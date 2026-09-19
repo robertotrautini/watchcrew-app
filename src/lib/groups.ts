@@ -18,3 +18,12 @@ export interface WatchGroupMembershipRow {
 export async function getUserGroups(userId: string) {
   return supabase.from("watch_group_members").select("*").eq("user_id", userId);
 }
+
+// M5-part-2 addition (Watchlist screen's "x/y bewertet" progress badge needs
+// a group's total current membership count, which nothing existing exposed
+// — `getUserGroups` above is user-centric, filtered by user_id, not
+// group-centric). Same never-throw tuple-passthrough convention as
+// `getUserGroups`.
+export async function getGroupMembers(groupId: string) {
+  return supabase.from("watch_group_members").select("*").eq("group_id", groupId);
+}

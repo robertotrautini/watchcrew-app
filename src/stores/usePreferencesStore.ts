@@ -12,9 +12,26 @@ import { mmkvStorage } from "@/lib/mmkvStorage";
  */
 export type LastActiveTab = "tracker" | "watchlist" | "tagebuch" | null;
 
+/**
+ * The view mode the Watchlist tab is currently displayed in. This is a
+ * shared/global preference (not per-group, not per-user-in-a-group) — it is
+ * the same across every watch group the user is a member of.
+ */
+export type WatchlistViewMode = "cards" | "grid" | "list";
+
+/**
+ * The view mode the Tagebuch (diary) tab is currently displayed in. Same
+ * shared/global-not-per-group convention as `WatchlistViewMode` above.
+ */
+export type DiaryViewMode = "cards" | "grid" | "list";
+
 interface PreferencesState {
   lastActiveTab: LastActiveTab;
   setLastActiveTab: (tab: LastActiveTab) => void;
+  watchlistViewMode: WatchlistViewMode;
+  setWatchlistViewMode: (mode: WatchlistViewMode) => void;
+  diaryViewMode: DiaryViewMode;
+  setDiaryViewMode: (mode: DiaryViewMode) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -22,6 +39,10 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set) => ({
       lastActiveTab: null,
       setLastActiveTab: (tab) => set({ lastActiveTab: tab }),
+      watchlistViewMode: "cards",
+      setWatchlistViewMode: (mode) => set({ watchlistViewMode: mode }),
+      diaryViewMode: "cards",
+      setDiaryViewMode: (mode) => set({ diaryViewMode: mode }),
     }),
     {
       name: "watchcrew-preferences",
