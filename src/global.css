@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --font-display:
     Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
@@ -6,4 +10,72 @@
     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
   --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+/*
+ * WatchCrew group-theme color variables.
+ *
+ * Each Watch-Group picks one of these 6 named themes. GroupThemeProvider
+ * (src/components/GroupThemeProvider.tsx) applies the matching class below
+ * to its root View based on the group's `themeName`, and Tailwind classes
+ * like `bg-accent` / `text-star-color` (see tailwind.config.js) resolve
+ * through these CSS custom properties.
+ *
+ * These hex values MUST stay in sync with src/lib/groupTheme.ts, which is
+ * the source of truth for anything needing a raw hex string (e.g. a native
+ * component like StatusBar that can't take a className). See that file's
+ * header comment for the exact derivation formula used for the 5 non-Gold
+ * themes' accentLight/gradientStart/gradientEnd/starColor.
+ *
+ * `:root` itself defaults to the Gold/"Alle drei" theme, matching
+ * groupTheme.ts's DEFAULT_GROUP_THEME fallback for when no group theme
+ * class is present yet (e.g. before a group has loaded).
+ */
+:root,
+.theme-gold {
+  --color-accent: #c8a44e;
+  --color-accent-light: #e8d5a3;
+  --color-accent-gradient-start: #d4aa4f;
+  --color-accent-gradient-end: #b8903e;
+  --color-star: #ffd700;
+}
+
+.theme-red {
+  --color-accent: #c75050;
+  --color-accent-light: #dd9696;
+  --color-accent-gradient-start: #d16f6f;
+  --color-accent-gradient-end: #b43a3a;
+  --color-star: #c75050;
+}
+
+.theme-blue {
+  --color-accent: #4e8ac8;
+  --color-accent-light: #95b9de;
+  --color-accent-gradient-start: #6d9fd2;
+  --color-accent-gradient-end: #3876b5;
+  --color-star: #4e8ac8;
+}
+
+.theme-green {
+  --color-accent: #50a870;
+  --color-accent-light: #96cba9;
+  --color-accent-gradient-start: #69b886;
+  --color-accent-gradient-end: #438c5e;
+  --color-star: #50a870;
+}
+
+.theme-purple {
+  --color-accent: #9050c7;
+  --color-accent-light: #bc96dd;
+  --color-accent-gradient-start: #a46fd1;
+  --color-accent-gradient-end: #7c3ab4;
+  --color-star: #9050c7;
+}
+
+.theme-orange {
+  --color-accent: #c8784e;
+  --color-accent-light: #deae95;
+  --color-accent-gradient-start: #d2906d;
+  --color-accent-gradient-end: #b56338;
+  --color-star: #c8784e;
 }
