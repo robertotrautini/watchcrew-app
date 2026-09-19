@@ -1,14 +1,116 @@
-import { Text, View } from 'react-native';
+import { useState } from 'react';
+import { Text, TextInput, View } from 'react-native';
+import { Link } from 'expo-router';
+
+import { Button } from '@/components/ui/Button';
+import { signInWithEmail } from '@/lib/auth';
+
+// Basic (not RFC-perfect) email shape check — good enough to catch obvious
+// typos ("foo", "foo@") before spending a network round-trip, without
+// pretending to fully validate deliverability.
+const EMAIL_SHAPE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
- * Placeholder only — real login form fields are a later M3 content task.
- * This screen exists purely so the (auth) route group is wired up and
- * navigable end to end for the navigation-shell check.
+ * Real M3 Login screen content. Client-side validation only checks
+ * non-empty password + plausible email shape before calling
+ * `signInWithEmail` (src/lib/auth.ts, M1) — it does not attempt to
+ * pre-verify credentials. On success there is no manual navigation: the
+ * root `useAuthGate`/`index.tsx` redirect (src/hooks/useAuthGate.ts,
+ * untouched here) reacts to the Supabase auth-state-change and routes away
+ * from `/login` once a session exists. This screen only owns its own local
+ * loading/error UI state.
  */
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    setApiError(null);
+
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !EMAIL_SHAPE_REGEX.test(trimmedEmail)) {
+      setValidationError('Bitte gib eine gültige E-Mail-Adresse ein.');
+      return;
+    }
+
+    if (!password) {
+      setValidationError('Bitte gib dein Passwort ein.');
+      return;
+    }
+
+    setValidationError(null);
+    setLoading(true);
+
+    const { error } = await signInWithEmail(trimmedEmail, password);
+
+    setLoading(false);
+
+    if (error) {
+      setApiError(error.message);
+    }
+  }
+
   return (
-    <View className="flex-1 items-center justify-center bg-bg-primary" testID="login-screen">
-      <Text className="text-lg text-text-primary">Login (TODO)</Text>
+    <View className="flex-1 justify-center bg-bg-primary px-6" testID="login-screen">
+      <Text className="mb-8 text-center font-display-bold text-3xl text-text-primary">
+        WatchCrew
+      </Text>
+
+      <Text className="mb-1 text-sm text-text-secondary">E-Mail</Text>
+      <TextInput
+        testID="login-email-input"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        placeholder="du@beispiel.de"
+        placeholderTextColor="#888888"
+        className="mb-4 rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
+      />
+
+      <Text className="mb-1 text-sm text-text-secondary">Passwort</Text>
+      <TextInput
+        testID="login-password-input"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+        autoCapitalize="none"
+        placeholder="••••••••"
+        placeholderTextColor="#888888"
+        className="mb-4 rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
+      />
+
+      {validationError ? (
+        <Text testID="login-validation-error" className="mb-4 text-sm text-danger">
+          {validationError}
+        </Text>
+      ) : null}
+
+      {apiError ? (
+        <Text testID="login-api-error" className="mb-4 text-sm text-danger">
+          {`Anmeldung fehlgeschlagen: ${apiError}`}
+        </Text>
+      ) : null}
+
+      <Button
+        label="Anmelden"
+        onPress={handleSubmit}
+        loading={loading}
+        disabled={loading}
+        testID="login-submit-button"
+      />
+
+      <Link
+        href="/(auth)/register"
+        testID="login-register-link"
+        className="mt-6 text-center text-text-secondary">
+        Noch kein Konto? Jetzt registrieren
+      </Link>
     </View>
   );
 }
