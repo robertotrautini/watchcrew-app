@@ -141,22 +141,15 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  // NOTE (decision point, not made autonomously): no default region has
-  // been decided for kind: "streaming" requests that omit `region`. Rather
-  // than guessing a default (e.g. "DE"), this returns a 400 until that's
-  // explicitly decided. See task report.
-  if (body.kind === "streaming" && !body.region) {
-    return jsonResponse(
-      { error: "region is required for kind: 'streaming'" },
-      400,
-    );
-  }
+  // Decision: kind: "streaming" requests that omit `region` default to "DE"
+  // (explicitly confirmed by the user, not an autonomous default).
+  const region = body.kind === "streaming" ? (body.region ?? "DE") : undefined;
 
   try {
     const supabase = getSupabaseClient();
     const data = body.kind === "metadata"
       ? await handleMetadata(supabase, body.tmdbId)
-      : await handleStreaming(supabase, body.tmdbId, body.region!);
+      : await handleStreaming(supabase, body.tmdbId, region!);
 
     return jsonResponse({ data }, 200);
   } catch (error) {
