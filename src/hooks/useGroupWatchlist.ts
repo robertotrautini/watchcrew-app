@@ -1,0 +1,58 @@
+import { useQuery } from "@tanstack/react-query";
+
+import { getGroupWatchlistEntries, getStreamingAvailabilityForTmdbIds } from "@/lib/watchlist";
+import { buildStreamingAvailabilityLookup } from "@/lib/watchlistLogic";
+import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
+
+export interface GroupWatchlistData {
+  /** The group's full watchlist_entries set (joined with movie/genres/ratings) — NOT pre-split into Watchlist/Diary; see `splitWatchlistAndDiary`. */
+  entries: WatchlistEntry[];
+  /** tmdb_id -> "available on streaming per cache", for the 'upcoming' ("Kommt noch") predicate. */
+  streamingAvailability: StreamingAvailabilityLookup;
+}
+
+/**
+ * Wraps `getGroupWatchlistEntries` + `getStreamingAvailabilityForTmdbIds`
+ * (src/lib/watchlist.ts) in a single TanStack Query.
+ *
+ * Both underlying calls never throw — they always resolve Supabase's raw
+ * `{ data, error }` tuple, even on failure. This hook translates that into
+ * React Query's native error channel (throwing on `error`) so consumers can
+ * rely on the usual `isLoading`/`data`/`error`/`isError` states, matching
+ * the convention in src/hooks/useUserGroups.ts.
+ */
+export function useGroupWatchlist(groupId: string | undefined) {
+  return useQuery({
+    queryKey: ["watchlist", groupId],
+    queryFn: async (): Promise<GroupWatchlistData> => {
+      const { data: entries, error: entriesError } = await getGroupWatchlistEntries(
+        groupId as string
+      );
+      if (entriesError) {
+        throw entriesError;
+      }
+
+      const safeEntries = (entries ?? []) as unknown as WatchlistEntry[];
+
+      const tmdbIds = Array.from(
+        new Set(
+          safeEntries
+            .map((entry) => entry.movie?.tmdb_id)
+            .filter((id): id is number => typeof id === "number")
+        )
+      );
+
+      const { data: availabilityRows, error: availabilityError } =
+        await getStreamingAvailabilityForTmdbIds(tmdbIds);
+      if (availabilityError) {
+        throw availabilityError;
+      }
+
+      return {
+        entries: safeEntries,
+        streamingAvailability: buildStreamingAvailabilityLookup(availabilityRows ?? []),
+      };
+    },
+    enabled: !!groupId,
+  });
+}
