@@ -5,19 +5,26 @@ import {
   PlayfairDisplay_700Bold_Italic,
   useFonts,
 } from '@expo-google-fonts/playfair-display';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
 import { initSentry } from '@/lib/sentry';
 
 initSentry();
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
+/**
+ * Root layout (M3 navigation shell). This only sets up cross-cutting
+ * providers (theme, splash, fonts — unchanged from M0/M1/M2) and declares
+ * the three top-level route groups as plain Stack screens. The actual
+ * auth-state/group-membership redirect DECISION lives in `src/app/index.tsx`
+ * via `useAuthGate()` (src/hooks/useAuthGate.ts) — this file does not
+ * duplicate that logic, it just gives the groups somewhere to mount.
+ */
+export default function RootLayout() {
   const colorScheme = useColorScheme();
   // Headings/brand font per docs/adr/0007-client-tech-stack.md — weights
   // 400/700 + italic, matching the `font-display*` Tailwind tokens in
@@ -38,7 +45,12 @@ export default function TabLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(app)" />
+      </Stack>
     </ThemeProvider>
   );
 }
