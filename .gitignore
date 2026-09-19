@@ -4,3 +4,23 @@ dist/
 .env*
 .DS_Store
 *.log
+
+# Added by Expo scaffolding (npx create-expo-app@latest) — merged additively
+web-build/
+expo-env.d.ts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+.metro-health-check*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.pem
+*.tsbuildinfo
+example
+/ios
+/android
