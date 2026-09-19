@@ -5,12 +5,14 @@ import {
   PlayfairDisplay_700Bold_Italic,
   useFonts,
 } from '@expo-google-fonts/playfair-display';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import { initSentry } from '@/lib/sentry';
+import { queryClient } from '@/lib/queryClient';
 
 initSentry();
 
@@ -43,14 +45,20 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="(onboarding)" />
-        <Stack.Screen name="(app)" />
-      </Stack>
-    </ThemeProvider>
+    // M4 data layer: QueryClientProvider is the outermost element so the
+    // TanStack Query cache (src/lib/queryClient.ts) is available to any
+    // screen, including auth-dependent ones inside (auth)/(onboarding)/(app)
+    // that need to read/mutate Supabase server-state via query hooks.
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AnimatedSplashOverlay />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="(app)" />
+        </Stack>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
