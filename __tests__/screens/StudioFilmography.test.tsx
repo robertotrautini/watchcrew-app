@@ -188,7 +188,7 @@ describe("StudioFilmographyScreen", () => {
     });
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/(modals)/movie-detail",
+      pathname: "/movie/[tmdbId]",
       params: { tmdbId: "7" },
     });
   });

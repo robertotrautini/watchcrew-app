@@ -226,7 +226,7 @@ describe("ActorFilmographyScreen", () => {
     await fireEvent.press(getByTestId("actor-filmography-screen-grid-item-3"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/(modals)/movie-detail",
+      pathname: "/movie/[tmdbId]",
       params: { tmdbId: "3" },
     });
   });

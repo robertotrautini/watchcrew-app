@@ -19,47 +19,43 @@ type Router = ReturnType<typeof useRouter>;
 /**
  * Real M6-part-2b route: `src/app/(app)/(modals)/filmography/director/[personId].tsx`.
  *
- * `as never` on `pathname` is a temporary cast — `.expo/types/router.d.ts`
- * (Expo Router's typed-routes generation) hasn't been regenerated since
- * the M6-part-2b routes landed, so this literal isn't in its type union
- * yet. Drop the cast once `npx expo` (or a dev-server run) regenerates it.
+ * No `as never` cast needed (M6-Cleanup pass) — `.expo/types/router.d.ts`
+ * has been regenerated since the M6-part-2b routes landed, and this literal
+ * now type-checks against `tsc` cleanly.
  */
 export function navigateToDirectorFilmography(router: Router, personId: number): void {
   router.push({
-    pathname: "/filmography/director/[personId]" as never,
+    pathname: "/filmography/director/[personId]",
     params: { personId: String(personId) },
   });
 }
 
 /**
  * Real M6-part-2b route: `src/app/(app)/(modals)/filmography/actor/[personId].tsx`.
- * See `navigateToDirectorFilmography` for the `as never` rationale.
  */
 export function navigateToActorFilmography(router: Router, personId: number): void {
   router.push({
-    pathname: "/filmography/actor/[personId]" as never,
+    pathname: "/filmography/actor/[personId]",
     params: { personId: String(personId) },
   });
 }
 
 /**
  * Real M6-part-2b route: `src/app/(app)/(modals)/collection/[collectionId].tsx`.
- * See `navigateToDirectorFilmography` for the `as never` rationale.
  */
 export function navigateToCollection(router: Router, collectionId: number): void {
   router.push({
-    pathname: "/collection/[collectionId]" as never,
+    pathname: "/collection/[collectionId]",
     params: { collectionId: String(collectionId) },
   });
 }
 
 /**
  * Real M6-part-2b route: `src/app/(app)/(modals)/similar/[tmdbId].tsx`.
- * See `navigateToDirectorFilmography` for the `as never` rationale.
  */
 export function navigateToSimilarMovies(router: Router, tmdbId: number): void {
   router.push({
-    pathname: "/similar/[tmdbId]" as never,
+    pathname: "/similar/[tmdbId]",
     params: { tmdbId: String(tmdbId) },
   });
 }

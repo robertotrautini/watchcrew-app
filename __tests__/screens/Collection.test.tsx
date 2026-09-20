@@ -198,7 +198,7 @@ describe("CollectionScreen", () => {
     await fireEvent.press(getByTestId("collection-screen-grid-item-1"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/(modals)/movie-detail",
+      pathname: "/movie/[tmdbId]",
       params: { tmdbId: "1" },
     });
   });

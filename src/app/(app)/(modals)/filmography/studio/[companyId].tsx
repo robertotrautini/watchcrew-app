@@ -98,10 +98,7 @@ export default function StudioFilmographyScreen() {
         items={items}
         onPressItem={(item) =>
           router.push({
-            // Movie-detail screen not yet landed (parallel M6 part 1 task);
-            // cast is removed once its typed route exists — see
-            // docs/interim-decisions.md "Angenommene movie-detail-Route".
-            pathname: "/(app)/(modals)/movie-detail" as never,
+            pathname: "/movie/[tmdbId]",
             params: { tmdbId: String(item.tmdbId) },
           })
         }

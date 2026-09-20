@@ -190,6 +190,17 @@ describe("MovieGrid", () => {
       expect(getByTestId("grid-progress-header-bar")).toBeTruthy();
     });
 
+    it("sets the bar's fill width via an inline style (NativeWind can't statically extract a runtime percentage)", async () => {
+      const items = [makeItem({ tmdbId: 1 })];
+      const progressHeader = { watched: 3, total: 10, percent: 30, label: "3 von 10 gesehen · 30%" };
+
+      const { getByTestId } = await render(
+        <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" progressHeader={progressHeader} />,
+      );
+
+      expect(getByTestId("grid-progress-header-bar").props.style).toEqual({ width: "30%" });
+    });
+
     it("renders nothing for the progress header when omitted", async () => {
       const items = [makeItem({ tmdbId: 1 })];
 

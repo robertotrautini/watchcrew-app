@@ -148,12 +148,18 @@ export default function MovieDetailScreen() {
   const liked = currentUserRating?.liked === true;
 
   function handleToggleLike() {
-    if (currentUserRating && watchlistEntryId && currentUserId) {
+    // `groupId` is required so the mutation can invalidate this group's
+    // `["watchlist", groupId]` cache on success. It's always defined here in
+    // practice -- `currentUserRating` only exists when `watchlistEntry`
+    // resolved from `useGroupWatchlist(groupId)`'s data -- but the check is
+    // explicit for type-safety rather than a non-null assertion.
+    if (currentUserRating && watchlistEntryId && currentUserId && groupId) {
       toggleLikeMutation.mutate({
         watchlistEntryId,
         memberId: currentUserId,
         nextLiked: !currentUserRating.liked,
         existingRatingId: currentUserRating.id,
+        groupId,
       });
     }
   }

@@ -162,7 +162,18 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
           <View className="h-2 w-full overflow-hidden rounded-full bg-card">
             <View
               testID={`${testID}-progress-header-bar`}
-              className={`h-2 rounded-full bg-accent w-[${progressHeader.percent}%]`}
+              className="h-2 rounded-full bg-accent"
+              // Narrow, deliberate exception to the "NativeWind classes only"
+              // rule: `percent` is a genuinely continuous runtime value (any
+              // 0-100 float), so it has no discrete class equivalent — a
+              // template-literal class like `w-[${percent}%]` can't be
+              // statically extracted by NativeWind/Tailwind's JIT (arbitrary
+              // values must be known at compile time), so it silently never
+              // applies at runtime. `style` is the only mechanism that can
+              // express a truly dynamic percentage. See
+              // docs/interim-decisions.md for why this is scoped to only
+              // this one case, not a general inline-style allowance.
+              style={{ width: `${progressHeader.percent}%` }}
             />
           </View>
         </View>

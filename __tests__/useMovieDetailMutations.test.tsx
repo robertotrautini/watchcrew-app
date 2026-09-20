@@ -59,7 +59,12 @@ describe("useToggleLike", () => {
     const { result } = await renderHook(() => useToggleLike(), { wrapper });
 
     await act(async () => {
-      result.current.mutate({ watchlistEntryId: "we-1", memberId: "user-1", nextLiked: true });
+      result.current.mutate({
+        watchlistEntryId: "we-1",
+        memberId: "user-1",
+        nextLiked: true,
+        groupId: "group-1",
+      });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -84,6 +89,7 @@ describe("useToggleLike", () => {
         memberId: "user-1",
         nextLiked: false,
         existingRatingId: "r1",
+        groupId: "group-1",
       });
     });
 
@@ -105,11 +111,59 @@ describe("useToggleLike", () => {
     const { result } = await renderHook(() => useToggleLike(), { wrapper });
 
     await act(async () => {
-      result.current.mutate({ watchlistEntryId: "we-1", memberId: "user-1", nextLiked: true });
+      result.current.mutate({
+        watchlistEntryId: "we-1",
+        memberId: "user-1",
+        nextLiked: true,
+        groupId: "group-1",
+      });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(fakeError);
+  });
+
+  it("invalidates the group's watchlist cache on success (fixes the missing-refresh bug)", async () => {
+    mockToggleLike.mockResolvedValue({ data: { id: "r1", liked: true }, error: null });
+    const { useToggleLike } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useToggleLike(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({
+        watchlistEntryId: "we-1",
+        memberId: "user-1",
+        nextLiked: true,
+        groupId: "group-1",
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+  });
+
+  it("does not invalidate the cache when the like-toggle errors", async () => {
+    const fakeError = { message: "rls denied" };
+    mockToggleLike.mockResolvedValue({ data: null, error: fakeError });
+    const { useToggleLike } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useToggleLike(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({
+        watchlistEntryId: "we-1",
+        memberId: "user-1",
+        nextLiked: true,
+        groupId: "group-1",
+      });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });
 

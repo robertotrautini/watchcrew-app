@@ -100,17 +100,33 @@ export default function SimilarMoviesScreen() {
             currentUserId ?? "",
           );
 
-          // Movie-detail screen not yet landed (parallel M6 part 1 task);
-          // casts below are removed once its typed route exists — see
-          // docs/interim-decisions.md "Angenommene movie-detail-Route".
-          if (badge !== null) {
+          // Real movie-detail route's params contract (src/app/(app)/(modals)/
+          // movie/[tmdbId].tsx): `groupId` + `source` ("watchlist"|"diary")
+          // together define "group context" there, and `watchlistEntryId`
+          // lets it resolve the already-loaded DB row instead of falling
+          // back to placeholder copy. `badge` (getLibraryBadgeForTmdbId)
+          // maps 1:1 onto that enum: "watched" -> the user already has a
+          // diary/rating row for it ("diary"), "watchlist" -> it's an
+          // unrated watchlist entry ("watchlist") — see
+          // docs/interim-decisions.md "M6-Cleanup — movie-detail-Routen-
+          // Korrektur" for why this replaces the earlier guessed
+          // `source: "library"` value, which isn't part of the real enum.
+          if (badge !== null && activeGroupId) {
+            const matchingEntry = watchlistQuery.data?.entries.find(
+              (entry) => entry.movie?.tmdb_id === item.tmdbId
+            );
             router.push({
-              pathname: "/(app)/(modals)/movie-detail" as never,
-              params: { tmdbId: String(item.tmdbId), groupId: activeGroupId ?? "", source: "library" },
+              pathname: "/movie/[tmdbId]",
+              params: {
+                tmdbId: String(item.tmdbId),
+                groupId: activeGroupId,
+                source: badge === "watched" ? "diary" : "watchlist",
+                ...(matchingEntry ? { watchlistEntryId: matchingEntry.id } : {}),
+              },
             });
           } else {
             router.push({
-              pathname: "/(app)/(modals)/movie-detail" as never,
+              pathname: "/movie/[tmdbId]",
               params: { tmdbId: String(item.tmdbId) },
             });
           }

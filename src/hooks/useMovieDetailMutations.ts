@@ -22,14 +22,42 @@ import {
 // without importing from src/lib directly.
 export { MovieNotCatalogedError };
 
+/**
+ * `groupId` is accepted alongside the like-toggle target purely so this hook
+ * can invalidate the affected group's `["watchlist", groupId]` query (the
+ * exact key used by `useGroupWatchlist`) on success -- same rationale as
+ * `DeleteWatchlistEntryMutationParams` below. Without this, the Watchlist/
+ * Tagebuch screens' like-heart state wouldn't visually refresh after a
+ * like-toggle from the Detail-Overlay until something else triggered a
+ * refetch (a real bug, fixed in the M6 cleanup pass -- see
+ * docs/interim-decisions.md).
+ */
+export interface ToggleLikeMutationParams extends ToggleLikeParams {
+  groupId: string;
+}
+
 export function useToggleLike() {
+  const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: async (params: ToggleLikeParams) => {
-      const { data, error } = await toggleLike(params);
+    mutationFn: async (params: ToggleLikeMutationParams) => {
+      // Destructured (not `toggleLike(params)` directly) so `groupId` --
+      // a mutation-only variable, not part of `ToggleLikeParams` -- never
+      // reaches the underlying lib call.
+      const { watchlistEntryId, memberId, nextLiked, existingRatingId } = params;
+      const { data, error } = await toggleLike({
+        watchlistEntryId,
+        memberId,
+        nextLiked,
+        existingRatingId,
+      });
       if (error) {
         throw error;
       }
       return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
     },
   });
 }

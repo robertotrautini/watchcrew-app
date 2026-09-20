@@ -35,9 +35,12 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside](#m6--person_moviesdirector_moviesstudio_movies-ebenfalls-ohne-cache-aside)
 - [M6 — Studio-Filmografie-Screen: Dedupe-Strategie, Footer-Sichtbarkeit, `movie-detail`-Routenannahme](#m6--studio-filmografie-screen-dedupe-strategie-footer-sichtbarkeit-movie-detail-routenannahme)
 - [M6 — Ähnliche-Filme-Screen: kein Poster-/Score-Backfill, `movie-detail`-Routenannahme](#m6--ähnliche-filme-screen-kein-poster-score-backfill-movie-detail-routenannahme)
-- [M6 (Teil 1) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call](#m6-teil-1--usemoviedetail-paralleles-fetching-statt-kombiniertem-server-call)
-- [M6 (Teil 1) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung](#m6-teil-1--usemoviedetailmutations-like-toggle-pfad-cache-invalidierung-fehlerbehandlung)
-- [M6 (Teil 1) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details](#m6-teil-1--movie-detail-screen-routen-contract-aktionsleisten-logik-trailer-ui-details)
+- [M6 (Teil 2a) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call](#m6-teil-2a--usemoviedetail-paralleles-fetching-statt-kombiniertem-server-call)
+- [M6 (Teil 2a) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung](#m6-teil-2a--usemoviedetailmutations-like-toggle-pfad-cache-invalidierung-fehlerbehandlung)
+- [M6 (Teil 2a) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details](#m6-teil-2a--movie-detail-screen-routen-contract-aktionsleisten-logik-trailer-ui-details)
+- [M6-Cleanup — `movie-detail`-Routen-Korrektur: echter Pfad, Source-Enum-Mapping, `as never`-Casts entfernt](#m6-cleanup--movie-detail-routen-korrektur-echter-pfad-source-enum-mapping-as-never-casts-entfernt)
+- [M6-Cleanup — MovieGrid: Inline-Style-Ausnahme für dynamische Fortschritts-Breite](#m6-cleanup--moviegrid-inline-style-ausnahme-für-dynamische-fortschritts-breite)
+- [M6-Cleanup / M7-Vorgriff — `movies`-Tabelle ohne INSERT/UPDATE-RLS: Add-Movie-Mechanismus offen](#m6-cleanup--m7-vorgriff--movies-tabelle-ohne-insertupdate-rls-add-movie-mechanismus-offen)
 
 ---
 
@@ -404,7 +407,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 **Warum das später leicht änderbar ist:** Poster-/Score-Backfill wäre eine rein additive Erweiterung der `.map()`-Funktion (ein weiterer Call, kein Strukturbruch). Die `movie-detail`-Params sind zwei String-Literale in genau einer `onPressItem`-Closure; falls der echte Screen andere Namen erwartet, ist das eine punktuelle Änderung ohne Rückwirkung auf `MovieGrid`, `useSimilarMovies` oder die Badge-/Filter-Logik.
 
-**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **zusätzlich zu verifizieren, sobald `movie-detail` gelandet ist:** ob `groupId`/`source` die tatsächlich erwarteten Param-Namen für den "bereits in Bibliothek"-Kontext sind.
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **zusätzlich zu verifizieren, sobald `movie-detail` gelandet ist:** ob `groupId`/`source` die tatsächlich erwarteten Param-Namen für den "bereits in Bibliothek"-Kontext sind. **Update (M6-Cleanup): verifiziert und korrigiert** — siehe "M6-Cleanup — `movie-detail`-Routen-Korrektur" unten für die tatsächliche Param-Namen-/Wertekorrektur (`source: "library"` war kein gültiger Enum-Wert, jetzt `"watchlist"`/`"diary"`).
 
 ---
 
@@ -426,7 +429,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 **Entscheidung (vorläufig):** Einheitlich über alle fünf Screens: `router.push({ pathname: "/(app)/(modals)/movie-detail", params: { tmdbId: String(tmdbId) } })`. Einzige Ausnahme: der Ähnliche-Filme-Screen (`similar/[tmdbId].tsx`) hängt zusätzlich `groupId: activeGroupId ?? "", source: "library"` an, wenn der Film laut `getLibraryBadgeForTmdbId` bereits `"watched"` oder `"watchlist"` ist (Feature-Vorgabe dieses Screens, siehe eigener Eintrag unten). Da die Zielroute noch nicht existiert, erzeugt Expo Routers `typedRoutes`-Generierung (`app.config.ts`) für `"/(app)/(modals)/movie-detail"` noch keinen validen Literal-Typ — alle fünf `router.push`-Aufrufe casten den `pathname` daher mit `as never`, kommentiert mit einem Verweis auf diesen Eintrag; die Casts fallen weg, sobald der echte Screen landet und `npx expo` seine Typen neu generiert.
 
-**Achtung, echter Verifikations-Gap:** Sowohl die Route selbst als auch die Parameter-Namen `tmdbId`/`groupId`/`source` sind unverifizierte Annahmen. Sobald der `movie-detail`-Screen aus dem parallelen Task gelandet ist, MUSS dessen tatsächliche `useLocalSearchParams`-Signatur gegen alle fünf `router.push`-Aufrufe (in `collection/[collectionId].tsx`, `filmography/director/[personId].tsx`, `filmography/actor/[personId].tsx`, `filmography/studio/[companyId].tsx`, `similar/[tmdbId].tsx`) abgeglichen werden.
+**Achtung, echter Verifikations-Gap:** Sowohl die Route selbst als auch die Parameter-Namen `tmdbId`/`groupId`/`source` sind unverifizierte Annahmen. Sobald der `movie-detail`-Screen aus dem parallelen Task gelandet ist, MUSS dessen tatsächliche `useLocalSearchParams`-Signatur gegen alle fünf `router.push`-Aufrufe (in `collection/[collectionId].tsx`, `filmography/director/[personId].tsx`, `filmography/actor/[personId].tsx`, `filmography/studio/[companyId].tsx`, `similar/[tmdbId].tsx`) abgeglichen werden. **Update (M6-Cleanup): abgeglichen und korrigiert** — der echte Screen liegt unter `movie/[tmdbId].tsx` (nicht `movie-detail`), alle fünf Aufrufer wurden korrigiert; siehe "M6-Cleanup — `movie-detail`-Routen-Korrektur" unten für Details.
 
 **Warum das später leicht änderbar ist:** Jeder Aufruf ist eine isolierte `router.push(...)`-Zeile in genau einer `onPressItem`-Closure pro Screen — keine strukturelle Kopplung an `MovieGrid`, die Hooks oder die Badge-/Filter-Logik.
 
@@ -494,7 +497,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 ---
 
-## M6 (Teil 1) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call
+## M6 (Teil 2a) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call
 
 **Problem/Lücke:** Der neue Movie-Detail-Screen braucht fünf verschiedene `tmdb-proxy`-Actions (`details`, `videos`, `credits`, `release_dates`, `providers`) gleichzeitig. Weder ADR 0002/0005 noch feature-inventory.md legen fest, ob diese als ein kombinierter Server-Call oder als mehrere Client-Calls geholt werden.
 
@@ -510,13 +513,13 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 ---
 
-## M6 (Teil 1) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung
+## M6 (Teil 2a) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung
 
 **Problem/Lücke:** Für Like-Toggle, Watchlist-Hinzufügen und Watchlist-Löschen aus dem Movie-Detail-Screen fehlten Implementierungsdetails zu Update- vs. Insert-Pfad, Cache-Invalidierung, Fehlerformat und Nutzer-ID-Herkunft.
 
 **Entscheidung (vorläufig):**
 - Like-Toggle: `.update({ liked })` auf die konkrete Rating-Zeile per `id`, wenn eine existierende Rating-ID bekannt ist (garantiert, dass andere Rating-Felder unangetastet bleiben); `.upsert(..., { onConflict: "watchlist_entry_id,member_id" })`, wenn keine existierende Rating-ID bekannt ist (Insert-oder-Erzeugen-mit-nur-`liked`-gesetzt-Pfad, da `ratings` keine DELETE-Policy hat). Aufrufer/UI entscheidet über den Pfad, je nachdem ob `existingRatingId` mitgegeben wird oder nicht.
-- Cache-Invalidierung: `useDeleteWatchlistEntry`/`useAddToWatchlist` nehmen `groupId` als Mutation-Variable entgegen und invalidieren bei Erfolg exakt den Key `["watchlist", groupId]` — derselbe Key, den `useGroupWatchlist` verwendet. `useToggleLike` invalidiert bewusst KEINEN Cache (im Auftrag nicht gefordert; separat als bekannte Lücke geflaggt, hier nicht behoben, da diese Datei im Rahmen dieser Konsolidierung nicht angefasst werden sollte).
+- Cache-Invalidierung: `useDeleteWatchlistEntry`/`useAddToWatchlist` nehmen `groupId` als Mutation-Variable entgegen und invalidieren bei Erfolg exakt den Key `["watchlist", groupId]` — derselbe Key, den `useGroupWatchlist` verwendet. `useToggleLike` invalidiert bewusst KEINEN Cache (im Auftrag nicht gefordert; separat als bekannte Lücke geflaggt, hier nicht behoben, da diese Datei im Rahmen dieser Konsolidierung nicht angefasst werden sollte). **Update (M6-Cleanup):** genau diese Lücke wurde inzwischen behoben — `useToggleLike` nimmt jetzt ebenfalls `groupId` als Mutation-Variable entgegen (analog zu `useDeleteWatchlistEntry`) und invalidiert `["watchlist", groupId]` bei Erfolg, damit das Like-Herz in Watchlist/Tagebuch nach einem Toggle aus dem Detail-Overlay sofort visuell aktualisiert.
 - Duplicate-Entry-Fehler (Postgres-Code `23505`): keine Übersetzung in eine freundliche Meldung, der rohe Postgres-Fehler wird unverändert durchgereicht (kein Präzedenzfall im Repo für eine Übersetzung von Postgres-Fehlercodes gefunden; als UI-Layer-Scope betrachtet).
 - Aktuelle User-ID wird als Hook-/Mutation-Parameter (`memberId`/`addedBy`) übergeben, nicht intern per `useCurrentUserId()` geholt — hält diese Mutation-Hooks auth-state-agnostisch und leichter testbar/wiederverwendbar, passend zu `watchlist.tsx`/`tagebuch.tsx`, die `useCurrentUserId()` einmal auf Screen-Ebene aufrufen und nach unten durchreichen.
 - `MovieNotCatalogedError` wird auf der `src/lib`-Ebene als `{ data: null, error }` zurückgegeben (never-throws-Konvention), auf Hook-Ebene aber in einen echten geworfenen Fehler umgewandelt, damit UI-Code per `error instanceof MovieNotCatalogedError` auf `mutation.error` prüfen kann.
@@ -527,7 +530,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 ---
 
-## M6 (Teil 1) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details
+## M6 (Teil 2a) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details
 
 **Problem/Lücke:** Für den neuen Screen `src/app/(app)/(modals)/movie/[tmdbId].tsx` fehlten Festlegungen zu Routen-Parametern, Aktionsleisten-Sichtbarkeit, Lösch-Bestätigung, Platzhalter-Navigation, Trailer-Wiedergabe und diversem UI-Feinschliff.
 
@@ -547,6 +550,49 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 **Warum das später leicht änderbar ist:** Alle Punkte sind lokal isolierte Implementierungsdetails innerhalb genau dieses einen Screens bzw. seiner extrahierten Helper-Module (`movieDetailLogic.ts`, `movieDetailNavigation.ts`) — Routen-Parameter-Namen, Aktionsleisten-Copy, Trailer-Mechanik und UI-Feinschliff ließen sich jeweils lokal austauschen, ohne `useMovieDetail`/`useMovieDetailMutations` oder andere Screens anzufassen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6-Cleanup — `movie-detail`-Routen-Korrektur: echter Pfad, Source-Enum-Mapping, `as never`-Casts entfernt
+
+**Problem/Lücke:** Die fünf M6-part-2b-Sub-View-Screens (`collection/[collectionId].tsx`, `filmography/{director,actor,studio}/[...].tsx`, `similar/[tmdbId].tsx`) navigierten alle zu einem angenommenen, nie existierenden Pfad `/(app)/(modals)/movie-detail` mit `as never`-Casts (dokumentiert in "M6 — Angenommene `movie-detail`-Route" oben). Der echte, inzwischen gelandete Screen liegt tatsächlich unter `src/app/(app)/(modals)/movie/[tmdbId].tsx` — anderer Pfad (`movie/[tmdbId]`, nicht `movie-detail`) UND ein anderer Params-Vertrag (`groupId`, `source: "watchlist"|"diary"`, `watchlistEntryId`, `movieJson`), während der Ähnliche-Filme-Screen zuvor `source: "library"` geraten hatte — kein gültiger Wert im echten Enum.
+
+**Entscheidung (vorläufig):**
+- Alle fünf `router.push`-Aufrufe korrigiert auf `pathname: "/movie/[tmdbId]"` (kein `as never` mehr nötig — `.expo/types/router.d.ts` wurde neu generiert und enthält das Literal jetzt).
+- `collection`/`filmography/{actor,director,studio}`: unverändertes Verhalten ansonsten — weiterhin nur `tmdbId` als Param, kein Gruppen-Kontext (diese vier Screens hatten nie eine Badge-abhängige Verzweigung, nur `similar` hatte das).
+- `similar/[tmdbId].tsx`: die bestehende Badge-abhängige Verzweigung (Film bereits in der aktiven Gruppen-Bibliothek ja/nein) bleibt erhalten, aber korrekt auf den echten Enum gemappt — `getLibraryBadgeForTmdbId`s `"watched"` → `source: "diary"` (Nutzer hat bereits eine Bewertung/Diary-Zeile), `"watchlist"` → `source: "watchlist"` (unbewerteter Watchlist-Eintrag), `null` → kein Gruppen-Kontext (nur `tmdbId`, wie zuvor). Zusätzlich wird jetzt, wenn ein Badge vorliegt, die passende `watchlist_entries.id` aus den bereits geladenen `watchlistQuery.data.entries` per `tmdb_id`-Match nachgeschlagen und als `watchlistEntryId` mitgegeben — ohne das hätte der echte Movie-Detail-Screen trotz gesetztem `groupId`/`source` keine passende Zeile gefunden (`watchlistEntry`-Lookup dort matcht exakt auf `watchlistEntryId`) und wäre auf die "Film"-Platzhalter-Copy zurückgefallen, obwohl die echten Film-/Bewertungsdaten bereits im Speicher lagen — das wäre ein vermeidbarer Funktionsverlust gewesen, kein bloßes Detail.
+- Zusätzlich (nicht explizit im Auftrag genannt, aber derselbe Ursache-/Cleanup-Kontext): die vier `as never`-Casts in `src/lib/movieDetailNavigation.ts` (`navigateToDirectorFilmography`/`navigateToActorFilmography`/`navigateToCollection`/`navigateToSimilarMovies`) wurden ebenfalls entfernt — sie zeigten bereits auf echte, existierende Routen und waren nur durch dieselbe veraltete `.expo/types/router.d.ts`-Generierung blockiert, die jetzt aktualisiert ist. Die zwei echten M7-Platzhalter (`navigateToRatingDialog`/`navigateToEditFlow`) behalten ihren `as never`-Cast, da diese Routen noch nicht existieren.
+- `.expo/types/router.d.ts` wurde durch einen kurzen `npx expo start`-Lauf neu generiert (die Datei ist `.gitignore`t, rein lokal — jede Umgebung, die `tsc`/`expo start` einmal laufen lässt, bekommt dieselbe aktuelle Generierung).
+
+**Warum das später leicht änderbar ist:** Jeder Aufruf ist weiterhin eine isolierte `router.push(...)`-Zeile in genau einer `onPressItem`-Closure pro Screen (bzw. eine Zeile pro `navigateToX`-Funktion in `movieDetailNavigation.ts`) — keine strukturelle Kopplung an `MovieGrid`, die Hooks oder die Badge-/Filter-Logik. Das `badge`→`source`-Mapping ist ein einzeiliger Ternary, austauschbar ohne Rückwirkung auf `getLibraryBadgeForTmdbId` selbst.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6-Cleanup — MovieGrid: Inline-Style-Ausnahme für dynamische Fortschritts-Breite
+
+**Problem/Lücke:** `MovieGrid.tsx`s Fortschrittsbalken-Füllung baute ihre Breite über eine Laufzeit-Template-Literal-Klasse (`` `w-[${percent}%]` ``) — NativeWind/Tailwinds JIT kann beliebige (`arbitrary`) Klassenwerte nur extrahieren, wenn sie zur Build-Zeit statisch bekannt sind; ein zur Laufzeit interpolierter Prozentwert wird dort NIE als echte CSS-Regel erzeugt, die Klasse ist also praktisch wirkungslos. Das verstößt gegen die Projekt-Standing-Regel "NativeWind-Klassen statt Inline-Styles", die aber genau für diesen strukturell unlösbaren Fall eine schmale, explizit genehmigte Ausnahme vorsieht.
+
+**Entscheidung (vorläufig):** Nur für dieses eine Element (den Fortschrittsbalken-Fill-`View`) wird `style={{ width: `${percent}%` }}` statt einer `w-[...]`-Klasse verwendet, mit Code-Kommentar direkt an der Stelle, der die Begründung erklärt. Alles andere an der Komponente (Farben, Layout, Border-Radius, die äußere Balken-Hülle) bleibt unverändert auf NativeWind-Klassen. Diese Ausnahme ist bewusst NICHT verallgemeinerbar: sie gilt nur für echte, kontinuierliche Laufzeitwerte ohne diskretes Klassen-Äquivalent (ein Prozentsatz zwischen 0 und 100 mit beliebiger Nachkommastelle) — keine feste Anzahl möglicher Werte ließe sich sinnvoll als vordefinierte Klassenliste ausrollen, anders als z. B. ein Badge mit nur zwei/drei Zuständen (dort bleiben feste Klassen/Ternaries wie bisher Pflicht).
+
+**Warum das später leicht änderbar ist:** Eine einzelne `style`-Prop an genau einem `View`-Element in genau einer Datei — falls NativeWind zukünftig echte Laufzeit-Arbitrary-Values unterstützt (z. B. über CSS-Custom-Properties), ist das ein lokaler Ein-Zeilen-Tausch zurück auf eine Klasse, ohne Auswirkung auf den Rest der Komponente.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6-Cleanup / M7-Vorgriff — `movies`-Tabelle ohne INSERT/UPDATE-RLS: Add-Movie-Mechanismus offen
+
+**Problem/Lücke:** Die `movies`-Tabelle hat für `authenticated` aktuell KEINE INSERT/UPDATE-RLS-Policy (Catalog-Schreibzugriffe sind laut der M1-Migration bewusst nur einer service-role Edge Function vorbehalten, siehe deren Migrations-Kommentar). Das bedeutet: ein Film, der noch nie zur Watchlist IRGENDEINER Gruppe hinzugefügt wurde (also noch keine `movies`-Zeile hat), kann über `useAddToWatchlist`/`addToWatchlist` (`src/lib/movieDetailMutations.ts`) aktuell NICHT hinzugefügt werden — die Funktion schlägt bewusst früh und sauber fehl (`{ data: null, error: new MovieNotCatalogedError(tmdbId) }`), statt einen zum Scheitern verurteilten RLS-abgelehnten Insert zu versuchen.
+
+**Entscheidung (vorläufig):** Dies ist KEIN Bug, der jetzt zu fixen wäre, und wird auch NICHT stillschweigend umgangen — es ist eine echte, bewusst offene Architekturfrage, die absichtlich auf Milestone M7 ("Add-Movie- & Rating-Flows") verschoben wird, weil M7 der natürliche Ort ist, den tatsächlichen Mechanismus festzulegen. Zwei Optionen stehen dafür zur Wahl, beide mit echten Sicherheits-/Architektur-Implikationen, die eine bewusste Nutzer-Entscheidung brauchen (kein "vertretbarer stiller Default" im Sinne dieses Dokuments):
+1. Eine neue, bewusst eingeschränkte `authenticated`-INSERT-Policy auf `movies` (z. B. nur bestimmte Spalten, oder nur im selben Request wie ein `watchlist_entries`-Insert per Trigger/Constraint).
+2. Eine service-role Edge Function, die den Film-Datensatz zuerst per TMDB-Daten upserted und danach den `watchlist_entries`-Insert vornimmt (analog zum bestehenden Muster "Catalog-Schreibzugriffe nur über service-role").
+
+**Warum das später leicht änderbar ist:** `MovieNotCatalogedError` ist bereits ein eigener, `instanceof`-prüfbarer Fehlertyp, den die UI-Schicht gezielt abfangen kann (aktuell zeigt der Movie-Detail-Screen dafür einen generischen Fehler-Alert) — welche der beiden Optionen M7 auch wählt, der Aufrufer-Code ändert sich nicht strukturell, nur `addToWatchlist`s interner "Film nicht gefunden"-Zweig wird durch den echten Mechanismus ersetzt oder ergänzt.
+
+**Status:** Offen — **dies ist explizit eine echte Architekturfrage für M7, keine vorläufige Cleanup-Entscheidung** — der Nutzer entscheidet in M7 zwischen den beiden oben genannten Optionen (oder einer dritten), bevor der Add-Movie-Flow dort implementiert wird.
 
 ---
 

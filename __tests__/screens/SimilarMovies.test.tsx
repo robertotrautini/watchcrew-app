@@ -201,12 +201,12 @@ describe("SimilarMoviesScreen", () => {
     await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/(modals)/movie-detail",
+      pathname: "/movie/[tmdbId]",
       params: { tmdbId: "101" },
     });
   });
 
-  it("calls router.push with groupId/source=library when the tapped movie IS already in the library", async () => {
+  it("calls router.push with groupId/source=watchlist/watchlistEntryId when the tapped movie is on the group's watchlist (unrated)", async () => {
     setUpHappyPath();
     mockUseGroupWatchlist.mockReturnValue({
       data: {
@@ -224,8 +224,47 @@ describe("SimilarMoviesScreen", () => {
     await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
 
     expect(mockPush).toHaveBeenCalledWith({
-      pathname: "/(app)/(modals)/movie-detail",
-      params: { tmdbId: "101", groupId: "g1", source: "library" },
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "101", groupId: "g1", source: "watchlist", watchlistEntryId: "e1" },
+    });
+  });
+
+  it("calls router.push with groupId/source=diary/watchlistEntryId when the tapped movie is already watched (rated)", async () => {
+    setUpHappyPath();
+    mockUseGroupWatchlist.mockReturnValue({
+      data: {
+        entries: [
+          makeEntry({
+            id: "e1",
+            movie: makeMovie({ tmdb_id: 101 }),
+            ratings: [
+              {
+                id: "r1",
+                watchlist_entry_id: "e1",
+                member_id: "u1",
+                rating: 4,
+                liked: false,
+                seen_at: null,
+                rated_at: "2026-01-01T00:00:00Z",
+              },
+            ],
+          }),
+        ],
+        streamingAvailability: new Map(),
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    const SimilarMoviesScreen = loadSimilarMoviesScreen();
+    const { getByTestId } = await render(<SimilarMoviesScreen />);
+
+    await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
+
+    expect(mockPush).toHaveBeenCalledWith({
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "101", groupId: "g1", source: "diary", watchlistEntryId: "e1" },
     });
   });
 
