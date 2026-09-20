@@ -21,12 +21,12 @@ import { usePreferencesStore } from "@/stores/usePreferencesStore";
  * sign-out, app version). No feature-request row (legacy-only, never
  * surfaced in that app's own visible menu either — out of scope here).
  *
- * "Benachrichtigungen" routes to `/settings/notifications`, which this task
- * gives only a minimal placeholder screen (see
- * src/app/(app)/(modals)/settings/notifications.tsx) — the parallel M10
- * push-notifications task owns the real subscription UI there and is
- * expected to replace that stub. Documented as a reconciliation point in
- * docs/interim-decisions.md.
+ * "Benachrichtigungen" routes to `/settings/notifications`. This task
+ * originally gave that route only a minimal placeholder screen (see
+ * src/app/(app)/(modals)/settings/notifications.tsx's own module comment);
+ * that placeholder has since been replaced by the real per-group push
+ * opt-in screen (M10 reconciliation, see docs/interim-decisions.md — the
+ * hub row and route themselves needed no change).
  *
  * "Neue Funktionen verfügbar" hint: the parallel M10 Realtime task's
  * `showToast`/`ToastHost` (src/lib/toast.ts, mounted at the app root) landed

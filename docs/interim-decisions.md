@@ -99,6 +99,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M10 — "Abmelden"/Konto-Löschung: expliziter `router.replace("/")` statt Vertrauen auf den bestehenden Auth-Gate](#m10--abmeldenkonto-löschung-expliziter-routerreplace-statt-vertrauen-auf-den-bestehenden-auth-gate)
 - [M10 — "Benachrichtigungen"-Zeile verlinkt einen Platzhalter-Screen (Abstimmungspunkt mit der parallelen Push-Task)](#m10--benachrichtigungen-zeile-verlinkt-einen-platzhalter-screen-abstimmungspunkt-mit-der-parallelen-push-task)
 - [M10 — `.expo/types/router.d.ts` manuell nachgezogen (kein Entscheid, Tooling-Hinweis)](#m10--exportypesrouterdts-manuell-nachgezogen-kein-entscheid-tooling-hinweis)
+- [M10 (Nachzügler) — Benachrichtigungen-Screen: echte Umsetzung ersetzt den Platzhalter](#m10-nachzügler--benachrichtigungen-screen-echte-umsetzung-ersetzt-den-platzhalter)
 
 ---
 
@@ -1427,7 +1428,7 @@ Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Re
 
 **Warum das später leicht änderbar ist:** Eine einzelne Datei, die komplett überschrieben werden kann, sobald die parallele Push-Task ihren echten Screen liefert — die Route (`/settings/notifications`) und der Verlinkungspunkt im Hub ändern sich dabei nicht.
 
-**Status:** Offen für Abstimmung mit der parallelen Push-Notifications-Task — bitte `settings/notifications.tsx` durch deren echten Screen ersetzen (lassen), sobald verfügbar.
+**Status:** ✅ Abgelöst — siehe [M10 (Nachzügler) — Benachrichtigungen-Screen: echte Umsetzung ersetzt den Platzhalter](#m10-nachzügler--benachrichtigungen-screen-echte-umsetzung-ersetzt-den-platzhalter). Dieser Eintrag bleibt zur Historie stehen.
 
 ---
 
@@ -1440,6 +1441,22 @@ Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Re
 **Warum das später leicht änderbar ist:** n/a — reines Tooling-Artefakt, kein Code-Entscheid; kein Handlungsbedarf.
 
 **Status:** Zur Kenntnisnahme, keine Bestätigung nötig.
+
+---
+
+## M10 (Nachzügler) — Benachrichtigungen-Screen: echte Umsetzung ersetzt den Platzhalter
+
+**Problem/Lücke:** Die parallele M10-Push-Task hatte `useGroupPushSubscription` (`src/hooks/useGroupPushSubscription.ts`) bereits fertig gebaut und getestet, aber `src/app/(app)/(modals)/settings/notifications.tsx` blieb ein bewusster Platzhalter (siehe oben, "'Benachrichtigungen'-Zeile verlinkt einen Platzhalter-Screen"). Weder ADR 0006 noch feature-inventory.md geben eine exakte Erklärungstext-Copy oder ein Lade-/Deaktivierungs-Verhalten für diesen konkreten Toggle vor.
+
+**Entscheidung:**
+- `settings/notifications.tsx` ersetzt den Platzhalter vollständig: `useActiveGroup(useCurrentUserId())` liefert die aktive Gruppe, `useGroupPushSubscription(activeGroupId, currentUserId)` liefert Zustand + Mutationen. Ein einzelner Toggle ("Push-Benachrichtigungen für diese Gruppe") — derselbe custom-Pressable-Toggle-Stil wie `settings/display.tsx` (`accessibilityRole="switch"`, kein natives `Switch`), keine neue wiederverwendbare `Toggle`-Komponente eingeführt.
+- Erklärungstext (Platzhalter-Qualität, analog zu M5s Empty-State-Texten und M10s Push-Notification-Copy): „Du wirst benachrichtigt, wenn jemand aus dieser Gruppe einen neuen Film zur Watchlist hinzufügt, einen Film als Erstes bewertet, oder wenn der Kinostart eines vorgemerkten Films näher rückt." — fasst die drei tatsächlichen Push-Trigger aus `push-sender.ts`s `buildNotificationCopy` (`new_entry`/`first_rating`/`release_reminder`) in einem Satz zusammen.
+- Lade-/Disabled-Verhalten: Während `isLoading` (initialer Query-Fetch) wird ein `ActivityIndicator` ANSTELLE des Toggles gezeigt (kein "Toggle sichtbar, aber disabled"-Zwischenzustand); ist die Query einmal aufgelöst, ist der Toggle nur noch während `isMutating` (Subscribe/Unsubscribe in Flight) disabled. `accessibilityState.disabled` wird trotzdem als `isMutating || isLoading` berechnet (nicht nur `isMutating`), rein defensiv/wortgetreu zur Aufgabenstellung — praktisch macht das keinen Unterschied, da der Toggle bei `isLoading` ohnehin nicht gerendert wird.
+- `settings.tsx`s Modul-Kommentar wurde aktualisiert (Platzhalter-Hinweis entfernt), die Zeilen-Copy/Route selbst (`"Benachrichtigungen"` → `/settings/notifications`) blieben unverändert, da schon vorher korrekt.
+
+**Warum das später leicht änderbar ist:** Erklärungstext ist ein einzelner String in einer Datei; das Lade-vs-Disabled-Verhalten ist eine einzelne bedingte Verzweigung (`isLoading ? <ActivityIndicator /> : <Pressable ...>`), austauschbar ohne Strukturänderung. Kein Schema-/Route-/Hook-Vertrag wurde angefasst — `useGroupPushSubscription` blieb exakt wie von der parallelen Task geliefert.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
 ---
 
