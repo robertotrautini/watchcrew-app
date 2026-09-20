@@ -1,4 +1,5 @@
 import { supabase } from "./supabase";
+import type { RatingUpsertPayload } from "./ratingLogic";
 
 // M6 part 2a: thin, typed wrappers around the Supabase writes needed for the
 // Movie Detail Overlay (toggle-like, delete-from-watchlist,
@@ -134,6 +135,91 @@ export async function addToWatchlist(params: AddToWatchlistParams) {
   return supabase
     .from("watchlist_entries")
     .insert({ group_id: groupId, movie_id: (movie as { id: string }).id, added_by: addedBy })
+    .select()
+    .single();
+}
+
+// --- M7 part 2b: Rating-Dialog writes ---
+//
+// Interim decision (docs/interim-decisions.md "M7 Teil 2b"): these three
+// functions live here (extending the existing M6-part-2a movie-detail
+// mutations file) rather than in a brand-new `src/lib/ratingMutations.ts` --
+// they're the same "thin, typed, never-throw Supabase wrapper" kind of
+// function as `toggleLike`/`deleteWatchlistEntry`/`addToWatchlist` above,
+// operate on the same two tables (`ratings`/`watchlist_entries`), and the
+// task brief itself flagged this file as the natural fit to check first.
+// The hook layer (`src/hooks/useSaveRating.ts`) is a NEW file, per the
+// task's explicit deliverable list.
+
+/**
+ * Upserts the acting member's own `ratings` row for a watchlist entry.
+ *
+ * Deliberately a real UPSERT (never a delete-then-reinsert) so a future
+ * server-side NULL->value push trigger (ADR 0006's push-behavior design,
+ * out of scope for this client-side task) can correctly observe a
+ * NULL->value vs. value->value transition on `rating` later. `payload` is
+ * expected to already be shaped by `buildRatingUpsertPayload`
+ * (src/lib/ratingLogic.ts) -- this function does no further shaping itself.
+ *
+ * RLS (`ratings_insert_own_row_only`/`ratings_update_own_row_only`)
+ * restricts both the insert and update path of this upsert to
+ * `member_id = auth.uid()`, so this can only ever write the CALLING
+ * member's own rating row -- exactly the "Direkt Bewerten only rates for
+ * the acting user" business rule, enforced at the database layer, not just
+ * assumed client-side.
+ */
+export async function saveRating(payload: RatingUpsertPayload) {
+  return supabase
+    .from("ratings")
+    .upsert(payload, { onConflict: "watchlist_entry_id,member_id" })
+    .select()
+    .single();
+}
+
+export interface ResetRatingParams {
+  ratingId: string;
+}
+
+/**
+ * Resets a rating row's `rating` back to NULL and its `liked` back to
+ * `false` -- per the known rule "deleting a rating also resets the like".
+ * Only `rating`/`liked` are touched: `seen_at`/`rated_at` are left exactly
+ * as they were (resetting a rating value isn't itself a new "rating
+ * event", so `rated_at` is intentionally NOT bumped here -- an interim
+ * decision, see docs/interim-decisions.md "M7 Teil 2b").
+ *
+ * An `.update()` targeting the existing row's id, not a delete -- `ratings`
+ * has no DELETE policy at all (see the M6-part-2a `toggleLike` doc comment
+ * above), and this keeps the same "never delete-then-reinsert" guarantee
+ * `saveRating` relies on.
+ */
+export async function resetRating(params: ResetRatingParams) {
+  return supabase.from("ratings").update({ rating: null, liked: false }).eq("id", params.ratingId).select().single();
+}
+
+export interface SavePaymentParams {
+  watchlistEntryId: string;
+  paidByMemberId: string;
+  paidAt: string;
+}
+
+/**
+ * Assigns/confirms who paid for a watchlist entry and when. `paidAt` is
+ * expected to already be resolved via `resolvePaymentDate`
+ * (src/lib/ratingLogic.ts) by the caller -- this function does no priority
+ * resolution itself, it just writes the two columns.
+ *
+ * `watchlist_entries_update_group_members` (RLS) allows ANY group member to
+ * update this row, not just the payer or the row's own `added_by` -- this
+ * is the deliberate, documented "any member can log payment on any other
+ * member's behalf" interim decision (see docs/interim-decisions.md
+ * "M7 Teil 2b"), not an oversight.
+ */
+export async function savePayment(params: SavePaymentParams) {
+  return supabase
+    .from("watchlist_entries")
+    .update({ paid_by_member_id: params.paidByMemberId, paid_at: params.paidAt })
+    .eq("id", params.watchlistEntryId)
     .select()
     .single();
 }

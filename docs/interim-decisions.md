@@ -42,6 +42,15 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M6-Cleanup — MovieGrid: Inline-Style-Ausnahme für dynamische Fortschritts-Breite](#m6-cleanup--moviegrid-inline-style-ausnahme-für-dynamische-fortschritts-breite)
 - [M6-Cleanup / M7-Vorgriff — `movies`-Tabelle ohne INSERT/UPDATE-RLS: Add-Movie-Mechanismus offen](#m6-cleanup--m7-vorgriff--movies-tabelle-ohne-insertupdate-rls-add-movie-mechanismus-offen)
 - [M7 Teil 1 — `upsert_movie`-Action: exakte `movies`-Spalten-Zuordnung, Idempotenz-Ansatz, Genre-Upsert-Strategie](#m7-teil-1--upsert_movie-action-exakte-movies-spalten-zuordnung-idempotenz-ansatz-genre-upsert-strategie)
+- [M7 Teil 2b — `paid_at`-Prioritätskette: Einordnung des "Gesehen am"-Datums](#m7-teil-2b--paid_at-prioritätskette-einordnung-des-gesehen-am-datums)
+- [M7 Teil 2b — Like-Herz auch im "Direkt Bewerten"-Dialog](#m7-teil-2b--like-herz-auch-im-direkt-bewerten-dialog)
+- [M7 Teil 2b — "Einzelbewertung" (`renderRatingOverlayFor`) nicht gebaut](#m7-teil-2b--einzelbewertung-renderratingoverlayfor-nicht-gebaut)
+- [M7 Teil 2b — Reset-Button bewegt `rated_at` nicht](#m7-teil-2b--reset-button-bewegt-rated_at-nicht)
+- [M7 Teil 2b — Bezahl-Sektion: kein "Zahlung löschen"-Gesture, kein Overwrite bei unverändertem Zahler](#m7-teil-2b--bezahl-sektion-kein-zahlung-löschen-gesture-kein-overwrite-bei-unverändertem-zahler)
+- [M7 Teil 2b — Kein neues Datepicker-Package: einfaches TT.MM.JJJJ-Textfeld](#m7-teil-2b--kein-neues-datepicker-package-einfaches-ttmmjjjj-textfeld)
+- [M7 Teil 2b — Rating-Mutationen in der bestehenden `movieDetailMutations.ts`, neuer Hook `useSaveRating.ts`](#m7-teil-2b--rating-mutationen-in-der-bestehenden-moviedetailmutationsts-neuer-hook-usesaveratingts)
+- [M7 Teil 2b — Erfolgs-/Fehler-Feedback via `Alert.alert`](#m7-teil-2b--erfolgs-fehler-feedback-via-alertalert)
+- [M7 Teil 2b — `RatingDialog`-Prop-Zuschnitt](#m7-teil-2b--ratingdialog-prop-zuschnitt)
 
 ---
 
@@ -610,6 +619,133 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - **Architektur der Testbarkeit:** `upsertMovie()` nimmt ein injizierbares `MovieUpsertDb`-Objekt (benannte Methoden: `findMovieByTmdbId`/`insertMovie`/`findGenresByTmdbGenreIds`/`insertGenres`/`insertMovieGenres`) statt eines rohen `SupabaseClient` entgegen — Tests injizieren einfache Fakes und können exakt prüfen, welche DB-Operation mit welchem Payload aufgerufen wurde, ohne Postgrest-Query-Builder-Chains mocken zu müssen. `createSupabaseMovieUpsertDb()` ist die echte, produktive Implementierung (service-role Client, wie der Rest dieser Edge Function). Kein manuelles String-Concatenation/Interpolation in irgendeiner Query — alle Werte gehen durch die normalen `.insert()`/`.select()`/`.eq()`/`.in()`-Methoden des Supabase-JS-Clients, die intern parametrisieren; ein dedizierter Test (`movie-upsert.test.ts`) belegt, dass ein Filmname mit Apostroph/Anführungszeichen/Zeilenumbruch unverändert im Insert-Payload ankommt.
 
 **Warum das später leicht änderbar ist:** Die `tmdb-client.ts`-Erweiterungen sind rein additive Felder auf einem bestehenden Rückgabetyp — kein bestehender Aufrufer musste angepasst werden (verifiziert: nur `index.ts`s `details`-Case und die neue `movie-upsert.ts` importieren `fetchMovieDetails`). Die `movies`-Spalten-Zuordnung ist eine einzelne Objekt-Literal-Stelle in `upsertMovie()`. Der Idempotenz-/Race-Umgang ist auf `createSupabaseMovieUpsertDb`s `insertMovie` beschränkt (ein `if`-Zweig), betrifft die reine Orchestrierungslogik/Tests nicht. Die Genre-Upsert-Strategie ist ein isolierter Codeblock innerhalb `upsertMovie()`, austauschbar (z.B. gegen eine echte Postgres-`ON CONFLICT DO NOTHING`-Upsert-Query über ein RPC) ohne Änderung an `MovieUpsertDb`s Interface-Signatur.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — `paid_at`-Prioritätskette: Einordnung des "Gesehen am"-Datums
+
+**Problem/Lücke:** Der Task-Auftrag für den Rating-Dialog verlangt eine 4-stufige Prioritätskette für `paid_at` (explizit übergebenes neues Datum > bestehendes `paid_at` > das im selben Dialog eingegebene "Gesehen am"-Datum > "heute"), bezeichnet als Versöhnung "zweier Doc-Aussagen, die dort nicht vollständig querverwiesen wurden". Die feature-inventory.md selbst enthält dazu zwei Aussagen, die beide NUR eine 3-stufige Kette kennen (ohne "Gesehen am" als Zwischenstufe):
+  - §2.1: *„`paid_at` wird beim Bearbeiten/Bewerten NICHT überschrieben, wenn bereits ein Datum existiert (kritischer Bugfix, siehe Abschnitt 6) — API bevorzugt explizit übergebenes Datum, sonst existierendes `paid_at`, sonst „heute" (`api.php:580-584`)."*
+  - §6 (Changelog `4550aa1`): *„Beim Bearbeiten/Bewerten eines Films darf ein bereits gesetztes Zahlungsdatum NIEMALS stillschweigend auf "heute" zurückgesetzt werden, außer es wird explizit ein neues Datum übergeben oder es existierte noch keins."*
+  - Zum Vergleich, die eigenständige Tracker-„Zahlung erfassen"-Modal (§2.1) kennt ebenfalls nur "Datum (Default: heute)" — auch dort kein Bezug zu einem Sehdatum, weil dieser Dialog gar kein "Gesehen am"-Feld hat.
+
+Keine der drei Stellen erwähnt je ein "Gesehen am"-Datum als Fallback-Kandidaten — schlicht weil keine von ihnen den Fall betrachtet, dass die Zahlungs-Erfassung UND die "Gesehen am"-Eingabe im selben Dialog-Save zusammenfallen (das ist nur im hier gebauten Rating-Dialog der Fall, nicht im eigenständigen Tracker-Modal).
+
+**Entscheidung (vorläufig):** Für Zahlungen, die über die in den Rating-Dialog eingebettete Bezahl-Sektion gesetzt werden (nicht für die eigenständige Tracker-„Zahlung erfassen"-Modal, die kein "Gesehen am"-Feld hat und daher weiterhin nur die ursprüngliche 3-stufige Kette bräuchte, falls/wenn sie in einem späteren Milestone gebaut wird), wird das im selben Save eingegebene "Gesehen am"-Datum als zusätzliche Zwischenstufe zwischen "bestehendes `paid_at`" und "heute" eingefügt — sinnvoller Default: wurde ein Film nachträglich für ein vergangenes Sehdatum bewertet und dabei erstmals eine Zahlung zugeordnet, ist "an dem Tag, an dem der Film geschaut wurde" ein plausiblerer Zahlungstag als das Eingabedatum ("heute"). Implementiert in `resolvePaymentDate(explicitDate, existingPaidAt, seenAtDate, now)` (`src/lib/ratingLogic.ts`), alle 4 Zweige TDD-abgesichert (`__tests__/ratingLogic.test.ts`).
+
+**Warum das später leicht änderbar ist:** Eine einzelne, pur getestete Funktion mit vier `if`-Zweigen — die dritte Stufe (Zeile `if (seenAtDate) return seenAtDate;`) ließe sich ersatzlos streichen, um exakt auf die ursprüngliche 3-stufige `api.php`-Kette zurückzufallen, ohne die übrigen drei Zweige oder ihre Aufrufer (`useSaveRating`) zu berühren.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — Like-Herz auch im "Direkt Bewerten"-Dialog
+
+**Problem/Lücke:** feature-inventory.md §4.4 flaggt selbst explizit eine mögliche Lücke im Legacy-Code: *„Setzbar: im Rating-Dialog (Herz-Button neben Sternen), im "Film bearbeiten"-Dialog (Tagebuch), NICHT im "Direkt Bewerten"-Dialog (kein Herz-Button dort implementiert — zu prüfen, ob gewollt oder Lücke)."*
+
+**Entscheidung (vorläufig):** Für diese Neuimplementierung wird das Like-Herz einheitlich in allen drei Kontexten (Watchlist-Erstbewertung, Tagebuch-Bearbeiten, Direkt Bewerten) angezeigt — `RatingDialog` unterscheidet UI/Verhalten nicht nach `mode` außer im Sheet-Titel. Es gibt keinen erkennbaren fachlichen Grund, warum ein "Mag ich" gerade im Direkt-Bewerten-Pfad fehlen sollte, und die Doc selbst stuft die Legacy-Lücke als wahrscheinlich unbeabsichtigt ein.
+
+**Warum das später leicht änderbar ist:** Falls doch gewünscht, wäre das Ausblenden für `mode === "direct"` eine einzelne bedingte Prop (`onToggleLike={mode === "direct" ? undefined : ...}`) an der `StarRating`-Einbindung in `RatingDialog.tsx` — keine Änderung an `StarRating` selbst oder an den Mutationen nötig (das `liked`-Feld wird ohnehin immer mitgespeichert).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — "Einzelbewertung" (`renderRatingOverlayFor`) nicht gebaut
+
+**Problem/Lücke:** feature-inventory.md §2.6 erwähnt einen separaten, minimaleren Dialog für eine "Einzelbewertung" (`renderRatingOverlayFor`), erreichbar über `renderRatingSection()`, und flaggt ihn selbst als vermutlich verwaist: *„(scheint aktuell nicht mehr direkt verlinkt, aber Funktion existiert weiterhin, evtl. Altlast/Fallback für stellvertretende Bewertung eines anderen Mitglieds)"*.
+
+**Entscheidung (vorläufig):** Explizit NICHT für M7 gebaut — die drei im Task-Auftrag benannten Kontexte (Watchlist-Erstbewertung, Tagebuch-Bearbeiten, Direkt Bewerten) sind alle über den einen gemeinsamen `RatingDialog` abgedeckt. Eine vierte, separate "stellvertretende Bewertung für ein anderes Mitglied"-UI wäre ohnehin fachlich fragwürdig, da die `ratings`-RLS-Policies (`ratings_insert_own_row_only`/`ratings_update_own_row_only`) Schreibzugriffe strikt auf `member_id = auth.uid()` beschränken — eine stellvertretende Bewertung für ein anderes Mitglied wäre also serverseitig ohnehin abgelehnt worden, ganz unabhängig von dieser UI-Entscheidung.
+
+**Warum das später leicht änderbar ist:** Reine Nichtimplementierung, kein bestehender Code muss geändert werden, falls doch gewünscht — würde einen neuen, eigenständigen Dialog plus eine RLS-Erweiterung (falls stellvertretende Bewertung tatsächlich gewollt ist) erfordern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — Reset-Button bewegt `rated_at` nicht
+
+**Problem/Lücke:** feature-inventory.md nennt für den Reset/Löschen-Button nur "(setzt Rating auf 0/NULL zurück, deaktiviert wenn keine Bewertung vorhanden)" — keine Aussage dazu, ob `rated_at` beim Reset ebenfalls berührt wird.
+
+**Entscheidung (vorläufig):** `resetRating()` (`src/lib/movieDetailMutations.ts`) aktualisiert ausschließlich `rating` (→ `null`) und `liked` (→ `false`, bekannte Regel "Löschen einer Bewertung setzt auch den Like zurück") — `seen_at`/`rated_at` bleiben unverändert. Begründung: ein Reset ist kein neues "Bewertungsereignis", sondern die Rücknahme eines vorherigen; `rated_at` erneut auf "jetzt" zu setzen würde ein zukünftiges serverseitiges NULL→Wert-Push-Trigger (ADR 0006, außerhalb des Scopes dieser Aufgabe) unnötig verwirren, wenn der Nutzer später erneut bewertet.
+
+**Warum das später leicht änderbar ist:** Eine einzelne `.update({ rating: null, liked: false })`-Payload-Zeile in `resetRating()` — ein drittes Feld (`rated_at: null` oder `rated_at: now.toISOString()`) wäre eine Ein-Zeilen-Ergänzung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — Bezahl-Sektion: kein "Zahlung löschen"-Gesture, kein Overwrite bei unverändertem Zahler
+
+**Problem/Lücke:** feature-inventory.md §2.1 kennt zwar ein eigenständiges `deletePayment` (setzt `paid_by_member_id`/`paid_at` auf `NULL`) — aber das ist eine Tracker-Tabellen-Aktion (Löschen-Button auf einer bereits-bezahlt-Zeile), keine im Rating-Dialog selbst beschriebene Geste. Der Task-Auftrag für DIESEN Dialog spezifiziert nur einen Zahler-Picker ("jedes Gruppenmitglied auswählbar"), keine explizite "Zahlung wieder entfernen"-Interaktion innerhalb des Rating-Dialogs.
+
+**Entscheidung (vorläufig):**
+- Der Zahler-Picker im `RatingDialog` ist als Chip-Reihe umgesetzt, vorausgewählt mit dem aktuellen `paid_by_member_id` (falls gesetzt). Erneutes Antippen des bereits ausgewählten Chips deselektiert ihn wieder (`selectedPayerId = null`).
+- Ist beim Speichern kein Zahler ausgewählt (`selectedPayerId == null`), wird `watchlist_entries.paid_by_member_id`/`paid_at` GAR NICHT angefasst — weder gelöscht noch neu gesetzt. Das eigentliche "Zahlung endgültig entfernen" bleibt Aufgabe der (in einem späteren Milestone zu bauenden) eigenständigen Tracker-Sektion (§2.1 `deletePayment`), nicht dieses Dialogs.
+- Ist ein Zahler ausgewählt (ob neu oder unverändert derselbe wie zuvor), wird bei JEDEM Speichern ein `savePayment`-Call ausgeführt — harmlos idempotent, da `resolvePaymentDate` ein bereits bestehendes `paid_at` ohnehin bewahrt (siehe oben), der `paid_by_member_id`-Wert also bestenfalls unverändert neu geschrieben wird.
+
+**Warum das später leicht änderbar ist:** Eine dedizierte "Zahlung entfernen"-Geste (z.B. ein expliziter "Zahlung löschen"-Button neben dem Picker, der `paid_by_member_id`/`paid_at` gezielt auf `NULL` setzt) wäre ein zusätzlicher, isolierter Button + eine neue kleine Mutation, ohne Änderung an der bestehenden Speichern-Logik.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — Kein neues Datepicker-Package: einfaches TT.MM.JJJJ-Textfeld
+
+**Problem/Lücke:** Der Rating-Dialog braucht editierbare Datumsfelder ("Gesehen am", optional "Bezahlt am"). Im Projekt ist bislang KEINE Datepicker-Bibliothek installiert (`package.json` geprüft) — jede neue Abhängigkeit wäre laut der projektweiten "Zero autonomous decisions"-Hard-Rule genau die Art von Tooling-Entscheidung, die dem Nutzer vorab vorgelegt werden muss, keine stillschweigend wählbare Kleinigkeit.
+
+**Entscheidung (vorläufig):** Für diese Implementierung wird ein einfaches `TextInput` im vertrauten deutschen Format TT.MM.JJJJ verwendet, mit zwei neuen, pur getesteten Konvertierungsfunktionen `parseGermanDateInput`/`formatDateForInput` (`src/lib/ratingLogic.ts`) für die TT.MM.JJJJ ↔ YYYY-MM-DD (Postgres `date`)-Umwandlung. Kein Kalender-Popup, keine Eingabemasken-/Validierungs-UI über die reine Regex-Formprüfung + Kalendergültigkeits-Check hinaus.
+
+**Warum das später leicht änderbar ist:** Ein echter Datepicker würde nur die Eingabe-Komponente in `RatingDialog.tsx` ersetzen (`TextInput` → Picker-Komponente, die direkt ein YYYY-MM-DD liefert) — `parseGermanDateInput`/`formatDateForInput` würden dann schlicht ungenutzt, ohne dass `resolvePaymentDate`/`resolveSeenAtDate`/`buildRatingUpsertPayload` oder die Mutationen angepasst werden müssten (die arbeiten bereits durchgehend mit ISO-Datumsstrings).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **echte Tooling-Entscheidung, die eigentlich eine Bestätigung braucht:** falls ein echter Datepicker gewünscht ist, bitte die konkrete Bibliothek benennen (z.B. `@react-native-community/datetimepicker`), das wird hier bewusst nicht selbst ausgewählt.
+
+---
+
+## M7 Teil 2b — Rating-Mutationen in der bestehenden `movieDetailMutations.ts`, neuer Hook `useSaveRating.ts`
+
+**Problem/Lücke:** Der Task-Auftrag erlaubte explizit beide Optionen für die Mutations-Platzierung ("useSaveRating.ts (oder ... eine bestehende Mutations-Datei erweitern, falls besser passend — prüfe movieDetailMutations.ts/useMovieDetailMutations.ts").
+
+**Entscheidung (vorläufig):** Aufgeteilt: die rohen, nie werfenden Supabase-Aufrufe (`saveRating`, `resetRating`, `savePayment`) wurden zur bestehenden `src/lib/movieDetailMutations.ts` hinzugefügt (gleiche Kategorie "dünner, typisierter, nie werfender Supabase-Wrapper" wie `toggleLike`/`deleteWatchlistEntry`/`addToWatchlist` dort, operieren auf denselben zwei Tabellen). Die `useMutation`-Hooks selbst (`useSaveRating`, `useResetRating`) leben dagegen in der NEUEN, vom Task-Auftrag namentlich verlangten Datei `src/hooks/useSaveRating.ts` (nicht in `useMovieDetailMutations.ts`) — diese Datei orchestriert zusätzlich die `resolvePaymentDate`/`buildRatingUpsertPayload`-Business-Logik zwischen den beiden Supabase-Aufrufen, was mehr Eigenlogik ist, als die übrigen Hooks in `useMovieDetailMutations.ts` haben (die sind reine 1:1-Passthroughs).
+
+**Hinweis zur parallelen Add-Movie-Modal-Aufgabe:** `src/lib/movieDetailMutations.ts` und ihre Testdatei wurden während dieser Arbeit zeitgleich auch von der parallelen Add-Movie-Modal-Aufgabe bearbeitet (deren `addToWatchlist`-Umbau auf `upsertMovie`). Beide Änderungssätze wurden ausschließlich additiv/chirurgisch (per gezielten Edits, nie per Volldatei-Überschreiben) vorgenommen und überschneiden sich nicht inhaltlich (unterschiedliche Funktionen im selben File) — zum Zeitpunkt der Abgabe dieser Aufgabe waren 3 `addToWatchlist`-bezogene Tests dort rot, weil die parallele Aufgabe zu diesem Zeitpunkt noch nicht abgeschlossen war; das betrifft ausschließlich deren Funktionsbereich, nicht `saveRating`/`resetRating`/`savePayment`.
+
+**Warum das später leicht änderbar ist:** Ein Verschieben von `saveRating`/`resetRating`/`savePayment` in eine eigene `ratingMutations.ts`-Datei wäre ein reiner Import-Pfad-Wechsel in `useSaveRating.ts`, keine Verhaltensänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — Erfolgs-/Fehler-Feedback via `Alert.alert`
+
+**Problem/Lücke:** Der Task-Auftrag überließ die exakte Toast-/Message-Copy explizit dieser Aufgabe ("dein Call auf genaue Toast-/Message-Copy, dokumentiere es"). Im Projekt existiert bislang keine Toast-/Snackbar-Bibliothek.
+
+**Entscheidung (vorläufig):** Wie bereits in `MovieDetailActionsBar` (M6, Fehler beim Hinzufügen zur Watchlist) wird `Alert.alert` verwendet, keine neue Toast-Bibliothek eingeführt. Exakte Texte:
+- Erfolg: Titel **„Gespeichert"**, Nachricht **„Deine Bewertung wurde gespeichert."**
+- Fehler beim Speichern: Titel **„Fehler"**, Nachricht **„Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut."**
+- Fehler beim Zurücksetzen: Titel **„Fehler"**, Nachricht **„Die Bewertung konnte nicht zurückgesetzt werden. Bitte versuche es erneut."**
+
+Legacy-Verhalten (feature-inventory.md §2.6: „danach Toast „Film → Tagebuch" bei Erstbewertung bzw. „Film → Watchlist" bei Rating-Entfernung") wurde bewusst NICHT 1:1 übernommen — dieser bewegungs-beschreibende Toast-Text setzt eine echte visuelle Watchlist/Tagebuch-Bewegungsanimation voraus, die in dieser App (anders als im alten Single-Page-Client) über zwei getrennte Tab-Screens hinweg passiert und hier nicht Teil des Task-Scopes war.
+
+**Warum das später leicht änderbar ist:** Drei String-Konstanten in `RatingDialog.tsx` (`SAVE_SUCCESS_TITLE`/`SAVE_SUCCESS_MESSAGE`/`SAVE_ERROR_TITLE`/`SAVE_ERROR_MESSAGE`/`RESET_ERROR_MESSAGE`) plus eine austauschbare `Alert.alert`-Aufrufstelle — ein Wechsel zu einer echten Toast-Bibliothek würde nur diese eine Datei berühren.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M7 Teil 2b — `RatingDialog`-Prop-Zuschnitt
+
+**Problem/Lücke:** Der Task-Auftrag überließ den exakten Prop-Zuschnitt explizit dieser Aufgabe.
+
+**Entscheidung (vorläufig):** `RatingDialog` bekommt dieselben Daten-Shapes, die der bestehende Movie-Detail-Screen (M6 Teil 2a) bereits für dieselbe Watchlist-Zeile berechnet, statt eigene, abweichende Scalar-Props zu erfinden:
+- `ratings: Rating[]` — ALLE Rating-Zeilen dieses `watchlist_entries`-Eintrags (eigene + fremde). Die eigene Zeile wird intern per `member_id === currentUserId` gefunden, statt als separate Prop übergeben zu werden — dadurch funktionieren alle drei Kontexte (inkl. einer brandneuen "Direkt Bewerten"-Zeile ohne eigene Rating-Zeile) einheitlich über denselben Code-Pfad.
+- `groupMembers: GroupMemberRow[]` (aus `useGroupMembers`) und `displayNameById: Map<string,string>` — exakt dieselben Shapes, die der Movie-Detail-Screen bereits für `MovieDetailRatingsSection` aufbaut, für den Zahler-Picker bzw. die Namensauflösung wiederverwendet.
+- `mode: "watchlist" | "diary" | "direct"` steuert AUSSCHLIESSLICH die Sheet-Titel-Copy — keine Verhaltensunterschiede, da die drei Kontexte laut Spec identisch funktionieren sollen (siehe Like-Herz-Entscheidung oben).
+- Der Dialog re-synchronisiert seinen kompletten lokalen Entwurfs-State (Sterne, Like, Gesehen-am-Modus/-Datum, Zahler-Auswahl) bei jedem Übergang zu `visible=true` aus den aktuellen Props neu — der Entwurf wird NICHT über Schließen/Wiederöffnen hinweg im Component-State gehalten (verhindert, dass ein Entwurf für Film A beim Öffnen für Film B durchsickert).
+
+**Warum das später leicht änderbar ist:** Alle vier Punkte sind lokale Prop-Interface-/State-Init-Entscheidungen in genau `RatingDialog.tsx` — der Aufrufer (Movie-Detail-Screen/Tagebuch-Screen) muss ohnehin verdrahtet werden, sobald dieser Dialog dort eingehängt wird (außerhalb des Scopes dieser Aufgabe, siehe Bericht), und könnte dabei bei Bedarf zusätzliche/andere Props anfordern.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

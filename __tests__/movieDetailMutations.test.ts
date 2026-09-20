@@ -203,3 +203,126 @@ describe("addToWatchlist", () => {
     expect(result.error.code).toBe("23505");
   });
 });
+
+// M7 part 2b (Rating-Dialog): the ratings/payment writes. `saveRating` is a
+// real UPSERT (never a delete-then-reinsert) so a future server-side
+// NULL->value push trigger (ADR 0006, out of scope here) can still correctly
+// observe the transition -- see docs/interim-decisions.md "M7 Teil 2b".
+describe("saveRating", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("upserts the full ratings payload keyed on (watchlist_entry_id, member_id)", async () => {
+    const fakeResult = { data: { id: "r1" }, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { saveRating } = require("../src/lib/movieDetailMutations");
+    const payload = {
+      watchlist_entry_id: "we-1",
+      member_id: "user-1",
+      rating: 4.5,
+      liked: true,
+      seen_at: "2026-09-10",
+      rated_at: "2026-09-20T12:00:00.000Z",
+    };
+    const result = await saveRating(payload);
+
+    expect(mockFrom).toHaveBeenCalledWith("ratings");
+    expect(chain.upsert).toHaveBeenCalledWith(payload, {
+      onConflict: "watchlist_entry_id,member_id",
+    });
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns the { data, error } shape unchanged on failure, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "rls denied" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { saveRating } = require("../src/lib/movieDetailMutations");
+    const result = await saveRating({
+      watchlist_entry_id: "we-1",
+      member_id: "user-1",
+      rating: 3,
+      liked: false,
+      seen_at: null,
+      rated_at: "2026-09-20T12:00:00.000Z",
+    });
+
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("resetRating", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates only rating and liked on the existing row (also resets the like, per the known rule), leaving seen_at/rated_at untouched", async () => {
+    const fakeResult = { data: { id: "r1", rating: null, liked: false }, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { resetRating } = require("../src/lib/movieDetailMutations");
+    const result = await resetRating({ ratingId: "r1" });
+
+    expect(mockFrom).toHaveBeenCalledWith("ratings");
+    expect(chain.update).toHaveBeenCalledWith({ rating: null, liked: false });
+    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("seen_at");
+    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("rated_at");
+    expect(chain.eq).toHaveBeenCalledWith("id", "r1");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns the { data, error } shape unchanged on failure, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "rls denied" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { resetRating } = require("../src/lib/movieDetailMutations");
+    const result = await resetRating({ ratingId: "r1" });
+
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("savePayment", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates paid_by_member_id and paid_at on the targeted watchlist_entries row", async () => {
+    const fakeResult = { data: { id: "we-1" }, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { savePayment } = require("../src/lib/movieDetailMutations");
+    const result = await savePayment({
+      watchlistEntryId: "we-1",
+      paidByMemberId: "user-2",
+      paidAt: "2026-09-20T12:00:00.000Z",
+    });
+
+    expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
+    expect(chain.update).toHaveBeenCalledWith({
+      paid_by_member_id: "user-2",
+      paid_at: "2026-09-20T12:00:00.000Z",
+    });
+    expect(chain.eq).toHaveBeenCalledWith("id", "we-1");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns the { data, error } shape unchanged on failure, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "rls denied" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { savePayment } = require("../src/lib/movieDetailMutations");
+    const result = await savePayment({
+      watchlistEntryId: "we-1",
+      paidByMemberId: "user-2",
+      paidAt: "2026-09-20T12:00:00.000Z",
+    });
+
+    expect(result).toBe(fakeResult);
+  });
+});
