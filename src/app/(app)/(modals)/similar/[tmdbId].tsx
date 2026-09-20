@@ -100,14 +100,17 @@ export default function SimilarMoviesScreen() {
             currentUserId ?? "",
           );
 
+          // Movie-detail screen not yet landed (parallel M6 part 1 task);
+          // casts below are removed once its typed route exists — see
+          // docs/interim-decisions.md "Angenommene movie-detail-Route".
           if (badge !== null) {
             router.push({
-              pathname: "/(app)/(modals)/movie-detail",
+              pathname: "/(app)/(modals)/movie-detail" as never,
               params: { tmdbId: String(item.tmdbId), groupId: activeGroupId ?? "", source: "library" },
             });
           } else {
             router.push({
-              pathname: "/(app)/(modals)/movie-detail",
+              pathname: "/(app)/(modals)/movie-detail" as never,
               params: { tmdbId: String(item.tmdbId) },
             });
           }

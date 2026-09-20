@@ -405,4 +405,90 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 ---
 
+## M6 — Route-Struktur für Sub-Views unter `(app)/(modals)/`
+
+**Problem/Lücke:** Für die vier neuen Movie-Sub-View-Screens (Filmreihe, Regisseur-/Schauspieler-/Studio-Filmografie, Ähnliche Filme) existierte vorher keine Routing-Konvention — weder ein Ordnerlayout noch eine Entscheidung, ob es überhaupt eine eigene Modal-Stack-Gruppe braucht.
+
+**Entscheidung (vorläufig):** Neue Routen unter einer eigenen Gruppe `(app)/(modals)/`: `collection/[collectionId].tsx` (plus `tmdbId` als Query-Param, da die `collection`-tmdb-proxy-Action beide braucht), `filmography/director/[personId].tsx`, `filmography/actor/[personId].tsx`, `filmography/studio/[companyId].tsx`, `similar/[tmdbId].tsx`. Alle fünf hängen an einem neuen `(modals)/_layout.tsx` (`<Stack screenOptions={{ headerShown: true }} />`), das wiederum in `src/app/(app)/_layout.tsx` als `<Stack.Screen name="(modals)" options={{ presentation: "modal", headerShown: false }} />` registriert ist — Geschwister von `(tabs)`, sodass der Tab-Stack beim Öffnen eines Sub-Views unangetastet bleibt.
+
+**Warum das später leicht änderbar ist:** Reine Datei-/Ordnerkonvention innerhalb von Expo Router (file-based Routing) — Umbenennen/Verschieben einzelner Routen berührt keine der fünf Screens inhaltlich, nur ihre eigene Datei plus ggf. `router.push`-Aufrufe an den (aktuell wenigen) Stellen, die dorthin navigieren.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Angenommene `movie-detail`-Route (konsolidiert über alle 5 Sub-View-Screens)
+
+**Problem/Lücke:** Alle fünf Sub-View-Screens navigieren bei Tap auf ein Grid-Item zum eigentlichen Movie-Detail-Overlay. Dieser Screen (`(app)/(modals)/movie-detail`) ist Teil eines PARALLEL laufenden Tasks (M6 Teil 1) und existierte zum Zeitpunkt dieser Arbeit noch nicht (`find src/app -iname "*movie-detail*"` findet weiterhin nichts — verifiziert am Ende dieser Arbeit, nicht nur zu Beginn).
+
+**Entscheidung (vorläufig):** Einheitlich über alle fünf Screens: `router.push({ pathname: "/(app)/(modals)/movie-detail", params: { tmdbId: String(tmdbId) } })`. Einzige Ausnahme: der Ähnliche-Filme-Screen (`similar/[tmdbId].tsx`) hängt zusätzlich `groupId: activeGroupId ?? "", source: "library"` an, wenn der Film laut `getLibraryBadgeForTmdbId` bereits `"watched"` oder `"watchlist"` ist (Feature-Vorgabe dieses Screens, siehe eigener Eintrag unten). Da die Zielroute noch nicht existiert, erzeugt Expo Routers `typedRoutes`-Generierung (`app.config.ts`) für `"/(app)/(modals)/movie-detail"` noch keinen validen Literal-Typ — alle fünf `router.push`-Aufrufe casten den `pathname` daher mit `as never`, kommentiert mit einem Verweis auf diesen Eintrag; die Casts fallen weg, sobald der echte Screen landet und `npx expo` seine Typen neu generiert.
+
+**Achtung, echter Verifikations-Gap:** Sowohl die Route selbst als auch die Parameter-Namen `tmdbId`/`groupId`/`source` sind unverifizierte Annahmen. Sobald der `movie-detail`-Screen aus dem parallelen Task gelandet ist, MUSS dessen tatsächliche `useLocalSearchParams`-Signatur gegen alle fünf `router.push`-Aufrufe (in `collection/[collectionId].tsx`, `filmography/director/[personId].tsx`, `filmography/actor/[personId].tsx`, `filmography/studio/[companyId].tsx`, `similar/[tmdbId].tsx`) abgeglichen werden.
+
+**Warum das später leicht änderbar ist:** Jeder Aufruf ist eine isolierte `router.push(...)`-Zeile in genau einer `onPressItem`-Closure pro Screen — keine strukturelle Kopplung an `MovieGrid`, die Hooks oder die Badge-/Filter-Logik.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Badge-Definition "gesehen" = eigene Bewertung/Diary-Eintrag statt gruppenweiter Aggregation
+
+**Problem/Lücke:** `getLibraryBadgeForTmdbId`/`getWatchedTmdbIdSet` (`src/lib/movieLibraryStatus.ts`) mussten festlegen, wessen "gesehen"-Status für das Watched-Badge in den neuen Grids zählt — nur der eigene oder gruppenweit aggregiert (z. B. "mindestens ein Gruppenmitglied hat's gesehen").
+
+**Entscheidung (vorläufig):** Beide Funktionen delegieren an `splitWatchlistAndDiary` (`src/lib/watchlistLogic.ts`, bereits aus M5) und werten ausschließlich den `diary`-Anteil des AKTUELLEN Users (`currentUserId`) als "watched"; der `watchlist`-Anteil ergibt das `"watchlist"`-Badge; alles andere `null`. Damit exakt dieselbe Pro-Nutzer-Regel wie im bestehenden Watchlist/Tagebuch-Screen (M5), keine neue/andere Gruppen-Aggregations-Logik.
+
+**Warum das später leicht änderbar ist:** Beide Funktionen sind reine, kleine Wrapper um `splitWatchlistAndDiary` — eine gruppenweite Variante wäre eine neue Funktion mit anderer Signatur (bräuchte alle Mitglieder-Diary-Einträge, nicht nur die des aktuellen Users), ohne dass `MovieGrid` oder die Screens angepasst werden müssten (sie kennen nur das `LibraryBadge`-Resultat).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Streaming-Provider-Filter nutzt `kind:"providers"` (nicht `kind:"streaming"`), ein Request pro Film
+
+**Problem/Lücke:** Die tmdb-proxy Edge Function hat bereits einen `kind:"streaming"`-Stub aus M1 (`supabase/functions/tmdb-proxy/index.ts` Zeile ~64/93/267, `tmdb-client.ts` Zeile ~4/18) — der liefert aber nur eine ungeprüfte, nicht nach Flatrate/Leihen/Kaufen aufgeschlüsselte Payload. Für den neuen Streaming-Filter in `collection`/`similar`-Grids brauchte es diese Aufschlüsselung.
+
+**Entscheidung (vorläufig):** Neuer, eigener Pfad statt Erweiterung des `streaming`-Stubs: `getMovieProviders`/`useMoviesProviders` (`src/lib/tmdbProxy.ts` `getMovieProviders`, Zeile 128) ruft `kind:"providers"` auf und bekommt `TmdbMovieProviders { flatrate, rent, buy }` zurück. `useMoviesProviders` fragt dabei PRO FILM einzeln ab (kein Batch-Endpoint) — bei bis zu 40 Items im Ähnliche-Filme-Grid also bis zu 40 parallele Requests.
+
+**Warum das später leicht änderbar ist:** Der `streaming`-Stub bleibt unangetastet (M1-Code, nicht Teil dieser Arbeit); ein Batch-Endpoint für Provider-Daten wäre ein rein serverseitiger Zusatz in der Edge Function plus einer Anpassung von `useMoviesProviders`s Fetch-Strategie — die Konsumenten (`filterByProviderCategory`, die Screens) kennen nur die fertige `Map<number, TmdbMovieProviders>` und müssten nicht angefasst werden.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Fehlende Provider-Daten gelten als "nicht verfügbar" im Filter
+
+**Problem/Lücke:** `filterByProviderCategory` (`src/lib/movieProviderFilter.ts`) musste festlegen, was bei aktivem Streaming-Filter mit Filmen passiert, für die (noch) keine Provider-Daten in der `providersByTmdbId`-Map vorliegen (z. B. Request noch nicht zurück, oder TMDB liefert für dieses Land keine Daten).
+
+**Entscheidung (vorläufig):** Solche Filme werden bei aktivem Filter (`category !== null`) herausgefiltert — kein Eintrag in der Map bzw. eine leere Liste für die gewählte Kategorie zählt als "nicht verfügbar in dieser Kategorie", nicht als "unbekannt, also anzeigen".
+
+**Warum das später leicht änderbar ist:** Eine einzige Zeile (`Array.isArray(list) && list.length > 0`) in einer reinen, ungekoppelten Filterfunktion — ein Wechsel zu "unbekannt anzeigen" wäre eine lokale Bedingungsänderung ohne Auswirkung auf Aufrufer.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Doppelte TMDB-Provider-Typen (`tmdbProxy.ts` vs. `movieDetailTypes.ts`) bewusst nicht konsolidiert
+
+**Problem/Lücke:** `TmdbProviderRef`/`TmdbMovieProviders` sind sowohl in `src/lib/tmdbProxy.ts` (diese Arbeit) als auch in `src/lib/movieDetailTypes.ts` (paralleler M6-Teil-1-Task, unabhängig entstanden) strukturell identisch definiert.
+
+**Entscheidung (vorläufig):** Bewusst NICHT konsolidiert/dedupliziert im Rahmen dieser Arbeit — ein Merge hätte bedeutet, in eine parallel und zeitgleich bearbeitete Datei (`movieDetailTypes.ts`, Teil des anderen, noch laufenden Tasks) einzugreifen, mit Risiko eines Merge-Konflikts oder einer stillen Breaking-Change für den anderen Task.
+
+**Warum das später leicht änderbar ist:** Beide Interfaces sind strukturell (nicht nur nominell) gleich — ein späteres Zusammenführen auf einen gemeinsamen Typ in einem dritten, neutralen Modul ist ein reiner Umbenennungs-/Import-Refactor ohne Verhaltensänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Test-Pfad-Konvention für neue Hooks flach (`__tests__/*.test.tsx`) statt `__tests__/hooks/`
+
+**Problem/Lücke:** Für die sieben neuen Hooks (`useCollection`, `useDirectorFilmography`, `useActorFilmography`, `useStudioFilmography`, `useSimilarMovies`, `useMovieProviders`, `useMoviesProviders`) gab es keine zwingende Vorgabe, ob ihre Tests unter einem eigenen `__tests__/hooks/`-Unterordner oder flach direkt unter `__tests__/` liegen.
+
+**Entscheidung (vorläufig):** Flach direkt unter `__tests__/` (z. B. `__tests__/useCollection.test.tsx`), passend zur bereits bestehenden Repo-Konvention für alle früheren Hooks (`useCurrentUserId.test.tsx`, `useGroupWatchlist.test.tsx`, `useUserGroups.test.tsx` usw. liegen ebenfalls flach, nicht unter `__tests__/hooks/`). Lib-Tests dagegen liegen unter `__tests__/lib/` und Screen-Tests unter `__tests__/screens/` — beides ebenfalls bereits bestehende, jetzt fortgeführte Konventionen.
+
+**Warum das später leicht änderbar ist:** Reine Datei-Pfad-Frage für Jest — ein `find`+`git mv` in einen `hooks/`-Unterordner würde nichts an Testinhalten oder Imports ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
 Neue Einträge werden von den Implementierungs-Subagents laufend ergänzt, sobald weitere Milestones reversible Detailentscheidungen treffen.

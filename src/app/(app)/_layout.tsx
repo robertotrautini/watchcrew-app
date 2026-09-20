@@ -10,6 +10,7 @@ export default function AppLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(modals)" options={{ presentation: "modal", headerShown: false }} />
     </Stack>
   );
 }
