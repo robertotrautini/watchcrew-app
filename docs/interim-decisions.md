@@ -54,6 +54,13 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M7-Konsolidierung — `upsert_movie`: optionale `manualReleaseDate`](#m7-konsolidierung--upsert_movie-optionale-manualreleasedate)
 - [M7-Konsolidierung — RatingDialog-Einbindung in die Movie-Detail-Overlay-Aktionsleiste](#m7-konsolidierung--ratingdialog-einbindung-in-die-movie-detail-overlay-aktionsleiste)
 - [M7-Konsolidierung — Datepicker-Bibliothek: `@react-native-community/datetimepicker`](#m7-konsolidierung--datepicker-bibliothek-react-native-communitydatetimepicker)
+- [M8 — `computeNextPayer`-Tie-Break: `joined_at` aufsteigend](#m8--computenextpayer-tie-break-joined_at-aufsteigend)
+- [M8 — Zahler-Button-Farben: Wiederverwendung der Gruppen-Theme-Palette statt hartcodiertem 3-Farben-Array](#m8--zahler-button-farben-wiederverwendung-der-gruppen-theme-palette-statt-hartcodiertem-3-farben-array)
+- [M8 — Zahlungs-Berechtigungen: jedes Gruppenmitglied darf jede Zahlung bearbeiten/löschen](#m8--zahlungs-berechtigungen-jedes-gruppenmitglied-darf-jede-zahlung-bearbeitenlöschen)
+- [M8 — `resolvePaymentDate`-Wiederverwendung mit vereinfachter Kette (kein "Gesehen am"-Fallback)](#m8--resolvepaymentdate-wiederverwendung-mit-vereinfachter-kette-kein-gesehen-am-fallback)
+- [M8 — Neuer Hook `useTrackerPayments.ts` statt Erweiterung von `useSaveRating.ts`](#m8--neuer-hook-usetrackerpaymentsts-statt-erweiterung-von-usesaveratingts)
+- [M8 — Inline-Löschen-Bestätigung statt Sheet: exakte Copy](#m8--inline-löschen-bestätigung-statt-sheet-exakte-copy)
+- [M8 — Inline-Style-Ausnahme für Zahler-Button-Farben](#m8--inline-style-ausnahme-für-zahler-button-farben)
 
 ---
 
@@ -832,6 +839,90 @@ Nur relevant auf dem NEU-Insert-Pfad — ein bereits katalogisierter Film (früh
 **Warum das später leicht änderbar ist:** `DateField` ist die einzige Stelle, die die native Picker-API berührt — ein Wechsel der Bibliothek würde nur diese eine Datei betreffen.
 
 **Status:** ✅ Umgesetzt wie vorgegeben (Bibliothek vom Nutzer bestätigt). Nicht mehr offen.
+
+---
+
+## M8 — `computeNextPayer`-Tie-Break: `joined_at` aufsteigend
+
+**Problem/Lücke:** Der Task-Auftrag für den Bezahl-Tracker gibt den Kern-Algorithmus vor (wer am längsten nicht bezahlt hat bzw. noch nie bezahlt hat, ist dran), flaggt aber selbst die Tie-Break-Fälle als offen: mehrere Mitglieder, die noch nie bezahlt haben, ODER mehrere Mitglieder mit exakt demselben letzten Zahldatum.
+
+**Entscheidung (vorläufig):** Deterministischer Tie-Break nach `joined_at` aufsteigend — das am frühesten beigetretene Mitglied gewinnt. Gilt identisch für beide geflaggten Fälle (alle "nie bezahlt" ODER alle mit exakt gleichem letzten Zahldatum), und macht den allerersten Vorschlag einer brandneuen Gruppe (in der noch niemand je bezahlt hat) ebenfalls vollständig deterministisch, statt z.B. von der zufälligen Reihenfolge der `groupMembers`-Query abzuhängen.
+
+**Warum das später leicht änderbar ist:** Der Tie-Break ist eine einzelne, isolierte Vergleichsklausel innerhalb der `compare()`-Funktion in `computeNextPayer` (`src/lib/trackerLogic.ts`) — ein Wechsel auf ein anderes Kriterium (z.B. alphabetisch nach Anzeigename, oder zufällig) würde nur diese eine Zeile betreffen, keine Änderung an der Haupt-Priorisierungslogik (nie-bezahlt vor bezahlt, ältestes Zahldatum zuerst).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M8 — Zahler-Button-Farben: Wiederverwendung der Gruppen-Theme-Palette statt hartcodiertem 3-Farben-Array
+
+**Problem/Lücke:** Die Legacy-App wies jedem Zahler-Button eine von genau 3 hartcodierten Farben zu — eine echte Einschränkung, sobald eine Gruppe mehr als 3 Mitglieder hat (ein 4. Mitglied hätte gar keine eigene Farbe mehr bekommen können). Der Task-Auftrag benennt dies explizit als RESOLVED interim decision mit Vorgabe der Grundidee ("reuse existing group-theme color derivation pattern ... assign each member a color from the theme's palette by stable index"), überlässt aber die konkrete Umsetzung dieser Aufgabe.
+
+**Entscheidung (vorläufig):** `src/lib/trackerLogic.ts`s `assignMemberColors(members)` nutzt die 6 benannten Gruppen-Theme-Akzentfarben (`gold`/`red`/`blue`/`green`/`purple`/`orange`, via `resolveGroupTheme` aus `src/lib/groupTheme.ts`) als Zahler-Farbpalette. Mitglieder werden nach `joined_at` aufsteigend sortiert und dann per Index (`index % 6`) einer Palettenfarbe zugewiesen — stabil (hängt nicht von der Reihenfolge der `groupMembers`-Query ab) und ohne harte Obergrenze: Gruppen mit mehr als 6 Mitgliedern wickeln die Palette einfach per Modulo erneut ab (zwei Mitglieder teilen sich dann dieselbe Farbe), statt zu crashen oder undefiniert zu bleiben. Dies ist eine bewusste Verbesserung gegenüber dem Legacy-Hardcoding, kein 1:1-Port.
+
+**Warum das später leicht änderbar ist:** `MEMBER_COLOR_PALETTE`/`MEMBER_COLOR_THEME_NAMES` sind eine einzelne benannte Konstante in `trackerLogic.ts` — ein Wechsel auf eine größere/andere Farbpalette (z.B. eigene, nicht themengebundene Zahler-Farben) würde nur diese eine Liste betreffen, keine Änderung an `assignMemberColors`s Zuweisungslogik selbst.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M8 — Zahlungs-Berechtigungen: jedes Gruppenmitglied darf jede Zahlung bearbeiten/löschen
+
+**Problem/Lücke:** feature-inventory.md schweigt sich dazu aus, wer eine bereits erfasste Zahlung bearbeiten oder löschen darf — nur der Zahler selbst? Nur wer sie ursprünglich erfasst hat? Jedes Gruppenmitglied?
+
+**Entscheidung (vorläufig):** Jedes Gruppenmitglied darf jede Zahlung eines beliebigen anderen Mitglieds bearbeiten oder löschen — keine Einschränkung auf "nur der Zahler" oder "nur wer es erfasst hat". Dieselbe Begründung, die bereits in M7 Teil 2b für `savePayment` angewendet wurde (`watchlist_entries_update_group_members`-RLS-Policy erlaubt bereits jedem authentifizierten Gruppenmitglied ein UPDATE auf `watchlist_entries`, unabhängig von `paid_by_member_id`/`added_by`) — die neue `deletePayment`-Funktion (`src/lib/movieDetailMutations.ts`) nutzt exakt dieselbe UPDATE-Policy (setzt `paid_by_member_id`/`paid_at` auf `NULL`, statt sie zu setzen), es war also keine neue RLS-Policy nötig.
+
+**Warum das später leicht änderbar ist:** Eine spätere Einschränkung (z.B. "nur der Zahler selbst darf löschen") wäre eine reine RLS-Policy-Änderung (`USING`-Klausel um `paid_by_member_id = auth.uid()` erweitern) plus ggf. ein Client-seitiger UI-Guard (Bearbeiten/Löschen-Buttons ausblenden) — keine strukturelle Änderung an `useTrackerPayments.ts`/`tracker.tsx` nötig.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M8 — `resolvePaymentDate`-Wiederverwendung mit vereinfachter Kette (kein "Gesehen am"-Fallback)
+
+**Problem/Lücke:** Der Task-Auftrag verlangt explizit die Wiederverwendung von `resolvePaymentDate` (M7, `src/lib/ratingLogic.ts`) für die Tracker-eigenen Zahlungs-Flows, weist aber selbst darauf hin, dass der Tracker (anders als der Rating-Dialog) keinen "Gesehen am"-Kontext hat, in den die dritte Priorität der Funktion (`seenAtDate`) fallen könnte.
+
+**Entscheidung (vorläufig):** Direkte Wiederverwendung von `resolvePaymentDate` OHNE jede Änderung an der Funktion selbst — `src/hooks/useTrackerPayments.ts`s `useSetPayment` ruft sie mit `seenAtDate = null` auf. Da `resolvePaymentDate` einen falsy-aber-nicht-`??`-Check für alle drei Datums-Parameter verwendet, fällt ein `null`/`undefined` an dieser Stelle einfach direkt zur vierten Priorität ("jetzt") durch, sobald weder ein explizites Datum noch ein bestehendes `paid_at` vorhanden ist — die effektive Kette wird dadurch exakt `explizites Datum > bestehendes paid_at > jetzt`, ohne dass `ratingLogic.ts` angefasst werden musste.
+
+**Warum das später leicht änderbar ist:** Reine Aufrufer-seitige Entscheidung (ein `null`-Argument an einer bereits bestehenden, unveränderten Funktion) — betrifft nur `useTrackerPayments.ts`, keine Änderung an `resolvePaymentDate` selbst oder an dessen bestehenden Aufrufern (`useSaveRating.ts`).
+
+**Status:** ✅ Umgesetzt wie vorgegeben (der Auftrag selbst nennt dies bereits als die erwartete Lösung, "reuse directly with a null/undefined seenAt argument"). Nicht mehr offen.
+
+---
+
+## M8 — Neuer Hook `useTrackerPayments.ts` statt Erweiterung von `useSaveRating.ts`
+
+**Problem/Lücke:** Der Task-Auftrag überlässt es dieser Aufgabe, ob die Tracker-eigenen Zahlungs-Mutationen in eine bestehende Hook-Datei eingehängt oder als neue Datei angelegt werden.
+
+**Entscheidung (vorläufig):** Neue Datei `src/hooks/useTrackerPayments.ts` mit zwei Hooks (`useSetPayment`, `useDeletePayment`), statt `useSaveRating.ts` zu erweitern. Begründung: `useSaveRating` bündelt bewusst einen RATING-Write MIT einem optionalen Zahlungs-Write (die kombinierte Speichern-Aktion des Rating-Dialogs) — die Tracker-eigenen Flows ("Zahlung erfassen", inline "Bearbeiten", inline "Löschen") berühren nie eine `ratings`-Zeile, nur `watchlist_entries.paid_by_member_id`/`paid_at`. Eine Wiederverwendung von `useSaveRating` hätte entweder einen sinnlosen No-Op-Rating-Upsert bei jedem Tracker-Save erzwungen, oder den Rating-Teil des Hooks nachträglich optional gemacht — beides unsauberer als zwei kleine, dedizierte Hooks, die direkt `savePayment`/`deletePayment` (`src/lib/movieDetailMutations.ts`) aufrufen. Die zugrundeliegenden Supabase-Wrapper-Funktionen selbst (`savePayment`, neu: `deletePayment`) leben weiterhin in der bestehenden `movieDetailMutations.ts`, exakt wie im Task-Auftrag vorgeschlagen ("check its current savePayment shape ... you'll likely extend/reuse rather than duplicate") — nur die Hook-Ebene (TanStack-Query-Wrapper) ist neu, nicht die Datenzugriffs-Ebene.
+
+**Warum das später leicht änderbar ist:** Eine spätere Konsolidierung (z.B. alle Zahlungs-Hooks in eine gemeinsame Datei) wäre eine reine Datei-Verschiebung ohne Verhaltensänderung — beide neuen Hooks folgen exakt derselben `useMutation`+Invalidierungs-Konvention wie `useSaveRating`/`useMovieDetailMutations`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M8 — Inline-Löschen-Bestätigung statt Sheet: exakte Copy
+
+**Problem/Lücke:** Der Task-Auftrag verlangt explizit KEINE Sheet/Modal für die "Löschen"-Bestätigung im Tracker (anders als die bestehende `Sheet`-basierte Lösch-Bestätigung im Movie-Detail-Screen, `MovieDetailActionsBar.tsx`) — "literally inline text + confirm/cancel buttons in the expanded row". Die exakte Copy ist im Quelldokument nicht vorgegeben.
+
+**Entscheidung (vorläufig):** Bestätigungstext `"Wirklich löschen?"`, Buttons `"Abbrechen"` (`variant="secondary"`) / `"Löschen"` (`variant="danger"`) — bewusst dieselbe Button-Label-Konvention wie `MovieDetailActionsBar.tsx`s bestehende (Sheet-basierte) Lösch-Bestätigung, nur eben inline (`View` in der ausgeklappten Tabellenzeile, `tracker-row-{id}-delete-confirm`) statt in einer `Sheet`. Kein separater Bestätigungstitel nötig, da der Kontext (die bereits sichtbare, ausgeklappte Zeile mit Filmnamen) bereits eindeutig ist.
+
+**Warum das später leicht änderbar ist:** Eine reine Copy-/Komponenten-Änderung lokal in `src/app/(app)/(tabs)/tracker.tsx`s Zeilen-Render-Funktion — keine Auswirkung auf `useDeletePayment` oder die zugrundeliegende `deletePayment`-Mutation.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M8 — Inline-Style-Ausnahme für Zahler-Button-Farben
+
+**Problem/Lücke:** Die Zahler-Buttons (sowohl im "Zahlung erfassen"-Modal als auch im Tracker-Zeilen-Bearbeiten-Formular) brauchen pro Mitglied eine individuelle Hintergrund-/Rahmenfarbe aus `assignMemberColors` (siehe oben) — ein zur Laufzeit berechneter Hex-Wert ohne feste, im Voraus aufzählbare Werte-Menge. Das verstößt strukturell gegen die Projekt-Standing-Regel "NativeWind-Klassen statt Inline-Styles", genau wie bereits einmal bei `MovieGrid`s Fortschrittsbalken-Füllung (M6-Cleanup, siehe oben verlinkter Eintrag).
+
+**Entscheidung (vorläufig):** Exakt derselbe, bereits dokumentierte und schmal gefasste Ausnahme-Präzedenzfall wie beim M6-Cleanup-Eintrag wird hier ein zweites Mal angewendet: `style={{ backgroundColor: color }}` bzw. `style={{ borderWidth: 1, borderColor: color }}` NUR auf dem einen Zahler-Button-`Pressable`-Element (`src/components/movie/PaymentModal.tsx` und `src/app/(app)/(tabs)/tracker.tsx`s Bearbeiten-Formular), mit Code-Kommentar direkt an beiden Stellen, der auf diesen Präzedenzfall verweist. Alles andere an diesen Komponenten (Layout, Typografie, Zustände) bleibt auf NativeWind-Klassen.
+
+**Warum das später leicht änderbar ist:** Beide Stellen sind isolierte `style`-Props auf jeweils einem einzelnen `Pressable`-Element — betrifft keine andere Stelle der beiden Komponenten und folgt exakt demselben, bereits vom Nutzer zu bestätigenden Präzedenzfall (M6-Cleanup-Eintrag), sodass eine gemeinsame Entscheidung für beide Fälle möglich ist.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
 ---
 

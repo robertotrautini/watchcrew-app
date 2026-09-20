@@ -348,3 +348,33 @@ describe("savePayment", () => {
     expect(result).toBe(fakeResult);
   });
 });
+
+describe("deletePayment", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("clears paid_by_member_id and paid_at (both to null) on the targeted watchlist_entries row", async () => {
+    const fakeResult = { data: { id: "we-1", paid_by_member_id: null, paid_at: null }, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { deletePayment } = require("../src/lib/movieDetailMutations");
+    const result = await deletePayment({ watchlistEntryId: "we-1" });
+
+    expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
+    expect(chain.update).toHaveBeenCalledWith({ paid_by_member_id: null, paid_at: null });
+    expect(chain.eq).toHaveBeenCalledWith("id", "we-1");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns the { data, error } shape unchanged on failure, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "rls denied" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { deletePayment } = require("../src/lib/movieDetailMutations");
+    const result = await deletePayment({ watchlistEntryId: "we-1" });
+
+    expect(result).toBe(fakeResult);
+  });
+});

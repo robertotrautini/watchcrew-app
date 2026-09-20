@@ -223,3 +223,31 @@ export async function savePayment(params: SavePaymentParams) {
     .select()
     .single();
 }
+
+export interface DeletePaymentParams {
+  watchlistEntryId: string;
+}
+
+/**
+ * M8 (Bezahl-Tracker): clears a logged payment -- resets both
+ * `paid_by_member_id` and `paid_at` to `NULL` on the targeted
+ * `watchlist_entries` row. This is the "Löschen" action on an already-paid
+ * Tracker row (feature-inventory.md §2.1's `deletePayment`), distinct from
+ * `deleteWatchlistEntry` above (which removes the whole entry, not just its
+ * payment fields).
+ *
+ * Same RLS policy as `savePayment` (`watchlist_entries_update_group_members`)
+ * applies here too -- any group member can clear any other member's logged
+ * payment, not just the person who originally logged it or the payer
+ * themselves. RESOLVED interim decision (see docs/interim-decisions.md
+ * "M8"): the source doc is silent on payment-record permissions, same gap
+ * already resolved identically for `savePayment` in M7 Teil 2b.
+ */
+export async function deletePayment(params: DeletePaymentParams) {
+  return supabase
+    .from("watchlist_entries")
+    .update({ paid_by_member_id: null, paid_at: null })
+    .eq("id", params.watchlistEntryId)
+    .select()
+    .single();
+}
