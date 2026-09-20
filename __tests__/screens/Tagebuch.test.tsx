@@ -48,6 +48,30 @@ jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
 }));
 
+// M10 (Realtime foreground sync, ADR 0006): this screen now calls
+// `useFocusEffect` (via src/hooks/useRegisterFocusedGroupScreen.ts) --
+// mocked as "run the effect once on mount, cleanup once on unmount", same
+// convention as __tests__/useRegisterFocusedGroupScreen.test.tsx -- and its
+// own realtime/focus wiring is mocked as a no-op here, same as
+// __tests__/screens/Watchlist.test.tsx, so this file keeps testing only its
+// own concerns without needing a real Supabase client.
+jest.mock("expo-router", () => ({
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    const React = require("react");
+    React.useEffect(() => callback(), []);
+  },
+}));
+
+const mockUseGroupRealtimeSync = jest.fn();
+jest.mock("@/hooks/useGroupRealtimeSync", () => ({
+  useGroupRealtimeSync: mockUseGroupRealtimeSync,
+}));
+
+const mockUseRegisterFocusedGroupScreen = jest.fn();
+jest.mock("@/hooks/useRegisterFocusedGroupScreen", () => ({
+  useRegisterFocusedGroupScreen: mockUseRegisterFocusedGroupScreen,
+}));
+
 // Lazily required — same Babel CJS-hoisting reason as
 // __tests__/screens/Login.test.tsx for the screen under test.
 function loadTagebuchScreen() {
@@ -364,6 +388,28 @@ describe("TagebuchScreen", () => {
       await fireEvent.press(getByTestId("tagebuch-view-mode-list"));
 
       expect(usePreferencesStore.getState().diaryViewMode).toBe("list");
+    });
+
+    it("shows a title under each grid tile when showTitlesInGrid is true (M10 Darstellung toggle)", async () => {
+      mockHappyPath([entry]);
+      const usePreferencesStore = loadPreferencesStore();
+      usePreferencesStore.setState({ diaryViewMode: "grid", showTitlesInGrid: true });
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId(`tagebuch-grid-title-${entry.id}`).props.children).toBe("Alpha");
+    });
+
+    it("hides the title under each grid tile when showTitlesInGrid is false (M10 Darstellung toggle)", async () => {
+      mockHappyPath([entry]);
+      const usePreferencesStore = loadPreferencesStore();
+      usePreferencesStore.setState({ diaryViewMode: "grid", showTitlesInGrid: false });
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { queryByTestId } = await render(<TagebuchScreen />);
+
+      expect(queryByTestId(`tagebuch-grid-title-${entry.id}`)).toBeNull();
     });
   });
 

@@ -7,7 +7,9 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import {
   computeAverageRating,
   deriveGenreNamesById,
@@ -132,6 +134,12 @@ export default function TagebuchScreen() {
   // "first group = active group" interim simplification) -- see
   // src/hooks/useActiveGroup.ts.
   const { activeGroupId, groupsQuery } = useActiveGroup(userId);
+
+  // M10 (Realtime foreground sync, ADR 0006): see the identical comment in
+  // src/app/(app)/(tabs)/watchlist.tsx -- same wiring, same reasoning.
+  useGroupRealtimeSync(activeGroupId);
+  useRegisterFocusedGroupScreen(activeGroupId);
+
   const watchlistQuery = useGroupWatchlist(activeGroupId);
   const groupMembersQuery = useGroupMembers(activeGroupId);
 

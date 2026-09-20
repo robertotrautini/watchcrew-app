@@ -76,6 +76,11 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M9 Teil 2 — Namensfeld-Sync ohne eigenes Dirty-Tracking](#m9-teil-2--namensfeld-sync-ohne-eigenes-dirty-tracking)
 - [M9 Teil 2 — `useLeaveGroup` als eigener Hook statt Wiederverwendung von `useRemoveMember`](#m9-teil-2--useleavegroup-als-eigener-hook-statt-wiederverwendung-von-useremovemember)
 - [M9 Teil 2 — Einstiegspunkt für das Group-Settings-Screen: "⚙️"-Button im Tracker-Header](#m9-teil-2--einstiegspunkt-für-das-group-settings-screen-️-button-im-tracker-header)
+- [M10 — Realtime-Filterung für `ratings`: unfiltert abonniert, Mitgliedschaft clientseitig geprüft](#m10--realtime-filterung-für-ratings-unfiltert-abonniert-mitgliedschaft-clientseitig-geprüft)
+- [M10 — Toast-Trigger-Typen: drei Arten, generische Copy ohne Namen](#m10--toast-trigger-typen-drei-arten-generische-copy-ohne-namen)
+- [M10 — Fokus-Tracking-Mechanismus: eigener, nicht-persistierter Store + `useFocusEffect`](#m10--fokus-tracking-mechanismus-eigener-nicht-persistierter-store--usefocuseffect)
+- [M10 — Toast-Anzeigedauer](#m10--toast-anzeigedauer)
+- [M10 — Toast: kein Tap-to-Navigate](#m10--toast-kein-tap-to-navigate)
 
 ---
 
@@ -1135,6 +1140,68 @@ Wörtlich gelesen wäre "dieselbe UUID" `watch_groups.id`, der Primärschlüssel
 **Entscheidung (ausdrücklich als vorläufige Platzierung markiert, keine endgültige Entscheidung):** Ein kleiner "⚙️"-Button im Tracker-Screen-Header (`src/app/(app)/(tabs)/tracker.tsx`, `testID="tracker-group-settings-button"`, `accessibilityLabel="Gruppe verwalten"`), navigiert per `router.push("/group-settings")`. Tracker gewählt statt Watchlist, da es der dritte/letzte Tab ist und der Button dort keine bestehende Button-Reihe (Ansichts-Umschalter) verdrängt, sondern nur neben dem bereits vorhandenen "💰"-Button steht.
 
 **Warum das später leicht änderbar ist:** Eine einzelne Button-Definition + `onPress`-Handler in genau einer Datei. Sobald M10 einen echten Settings-Hub baut, wird dieser Button ersatzlos entfernt (oder zu einem Menüpunkt innerhalb des Hubs) — die Zielroute `/group-settings` selbst bleibt unverändert erreichbar.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Realtime-Filterung für `ratings`: unfiltert abonniert, Mitgliedschaft clientseitig geprüft
+
+**Problem/Lücke:** `watchlist_entries` hat eine eigene `group_id`-Spalte, `ratings` (M1-Schema) aber nicht — nur `watchlist_entry_id`. Supabase Realtimes `postgres_changes`-`filter`-Option unterstützt ausschließlich Spalten-Vergleiche auf der abonnierten Tabelle selbst, keine Joins — eine serverseitige "nur Ratings dieser Gruppe"-Filterung ist für `ratings` also nicht direkt möglich.
+
+**Entscheidung:** `src/hooks/useGroupRealtimeSync.ts` abonniert `ratings` UNGEFILTERT (alle Gruppen, alle Nutzer der App) und prüft bei jedem eingehenden Event clientseitig, ob die betroffene `watchlist_entry_id` in den bereits gecachten Einträgen der aktiven Gruppe (`queryClient.getQueryData(["watchlist", groupId])`) vorkommt — nur dann wird reagiert (Cache-Invalidierung, ggf. Toast). Ist die Watchlist der aktiven Gruppe noch nicht gecacht (Screen lädt gerade zum ersten Mal), wird das Event verworfen statt geraten — ein normaler App-Durchlauf lädt die Watchlist immer vor dem ersten Render eines der drei Tabs, das Zeitfenster ist also praktisch nur "vor dem ersten Paint".
+
+Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Realtime technisch unterstützt) — hätte aber erfordert, den Channel bei jeder Änderung der Eintragsliste (neuer Film hinzugefügt/entfernt) neu zu erstellen bzw. den Filter zu aktualisieren. Für eine kleine, "chatty" Freundesgruppen-App wurde der unfiltrierte `ratings`-Stream + clientseitiger Check als deutlich simpler bewertet.
+
+**Warum das später leicht änderbar ist:** Reine, isolierte Logik in `src/hooks/useGroupRealtimeSync.ts` (die Membership-Prüfung) und `src/lib/realtimeSync.ts` (`extractWatchlistEntryId`). Sollte `ratings` später eine eigene `group_id`-Spalte bekommen (Schema-Änderung, außerhalb dieses Tasks), ließe sich direkt auf einen echten Server-Filter umstellen, ohne die Aufrufer (die drei Tab-Screens) zu ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Toast-Trigger-Typen: drei Arten, generische Copy ohne Namen
+
+**Problem/Lücke:** ADR 0006 / feature-inventory.md (Abschnitt 2.6/4.2) beschreiben nur zwei historische Push-Trigger aus der alten App (neuer Watchlist-Eintrag, Erstbewertung NULL→Wert). Der Task-Auftrag verlangte "Toast-Copy für die drei Trigger-Typen, passend zu den Event-Typen der parallelen Push-Task" — ohne Garantie, dass sich beide Tasks exakt abstimmen können (parallele, unabhängige Bearbeitung).
+
+**Entscheidung:** Drei Typen definiert in `src/lib/realtimeSync.ts` (`RealtimeChangeKind`): `watchlist_entry_added` ("Neuer Film zur Watchlist hinzugefügt"), `rating_first` ("Jemand hat einen Film bewertet"), `payment_recorded` ("Eine Zahlung wurde erfasst" — NEU für diesen Rewrite, `paid_at` transitioniert null→Wert auf `watchlist_entries`, kein Vorbild in der alten App, aber symmetrisch zu den anderen beiden: je ein Trigger pro betroffenem Tab, Watchlist/Tagebuch/Tracker). Alle drei Texte bewusst generisch OHNE Namen (kein "Robin hat bewertet") — eine Namensauflösung hätte einen zusätzlichen Netzwerk-Roundtrip im Realtime-Handler gebraucht, außerhalb des Scopes dieser Aufgabe. Jede andere Änderung (Bewertungs-Korrektur, sonstige `watchlist_entries`-Updates, jedes DELETE) zählt als `"other"` — löst weiterhin eine stille Cache-Invalidierung aus, aber NIE einen Toast.
+
+**Warum das später leicht änderbar ist:** Reine String-Konstanten in `REALTIME_TOAST_COPY` (`src/lib/realtimeSync.ts`) plus eine kleine Klassifizierungsfunktion pro Tabelle — falls die parallele Push-Task andere/zusätzliche Event-Typen oder eine andere Formulierung festlegt, ist ein Abgleich eine reine Textänderung an einer Stelle, keine Strukturänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — insbesondere: bitte mit der parallelen Push-Infrastruktur-Task abgleichen, ob `payment_recorded` als dritter Typ dort ein Äquivalent hat oder ergänzt werden sollte.
+
+---
+
+## M10 — Fokus-Tracking-Mechanismus: eigener, nicht-persistierter Store + `useFocusEffect`
+
+**Problem/Lücke:** ADR 0006 verlangt, dass die drei betroffenen Tabs (Watchlist/Tagebuch/Tracker) erkennen können, ob der Nutzer GERADE auf einem von ihnen ist (für die "still" vs. "Toast"-Entscheidung) — der Task-Auftrag nannte als möglichen Ansatz "ein kleiner shared Store/Context, den jeder Screen bei Fokus registriert/bei Blur deregistriert".
+
+**Entscheidung:** Neuer, bewusst NICHT über `persist()` laufender Zustand-Store `src/stores/useFocusedGroupScreen.ts` (`focusedGroupId: string | null`), getrennt von `src/stores/usePreferencesStore.ts` (das ist echte, persistierte Nutzer-Präferenz — Fokus-Zustand ist reiner, flüchtiger UI-Zustand, der einen App-Neustart nicht überleben soll). Registrierung über `expo-router`s `useFocusEffect` (re-exportiert von `expo-router`, selbst aus `@react-navigation/native`), gekapselt in einem neuen kleinen Hook `src/hooks/useRegisterFocusedGroupScreen.ts`, den jeder der drei Screens zusätzlich zu `useGroupRealtimeSync` aufruft. `src/hooks/useGroupRealtimeSync.ts` liest den Store per `.getState()` (außerhalb von React) im Moment eines eingehenden Realtime-Events.
+
+**Warum das später leicht änderbar ist:** Der Store hat genau ein Feld + einen Setter; der Registrierungs-Hook ist von den drei Screens komplett entkoppelt. Ein Wechsel auf einen React-Context (falls je gewünscht) wäre ein reiner Austausch der internen Store-Implementierung, ohne die drei Aufrufer oder `useGroupRealtimeSync.ts`s Lesezugriff strukturell zu ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Toast-Anzeigedauer
+
+**Problem/Lücke:** Der Task-Auftrag überließ die exakte Auto-Dismiss-Dauer explizit meiner Einschätzung ("your call, document it").
+
+**Entscheidung:** 4 Sekunden (`TOAST_DURATION_MS` in `src/components/ui/Toast.tsx`) — genug Zeit, einen kurzen deutschen Einzeiler zu lesen, ohne unnötig lange am Bildschirmrand zu kleben. Ein neuer, während ein Toast noch sichtbar ist eintreffender Toast ersetzt den alten und startet den Timer neu (kein Anhängen/Stapeln mehrerer Toasts).
+
+**Warum das später leicht änderbar ist:** Eine einzelne Zahlenkonstante.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Toast: kein Tap-to-Navigate
+
+**Problem/Lücke:** Der Task-Auftrag nannte Tap-to-Navigate als optionales Nice-to-have ("your call whether to include, document either way").
+
+**Entscheidung:** Nicht gebaut. Die Toast-Texte sind bewusst generisch/namenlos (siehe oben) und tragen kein konkretes Ziel (welcher Film, welcher Eintrag) — ein Tap könnte bestenfalls zum betroffenen TAB im Allgemeinen navigieren, was der Nutzer über die ohnehin sichtbare Tab-Leiste genauso einfach erreicht. Der Zusatzaufwand (Tap-Handler, Navigationsziel pro Trigger-Typ ableiten) stand in keinem Verhältnis zum Nutzen für dieses Milestone.
+
+**Warum das später leicht änderbar ist:** `ToastHost` (`src/components/ui/Toast.tsx`) müsste nur einen `onPress`/`router.push(...)`-Aufruf ergänzen; dafür bräuchte `showToast(...)` einen optionalen zweiten Parameter (Zielroute) statt nur eines reinen Strings — additive Erweiterung der `src/lib/toast.ts`-Signatur, kein Bruch bestehender Aufrufer.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

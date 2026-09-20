@@ -3,9 +3,14 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 // M9 part 2: the new "⚙️" header button navigates via expo-router, same
 // router mocking convention as __tests__/screens/Watchlist.test.tsx's
 // "+" Add-Movie button.
+// M10: also needs `useFocusEffect` now (src/hooks/useRegisterFocusedGroupScreen.ts).
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    const React = require("react");
+    React.useEffect(() => callback(), []);
+  },
 }));
 
 jest.mock("@react-native-community/datetimepicker", () => {
@@ -36,6 +41,17 @@ jest.mock("@/hooks/useGroupWatchlist", () => ({
 }));
 jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
+}));
+// M10 (Realtime foreground sync, ADR 0006): this screen's own realtime/focus
+// wiring has its own dedicated tests -- mocked here as no-ops, see the
+// identical comment in __tests__/screens/Watchlist.test.tsx.
+const mockUseGroupRealtimeSync = jest.fn();
+const mockUseRegisterFocusedGroupScreen = jest.fn();
+jest.mock("@/hooks/useGroupRealtimeSync", () => ({
+  useGroupRealtimeSync: mockUseGroupRealtimeSync,
+}));
+jest.mock("@/hooks/useRegisterFocusedGroupScreen", () => ({
+  useRegisterFocusedGroupScreen: mockUseRegisterFocusedGroupScreen,
 }));
 jest.mock("@/hooks/useTrackerPayments", () => ({
   useSetPayment: () => ({ mutate: mockSetPaymentMutate, isPending: mockSetPaymentIsPending }),
@@ -304,14 +320,14 @@ describe("TrackerScreen", () => {
     });
   });
 
-  it("navigates to the Group-Settings screen when the '⚙️' button is tapped", async () => {
+  it("navigates to the Settings hub when the '⚙️' button is tapped", async () => {
     setUpHappyPath();
     const TrackerScreen = loadTrackerScreen();
     const { getByTestId } = await render(<TrackerScreen />);
 
     await fireEvent.press(getByTestId("tracker-group-settings-button"));
 
-    expect(mockPush).toHaveBeenCalledWith("/group-settings");
+    expect(mockPush).toHaveBeenCalledWith("/settings");
   });
 
   it("opens the 'Zahlung erfassen' modal via the 💰 button, listing only unpaid diary movies", async () => {

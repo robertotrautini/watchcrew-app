@@ -8,7 +8,9 @@ import { DateField } from "@/components/ui/DateField";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import { useDeletePayment, useSetPayment } from "@/hooks/useTrackerPayments";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import {
@@ -54,6 +56,11 @@ export default function TrackerScreen() {
   // "first group = active group" interim simplification) -- see
   // src/hooks/useActiveGroup.ts.
   const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
+
+  // M10 (Realtime foreground sync, ADR 0006): see the identical comment in
+  // src/app/(app)/(tabs)/watchlist.tsx -- same wiring, same reasoning.
+  useGroupRealtimeSync(activeGroupId);
+  useRegisterFocusedGroupScreen(activeGroupId);
 
   const groupMembersQuery = useGroupMembers(activeGroupId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);

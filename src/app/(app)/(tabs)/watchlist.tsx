@@ -8,7 +8,9 @@ import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
@@ -83,6 +85,16 @@ export default function WatchlistScreen() {
   // "first group = active group" interim simplification) -- see
   // src/hooks/useActiveGroup.ts.
   const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
+
+  // M10 (Realtime foreground sync, ADR 0006): subscribes to live
+  // watchlist_entries/ratings changes for the active group (silent cache
+  // refresh, or a toast when this tab isn't the one on screen -- see
+  // src/hooks/useGroupRealtimeSync.ts), and announces "Watchlist is the
+  // currently-focused screen for this group" while it's in view (see
+  // src/hooks/useRegisterFocusedGroupScreen.ts) so that hook can tell silent
+  // update apart from toast.
+  useGroupRealtimeSync(activeGroupId);
+  useRegisterFocusedGroupScreen(activeGroupId);
 
   const groupMembersQuery = useGroupMembers(activeGroupId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);

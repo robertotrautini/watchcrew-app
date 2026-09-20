@@ -2,9 +2,16 @@ import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // M7 part 2 (Add-Movie-Modal): the new "+" button navigates via expo-router,
 // so this screen now needs a router mock too (it previously had none).
+// M10: also needs `useFocusEffect` now (src/hooks/useRegisterFocusedGroupScreen.ts) --
+// mocked as "run the effect once on mount, cleanup once on unmount", same
+// convention as __tests__/useRegisterFocusedGroupScreen.test.tsx.
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
+  useFocusEffect: (callback: () => void | (() => void)) => {
+    const React = require("react");
+    React.useEffect(() => callback(), []);
+  },
 }));
 
 // --- Hook mocks -------------------------------------------------------
@@ -14,6 +21,13 @@ const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
 const mockUsePreferencesStore = jest.fn();
 const mockSetWatchlistViewMode = jest.fn();
+// M10 (Realtime foreground sync, ADR 0006): this screen's own realtime/focus
+// wiring has its own dedicated tests (useGroupRealtimeSync.test.tsx,
+// useRegisterFocusedGroupScreen.test.tsx) -- mocked here as no-ops so this
+// file keeps testing only ITS OWN concerns (loading/rendering/sort/filter),
+// and so this test doesn't need to construct a real Supabase client.
+const mockUseGroupRealtimeSync = jest.fn();
+const mockUseRegisterFocusedGroupScreen = jest.fn();
 
 jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
@@ -26,6 +40,12 @@ jest.mock("@/hooks/useGroupWatchlist", () => ({
 }));
 jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
+}));
+jest.mock("@/hooks/useGroupRealtimeSync", () => ({
+  useGroupRealtimeSync: mockUseGroupRealtimeSync,
+}));
+jest.mock("@/hooks/useRegisterFocusedGroupScreen", () => ({
+  useRegisterFocusedGroupScreen: mockUseRegisterFocusedGroupScreen,
 }));
 jest.mock("@/stores/usePreferencesStore", () => ({
   usePreferencesStore: mockUsePreferencesStore,
@@ -149,11 +169,15 @@ function setUpHappyPath(entries = [ENTRY_ALPHA, ENTRY_BETA, ENTRY_GAMMA]) {
   });
 }
 
-function setUpPreferencesStore(watchlistViewMode: "cards" | "grid" | "list" = "cards") {
+function setUpPreferencesStore(
+  watchlistViewMode: "cards" | "grid" | "list" = "cards",
+  showTitlesInGrid = true,
+) {
   mockUsePreferencesStore.mockImplementation((selector: (state: unknown) => unknown) =>
     selector({
       watchlistViewMode,
       setWatchlistViewMode: mockSetWatchlistViewMode,
+      showTitlesInGrid,
     }),
   );
 }
@@ -221,6 +245,26 @@ describe("WatchlistScreen", () => {
     expect(getByTestId("watchlist-entry-e1")).toBeTruthy();
     expect(getByTestId("watchlist-entry-e2")).toBeTruthy();
     expect(getByTestId("watchlist-entry-e3")).toBeTruthy();
+  });
+
+  it("hides grid-mode titles when showTitlesInGrid is false (M10 Darstellung toggle)", async () => {
+    setUpHappyPath();
+    setUpPreferencesStore("grid", false);
+
+    const WatchlistScreen = loadWatchlistScreen();
+    const { queryByTestId } = await render(<WatchlistScreen />);
+
+    expect(queryByTestId("watchlist-entry-e1-title")).toBeNull();
+  });
+
+  it("shows grid-mode titles when showTitlesInGrid is true (M10 Darstellung toggle)", async () => {
+    setUpHappyPath();
+    setUpPreferencesStore("grid", true);
+
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    expect(getByTestId("watchlist-entry-e1-title")).toBeTruthy();
   });
 
   it("switches to grid mode via the view-mode toggle and persists the choice", async () => {

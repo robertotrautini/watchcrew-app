@@ -11,6 +11,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { ToastHost } from '@/components/ui/Toast';
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
 
@@ -58,6 +59,13 @@ export default function RootLayout() {
           <Stack.Screen name="(onboarding)" />
           <Stack.Screen name="(app)" />
         </Stack>
+        {/* M10 (Realtime foreground sync, ADR 0006): mounted once here so
+            src/lib/toast.ts's `showToast(...)` (called from
+            src/hooks/useGroupRealtimeSync.ts) has somewhere to render,
+            app-wide, regardless of which route group is active. Purely
+            additive -- doesn't touch the Sentry/font/QueryClientProvider/
+            auth-gate logic above. */}
+        <ToastHost />
       </ThemeProvider>
     </QueryClientProvider>
   );
