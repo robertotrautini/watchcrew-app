@@ -33,6 +33,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M6 — `search_company`-Scoring: eigene Fuzzy-/Bonus-Gewichte](#m6--search_company-scoring-eigene-fuzzy-bonus-gewichte)
 - [M6 — `trakt_related`: TMDB-ID → Trakt-Slug-Auflösung als Zwischenschritt](#m6--trakt_related-tmdb-id--trakt-slug-auflösung-als-zwischenschritt)
 - [M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside](#m6--person_moviesdirector_moviesstudio_movies-ebenfalls-ohne-cache-aside)
+- [M6 — Studio-Filmografie-Screen: Dedupe-Strategie, Footer-Sichtbarkeit, `movie-detail`-Routenannahme](#m6--studio-filmografie-screen-dedupe-strategie-footer-sichtbarkeit-movie-detail-routenannahme)
 
 ---
 
@@ -365,6 +366,22 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 **Entscheidung (vorläufig):** Auch diese drei Actions laufen als reines Fetch-Through ohne Cache-Tabelle — sie sind genauso query-/lookup-förmig (Schlüssel ist eine Personen-/Firmen-ID + optionale Seite, kein fester Pro-Film-Cache-Key) und im alten Legacy-Zustand ohne eigene `_cache`-Variable erwähnt (nur `_similarCache`/`_providerCache` sind dort benannt). Konsistent mit der Begründung, die der Task-Auftrag für die explizit genannten Actions gibt.
 
 **Warum das später leicht änderbar ist:** Falls doch gewünscht, wäre das ein zusätzlicher `handleCacheAsideField`-artiger Wrapper um genau diese drei `index.ts`-Cases, ohne Änderung an den zugrunde liegenden `tmdb-client.ts`-Fetch-Funktionen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Studio-Filmografie-Screen: Dedupe-Strategie, Footer-Sichtbarkeit, `movie-detail`-Routenannahme
+
+**Problem/Lücke:** Der Studio-Filmografie-Screen (`src/app/(app)/(modals)/filmography/studio/[companyId].tsx`) baut auf `useStudioFilmography`s `useInfiniteQuery`-Pagination auf; der Task-Auftrag ließ drei Implementierungsdetails offen: (1) wie über mehrere geladene Seiten hinweg dedupliziert wird, (2) wann genau der "Mehr laden"-Footer erscheint, und (3) welche Route/Params ein Tile-Tap ansteuert, da der `movie-detail`-Screen selbst zum Zeitpunkt dieser Arbeit noch nicht existierte (durch ein paralleles Detail-Overlay-Task).
+
+**Entscheidung (vorläufig):**
+- Dedupe: alle geladenen Seiten werden zu einer Liste geflacht, dann über ein `Set<number>` nach `tmdbId` in Erst-Vorkommen-Reihenfolge dedupliziert (spätere Duplikate verworfen) — reine In-Memory-Defensivmaßnahme gegen TMDBs seltene Seiten-Überlappung bei sich verschiebenden Discover-Ergebnissen, keine Server-Änderung.
+- Footer-Sichtbarkeit: der "Mehr laden"-Button (`MovieGrid`s `footer`-Prop) wird nur gerendert, wenn `hasNextPage === true`; ist die letzte Seite erreicht, wird `footer={undefined}` übergeben (kein deaktivierter/ausgegrauter Button als letzter Zustand).
+- `movie-detail`-Route: `router.push({ pathname: "/(app)/(modals)/movie-detail", params: { tmdbId: String(item.tmdbId) } })` — 1:1 übernommen von der bereits gelandeten Schwester-Implementierung `src/app/(app)/(modals)/collection/[collectionId].tsx` (identische Konvention dort bereits vorgefunden), NICHT neu erfunden. Der `movie-detail`-Screen selbst existierte zum Zeitpunkt dieser Arbeit noch nicht (`find src/app -iname "*movie-detail*"` fand nichts) — daher ein bekannter, erwarteter `tsc`-Fehler in allen fünf Sub-View-Screens (`collection`, `filmography/actor`, `filmography/director`, `filmography/studio`, `similar`), der erst verschwindet, sobald das parallele Detail-Overlay-Task landet.
+- Kein `progressHeader` und kein `streamingFilter` an `MovieGrid` übergeben (`undefined`) — laut Task-Spec bewusst NICHT Teil des Studio-Grids (anders als Regisseur/Schauspieler bzw. Filmreihe), da ein Studio-Katalog i.d.R. zu groß/unabgeschlossen für eine "X von Y gesehen"-Fortschrittsanzeige ist.
+
+**Warum das später leicht änderbar ist:** Alle vier Punkte sind isolierte, kleine Code-Stellen in genau dieser einen Datei (ein `Set`-basierter Dedupe-Block, ein Ternary für die `footer`-Prop, eine `router.push`-Zeile, zwei `undefined`-Props) — keine strukturelle Kopplung an `MovieGrid`, `useStudioFilmography` oder andere Sub-View-Screens. Sobald der echte `movie-detail`-Screen landet, muss hier höchstens der Pfad/die Param-Namen angepasst werden, falls sie von der Collection-Screen-Konvention abweichen sollten.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
