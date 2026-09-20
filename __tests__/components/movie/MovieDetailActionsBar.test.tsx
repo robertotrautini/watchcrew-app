@@ -14,17 +14,10 @@ jest.mock("@/lib/movieDetailNavigation", () => ({
   navigateToActorFilmography: jest.fn(),
   navigateToCollection: jest.fn(),
   navigateToSimilarMovies: jest.fn(),
-  navigateToRatingDialog: jest.fn(),
-  navigateToEditFlow: jest.fn(),
 }));
 
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
-import {
-  navigateToCollection,
-  navigateToEditFlow,
-  navigateToRatingDialog,
-  navigateToSimilarMovies,
-} from "@/lib/movieDetailNavigation";
+import { navigateToCollection, navigateToSimilarMovies } from "@/lib/movieDetailNavigation";
 
 function createMockRouter() {
   return {
@@ -133,8 +126,9 @@ describe("MovieDetailActionsBar", () => {
     );
   });
 
-  it("'direkt_bewerten' calls addToWatchlist mutate and navigates to rating dialog on success", async () => {
+  it("'direkt_bewerten' calls addToWatchlist mutate and reports the newly-created entry via onDirectRateEntryCreated on success", async () => {
     const router = createMockRouter();
+    const onDirectRateEntryCreated = jest.fn();
     const { getByTestId } = await render(
       <MovieDetailActionsBar
         actions={["direkt_bewerten"]}
@@ -142,6 +136,7 @@ describe("MovieDetailActionsBar", () => {
         tmdbId={42}
         activeGroupId="active-group-1"
         currentUserId="user-1"
+        onDirectRateEntryCreated={onDirectRateEntryCreated}
       />,
     );
 
@@ -155,7 +150,7 @@ describe("MovieDetailActionsBar", () => {
     const onSuccess = mockAddMutate.mock.calls[0][1].onSuccess;
     onSuccess({ id: "new-entry-id" });
 
-    expect(navigateToRatingDialog).toHaveBeenCalledWith(router, "new-entry-id");
+    expect(onDirectRateEntryCreated).toHaveBeenCalledWith("new-entry-id");
   });
 
   it("'filmreihe' navigates to the collection", async () => {
@@ -174,21 +169,41 @@ describe("MovieDetailActionsBar", () => {
     expect(navigateToCollection).toHaveBeenCalledWith(router, 99);
   });
 
-  it("'bewerten' and 'bearbeiten' navigate with watchlistEntryId", async () => {
+  it("'bewerten' and 'bearbeiten' call onOpenRatingDialog with watchlistEntryId and the matching mode", async () => {
     const router = createMockRouter();
+    const onOpenRatingDialog = jest.fn();
     const { getByTestId } = await render(
       <MovieDetailActionsBar
         actions={["bewerten", "bearbeiten"]}
         router={router}
         tmdbId={42}
         watchlistEntryId="entry-1"
+        onOpenRatingDialog={onOpenRatingDialog}
       />,
     );
 
     await fireEvent.press(getByTestId("movie-detail-action-bewerten"));
-    expect(navigateToRatingDialog).toHaveBeenCalledWith(router, "entry-1");
+    expect(onOpenRatingDialog).toHaveBeenCalledWith("entry-1", "watchlist");
 
     await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
-    expect(navigateToEditFlow).toHaveBeenCalledWith(router, "entry-1");
+    expect(onOpenRatingDialog).toHaveBeenCalledWith("entry-1", "diary");
+  });
+
+  it("'bewerten'/'bearbeiten' do nothing when watchlistEntryId is missing (defensive no-op)", async () => {
+    const router = createMockRouter();
+    const onOpenRatingDialog = jest.fn();
+    const { getByTestId } = await render(
+      <MovieDetailActionsBar
+        actions={["bewerten", "bearbeiten"]}
+        router={router}
+        tmdbId={42}
+        onOpenRatingDialog={onOpenRatingDialog}
+      />,
+    );
+
+    await fireEvent.press(getByTestId("movie-detail-action-bewerten"));
+    await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
+
+    expect(onOpenRatingDialog).not.toHaveBeenCalled();
   });
 });

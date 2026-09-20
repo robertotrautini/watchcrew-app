@@ -8,6 +8,17 @@ jest.mock("@expo/vector-icons", () => {
   };
 });
 
+// M7 consolidation (Item 3): "Gesehen am"/"Bezahlt am" now render a real
+// native date-picker (src/components/ui/DateField.tsx) instead of a plain
+// TextInput -- mocked the same way as the Ionicons mock above.
+jest.mock("@react-native-community/datetimepicker", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => <View {...props} />,
+  };
+});
+
 const mockSaveMutate = jest.fn();
 const mockResetMutate = jest.fn();
 let mockSaveIsPending = false;
@@ -93,7 +104,7 @@ describe("RatingDialog", () => {
 
   it("defaults 'Gesehen am' to today when there's no existing own rating", async () => {
     const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
-    expect(getByTestId("rating-dialog-seen-at-input").props.value).toBe("20.09.2026");
+    expect(within(getByTestId("rating-dialog-seen-at-input")).getByText("20.09.2026")).toBeTruthy();
   });
 
   it("pre-fills the star rating, like-heart, and Gesehen-am date from an existing own rating (Diary-edit context)", async () => {
@@ -102,7 +113,7 @@ describe("RatingDialog", () => {
       <RatingDialog {...baseProps({ mode: "diary", ratings })} />,
     );
 
-    expect(getByTestId("rating-dialog-seen-at-input").props.value).toBe("10.09.2026");
+    expect(within(getByTestId("rating-dialog-seen-at-input")).getByText("10.09.2026")).toBeTruthy();
     expect(getByTestId("star-rating-heart-icon").props.name).toBe("heart");
   });
 
@@ -169,7 +180,7 @@ describe("RatingDialog", () => {
       const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
 
       await fireEvent.press(getByTestId("rating-dialog-checkbox-unknown"));
-      expect(getByTestId("rating-dialog-seen-at-input").props.editable).toBe(false);
+      expect(getByTestId("rating-dialog-seen-at-input").props.accessibilityState.disabled).toBe(true);
 
       await fireEvent.press(getByTestId("rating-dialog-save-button"));
 
@@ -254,7 +265,13 @@ describe("RatingDialog", () => {
       const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
 
       await fireEvent.press(getByTestId("rating-dialog-payer-chip-user-2"));
-      await fireEvent.changeText(getByTestId("rating-dialog-payment-date-input"), "19.09.2026");
+      await fireEvent.press(getByTestId("rating-dialog-payment-date-input"));
+      await fireEvent(
+        getByTestId("rating-dialog-payment-date-input-picker"),
+        "change",
+        { type: "set" },
+        new Date("2026-09-19T00:00:00.000Z"),
+      );
       await fireEvent.press(getByTestId("rating-dialog-save-button"));
 
       expect(mockSaveMutate).toHaveBeenCalledWith(

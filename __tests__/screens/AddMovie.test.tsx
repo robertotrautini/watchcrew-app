@@ -6,6 +6,18 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+// M7 consolidation (Item 3): the manual-release-date field now renders a
+// real native date-picker (src/components/ui/DateField.tsx) instead of a
+// plain TextInput -- mocked here the same way other native components are
+// mocked in this repo (e.g. RatingDialog.test.tsx's Ionicons mock).
+jest.mock("@react-native-community/datetimepicker", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => <View {...props} />,
+  };
+});
+
 const mockUseCurrentUserId = jest.fn();
 jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
@@ -217,26 +229,41 @@ describe("AddMovieScreen", () => {
     expect(queryByTestId("add-movie-duplicate-cancel-button")).toBeNull();
   });
 
-  it("manual-date fallback: gates the add behind a required date input when release_date is missing", async () => {
+  it("manual-date fallback: gates the add behind a required date input when release_date is missing, and forwards the picked date as manualReleaseDate", async () => {
     mockUseMovieSearch.mockReturnValue(
       emptyQueryResult({ data: [{ id: 604, title: "No Date Movie", release_date: undefined }] }),
     );
     const AddMovieScreen = loadAddMovieScreen();
-    const { getByTestId } = await render(<AddMovieScreen />);
+    const { getByTestId, queryByTestId } = await render(<AddMovieScreen />);
 
     await fireEvent.press(getByTestId("add-movie-film-grid-add-604"));
 
     expect(mockAddMutate).not.toHaveBeenCalled();
     expect(getByTestId("add-movie-manual-date-input")).toBeTruthy();
 
-    // Confirm button disabled until a date is typed.
+    // Confirm button disabled until a date is picked.
     await fireEvent.press(getByTestId("add-movie-manual-date-confirm-button"));
     expect(mockAddMutate).not.toHaveBeenCalled();
 
-    await fireEvent.changeText(getByTestId("add-movie-manual-date-input"), "1999-03-31");
+    // Tapping the field opens the native picker; picking a date closes it
+    // again and fills the field's displayed value.
+    expect(queryByTestId("add-movie-manual-date-input-picker")).toBeNull();
+    await fireEvent.press(getByTestId("add-movie-manual-date-input"));
+    await fireEvent(
+      getByTestId("add-movie-manual-date-input-picker"),
+      "change",
+      { type: "set" },
+      new Date("1999-03-31T00:00:00.000Z"),
+    );
+
     await fireEvent.press(getByTestId("add-movie-manual-date-confirm-button"));
 
-    expect(mockAddMutate).toHaveBeenCalledWith({ tmdbId: 604, groupId: "group-1", addedBy: "u1" });
+    expect(mockAddMutate).toHaveBeenCalledWith({
+      tmdbId: 604,
+      groupId: "group-1",
+      addedBy: "u1",
+      manualReleaseDate: "1999-03-31",
+    });
   });
 
   it("duplicate warning: shows the 'Bereits gesehen' sheet with the average rating when the target group already rated this tmdbId", async () => {

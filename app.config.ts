@@ -55,6 +55,10 @@ const config: ExpoConfig = {
         imageWidth: 76,
       },
     ],
+    // M7 consolidation: real native date-picker for the Rating-Dialog's
+    // "Gesehen am"/payment-date fields and the Add-Movie-Modal's manual-
+    // release-date field — see docs/interim-decisions.md.
+    "@react-native-community/datetimepicker",
   ],
   experiments: {
     typedRoutes: true,

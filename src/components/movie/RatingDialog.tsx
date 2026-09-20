@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { Button } from "@/components/ui/Button";
+import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { StarRating } from "@/components/ui/StarRating";
 import { useResetRating, useSaveRating } from "@/hooks/useSaveRating";
@@ -231,15 +232,13 @@ export function RatingDialog({
 
         <View className="gap-2">
           <Text className="text-text-secondary">Gesehen am</Text>
-          <TextInput
+          <DateField
             testID="rating-dialog-seen-at-input"
-            value={manualDateInput}
-            onChangeText={setManualDateInput}
-            editable={seenAtMode === "manual"}
+            valueIso={parseGermanDateInput(manualDateInput)}
+            displayText={manualDateInput}
             placeholder="TT.MM.JJJJ"
-            placeholderTextColor="#888888"
-            className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-            style={seenAtMode !== "manual" ? { opacity: 0.5 } : undefined}
+            editable={seenAtMode === "manual"}
+            onChangeIso={(iso) => setManualDateInput(formatDateForInput(iso))}
           />
 
           <Pressable
@@ -332,13 +331,12 @@ export function RatingDialog({
           </View>
 
           {selectedPayerId ? (
-            <TextInput
+            <DateField
               testID="rating-dialog-payment-date-input"
-              value={paymentDateInput}
-              onChangeText={setPaymentDateInput}
+              valueIso={parseGermanDateInput(paymentDateInput)}
+              displayText={paymentDateInput}
               placeholder="Bezahlt am (TT.MM.JJJJ, optional)"
-              placeholderTextColor="#888888"
-              className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
+              onChangeIso={(iso) => setPaymentDateInput(formatDateForInput(iso))}
             />
           ) : null}
         </View>

@@ -181,7 +181,22 @@ export function searchCompany(query: string): Promise<TmdbProxyResult<TmdbCompan
  * M7 part 1's `upsert_movie` action, now given its first real caller (M7
  * part 2's rewired `addToWatchlist`, see src/lib/movieDetailMutations.ts):
  * gets-or-creates the local `movies` row for a TMDB id, idempotently.
+ *
+ * `manualReleaseDate` (M7 consolidation Item 1, see
+ * docs/interim-decisions.md): an optional ISO date string, forwarded
+ * verbatim to the `upsert_movie` Edge Function action. Omitted from the
+ * request body entirely when not given, same convention as
+ * `getStudioMovies`'s optional `page` above — the server-side safety rule
+ * (a real TMDB release date always wins, this only fills a genuine gap)
+ * lives in supabase/functions/tmdb-proxy/movie-upsert.ts, not here.
  */
-export function upsertMovie(tmdbId: number): Promise<TmdbProxyResult<UpsertMovieResponse>> {
-  return invokeTmdbProxy<UpsertMovieResponse>({ kind: "upsert_movie", tmdbId });
+export function upsertMovie(
+  tmdbId: number,
+  manualReleaseDate?: string
+): Promise<TmdbProxyResult<UpsertMovieResponse>> {
+  const body: Record<string, unknown> = { kind: "upsert_movie", tmdbId };
+  if (manualReleaseDate !== undefined) {
+    body.manualReleaseDate = manualReleaseDate;
+  }
+  return invokeTmdbProxy<UpsertMovieResponse>(body);
 }

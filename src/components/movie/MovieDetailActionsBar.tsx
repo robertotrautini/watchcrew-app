@@ -9,12 +9,7 @@ import {
   useDeleteWatchlistEntry,
 } from "@/hooks/useMovieDetailMutations";
 import type { ActionButtonId } from "@/lib/movieDetailLogic";
-import {
-  navigateToCollection,
-  navigateToEditFlow,
-  navigateToRatingDialog,
-  navigateToSimilarMovies,
-} from "@/lib/movieDetailNavigation";
+import { navigateToCollection, navigateToSimilarMovies } from "@/lib/movieDetailNavigation";
 
 // M6 part 2a: the Movie-Detail-Overlay's bottom fixed action-buttons bar.
 // Owns the delete-confirmation Sheet and the mutation wiring for
@@ -25,6 +20,16 @@ import {
 //
 // Bottom-pinning (position/absolute placement) is the PARENT route file's
 // job — this component's own root is a plain flex row/wrap layout.
+//
+// M7 consolidation (Item 2, see docs/interim-decisions.md): "Bewerten"/
+// "Bearbeiten"/"Direkt Bewerten" no longer navigate to a placeholder route
+// (the former `navigateToRatingDialog`/`navigateToEditFlow`, which pointed
+// at a route that never existed) -- the real `RatingDialog` is now rendered
+// directly by the PARENT screen (movie/[tmdbId].tsx) as a controlled
+// overlay, matching this component's own delete-confirmation `Sheet`
+// convention. This component only reports WHICH watchlist entry/mode to
+// open it for, via the two callback props below; it owns no dialog-open
+// state of its own for rating.
 
 type Router = ReturnType<typeof useRouter>;
 
@@ -37,6 +42,10 @@ export interface MovieDetailActionsBarProps {
   activeGroupId?: string;
   currentUserId?: string;
   collectionId?: number;
+  /** "bewerten" (watchlist context) / "bearbeiten" (diary context) -- see the module comment above. */
+  onOpenRatingDialog?: (watchlistEntryId: string, mode: "watchlist" | "diary") => void;
+  /** "direkt_bewerten": called once the add-to-watchlist mutation succeeds, with the newly-created entry's id. */
+  onDirectRateEntryCreated?: (watchlistEntryId: string) => void;
 }
 
 /**
@@ -79,6 +88,8 @@ export function MovieDetailActionsBar({
   activeGroupId,
   currentUserId,
   collectionId,
+  onOpenRatingDialog,
+  onDirectRateEntryCreated,
 }: MovieDetailActionsBarProps) {
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
 
@@ -125,7 +136,7 @@ export function MovieDetailActionsBar({
     addToWatchlistMutation.mutate(
       { tmdbId, groupId: activeGroupId, addedBy: currentUserId },
       {
-        onSuccess: (data) => navigateToRatingDialog(router, data.id),
+        onSuccess: (data) => onDirectRateEntryCreated?.(data.id),
         onError: handleAddToWatchlistError,
       },
     );
@@ -172,7 +183,7 @@ export function MovieDetailActionsBar({
             label={label}
             onPress={() => {
               if (watchlistEntryId) {
-                navigateToRatingDialog(router, watchlistEntryId);
+                onOpenRatingDialog?.(watchlistEntryId, "watchlist");
               }
             }}
           />
@@ -187,7 +198,7 @@ export function MovieDetailActionsBar({
             label={label}
             onPress={() => {
               if (watchlistEntryId) {
-                navigateToEditFlow(router, watchlistEntryId);
+                onOpenRatingDialog?.(watchlistEntryId, "diary");
               }
             }}
           />

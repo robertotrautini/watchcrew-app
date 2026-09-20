@@ -81,6 +81,16 @@ export interface AddToWatchlistParams {
   tmdbId: number;
   groupId: string;
   addedBy: string;
+  /**
+   * M7 consolidation (Item 1, see docs/interim-decisions.md): the Add-
+   * Movie-Modal's manual-date fallback value (ISO date string), forwarded
+   * to the `upsert_movie` Edge Function action's own optional parameter of
+   * the same name. Only relevant when TMDB has no release date for this
+   * movie at all -- see `upsertMovie`'s own doc comment
+   * (supabase/functions/tmdb-proxy/movie-upsert.ts) for the full "never
+   * overrides real TMDB data" safety rule enforced server-side.
+   */
+  manualReleaseDate?: string;
 }
 
 /**
@@ -110,9 +120,9 @@ export interface AddToWatchlistParams {
  * not a reaction to this constraint -- see src/lib/addMovieLogic.ts).
  */
 export async function addToWatchlist(params: AddToWatchlistParams) {
-  const { tmdbId, groupId, addedBy } = params;
+  const { tmdbId, groupId, addedBy, manualReleaseDate } = params;
 
-  const { data: upsertResult, error: upsertError } = await upsertMovie(tmdbId);
+  const { data: upsertResult, error: upsertError } = await upsertMovie(tmdbId, manualReleaseDate);
 
   if (upsertError) {
     return { data: null, error: upsertError };

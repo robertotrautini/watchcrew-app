@@ -156,7 +156,7 @@ describe("addToWatchlist", () => {
     const { addToWatchlist } = require("../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
 
-    expect(mockUpsertMovie).toHaveBeenCalledWith(603);
+    expect(mockUpsertMovie).toHaveBeenCalledWith(603, undefined);
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
     expect(entriesChain.insert).toHaveBeenCalledWith({
@@ -177,6 +177,34 @@ describe("addToWatchlist", () => {
     expect(result).toEqual({ data: null, error: upsertError });
     // No DB call at all -- the doomed insert never happens.
     expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  // M7 consolidation (Item 1): manualReleaseDate forwarding.
+  it("forwards manualReleaseDate through to upsertMovie when given", async () => {
+    mockUpsertMovie.mockResolvedValue({ data: { movieId: "movie-uuid-1" }, error: null });
+    const insertResult = { data: { id: "we-new-1" }, error: null };
+    mockFrom.mockReturnValueOnce(makeChain(insertResult));
+
+    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    await addToWatchlist({
+      tmdbId: 604,
+      groupId: "group-1",
+      addedBy: "user-1",
+      manualReleaseDate: "2027-05-01",
+    });
+
+    expect(mockUpsertMovie).toHaveBeenCalledWith(604, "2027-05-01");
+  });
+
+  it("passes undefined for manualReleaseDate to upsertMovie when not given", async () => {
+    mockUpsertMovie.mockResolvedValue({ data: { movieId: "movie-uuid-1" }, error: null });
+    const insertResult = { data: { id: "we-new-1" }, error: null };
+    mockFrom.mockReturnValueOnce(makeChain(insertResult));
+
+    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
+
+    expect(mockUpsertMovie).toHaveBeenCalledWith(603, undefined);
   });
 
   it("propagates a raw unique-violation (23505) error from the watchlist_entries insert unchanged (no friendly-message translation)", async () => {

@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { Button } from "@/components/ui/Button";
+import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActorFilmography } from "@/hooks/useActorFilmography";
 import { useCompanySearch } from "@/hooks/useCompanySearch";
@@ -164,11 +165,26 @@ export default function AddMovieScreen() {
     }
   }
 
-  function performAdd(tmdbId: number) {
+  function performAdd(item: MovieGridItem) {
     if (!activeGroupId || !currentUserId) {
       return;
     }
-    addToWatchlistMutation.mutate({ tmdbId, groupId: activeGroupId, addedBy: currentUserId });
+    // M7 consolidation (Item 1, see docs/interim-decisions.md): the
+    // manually-entered release date is only ever meaningful -- and only
+    // ever forwarded -- when THIS item actually needed the manual-date
+    // fallback in the first place (`needsManualReleaseDate`). A quick-add
+    // for a movie that already has a real TMDB release date never sends
+    // `manualReleaseDate`, even if a stale value happens to still be
+    // sitting in `manualDateInput` from a previous, unrelated add.
+    const manualReleaseDate = needsManualReleaseDate(item.releaseDate)
+      ? manualDateInput.trim()
+      : undefined;
+    addToWatchlistMutation.mutate({
+      tmdbId: item.tmdbId,
+      groupId: activeGroupId,
+      addedBy: currentUserId,
+      manualReleaseDate,
+    });
     setPendingItem(null);
     setDuplicateInfo(null);
     setManualDateInput("");
@@ -181,7 +197,7 @@ export default function AddMovieScreen() {
       setDuplicateInfo(duplicate);
       return;
     }
-    performAdd(item.tmdbId);
+    performAdd(item);
   }
 
   function handleAddItem(item: MovieGridItem) {
@@ -207,7 +223,7 @@ export default function AddMovieScreen() {
 
   function handleDuplicateConfirm() {
     if (pendingItem) {
-      performAdd(pendingItem.tmdbId);
+      performAdd(pendingItem);
     }
   }
 
@@ -475,15 +491,11 @@ export default function AddMovieScreen() {
       {/*
         Manual-date fallback (per the task spec): a selected movie with no
         TMDB release_date needs a manual date entered before the add can
-        proceed. FLAGGED GAP (not silently built around): there is
-        currently no backend field this manually-entered date can be
-        persisted to -- `movies.release_date` is written only by the
-        `upsert_movie` Edge Function action from TMDB data, which has no
-        client-supplied override input. This gate is therefore UI-only
-        right now (it blocks the add until a value is entered) but the
-        entered value is NOT sent anywhere yet. See
-        docs/interim-decisions.md "M7 Teil 2 — Add-Movie-Modal" for the
-        full write-up and the two follow-up options this leaves open.
+        proceed. M7 consolidation (Item 1, see docs/interim-decisions.md):
+        the FORMERLY-flagged gap is now resolved -- the entered value is
+        forwarded as `manualReleaseDate` to `addToWatchlist`/`upsertMovie`
+        (see `performAdd` above), which only ever fills a genuine TMDB gap
+        server-side and never overrides real TMDB data.
       */}
       <Sheet
         visible={manualDateSheetVisible}
@@ -493,13 +505,13 @@ export default function AddMovieScreen() {
         <Text className="mb-3 text-text-primary">
           Für "{pendingItem?.title}" ist kein Erscheinungsdatum bekannt. Bitte gib eins ein, um fortzufahren.
         </Text>
-        <TextInput
+        <DateField
           testID="add-movie-manual-date-input"
-          className="mb-3 rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
-          placeholder="JJJJ-MM-TT"
-          placeholderTextColor="#8b8b8b"
-          value={manualDateInput}
-          onChangeText={setManualDateInput}
+          className="mb-3"
+          valueIso={manualDateInput || null}
+          displayText={manualDateInput}
+          placeholder="Datum wählen"
+          onChangeIso={setManualDateInput}
         />
         <Button
           testID="add-movie-manual-date-confirm-button"

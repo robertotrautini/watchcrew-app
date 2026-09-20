@@ -75,6 +75,31 @@ jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useAddToWatchlist: mockUseAddToWatchlist,
 }));
 
+// M7 consolidation (Item 2): this screen now renders the real `RatingDialog`
+// (src/components/movie/RatingDialog.tsx), which itself pulls in
+// `useSaveRating`/`useResetRating` (src/hooks/useSaveRating.ts) -- same
+// "mock the whole hook module, never requireActual" rationale as
+// useMovieDetailMutations above (that module chain also ends at a real
+// src/lib/supabase client construction, which errors under Jest's Node
+// environment).
+const mockUseSaveRating = jest.fn();
+const mockUseResetRating = jest.fn();
+jest.mock("@/hooks/useSaveRating", () => ({
+  useSaveRating: mockUseSaveRating,
+  useResetRating: mockUseResetRating,
+}));
+
+// RatingDialog itself renders react-native's DateTimePicker indirectly via
+// src/components/ui/DateField.tsx -- mocked the same way as every other
+// test that renders RatingDialog (see RatingDialog.test.tsx).
+jest.mock("@react-native-community/datetimepicker", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => <View {...props} />,
+  };
+});
+
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the jest.mock factories above, matching the convention in
 // __tests__/screens/Collection.test.tsx.
@@ -96,6 +121,8 @@ function setupDefaultMocks() {
   mockUseToggleLike.mockReturnValue({ mutate: jest.fn(), isPending: false });
   mockUseDeleteWatchlistEntry.mockReturnValue({ mutate: jest.fn(), isPending: false });
   mockUseAddToWatchlist.mockReturnValue({ mutate: jest.fn(), isPending: false });
+  mockUseSaveRating.mockReturnValue({ mutate: jest.fn(), isPending: false });
+  mockUseResetRating.mockReturnValue({ mutate: jest.fn(), isPending: false });
 }
 
 describe("MovieDetailScreen", () => {
@@ -169,5 +196,132 @@ describe("MovieDetailScreen", () => {
 
     expect(getByTestId("movie-detail-ratings-section")).toBeTruthy();
     expect(getByText("Test Movie")).toBeTruthy();
+  });
+
+  // M7 consolidation (Item 2): RatingDialog wiring smoke tests -- the real
+  // dialog is now rendered by this screen (see the module comment above the
+  // hook mocks), replacing the former placeholder-route navigation.
+  describe("RatingDialog wiring", () => {
+    const { fireEvent } = require("@testing-library/react-native");
+
+    it("'direkt_bewerten' (no group context) opens the dialog in 'direct' mode for the newly-created entry once addToWatchlist succeeds", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
+      mockUseUserGroups.mockReturnValue({ data: [{ group_id: "active-group-1", user_id: "user-1" }] });
+      mockUseAddToWatchlist.mockReturnValue({
+        mutate: (_vars: unknown, opts: { onSuccess: (data: { id: string }) => void }) =>
+          opts.onSuccess({ id: "new-entry-1" }),
+        isPending: false,
+      });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, getAllByText, queryByTestId } = await render(<MovieDetailScreen />);
+
+      expect(queryByTestId("rating-dialog")).toBeNull();
+
+      await fireEvent.press(getByTestId("movie-detail-action-direkt_bewerten"));
+
+      expect(getByTestId("rating-dialog")).toBeTruthy();
+      // The dialog's Sheet title ("Direkt bewerten") is a SECOND occurrence
+      // of this text alongside the action button's own label -- proves the
+      // Sheet actually opened with the "direct" mode's title, not just that
+      // the button rendered.
+      expect(getAllByText("Direkt bewerten").length).toBeGreaterThan(1);
+    });
+
+    it("'bewerten' (watchlist context) opens the dialog in 'watchlist' mode for the existing watchlistEntryId", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "watchlist",
+        watchlistEntryId: "entry-1",
+      });
+      mockUseGroupWatchlist.mockReturnValue({
+        data: {
+          entries: [
+            {
+              id: "entry-1",
+              group_id: "group-1",
+              movie_id: "movie-1",
+              added_at: "2026-01-01T00:00:00Z",
+              added_by: "user-1",
+              paid_by_member_id: null,
+              paid_at: null,
+              movie: {
+                id: "movie-1",
+                tmdb_id: 42,
+                name: "Test Movie",
+                release_date: "2020-01-01",
+                poster: null,
+                overview: null,
+                runtime: null,
+                director: null,
+                director_id: null,
+                vote_average: null,
+              },
+              ratings: [],
+            },
+          ],
+          streamingAvailability: new Map(),
+        },
+      });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, getAllByText, queryByTestId } = await render(<MovieDetailScreen />);
+
+      expect(queryByTestId("rating-dialog")).toBeNull();
+
+      await fireEvent.press(getByTestId("movie-detail-action-bewerten"));
+
+      expect(getByTestId("rating-dialog")).toBeTruthy();
+      // Same rationale as the "direkt_bewerten" test above: a second
+      // "Bewerten" occurrence (the Sheet title) proves the dialog opened.
+      expect(getAllByText("Bewerten").length).toBeGreaterThan(1);
+    });
+
+    it("'bearbeiten' (diary context) opens the dialog in 'diary' mode", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "diary",
+        watchlistEntryId: "entry-1",
+      });
+      mockUseGroupWatchlist.mockReturnValue({
+        data: {
+          entries: [
+            {
+              id: "entry-1",
+              group_id: "group-1",
+              movie_id: "movie-1",
+              added_at: "2026-01-01T00:00:00Z",
+              added_by: "user-1",
+              paid_by_member_id: null,
+              paid_at: null,
+              movie: {
+                id: "movie-1",
+                tmdb_id: 42,
+                name: "Test Movie",
+                release_date: "2020-01-01",
+                poster: null,
+                overview: null,
+                runtime: null,
+                director: null,
+                director_id: null,
+                vote_average: null,
+              },
+              ratings: [],
+            },
+          ],
+          streamingAvailability: new Map(),
+        },
+      });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, getByText } = await render(<MovieDetailScreen />);
+
+      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
+
+      expect(getByTestId("rating-dialog")).toBeTruthy();
+      expect(getByText("Bewertung bearbeiten")).toBeTruthy();
+    });
   });
 });

@@ -60,24 +60,11 @@ export function navigateToSimilarMovies(router: Router, tmdbId: number): void {
   });
 }
 
-/**
- * PLACEHOLDER — coordinate exact path with M7 (rating dialog) task, this
- * route does not exist yet.
- */
-export function navigateToRatingDialog(router: Router, watchlistEntryId: string): void {
-  router.push({
-    pathname: "/movie/rate/[watchlistEntryId]" as never,
-    params: { watchlistEntryId },
-  });
-}
-
-/**
- * PLACEHOLDER — coordinate exact path with M7 (edit flow) task, this route
- * does not exist yet.
- */
-export function navigateToEditFlow(router: Router, watchlistEntryId: string): void {
-  router.push({
-    pathname: "/movie/edit/[watchlistEntryId]" as never,
-    params: { watchlistEntryId },
-  });
-}
+// M7 consolidation (Item 2, see docs/interim-decisions.md): the former
+// `navigateToRatingDialog`/`navigateToEditFlow` placeholders (pointing at a
+// `/movie/rate/[watchlistEntryId]` route that never existed) were removed
+// here entirely — the real `RatingDialog` is now rendered directly by
+// movie/[tmdbId].tsx as a controlled overlay instead of a separate route,
+// matching that screen's own delete-confirmation `Sheet` convention. See
+// src/components/movie/MovieDetailActionsBar.tsx's `onOpenRatingDialog`/
+// `onDirectRateEntryCreated` callback props for the replacement wiring.

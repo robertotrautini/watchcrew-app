@@ -93,6 +93,13 @@ interface ProxyRequestBody {
   collectionId?: number;
   companyId?: number;
   page?: number;
+  /**
+   * M7 consolidation (Item 1): optional client-supplied ISO date string,
+   * `kind: "upsert_movie"` only — see ./movie-upsert.ts's `upsertMovie` doc
+   * comment for the full "only fills a genuine TMDB gap, never overrides a
+   * real TMDB date" safety rule.
+   */
+  manualReleaseDate?: string;
 }
 
 const VALID_KINDS: ProxyKind[] = [
@@ -414,10 +421,15 @@ Deno.serve(async (req: Request) => {
       // --- M7 part 1: authenticated-client "add a new movie" resolution ---
       case "upsert_movie": {
         if (typeof body.tmdbId !== "number") {
-          return badRequest("Expected { tmdbId: number, kind: 'upsert_movie' }");
+          return badRequest(
+            "Expected { tmdbId: number, kind: 'upsert_movie', manualReleaseDate?: string }",
+          );
+        }
+        if (body.manualReleaseDate !== undefined && typeof body.manualReleaseDate !== "string") {
+          return badRequest("Expected manualReleaseDate to be a string (ISO date) when provided");
         }
         const db = createSupabaseMovieUpsertDb(supabase);
-        const data = await upsertMovie(body.tmdbId, { db });
+        const data = await upsertMovie(body.tmdbId, { db }, body.manualReleaseDate);
         return jsonResponse({ data }, 200);
       }
 

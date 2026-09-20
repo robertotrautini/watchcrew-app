@@ -197,10 +197,25 @@ function placeholderMovieName(tmdbId: number): string {
  *    (reusing the already-built M6 `tmdb-client.ts` functions), maps them
  *    onto the exact M1 `movies` column names, inserts the row, then
  *    upserts-if-missing the `genres` rows and links them via `movie_genres`.
+ *
+ * @param manualReleaseDate M7 consolidation (Item 1, see
+ *   docs/interim-decisions.md): an optional ISO date string collected by the
+ *   Add-Movie-Modal's manual-date fallback UI when TMDB has no release date
+ *   at all for this movie. This is the LOWEST-priority fallback in the
+ *   release-date resolution chain — it only ever fills a genuine gap left by
+ *   TMDB (both the German-region and the global release date being absent).
+ *   SAFETY: a client-supplied `manualReleaseDate` is NEVER allowed to
+ *   silently override a real TMDB release date — if TMDB has EITHER a
+ *   German or a global release date, that value wins outright and
+ *   `manualReleaseDate` is ignored (logged, not silently dropped) for this
+ *   tmdb_id. Only relevant on the new-movie insert path — an already-
+ *   cataloged movie (the early-return branch above) is never updated by
+ *   this action at all, manual or otherwise.
  */
 export async function upsertMovie(
   tmdbId: number,
   deps: UpsertMovieDeps,
+  manualReleaseDate?: string,
 ): Promise<{ movieId: string }> {
   const {
     db,
@@ -226,7 +241,22 @@ export async function upsertMovie(
   // metadata list ("deutsches Kino-/Digital-/TV-Releasedatum ... bevorzugt
   // vor globalem TMDB-Datum"). Falls back to the global `release_date` from
   // `details` when TMDB has no DE-region release_dates entry at all.
-  const releaseDate = germanReleaseDate?.release_date ?? details.releaseDate ?? null;
+  //
+  // M7 consolidation (Item 1): `manualReleaseDate` is a THIRD, lowest-
+  // priority fallback, only reached when TMDB gave us neither a German nor
+  // a global release date — see this function's own doc comment above for
+  // the full safety rationale. The `??` chain already encodes that priority
+  // correctly by construction (a real TMDB value short-circuits before
+  // `manualReleaseDate` is ever consulted); the explicit check below only
+  // exists to make that safety behavior observable (logged), not to change
+  // the resolution itself.
+  const tmdbReleaseDate = germanReleaseDate?.release_date ?? details.releaseDate ?? null;
+  if (manualReleaseDate && tmdbReleaseDate) {
+    console.log(
+      `upsertMovie: ignoring client-supplied manualReleaseDate ("${manualReleaseDate}") for tmdb_id ${tmdbId} — TMDB already has a release date ("${tmdbReleaseDate}"), which always wins.`,
+    );
+  }
+  const releaseDate = tmdbReleaseDate ?? manualReleaseDate ?? null;
 
   const movieRow = await db.insertMovie({
     tmdb_id: tmdbId,

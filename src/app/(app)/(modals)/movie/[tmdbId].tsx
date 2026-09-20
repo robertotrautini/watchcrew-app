@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
@@ -12,6 +12,7 @@ import { MovieDetailPosterTrailer } from "@/components/movie/MovieDetailPosterTr
 import { MovieDetailProviders } from "@/components/movie/MovieDetailProviders";
 import { MovieDetailRatingsSection } from "@/components/movie/MovieDetailRatingsSection";
 import { MovieDetailTitleRow } from "@/components/movie/MovieDetailTitleRow";
+import { RatingDialog, type RatingDialogMode } from "@/components/movie/RatingDialog";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
@@ -183,6 +184,48 @@ export default function MovieDetailScreen() {
   };
   const actions = getVisibleActions(visibleActionsContext);
 
+  // M7 consolidation (Item 2, see docs/interim-decisions.md): the
+  // Rating-Dialog is rendered directly by THIS screen as a controlled
+  // overlay, matching the delete-confirmation `Sheet` convention already
+  // used by MovieDetailActionsBar -- a plain `visible` boolean plus a
+  // separate "what/for whom" target, rather than unmounting the dialog on
+  // close (RN `Modal`'s own `visible` prop already handles that).
+  const [ratingDialogVisible, setRatingDialogVisible] = useState(false);
+  const [ratingDialogTarget, setRatingDialogTarget] = useState<{
+    mode: RatingDialogMode;
+    watchlistEntryId: string;
+    groupId: string;
+  } | null>(null);
+
+  // Resolves the target watchlist_entries row's ratings/paid_by_member_id/
+  // paid_at for the dialog, when known. For "watchlist"/"diary" (an
+  // existing entry, always within the CURRENT `groupId` route param) this
+  // is the same `groupWatchlistQuery` this screen already loads. For
+  // "direct" (a brand-new entry, created for `activeGroupId` -- there is no
+  // group context on this screen at all in that case) `groupWatchlistQuery`
+  // was never fetching that group's data, so this resolves to `undefined`
+  // and the dialog falls back to sensible "nothing set yet" defaults below
+  // -- correct for a freshly-created entry either way.
+  const ratingDialogEntry = ratingDialogTarget
+    ? groupWatchlistQuery.data?.entries.find((entry) => entry.id === ratingDialogTarget.watchlistEntryId)
+    : undefined;
+
+  function handleOpenRatingDialog(entryId: string, mode: "watchlist" | "diary") {
+    if (!groupId) {
+      return;
+    }
+    setRatingDialogTarget({ mode, watchlistEntryId: entryId, groupId });
+    setRatingDialogVisible(true);
+  }
+
+  function handleDirectRateEntryCreated(entryId: string) {
+    if (!activeGroupId) {
+      return;
+    }
+    setRatingDialogTarget({ mode: "direct", watchlistEntryId: entryId, groupId: activeGroupId });
+    setRatingDialogVisible(true);
+  }
+
   if (!isValidTmdbId) {
     return (
       <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="movie-detail-invalid">
@@ -275,8 +318,27 @@ export default function MovieDetailScreen() {
           activeGroupId={activeGroupId}
           currentUserId={currentUserId}
           collectionId={collectionId}
+          onOpenRatingDialog={handleOpenRatingDialog}
+          onDirectRateEntryCreated={handleDirectRateEntryCreated}
         />
       </View>
+
+      <RatingDialog
+        visible={ratingDialogVisible}
+        onClose={() => setRatingDialogVisible(false)}
+        mode={ratingDialogTarget?.mode ?? "watchlist"}
+        groupId={ratingDialogTarget?.groupId ?? ""}
+        currentUserId={currentUserId ?? ""}
+        movieTitle={title}
+        movieReleaseDate={releaseInfo?.date ?? null}
+        watchlistEntryId={ratingDialogTarget?.watchlistEntryId ?? ""}
+        paidByMemberId={ratingDialogEntry?.paid_by_member_id ?? null}
+        paidAt={ratingDialogEntry?.paid_at ?? null}
+        ratings={ratingDialogEntry?.ratings ?? []}
+        groupMembers={groupMembersQuery.data ?? []}
+        displayNameById={displayNameById}
+        starColor={starColor}
+      />
     </View>
   );
 }

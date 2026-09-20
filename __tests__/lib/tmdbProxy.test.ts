@@ -195,4 +195,28 @@ describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () =>
 
     expect(result).toEqual({ data: null, error: { message: "upsert failed" } });
   });
+
+  // M7 consolidation (Item 1): manualReleaseDate override, forwarded verbatim.
+  it("upsertMovie forwards manualReleaseDate in the body when given", async () => {
+    mockInvoke.mockResolvedValue({ data: { data: { movieId: "movie-uuid-9" } }, error: null });
+
+    const { upsertMovie } = require("../../src/lib/tmdbProxy");
+    const result = await upsertMovie(603, "2027-05-01");
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "upsert_movie", tmdbId: 603, manualReleaseDate: "2027-05-01" },
+    });
+    expect(result).toEqual({ data: { movieId: "movie-uuid-9" }, error: null });
+  });
+
+  it("upsertMovie omits manualReleaseDate from the body when not given", async () => {
+    mockInvoke.mockResolvedValue({ data: { data: { movieId: "movie-uuid-9" } }, error: null });
+
+    const { upsertMovie } = require("../../src/lib/tmdbProxy");
+    await upsertMovie(603);
+
+    const calledBody = mockInvoke.mock.calls[0][1].body;
+    expect(calledBody).toEqual({ kind: "upsert_movie", tmdbId: 603 });
+    expect("manualReleaseDate" in calledBody).toBe(false);
+  });
 });

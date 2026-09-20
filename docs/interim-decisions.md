@@ -51,6 +51,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M7 Teil 2b — Rating-Mutationen in der bestehenden `movieDetailMutations.ts`, neuer Hook `useSaveRating.ts`](#m7-teil-2b--rating-mutationen-in-der-bestehenden-moviedetailmutationsts-neuer-hook-usesaveratingts)
 - [M7 Teil 2b — Erfolgs-/Fehler-Feedback via `Alert.alert`](#m7-teil-2b--erfolgs-fehler-feedback-via-alertalert)
 - [M7 Teil 2b — `RatingDialog`-Prop-Zuschnitt](#m7-teil-2b--ratingdialog-prop-zuschnitt)
+- [M7-Konsolidierung — `upsert_movie`: optionale `manualReleaseDate`](#m7-konsolidierung--upsert_movie-optionale-manualreleasedate)
+- [M7-Konsolidierung — RatingDialog-Einbindung in die Movie-Detail-Overlay-Aktionsleiste](#m7-konsolidierung--ratingdialog-einbindung-in-die-movie-detail-overlay-aktionsleiste)
+- [M7-Konsolidierung — Datepicker-Bibliothek: `@react-native-community/datetimepicker`](#m7-konsolidierung--datepicker-bibliothek-react-native-communitydatetimepicker)
 
 ---
 
@@ -700,7 +703,7 @@ Keine der drei Stellen erwähnt je ein "Gesehen am"-Datum als Fallback-Kandidate
 
 **Warum das später leicht änderbar ist:** Ein echter Datepicker würde nur die Eingabe-Komponente in `RatingDialog.tsx` ersetzen (`TextInput` → Picker-Komponente, die direkt ein YYYY-MM-DD liefert) — `parseGermanDateInput`/`formatDateForInput` würden dann schlicht ungenutzt, ohne dass `resolvePaymentDate`/`resolveSeenAtDate`/`buildRatingUpsertPayload` oder die Mutationen angepasst werden müssten (die arbeiten bereits durchgehend mit ISO-Datumsstrings).
 
-**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **echte Tooling-Entscheidung, die eigentlich eine Bestätigung braucht:** falls ein echter Datepicker gewünscht ist, bitte die konkrete Bibliothek benennen (z.B. `@react-native-community/datetimepicker`), das wird hier bewusst nicht selbst ausgewählt.
+**Status:** ✅ **RESOLVED (M7-Konsolidierung, Item 3):** Der Nutzer hat die konkrete Bibliothek bestätigt — `@react-native-community/datetimepicker` (Version `9.1.0`, per `npx expo install`, Expo-kompatibel). Siehe den neuen Eintrag "M7-Konsolidierung — Datepicker-Bibliothek" unten für die Umsetzungsdetails; dieser Eintrag hier bleibt als historisches Protokoll stehen.
 
 ---
 
@@ -766,7 +769,69 @@ Legacy-Verhalten (feature-inventory.md §2.6: „danach Toast „Film → Tagebu
 
 **Warum das (größtenteils) später leicht änderbar ist:** Punkte 2–5 sind lokal isolierte, austauschbare Implementierungsdetails (ein Debounce-Wert, eine Stub-Funktion, ein Sheet-Copy-Konstante, eine optionale Component-Prop). Punkt 1 ist bereits die vom Auftrag verlangte finale Lösung, keine Zwischenlösung. Punkt 6 ist die Ausnahme — die UI-Gate-Existenz ist austauschbar, aber die eigentliche Persistenz-Frage braucht eine echte Entscheidung (Edge-Function-Vertragsänderung), bevor das manuelle Datum tatsächlich irgendwo ankommt.
 
-**Status:** Punkte 1–5 offen für deine finale Bestätigung / Änderungswunsch. Punkt 6 (Manual-Date-Persistenz) ist ein ECHTER offener Entscheidungspunkt, keine vorläufige Bestätigungs-Formsache — bitte explizit klären, bevor darauf aufgebaut wird.
+**Status:** Punkte 1–5 offen für deine finale Bestätigung / Änderungswunsch. Punkt 6 (Manual-Date-Persistenz) war ein ECHTER offener Entscheidungspunkt — ✅ **RESOLVED (M7-Konsolidierung, Item 1):** `upsert_movie` akzeptiert jetzt ein optionales `manualReleaseDate`, siehe den neuen Eintrag "M7-Konsolidierung — `upsert_movie`: optionale `manualReleaseDate`" unten für die volle Umsetzung inkl. der Sicherheitsregel (TMDB-Datum gewinnt immer).
+
+---
+
+## M7-Konsolidierung — `upsert_movie`: optionale `manualReleaseDate`
+
+**Problem/Lücke:** Die M7-Teil-2-Aufgabe (Add-Movie-Modal) hatte einen echten offenen Punkt geflaggt (siehe oben, "M7 Teil 2 — Add-Movie-Modal", Punkt 6): das manuell eingegebene Erscheinungsdatum (Fallback, wenn TMDB keins liefert) hatte keinen Zielort in der Datenbank — `upsert_movie` kannte nur `{ tmdbId }`.
+
+**Entscheidung (vom Nutzer/koordinierender Session bereits final vorgegeben, hier nur umgesetzt):** `upsert_movie` (`supabase/functions/tmdb-proxy/movie-upsert.ts`, `index.ts`) akzeptiert jetzt ein optionales drittes Argument `manualReleaseDate?: string` (ISO-Datumsstring), das als DRITTER, niedrigster Fallback in der bestehenden Release-Date-Kette landet:
+
+```
+germanReleaseDate?.release_date ?? details.releaseDate ?? manualReleaseDate ?? null
+```
+
+**Sicherheitsregel (nicht verhandelbar, per Task-Vorgabe):** Ein client-seitig mitgeschicktes `manualReleaseDate` überschreibt NIEMALS ein echtes TMDB-Datum (weder das deutsche noch das globale) — es füllt ausschließlich eine echte Lücke. Das ist durch die `??`-Kette bereits strukturell garantiert; zusätzlich loggt die Funktion explizit (`console.log`), wenn ein mitgeschicktes `manualReleaseDate` ignoriert wird, weil TMDB bereits ein Datum hatte — für Beobachtbarkeit, nicht für die Entscheidung selbst. TDD-Nachweis: zwei neue Deno.test-Fälle in `movie-upsert.test.ts` ("SAFETY — a real global/German TMDB release date wins over a client-supplied manualReleaseDate"), die genau das Szenario "TMDB hat ein Datum UND der Client schickt trotzdem ein manuelles Datum mit" abdecken und `1999-03-30`/`1999-04-15` (TMDB) statt `2099-01-01` (manuell) erwarten.
+
+Nur relevant auf dem NEU-Insert-Pfad — ein bereits katalogisierter Film (früher Return in `upsertMovie`) wird von dieser Action grundsätzlich nie geupdated, manuell oder sonst wie.
+
+**Durchreichung:** `index.ts`s `upsert_movie`-Case validiert `manualReleaseDate` optional als `string` (400 bei Fehltyp) und reicht es durch. `src/lib/tmdbProxy.ts`s `upsertMovie(tmdbId, manualReleaseDate?)` lässt das Feld im Request-Body ganz weg, wenn nicht gegeben (gleiche Konvention wie `getStudioMovies`s optionales `page`). `src/lib/movieDetailMutations.ts`s `AddToWatchlistParams` bekam das gleichnamige optionale Feld, durchgereicht an `upsertMovie`. `src/app/(app)/(modals)/add-movie.tsx`s `performAdd` schickt es nur dann mit, wenn genau DIESER Film tatsächlich den Manual-Date-Fallback durchlaufen hat (`needsManualReleaseDate(item.releaseDate)`) — ein Quick-Add für einen Film mit echtem TMDB-Datum sendet nie ein (ggf. noch aus einem vorherigen, anderen Add übrig gebliebenes) `manualReleaseDate` mit.
+
+**Warum das später leicht änderbar ist:** Reine Parameter-Durchreichung entlang einer bereits bestehenden Kette — keine neue Tabelle, kein neuer Vertrag außer dem einen optionalen Feld.
+
+**Status:** ✅ Umgesetzt wie vorgegeben, TDD-abgesichert (siehe TMDB-gewinnt-Tests oben). Nicht mehr offen.
+
+---
+
+## M7-Konsolidierung — RatingDialog-Einbindung in die Movie-Detail-Overlay-Aktionsleiste
+
+**Problem/Lücke:** `MovieDetailActionsBar.tsx` (M6) verlinkte "Bewerten"/"Bearbeiten"/"Direkt Bewerten" auf `navigateToRatingDialog`/`navigateToEditFlow` (`src/lib/movieDetailNavigation.ts`) — beides Platzhalter auf eine nie gebaute Route `/movie/rate/[watchlistEntryId]`. `RatingDialog.tsx` (M7 Teil 2b) war fertig gebaut, aber nirgends eingehängt.
+
+**Entscheidung (vom Nutzer/koordinierender Session bereits final vorgegeben, hier nur umgesetzt):** `RatingDialog` wird direkt vom Movie-Detail-Screen (`src/app/(app)/(modals)/movie/[tmdbId].tsx`) als kontrollierter Overlay gerendert — exakt dieselbe Konvention wie die bereits bestehende Lösch-Bestätigungs-`Sheet` in derselben Datei (ein `visible`-Boolean plus ein separates "wofür"-Ziel-State-Objekt, `RatingDialog` bleibt permanent gemountet, `Sheet`s eigenes RN-`Modal` steuert die tatsächliche Sichtbarkeit).
+
+- `MovieDetailActionsBar` bekam zwei neue, rein optionale Callback-Props (`onOpenRatingDialog(watchlistEntryId, mode)`, `onDirectRateEntryCreated(watchlistEntryId)`) statt der Navigations-Aufrufe. "Bewerten" ruft `onOpenRatingDialog(id, "watchlist")`, "Bearbeiten" ruft `onOpenRatingDialog(id, "diary")`, "Direkt Bewerten" ruft nach erfolgreichem `addToWatchlist` `onDirectRateEntryCreated(neueId)`.
+- `movie/[tmdbId].tsx` hält `ratingDialogVisible`/`ratingDialogTarget` (`{ mode, watchlistEntryId, groupId }`) und rendert `RatingDialog` mit den bereits vorhandenen `groupMembersQuery`/`displayNameById`/`starColor`-Werten. Für "watchlist"/"diary" wird das Ziel-Entry (Ratings/Zahler/Zahldatum) aus der bereits geladenen `groupWatchlistQuery` (Route-`groupId`) aufgelöst; für "direct" (kein Gruppenkontext auf diesem Screen) gibt es dort keine passende Zeile — die Props fallen dann auf die für einen brandneuen Eintrag korrekten Defaults zurück (`ratings: []`, `paidByMemberId/paidAt: null`), `groupId` wird für diesen Fall auf `activeGroupId` gesetzt (dieselbe "erste Gruppe"-Übergangslösung wie an anderer Stelle im Screen).
+- `navigateToRatingDialog`/`navigateToEditFlow` wurden komplett aus `src/lib/movieDetailNavigation.ts` entfernt (keine anderen Referenzen mehr im Repo außer der jetzt aktualisierten `MovieDetailActionsBar.test.tsx`).
+
+**Cache-Invalidierung geprüft (kein Erweiterungsbedarf):** `useSaveRating`s bestehende `invalidateQueries({ queryKey: ["watchlist", groupId] })` (M7 Teil 2b) trifft GENAU den Query-Key, den sowohl `useGroupWatchlist` (Watchlist-/Tagebuch-Screens) als auch der Movie-Detail-Screen selbst für seine Ratings-Anzeige verwendet (`groupWatchlistQuery` — die einzige Quelle für `ratings`/`paid_by_member_id`/`paid_at` in diesem Screen; `useMovieDetail`s eigener `["movieDetail", tmdbId]`-Key liefert nur TMDB-Metadaten, keine Ratings). Eine erfolgreiche Speicherung im Dialog invalidiert also automatisch sowohl die Watchlist-/Tagebuch-Screens als auch die eigene Anzeige dieses Screens — keine Erweiterung von `useSaveRating` nötig.
+
+**TDD-Nachweis:** Drei neue Wiring-Tests in `__tests__/screens/MovieDetail.test.tsx` ("RatingDialog wiring"-Block) decken alle drei Kontexte ab (direkt/watchlist/diary), plus aktualisierte Tests in `MovieDetailActionsBar.test.tsx` für die neuen Callback-Props (inkl. eines neuen Defensive-no-op-Tests für fehlendes `watchlistEntryId`).
+
+**Warum das später leicht änderbar ist:** Beide Callback-Props sind rein optional und lokal in `MovieDetailActionsBar`; ein Wechsel zurück zu echter Navigation (z.B. wenn eine eigene Rating-Route doch gewünscht wird) würde nur die zwei `onPress`-Handler in `movie/[tmdbId].tsx` betreffen.
+
+**Status:** ✅ Umgesetzt wie vorgegeben. M7 ist damit Ende-zu-Ende verdrahtet (Suche → Hinzufügen → Bewerten, aus beiden Kontexten) — siehe Abschlussbericht.
+
+---
+
+## M7-Konsolidierung — Datepicker-Bibliothek: `@react-native-community/datetimepicker`
+
+**Problem/Lücke:** Sowohl der Rating-Dialog ("Gesehen am"/"Bezahlt am") als auch das Add-Movie-Modal (manuelles Erscheinungsdatum) verwendeten bislang ein reines `TextInput` mit manuellem String-Parsing (DD.MM.YYYY bzw. YYYY-MM-DD) — jeweils explizit als "braucht noch eine echte Tooling-Entscheidung" geflaggt.
+
+**Entscheidung (vom Nutzer/koordinierender Session bereits final vorgegeben, hier nur umgesetzt):** `@react-native-community/datetimepicker` (Version `9.1.0`, per `npx expo install` — Expo-kompatibel, Standard-Wahl für React-Native-Date-Picker, geringes Risiko) ist jetzt installiert und als Expo-Config-Plugin in `app.config.ts` eingetragen.
+
+- Neue gemeinsame Komponente `src/components/ui/DateField.tsx`: ein Pressable, das den aktuell gewählten/angezeigten Wert zeigt und beim Antippen den nativen Picker öffnet; die Konvertierung `Date` → ISO-"YYYY-MM-DD" passiert AUSSCHLIESSLICH an dieser einen Stelle (`selectedDate.toISOString().slice(0, 10)`).
+- Die bestehenden, bereits getesteten reinen Konvertierungsfunktionen `parseGermanDateInput`/`formatDateForInput` (`src/lib/ratingLogic.ts`) wurden NICHT angefasst — `RatingDialog.tsx` reicht weiterhin genau diese Funktionen als Grenze zwischen `DateField`s ISO-String-Vertrag und dem restlichen (deutschen String-basierten) State/Business-Logic-Code durch. `resolvePaymentDate`/`resolveSeenAtDate`/`buildRatingUpsertPayload`/die Mutationen sind komplett unverändert.
+- `RatingDialog.tsx`: "Gesehen am" und "Bezahlt am" nutzen jetzt `DateField` statt `TextInput` (inkl. Entfernung der bisherigen Inline-`style={{opacity: 0.5}}`-Ausnahme zugunsten einer CSS-Klasse in `DateField` selbst, gemäß Projektregel "CSS-Klassen statt Inline-Styles").
+- `add-movie.tsx`: das manuelle Erscheinungsdatum-Feld nutzt ebenfalls `DateField`, direkt mit ISO-Strings (kein Deutsch-Format nötig, das Feld hat nie ein anderes Format als ISO verwendet).
+- Tests: `RatingDialog.test.tsx`/`AddMovie.test.tsx`/`MovieDetail.test.tsx` mocken `@react-native-community/datetimepicker` als einfache `View`-Komponente (gleiche Konvention wie der bestehende `Ionicons`-Mock) und simulieren eine Datumsauswahl per `fireEvent(picker, "change", event, date)` statt `changeText`.
+
+**Bekannte Einschränkung (keine visuelle Verifikation möglich):** Das native Picker-Verhalten (iOS-Spinner vs. Android-Dialog, tatsächliches Öffnen/Schließen-Timing) konnte in dieser Umgebung nicht visuell verifiziert werden — nur über RNTL-Tests mit gemocktem Picker. Das ist eine bekannte Lücke, kein stillschweigend übergangenes Risiko.
+
+**Warum das später leicht änderbar ist:** `DateField` ist die einzige Stelle, die die native Picker-API berührt — ein Wechsel der Bibliothek würde nur diese eine Datei betreffen.
+
+**Status:** ✅ Umgesetzt wie vorgegeben (Bibliothek vom Nutzer bestätigt). Nicht mehr offen.
 
 ---
 

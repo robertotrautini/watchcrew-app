@@ -109,16 +109,17 @@ export function buildRatingUpsertPayload(args: BuildRatingUpsertPayloadArgs): Ra
 const GERMAN_DATE_REGEX = /^(\d{2})\.(\d{2})\.(\d{4})$/;
 
 /**
- * Interim decision (docs/interim-decisions.md "M7 Teil 2b"): no native
- * date-picker library is wired in for the "Gesehen am"/"Bezahlt am" manual
- * date fields -- the project has no such dependency yet, and adding one is
- * exactly the kind of tooling choice the project's "zero autonomous
- * decisions" hard rule flags for explicit confirmation, not a cheap/
- * reversible detail to silently pick. A plain `TextInput` in the familiar
- * German DD.MM.YYYY format is used instead, with these two pure
- * parse/format helpers doing the DD.MM.YYYY <-> YYYY-MM-DD (Postgres
- * `date`) conversion. Swapping in a real picker later would only touch the
- * component's input rendering, not these functions' contracts.
+ * RESOLVED (M7 consolidation, Item 3 -- see docs/interim-decisions.md): the
+ * Rating-Dialog's "Gesehen am"/"Bezahlt am" fields now use a real native
+ * date-picker (`@react-native-community/datetimepicker`, wrapped by
+ * `src/components/ui/DateField.tsx`) instead of a plain `TextInput`. These
+ * two pure parse/format helpers are UNCHANGED and still do all the actual
+ * DD.MM.YYYY <-> YYYY-MM-DD (Postgres `date`) conversion -- `DateField`
+ * only replaced the input widget around them, converting the picker's
+ * native `Date` to/from these functions' plain-string contract at its own
+ * boundary (see that component's doc comment). The original decision to
+ * NOT wire in a picker library was itself later resolved (also logged in
+ * docs/interim-decisions.md) once the user confirmed the concrete library.
  *
  * `parseGermanDateInput` validates the shape (two-digit day/month, four-
  * digit year) AND rejects calendar-invalid dates (e.g. "32.13.2026") by

@@ -188,6 +188,95 @@ Deno.test("upsertMovie: falls back to the global TMDB release date when there is
   assertEquals(inserted.release_date, "1999-03-30", "expected fallback to the global release date");
 });
 
+// --- M7 consolidation Item 1: optional manual release-date override ------
+//
+// `manualReleaseDate` (an ISO date string, collected by the Add-Movie-
+// Modal's manual-date fallback UI when TMDB has none) is a THIRD, lowest-
+// priority fallback -- after the German release date and the global TMDB
+// release date -- never a value that can silently override real TMDB data.
+// See docs/interim-decisions.md for the full write-up.
+
+Deno.test("upsertMovie: uses manualReleaseDate only when TMDB has NEITHER a German NOR a global release date", async () => {
+  const { db, calls } = createFakeDb({ existingGenres: [] });
+
+  await upsertMovie(
+    603,
+    {
+      db,
+      fetchDetails: async () => details({ releaseDate: null }),
+      fetchReleaseDates: async () => null,
+      fetchCredits: async () => credits(),
+    },
+    "2027-05-01",
+  );
+
+  const inserted = calls.insertMovie[0];
+  assertEquals(
+    inserted.release_date,
+    "2027-05-01",
+    "expected the manually-entered release date to fill the genuine gap left by TMDB",
+  );
+});
+
+Deno.test("upsertMovie: SAFETY -- a real global TMDB release date wins over a client-supplied manualReleaseDate (never silently overridden)", async () => {
+  const { db, calls } = createFakeDb({ existingGenres: [] });
+
+  await upsertMovie(
+    603,
+    {
+      db,
+      fetchDetails: async () => details({ releaseDate: "1999-03-30" }),
+      fetchReleaseDates: async () => null,
+      fetchCredits: async () => credits(),
+    },
+    "2099-01-01",
+  );
+
+  const inserted = calls.insertMovie[0];
+  assertEquals(
+    inserted.release_date,
+    "1999-03-30",
+    "expected the real TMDB (global) release date to win -- manualReleaseDate must be ignored, not override real data",
+  );
+});
+
+Deno.test("upsertMovie: SAFETY -- a real German TMDB release date wins over a client-supplied manualReleaseDate (never silently overridden)", async () => {
+  const { db, calls } = createFakeDb({ existingGenres: [] });
+
+  await upsertMovie(
+    603,
+    {
+      db,
+      fetchDetails: async () => details({ releaseDate: "1999-03-30" }),
+      fetchReleaseDates: async () =>
+        ({ category: "Kino", release_date: "1999-04-15", type: 3 }) as GermanReleaseDate,
+      fetchCredits: async () => credits(),
+    },
+    "2099-01-01",
+  );
+
+  const inserted = calls.insertMovie[0];
+  assertEquals(
+    inserted.release_date,
+    "1999-04-15",
+    "expected the real German TMDB release date to win over both the global TMDB date and the manual override",
+  );
+});
+
+Deno.test("upsertMovie: no TMDB release date at all and no manualReleaseDate given -> release_date stays null (unchanged prior behavior)", async () => {
+  const { db, calls } = createFakeDb({ existingGenres: [] });
+
+  await upsertMovie(603, {
+    db,
+    fetchDetails: async () => details({ releaseDate: null }),
+    fetchReleaseDates: async () => null,
+    fetchCredits: async () => credits(),
+  });
+
+  const inserted = calls.insertMovie[0];
+  assertEquals(inserted.release_date, null, "expected release_date to stay null when neither TMDB nor a manual date is available");
+});
+
 Deno.test("upsertMovie: no director credited -> director/director_id are null, not a throw", async () => {
   const { db, calls } = createFakeDb({ existingGenres: [] });
 
