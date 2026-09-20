@@ -41,7 +41,7 @@ jest.mock("expo-screen-orientation", () => ({
 }));
 
 const mockUseCurrentUserId = jest.fn();
-const mockUseUserGroups = jest.fn();
+const mockUseActiveGroup = jest.fn();
 const mockUseGroupMembers = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseMovieDetail = jest.fn();
@@ -52,8 +52,8 @@ const mockUseAddToWatchlist = jest.fn();
 jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
 }));
-jest.mock("@/hooks/useUserGroups", () => ({
-  useUserGroups: mockUseUserGroups,
+jest.mock("@/hooks/useActiveGroup", () => ({
+  useActiveGroup: mockUseActiveGroup,
 }));
 jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
@@ -114,7 +114,11 @@ function setupDefaultMocks() {
     push: jest.fn(),
   });
   mockUseCurrentUserId.mockReturnValue("user-1");
-  mockUseUserGroups.mockReturnValue({ data: [] });
+  mockUseActiveGroup.mockReturnValue({
+    activeGroupId: undefined,
+    setActiveGroup: jest.fn(),
+    groupsQuery: { data: [] },
+  });
   mockUseGroupMembers.mockReturnValue({ data: [] });
   mockUseGroupWatchlist.mockReturnValue({ data: undefined });
   mockUseMovieDetail.mockReturnValue({ data: undefined, isLoading: false });
@@ -206,7 +210,11 @@ describe("MovieDetailScreen", () => {
 
     it("'direkt_bewerten' (no group context) opens the dialog in 'direct' mode for the newly-created entry once addToWatchlist succeeds", async () => {
       mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
-      mockUseUserGroups.mockReturnValue({ data: [{ group_id: "active-group-1", user_id: "user-1" }] });
+      mockUseActiveGroup.mockReturnValue({
+        activeGroupId: "active-group-1",
+        setActiveGroup: jest.fn(),
+        groupsQuery: { data: [{ group_id: "active-group-1", user_id: "user-1" }] },
+      });
       mockUseAddToWatchlist.mockReturnValue({
         mutate: (_vars: unknown, opts: { onSuccess: (data: { id: string }) => void }) =>
           opts.onSuccess({ id: "new-entry-1" }),

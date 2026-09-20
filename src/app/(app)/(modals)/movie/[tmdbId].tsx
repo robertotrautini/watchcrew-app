@@ -13,12 +13,12 @@ import { MovieDetailProviders } from "@/components/movie/MovieDetailProviders";
 import { MovieDetailRatingsSection } from "@/components/movie/MovieDetailRatingsSection";
 import { MovieDetailTitleRow } from "@/components/movie/MovieDetailTitleRow";
 import { RatingDialog, type RatingDialogMode } from "@/components/movie/RatingDialog";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { useToggleLike } from "@/hooks/useMovieDetailMutations";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { resolveGroupTheme } from "@/lib/groupTheme";
 import {
   formatRuntime,
@@ -77,13 +77,13 @@ export default function MovieDetailScreen() {
   const hasGroupContext = Boolean(groupId && source);
 
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-  // Active-group pattern (same interim simplification as watchlist.tsx/
-  // tagebuch.tsx): used ONLY for the no-group-context
+  // M9 part 2: real, persisted active-group resolution (replaces the former
+  // "first group = active group" interim simplification) -- see
+  // src/hooks/useActiveGroup.ts. Used ONLY for the no-group-context
   // "zur_watchlist"/"direkt_bewerten" branch below. When `groupId` IS
   // present via route params, that's the group context used everywhere
   // else, not `activeGroupId`.
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  const { activeGroupId } = useActiveGroup(currentUserId);
 
   const groupWatchlistQuery = useGroupWatchlist(hasGroupContext ? groupId : undefined);
   const groupMembersQuery = useGroupMembers(hasGroupContext ? groupId : undefined);

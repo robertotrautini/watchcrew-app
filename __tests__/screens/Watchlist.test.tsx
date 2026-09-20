@@ -9,7 +9,7 @@ jest.mock("expo-router", () => ({
 
 // --- Hook mocks -------------------------------------------------------
 const mockUseCurrentUserId = jest.fn();
-const mockUseUserGroups = jest.fn();
+const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
 const mockUsePreferencesStore = jest.fn();
@@ -18,8 +18,8 @@ const mockSetWatchlistViewMode = jest.fn();
 jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
 }));
-jest.mock("@/hooks/useUserGroups", () => ({
-  useUserGroups: mockUseUserGroups,
+jest.mock("@/hooks/useActiveGroup", () => ({
+  useActiveGroup: mockUseActiveGroup,
 }));
 jest.mock("@/hooks/useGroupWatchlist", () => ({
   useGroupWatchlist: mockUseGroupWatchlist,
@@ -125,11 +125,15 @@ const ENTRY_GAMMA = makeEntry({
 
 function setUpHappyPath(entries = [ENTRY_ALPHA, ENTRY_BETA, ENTRY_GAMMA]) {
   mockUseCurrentUserId.mockReturnValue("u1");
-  mockUseUserGroups.mockReturnValue({
-    data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
-    isLoading: false,
-    isError: false,
-    error: null,
+  mockUseActiveGroup.mockReturnValue({
+    activeGroupId: "g1",
+    setActiveGroup: jest.fn(),
+    groupsQuery: {
+      data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
+      isLoading: false,
+      isError: false,
+      error: null,
+    },
   });
   mockUseGroupMembers.mockReturnValue({
     data: [{ user_id: "u1" }, { user_id: "u2" }, { user_id: "u3" }],
@@ -164,11 +168,10 @@ describe("WatchlistScreen", () => {
 
   it("renders a loading state while the watchlist query is loading", async () => {
     mockUseCurrentUserId.mockReturnValue("u1");
-    mockUseUserGroups.mockReturnValue({
-      data: [{ group_id: "g1" }],
-      isLoading: false,
-      isError: false,
-      error: null,
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "g1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null },
     });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null });
@@ -181,11 +184,10 @@ describe("WatchlistScreen", () => {
 
   it("renders an error state when the watchlist query fails", async () => {
     mockUseCurrentUserId.mockReturnValue("u1");
-    mockUseUserGroups.mockReturnValue({
-      data: [{ group_id: "g1" }],
-      isLoading: false,
-      isError: false,
-      error: null,
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "g1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null },
     });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({

@@ -4,10 +4,10 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { Sheet } from "@/components/ui/Sheet";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import {
   computeAverageRating,
   deriveGenreNamesById,
@@ -29,20 +29,23 @@ import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferences
  * wiring only; the actual sort/filter/split rules live in
  * `src/lib/watchlistLogic.ts` and are consumed here, never reimplemented.
  *
- * --- Interim simplification (per task brief, same as the parallel
- * Watchlist task) ---
- * There is no "active group" selector anywhere in the app yet (that's
- * later scope). Until it exists, this screen just uses the FIRST group
- * returned by `useUserGroups()` as "the" active group. Same reasoning
- * applies to the group's color THEME: no hook/lib function anywhere in
- * this codebase fetches a `watch_groups` row (which is where a theme_name
- * would live) for a given group id — `useUserGroups` only returns the
- * user's OWN `watch_group_members` rows (group_id/user_id/role/joined_at),
- * not the groups' own data. So this screen falls back to
+ * --- Active-group resolution (M9 part 2) ---
+ * The former "first group = active group" interim simplification (see
+ * docs/interim-decisions.md "M5") is now resolved via `useActiveGroup`
+ * (src/hooks/useActiveGroup.ts) -- a real, persisted active-group choice
+ * (Group-Settings switcher), falling back to the first group only when
+ * nothing has been explicitly picked yet or the stored choice has gone
+ * stale. This screen's own color THEME handling is UNCHANGED by that: no
+ * hook/lib function this screen calls fetches the group's `color_theme`
+ * (that's `useGroupDetails`, added for the new Group-Settings screen, not
+ * consumed here) — `useUserGroups`/`useActiveGroup` only expose the user's
+ * OWN `watch_group_members` rows (group_id/user_id/role/joined_at), not the
+ * group's own data. So this screen still falls back to
  * `resolveGroupTheme(undefined)` (-> Gold/default), the exact same
  * already-established fallback used elsewhere in this codebase for the
  * same reason (see src/app/(app)/(tabs)/_layout.tsx's tab bar and
- * src/app/(onboarding)/create-or-join-group.tsx) — not a new decision.
+ * src/app/(onboarding)/create-or-join-group.tsx) — not a new decision, and
+ * out of scope for this task to change.
  *
  * --- M5 FAST-FOLLOW: member display names & genre names ---
  * The per-member rating rows and the genre filter pills previously showed
@@ -125,8 +128,10 @@ function deriveAvailableYears(
 
 export default function TagebuchScreen() {
   const userId = useCurrentUserId();
-  const groupsQuery = useUserGroups(userId);
-  const activeGroupId = groupsQuery.data?.[0]?.group_id as string | undefined;
+  // M9 part 2: real, persisted active-group resolution (replaces the former
+  // "first group = active group" interim simplification) -- see
+  // src/hooks/useActiveGroup.ts.
+  const { activeGroupId, groupsQuery } = useActiveGroup(userId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
   const groupMembersQuery = useGroupMembers(activeGroupId);
 

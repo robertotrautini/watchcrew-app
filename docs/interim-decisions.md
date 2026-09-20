@@ -67,6 +67,15 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M9 Teil 1 — Einladungscode-Eingabefeld: Parsing-Regel für Link vs. rohe Token-UUID](#m9-teil-1--einladungscode-eingabefeld-parsing-regel-für-link-vs-rohe-token-uuid)
 - [M9 Teil 1 — Navigation nach Erstellen/Beitreten: expliziter `router.replace` statt Verlass auf `useAuthGate`](#m9-teil-1--navigation-nach-erstellenbeitreten-expliziter-routerreplace-statt-verlass-auf-useauthgate)
 - [M9 Teil 1 — Fehlertext-Konvention (generisch vs. Token-spezifisch)](#m9-teil-1--fehlertext-konvention-generisch-vs-token-spezifisch)
+- [M9 Teil 2 — "Aktive Gruppe": echter, persistierter State statt "erste Gruppe"](#m9-teil-2--aktive-gruppe-echter-persistierter-state-statt-erste-gruppe)
+- [M9 Teil 2 — Invite-Link-Regenerierung: SECURITY-DEFINER-RPC statt clientseitig generierter UUID](#m9-teil-2--invite-link-regenerierung-security-definer-rpc-statt-clientseitig-generierter-uuid)
+- [M9 Teil 2 — Deep-Link-Format für den Einladungslink](#m9-teil-2--deep-link-format-für-den-einladungslink)
+- [M9 Teil 2 — Bestätigungsmuster für "Entfernen"/"Gruppe verlassen": inline statt Sheet](#m9-teil-2--bestätigungsmuster-für-entfernengruppe-verlassen-inline-statt-sheet)
+- [M9 Teil 2 — Gruppen-Umschalter braucht die Namen ALLER Gruppen: neue `getWatchGroupsByIds`/`useGroupNames`](#m9-teil-2--gruppen-umschalter-braucht-die-namen-aller-gruppen-neue-getwatchgroupsbyidsusegroupnames)
+- [M9 Teil 2 — `groupDisplayLabel` liegt in `diaryDisplay.ts`, nicht in `groups.ts`](#m9-teil-2--groupdisplaylabel-liegt-in-diarydisplayts-nicht-in-groupsts)
+- [M9 Teil 2 — Namensfeld-Sync ohne eigenes Dirty-Tracking](#m9-teil-2--namensfeld-sync-ohne-eigenes-dirty-tracking)
+- [M9 Teil 2 — `useLeaveGroup` als eigener Hook statt Wiederverwendung von `useRemoveMember`](#m9-teil-2--useleavegroup-als-eigener-hook-statt-wiederverwendung-von-useremovemember)
+- [M9 Teil 2 — Einstiegspunkt für das Group-Settings-Screen: "⚙️"-Button im Tracker-Header](#m9-teil-2--einstiegspunkt-für-das-group-settings-screen-️-button-im-tracker-header)
 
 ---
 
@@ -270,7 +279,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 **Warum das später leicht änderbar ist:** Müsste durch echten Gruppen-Kontext/State ersetzt werden, sobald eine Gruppen-Auswahl-UI existiert — betrifft beide Tab-Screens gleichermaßen, ist als klar markierte Übergangslösung im Code kommentiert.
 
-**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+**Status:** ✅ Abgelöst durch M9 Teil 2 — siehe [M9 Teil 2 — "Aktive Gruppe": echter, persistierter State statt "erste Gruppe"](#m9-teil-2--aktive-gruppe-echter-persistierter-state-statt-erste-gruppe). Dieser Eintrag bleibt zur Historie stehen.
 
 ---
 
@@ -1015,6 +1024,117 @@ Wörtlich gelesen wäre "dieselbe UUID" `watch_groups.id`, der Primärschlüssel
 **Entscheidung (vorläufig):** Token-spezifischer Fall (ungültiger/deaktivierter Einladungscode, sowohl clientseitig durch `extractInviteToken()` als auch serverseitig durch den `WC003`-Errcode erkannt): fester Text `"Ungültiger oder deaktivierter Einladungscode."`. Jeder andere Fehler: Präfix + rohe Supabase-Fehlermeldung, exakt im selben Stil wie das bestehende Login-Screen-Muster (`` `Anmeldung fehlgeschlagen: ${error}` ``) — hier `` `Erstellen fehlgeschlagen: ${error.message}` `` bzw. `` `Beitritt fehlgeschlagen: ${error.message}` ``.
 
 **Warum das später leicht änderbar ist:** Zwei Textstring-Konstanten/Template-Literale in `src/app/(onboarding)/create-or-join-group.tsx`, keine Auswirkung auf die zugrundeliegende Fehlerbehandlungs-Logik.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — "Aktive Gruppe": echter, persistierter State statt "erste Gruppe"
+
+**Problem/Lücke:** Die M5-M8-Übergangslösung ("erste Gruppe aus `useUserGroups()` = aktive Gruppe", siehe M5-Eintrag oben) wird mit M9 Teil 1 unhaltbar, sobald ein Nutzer realistisch mehreren Gruppen angehören kann (Erstellen + Beitreten funktionieren jetzt echt). Es brauchte einen echten, persistierten Auswahl-Mechanismus plus eine UI dafür.
+
+**Entscheidung:**
+- `usePreferencesStore` (src/stores/usePreferencesStore.ts) bekommt ein neues Feld `activeGroupId: string | null` + `setActiveGroupId`, exakt nach dem bestehenden `lastActiveTab`/`watchlistViewMode`-Muster (persistiert über MMKV, `null` = "noch keine explizite Wahl getroffen").
+- Neuer Hook `useActiveGroup(userId)` (src/hooks/useActiveGroup.ts): liest `activeGroupId` aus dem Store, validiert ihn gegen die AKTUELLE Mitgliederliste aus `useUserGroups(userId)`, und fällt auf die erste Gruppe zurück, wenn der gespeicherte Wert `null` ist ODER nicht mehr zu einer Mitgliedschaft passt (Nutzer hat die Gruppe verlassen, oder sie wurde nach 2 Wochen hart gelöscht). Der Fallback wird NICHT automatisch zurückgeschrieben — bei jedem Aufruf neu berechnet, bis der Nutzer aktiv über den neuen Gruppen-Umschalter (Group-Settings-Screen) etwas auswählt.
+- Alle 4 Stellen, die vorher `userGroupsQuery.data?.[0]?.group_id` hartkodiert hatten (`watchlist.tsx`, `tagebuch.tsx`, `tracker.tsx`, `movie/[tmdbId].tsx`), nutzen jetzt ausschließlich diesen Hook.
+
+**Warum das später leicht änderbar ist:** Der Hook exportiert zusätzlich die zugrunde liegende `groupsQuery`, sodass kein Aufrufer eine zweite `useUserGroups`-Instanz braucht. Die Fallback-Logik ist eine einzelne, klar isolierte, TDD-getestete Funktion (`__tests__/useActiveGroup.test.tsx`, inkl. expliziter Tests für den "gespeicherte ID ist veraltet"-Fall) — ein anderes Fallback-Verhalten (z.B. "zeige einen Auswahl-Dialog statt automatisch zu wechseln") wäre eine isolierte Änderung an genau dieser einen Funktion.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Invite-Link-Regenerierung: SECURITY-DEFINER-RPC statt clientseitig generierter UUID
+
+**Problem/Lücke:** M9 Teil 1s Migrationskommentar hatte "Regenerieren" als reines `UPDATE watch_groups SET invite_token = ...` skizziert (bereits durch die bestehende Owner-only-RLS-Policy abgedeckt) — der Task-Auftrag ließ aber ausdrücklich offen, ob der neue Token client- oder serverseitig generiert wird.
+
+**Entscheidung:** Neue SECURITY-DEFINER-RPC `regenerate_invite_token(p_group_id uuid)` (`supabase/migrations/20260920140000_regenerate_invite_token_rpc.sql`), die serverseitig `gen_random_uuid()` erzeugt, die Owner-Rolle nochmal serverseitig prüft (neuer Errcode `WC004`, defense-in-depth zusätzlich zur ohnehin schon greifenden RLS-Policy) und `invite_enabled` im selben Update auf `true` setzt ("Regenerieren impliziert Re-Aktivieren", identisch zur M9-Teil-1-Regel). `src/lib/groups.ts`s `regenerateInviteToken(groupId)` ruft nur noch diese RPC auf, statt selbst `crypto.randomUUID()` aufzurufen und ein rohes `UPDATE` abzusetzen.
+
+**Warum das später leicht änderbar ist:** Genau wie bei `create_watch_group`/`join_watch_group_by_token` — eine in sich geschlossene Funktion mit stabiler Signatur (`p_group_id uuid` → `uuid`). Eine spätere Umstellung auf den clientseitigen Ansatz (falls je gewünscht) würde nur diese eine Migration plus die eine `groups.ts`-Funktion betreffen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Deep-Link-Format für den Einladungslink
+
+**Problem/Lücke:** ADR 0003 beschreibt einen "teilbaren Invite-Link", ohne ein konkretes URL-Schema festzulegen. M3s Notizen zu Universal Links wurden laut Task-Auftrag als "noch nicht entschieden/aufgeschoben" markiert — es gibt also kein bereits etabliertes Format, an das sich anschließen ließe.
+
+**Entscheidung:** Custom-Scheme-Deep-Link `watchcrew://join/<invite_token>` (Konstante `INVITE_LINK_SCHEME` in `src/app/(app)/(modals)/group-settings.tsx`). Kein Universal-Link/App-Link mit echter HTTPS-Domain — das würde eine verifizierte Domain + `apple-app-site-association`/`assetlinks.json`-Hosting voraussetzen, was für dieses Milestone nicht existiert.
+
+**Warum das später leicht änderbar ist:** Eine einzelne String-Konstante an einer Stelle. Der eigentliche Beitritts-Mechanismus (`extractInviteToken()`, aus M9 Teil 1) ist bereits schema-agnostisch — er sucht nach einer UUID-förmigen Teilzeichenkette irgendwo im eingefügten Text, egal welches Schema/welche Domain davor steht. Eine spätere Umstellung auf Universal Links würde also nur diese eine Konstante ändern, nicht die Beitritts-Logik.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Bestätigungsmuster für "Entfernen"/"Gruppe verlassen": inline statt Sheet
+
+**Problem/Lücke:** Der Task-Auftrag verlangte, ein bereits etabliertes Bestätigungsmuster wiederzuverwenden (M6/M8-Präzedenzfälle), statt ein drittes neu zu erfinden — beide Kandidaten (Sheet-basiert vs. inline) existieren bereits im Code.
+
+**Entscheidung:** Inline-Bestätigung, exakt nach dem M8-Tracker-Muster ("Wirklich löschen?" + Abbrechen/Löschen-Button-Reihe anstelle der Bearbeiten/Löschen-Buttons) — für BEIDE Fälle ("Entfernen" eines Mitglieds UND "Gruppe verlassen"), nicht ein `Sheet`. `Sheet` wird in dieser Codebase konsistent für Picker/Dialoge mit eigenem Inhalt verwendet (Sortier-Optionen, Rating-Dialog), nicht für reine Ja/Nein-Bestätigungen — M8 hatte diese Unterscheidung bereits getroffen.
+
+**Warum das später leicht änderbar ist:** Betrifft nur die lokale Render-Verzweigung in `group-settings.tsx` (ein `removeTargetUserId`/`leaveConfirmVisible`-State-Flag pro Bestätigung) — eine Umstellung auf `Sheet` wäre eine rein lokale Änderung an genau diesen zwei Stellen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Gruppen-Umschalter braucht die Namen ALLER Gruppen: neue `getWatchGroupsByIds`/`useGroupNames`
+
+**Problem/Lücke:** Der Gruppen-Umschalter soll laut Task-Auftrag "eine Liste/ein Picker aller Gruppen des Nutzers" sein — aber `useUserGroups()` liefert nur `watch_group_members`-Zeilen (`group_id`/`user_id`/`role`/`joined_at`), NIE die Namen der Gruppen selbst. Ohne Namen wäre der Umschalter nur eine Liste roher UUIDs.
+
+**Entscheidung:** Neue Funktion `getWatchGroupsByIds(groupIds: string[])` (`src/lib/groups.ts`) — ein gebündeltes `IN (...)`-Select über `watch_groups`, kurzschließt auf ein leeres Ergebnis für eine leere Id-Liste statt einer unnötigen `.in("id", [])`-Anfrage. Neuer Hook `useGroupNames(groupIds)` (`src/hooks/useGroupDetails.ts`) wrappt das in TanStack Query. Der Group-Settings-Screen lädt damit einmal die Namen ALLER Gruppen des Nutzers (nicht nur der aktiven) und zeigt sie im Umschalter über `groupDisplayLabel` (mit Uuid-Präfix-Fallback für eine noch nicht geladene Zeile).
+
+**Warum das später leicht änderbar ist:** Reine, additive Datenabfrage nach demselben Muster wie `getGroupMembers`s Profile-Join — betrifft nur den Umschalter, keine andere Business-Logik. Eine spätere Umstellung auf einen echten PostgREST-Embed (falls je eine direkte FK-Beziehung dafür entsteht) wäre eine isolierte Änderung an genau dieser Funktion.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — `groupDisplayLabel` liegt in `diaryDisplay.ts`, nicht in `groups.ts`
+
+**Problem/Lücke:** Der naheliegende Ort für eine "Gruppenname mit Uuid-Präfix-Fallback"-Hilfsfunktion wäre `src/lib/groups.ts` (wo auch `getWatchGroupsByIds` liegt) — das würde aber jeden Screen-Test, der nur diese reine Anzeige-Funktion importiert, zwingen, das GESAMTE `groups.ts`-Modul zu mocken, weil dieses Modul beim Import einen echten Supabase-/Realtime-Client konstruiert (bricht unter Jest mit "Node.js detected but native WebSocket not found", tatsächlich während dieser Aufgabe aufgetreten und behoben).
+
+**Entscheidung:** `groupDisplayLabel(groupId, name?)` liegt stattdessen in `src/lib/diaryDisplay.ts`, direkt neben `memberDisplayLabel`/`genreDisplayLabel` — exakt dieselbe Begründung, warum jene beiden Funktionen schon dort und nicht in `groups.ts`/`watchlist.ts` liegen.
+
+**Warum das später leicht änderbar ist:** Eine reine Funktionsverschiebung (kein Verhaltensunterschied) — falls eine spätere Reorganisation `diaryDisplay.ts` in mehrere themenspezifische Dateien aufteilen möchte, wäre das ein reiner Import-Pfad-Wechsel an den paar Aufrufstellen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Namensfeld-Sync ohne eigenes Dirty-Tracking
+
+**Problem/Lücke:** Das editierbare Namensfeld im Rename-Bereich muss beim Laden/Wechseln der aktiven Gruppe mit dem Server-Wert vorbefüllt werden — aber ein serverseitiger Refetch (z.B. nach erfolgreichem Speichern, durch die Cache-Invalidierung ausgelöst) könnte ein bereits wieder verändertes, noch nicht gespeichertes Eingabefeld überschreiben.
+
+**Entscheidung:** Bewusst KEIN separates "dirty"-Tracking — ein `useEffect` synchronisiert das Eingabefeld einfach jedes Mal neu, wenn sich `groupDetailsQuery.data?.name` ODER die aktive Gruppen-Id ändert. Für diesen einfachen Owner-Solo-Anwendungsfall (kein Multi-Device-Konflikt-Szenario in diesem Milestone vorgesehen) ist das ausreichend: der Effect feuert nur bei einer echten Namensänderung von außen (Gruppenwechsel oder erfolgreiches eigenes Speichern selbst), nicht bei jedem Tastendruck.
+
+**Warum das später leicht änderbar ist:** Betrifft nur einen einzelnen `useEffect`-Block in `group-settings.tsx`. Ein echtes Dirty-Tracking (z.B. "warne vor Verlust ungespeicherter Änderungen bei Gruppenwechsel") wäre eine rein additive Erweiterung an dieser einen Stelle.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — `useLeaveGroup` als eigener Hook statt Wiederverwendung von `useRemoveMember`
+
+**Problem/Lücke:** "Gruppe verlassen" (ein Mitglied entfernt seine EIGENE Mitgliedschaft) und "Entfernen" (der Owner entfernt ein ANDERES Mitglied) reduzieren sich auf exakt dasselbe `DELETE FROM watch_group_members` — dieselbe RLS-Policy (`watch_group_members_delete_owner_or_self`) deckt beide Fälle ab. Ein einziger Hook hätte also fachlich gereicht.
+
+**Entscheidung:** Trotzdem zwei separate Hooks (`useRemoveMember`/`useLeaveGroup`, beide in `src/hooks/useGroupSettings.ts`, beide rufen intern dieselbe `removeMember()`-Wrapper-Funktion auf) — der einzige Unterschied ist die Cache-Invalidierung nach Erfolg: "Entfernen" invalidiert nur `["groupMembers", groupId]` (der ausgeschlossene Nutzer ist nicht der aufrufende Client), während "Verlassen" ZUSÄTZLICH `["userGroups", userId]` invalidiert (die eigene Gruppenmitgliedschaftsliste des aufrufenden Nutzers ändert sich).
+
+**Warum das später leicht änderbar ist:** Beide Hooks sind dünne, wenige-Zeilen-`useMutation`-Wrapper um denselben `removeMember()`-Aufruf — eine Konsolidierung zu einem einzigen parametrisierten Hook (falls je gewünscht) wäre eine rein interne Umstrukturierung ohne Auswirkung auf die Aufrufer in `group-settings.tsx`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 2 — Einstiegspunkt für das Group-Settings-Screen: "⚙️"-Button im Tracker-Header
+
+**Problem/Lücke:** Es existiert noch keine Settings/Menü-Stelle irgendwo in der App (Settings selbst ist M10-Scope) — der Task-Auftrag verlangte explizit, zuerst zu prüfen, ob bereits ein Einstiegspunkt existiert (Tab-Screens, Root-Layout), bevor einer neu hinzugefügt wird. Geprüft: `src/app/(app)/(tabs)/_layout.tsx` (reiner Tab-Bar-Shell, kein Menü), `watchlist.tsx`/`tagebuch.tsx`/`tracker.tsx` (kein bestehender Settings-Zugang) — keiner gefunden.
+
+**Entscheidung (ausdrücklich als vorläufige Platzierung markiert, keine endgültige Entscheidung):** Ein kleiner "⚙️"-Button im Tracker-Screen-Header (`src/app/(app)/(tabs)/tracker.tsx`, `testID="tracker-group-settings-button"`, `accessibilityLabel="Gruppe verwalten"`), navigiert per `router.push("/group-settings")`. Tracker gewählt statt Watchlist, da es der dritte/letzte Tab ist und der Button dort keine bestehende Button-Reihe (Ansichts-Umschalter) verdrängt, sondern nur neben dem bereits vorhandenen "💰"-Button steht.
+
+**Warum das später leicht änderbar ist:** Eine einzelne Button-Definition + `onPress`-Handler in genau einer Datei. Sobald M10 einen echten Settings-Hub baut, wird dieser Button ersatzlos entfernt (oder zu einem Menüpunkt innerhalb des Hubs) — die Zielroute `/group-settings` selbst bleibt unverändert erreichbar.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

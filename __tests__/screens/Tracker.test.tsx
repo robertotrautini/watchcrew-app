@@ -1,5 +1,13 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+// M9 part 2: the new "⚙️" header button navigates via expo-router, same
+// router mocking convention as __tests__/screens/Watchlist.test.tsx's
+// "+" Add-Movie button.
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return {
@@ -9,7 +17,7 @@ jest.mock("@react-native-community/datetimepicker", () => {
 });
 
 const mockUseCurrentUserId = jest.fn();
-const mockUseUserGroups = jest.fn();
+const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
 const mockSetPaymentMutate = jest.fn();
@@ -20,8 +28,8 @@ let mockDeletePaymentIsPending = false;
 jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
 }));
-jest.mock("@/hooks/useUserGroups", () => ({
-  useUserGroups: mockUseUserGroups,
+jest.mock("@/hooks/useActiveGroup", () => ({
+  useActiveGroup: mockUseActiveGroup,
 }));
 jest.mock("@/hooks/useGroupWatchlist", () => ({
   useGroupWatchlist: mockUseGroupWatchlist,
@@ -97,11 +105,15 @@ const MEMBERS = [
 
 function setUpHappyPath(entries = [PAID_ALPHA, PAID_BETA, UNPAID_GAMMA]) {
   mockUseCurrentUserId.mockReturnValue("u1");
-  mockUseUserGroups.mockReturnValue({
-    data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
-    isLoading: false,
-    isError: false,
-    error: null,
+  mockUseActiveGroup.mockReturnValue({
+    activeGroupId: "g1",
+    setActiveGroup: jest.fn(),
+    groupsQuery: {
+      data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
+      isLoading: false,
+      isError: false,
+      error: null,
+    },
   });
   mockUseGroupMembers.mockReturnValue({ data: MEMBERS, isLoading: false, isError: false, error: null });
   mockUseGroupWatchlist.mockReturnValue({
@@ -121,7 +133,11 @@ describe("TrackerScreen", () => {
 
   it("renders a loading state while any underlying query is loading", async () => {
     mockUseCurrentUserId.mockReturnValue("u1");
-    mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null });
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "g1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null },
+    });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null });
 
@@ -132,7 +148,11 @@ describe("TrackerScreen", () => {
 
   it("renders an error state when a query fails", async () => {
     mockUseCurrentUserId.mockReturnValue("u1");
-    mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null });
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "g1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null },
+    });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({
       data: undefined,
@@ -282,6 +302,16 @@ describe("TrackerScreen", () => {
       expect(mockDeletePaymentMutate).not.toHaveBeenCalled();
       expect(getByTestId("tracker-row-e1-delete-button")).toBeTruthy();
     });
+  });
+
+  it("navigates to the Group-Settings screen when the '⚙️' button is tapped", async () => {
+    setUpHappyPath();
+    const TrackerScreen = loadTrackerScreen();
+    const { getByTestId } = await render(<TrackerScreen />);
+
+    await fireEvent.press(getByTestId("tracker-group-settings-button"));
+
+    expect(mockPush).toHaveBeenCalledWith("/group-settings");
   });
 
   it("opens the 'Zahlung erfassen' modal via the 💰 button, listing only unpaid diary movies", async () => {

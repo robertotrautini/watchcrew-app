@@ -33,9 +33,9 @@ jest.mock("@/hooks/useCurrentUserId", () => ({
   useCurrentUserId: mockUseCurrentUserId,
 }));
 
-const mockUseUserGroups = jest.fn();
-jest.mock("@/hooks/useUserGroups", () => ({
-  useUserGroups: mockUseUserGroups,
+const mockUseActiveGroup = jest.fn();
+jest.mock("@/hooks/useActiveGroup", () => ({
+  useActiveGroup: mockUseActiveGroup,
 }));
 
 const mockUseGroupWatchlist = jest.fn();
@@ -102,10 +102,14 @@ function makeEntry(overrides: Partial<WatchlistEntry> & Pick<WatchlistEntry, "id
 
 function mockHappyPath(entries: WatchlistEntry[], groupMembers?: Record<string, unknown>[]) {
   mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
-  mockUseUserGroups.mockReturnValue({
-    data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
-    isLoading: false,
-    isError: false,
+  mockUseActiveGroup.mockReturnValue({
+    activeGroupId: "g1",
+    setActiveGroup: jest.fn(),
+    groupsQuery: {
+      data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
+      isLoading: false,
+      isError: false,
+    },
   });
   mockUseGroupWatchlist.mockReturnValue({
     data: { entries, streamingAvailability: new Map() },
@@ -132,7 +136,11 @@ describe("TagebuchScreen", () => {
   describe("loading / error / empty states", () => {
     it("shows a loading indicator while the current user id is not yet known", async () => {
       mockUseCurrentUserId.mockReturnValue(undefined);
-      mockUseUserGroups.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+      mockUseActiveGroup.mockReturnValue({
+        activeGroupId: undefined,
+        setActiveGroup: jest.fn(),
+        groupsQuery: { data: undefined, isLoading: false, isError: false },
+      });
       mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
       const TagebuchScreen = loadTagebuchScreen();
 
@@ -143,10 +151,14 @@ describe("TagebuchScreen", () => {
 
     it("shows a loading indicator while the group watchlist query is loading", async () => {
       mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
-      mockUseUserGroups.mockReturnValue({
-        data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
-        isLoading: false,
-        isError: false,
+      mockUseActiveGroup.mockReturnValue({
+        activeGroupId: "g1",
+        setActiveGroup: jest.fn(),
+        groupsQuery: {
+          data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
+          isLoading: false,
+          isError: false,
+        },
       });
       mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null });
       const TagebuchScreen = loadTagebuchScreen();
@@ -158,10 +170,14 @@ describe("TagebuchScreen", () => {
 
     it("shows an error state when the group watchlist query fails", async () => {
       mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
-      mockUseUserGroups.mockReturnValue({
-        data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
-        isLoading: false,
-        isError: false,
+      mockUseActiveGroup.mockReturnValue({
+        activeGroupId: "g1",
+        setActiveGroup: jest.fn(),
+        groupsQuery: {
+          data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
+          isLoading: false,
+          isError: false,
+        },
       });
       mockUseGroupWatchlist.mockReturnValue({
         data: undefined,

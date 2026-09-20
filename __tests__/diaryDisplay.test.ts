@@ -4,6 +4,7 @@ import {
   deriveGroupMemberIds,
   formatSeenAtDate,
   genreDisplayLabel,
+  groupDisplayLabel,
   memberDisplayLabel,
 } from "@/lib/diaryDisplay";
 import type { Movie, Rating, WatchlistEntry } from "@/lib/watchlistTypes";
@@ -152,6 +153,18 @@ describe("genreDisplayLabel", () => {
     const placeholder = genreDisplayLabel("genre-action");
     expect(genreDisplayLabel("genre-action", null)).toBe(placeholder);
     expect(genreDisplayLabel("genre-action", "")).toBe(placeholder);
+  });
+});
+
+describe("groupDisplayLabel", () => {
+  it("returns the real group name when given", () => {
+    expect(groupDisplayLabel("11111111-aaaa-bbbb-cccc-111111111111", "Filmfreunde")).toBe("Filmfreunde");
+  });
+
+  it("falls back to a uuid-prefix placeholder when the name is missing, null, or empty", () => {
+    expect(groupDisplayLabel("11111111-aaaa-bbbb-cccc-111111111111")).toBe("Gruppe 11111111");
+    expect(groupDisplayLabel("11111111-aaaa-bbbb-cccc-111111111111", null)).toBe("Gruppe 11111111");
+    expect(groupDisplayLabel("11111111-aaaa-bbbb-cccc-111111111111", "")).toBe("Gruppe 11111111");
   });
 });
 

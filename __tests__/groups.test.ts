@@ -1,7 +1,13 @@
 const mockEq = jest.fn();
 const mockIn = jest.fn();
 const mockSelect = jest.fn(() => ({ eq: mockEq, in: mockIn }));
-const mockFrom = jest.fn(() => ({ select: mockSelect }));
+// Typed as plain `jest.Mock` (not inferred from the arrow function below) so
+// the M9-part-2 tests further down can `mockReturnValue` a differently-
+// shaped chainable mock (`makeChain`, mirroring
+// __tests__/movieDetailMutations.test.ts) without fighting the narrower
+// inferred return type from this file's original `getUserGroups`/
+// `getGroupMembers` mock shape.
+const mockFrom: jest.Mock = jest.fn(() => ({ select: mockSelect }));
 const mockRpc = jest.fn();
 
 jest.mock("../src/lib/supabase", () => ({
@@ -230,6 +236,219 @@ describe("joinWatchGroupByToken", () => {
     const result = await joinWatchGroupByToken("bad-token");
 
     expect(result).toEqual({ data: null, error: fakeError });
+  });
+});
+
+// M9 part 2: a minimal thenable Supabase query-builder mock, same pattern as
+// __tests__/movieDetailMutations.test.ts's `makeChain` -- every chain
+// method returns the SAME object, which resolves to `finalResult` when
+// awaited, mirroring the real supabase-js PostgrestFilterBuilder's own
+// thenable behavior regardless of how many methods were chained onto it.
+function makeChain(finalResult: unknown) {
+  const chain: Record<string, jest.Mock> & { then?: unknown } = {};
+  ["select", "eq", "update", "delete", "single"].forEach((method) => {
+    chain[method] = jest.fn(() => chain);
+  });
+  chain.then = (resolve: (value: unknown) => unknown, reject?: (reason: unknown) => unknown) =>
+    Promise.resolve(finalResult).then(resolve, reject);
+  return chain;
+}
+
+describe("getWatchGroupDetails", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("selects a single watch_groups row by id", async () => {
+    const fakeResult = {
+      data: { id: "g1", name: "Filmfreunde", color_theme: "gold", invite_token: "tok-1", invite_enabled: true, created_at: "2026-01-01" },
+      error: null,
+    };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { getWatchGroupDetails } = require("../src/lib/groups");
+    const result = await getWatchGroupDetails("g1");
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_groups");
+    expect(chain.select).toHaveBeenCalledWith("*");
+    expect(chain.eq).toHaveBeenCalledWith("id", "g1");
+    expect(chain.single).toHaveBeenCalled();
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns { data: null, error } unchanged when the query fails, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "network error" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { getWatchGroupDetails } = require("../src/lib/groups");
+    const result = await getWatchGroupDetails("g1");
+
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("getWatchGroupsByIds", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("selects watch_groups rows filtered by an IN(id) list", async () => {
+    const fakeResult = {
+      data: [
+        { id: "g1", name: "Filmfreunde", color_theme: "gold", invite_token: "tok-1", invite_enabled: true },
+        { id: "g2", name: "Kinoclub", color_theme: "blue", invite_token: "tok-2", invite_enabled: false },
+      ],
+      error: null,
+    };
+    const chain = makeChain(fakeResult);
+    chain.in = jest.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const result = await getWatchGroupsByIds(["g1", "g2"]);
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_groups");
+    expect(chain.select).toHaveBeenCalledWith("*");
+    expect(chain.in).toHaveBeenCalledWith("id", ["g1", "g2"]);
+    expect(result).toBe(fakeResult);
+  });
+
+  it("short-circuits to an empty result without querying, for an empty id list", async () => {
+    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const result = await getWatchGroupsByIds([]);
+
+    expect(mockFrom).not.toHaveBeenCalled();
+    expect(result).toEqual({ data: [], error: null });
+  });
+
+  it("returns { data: null, error } unchanged when the query fails, instead of throwing", async () => {
+    const fakeResult = { data: null, error: { message: "network error" } };
+    const chain = makeChain(fakeResult);
+    chain.in = jest.fn(() => chain);
+    mockFrom.mockReturnValue(chain);
+
+    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const result = await getWatchGroupsByIds(["g1"]);
+
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("renameWatchGroup", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates watch_groups.name for the given group id", async () => {
+    const fakeResult = { data: null, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { renameWatchGroup } = require("../src/lib/groups");
+    const result = await renameWatchGroup("g1", "Neuer Name");
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_groups");
+    expect(chain.update).toHaveBeenCalledWith({ name: "Neuer Name" });
+    expect(chain.eq).toHaveBeenCalledWith("id", "g1");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("passes a name containing an apostrophe straight through with no client-side escaping", async () => {
+    const chain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { renameWatchGroup } = require("../src/lib/groups");
+    await renameWatchGroup("g1", "O'Brien's Crew");
+
+    expect(chain.update).toHaveBeenCalledWith({ name: "O'Brien's Crew" });
+  });
+
+  it("returns { data: null, error } unchanged when the update fails (e.g. non-owner blocked by RLS)", async () => {
+    const fakeResult = { data: null, error: { message: "new row violates row-level security policy" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { renameWatchGroup } = require("../src/lib/groups");
+    const result = await renameWatchGroup("g1", "Neuer Name");
+
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("setInviteEnabled", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates watch_groups.invite_enabled for the given group id", async () => {
+    const fakeResult = { data: null, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { setInviteEnabled } = require("../src/lib/groups");
+    const result = await setInviteEnabled("g1", false);
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_groups");
+    expect(chain.update).toHaveBeenCalledWith({ invite_enabled: false });
+    expect(chain.eq).toHaveBeenCalledWith("id", "g1");
+    expect(result).toBe(fakeResult);
+  });
+});
+
+describe("regenerateInviteToken", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("calls the regenerate_invite_token RPC and reshapes the returned uuid into { inviteToken }", async () => {
+    mockRpc.mockResolvedValue({ data: "new-token-uuid", error: null });
+
+    const { regenerateInviteToken } = require("../src/lib/groups");
+    const result = await regenerateInviteToken("g1");
+
+    expect(mockRpc).toHaveBeenCalledWith("regenerate_invite_token", { p_group_id: "g1" });
+    expect(result).toEqual({ data: { inviteToken: "new-token-uuid" }, error: null });
+  });
+
+  it("returns { data: null, error } unchanged when the RPC fails (e.g. non-owner, WC004)", async () => {
+    const fakeError = { message: "regenerate_invite_token requires group ownership", code: "WC004", details: null, hint: null };
+    mockRpc.mockResolvedValue({ data: null, error: fakeError });
+
+    const { regenerateInviteToken } = require("../src/lib/groups");
+    const result = await regenerateInviteToken("g1");
+
+    expect(result).toEqual({ data: null, error: fakeError });
+  });
+});
+
+describe("removeMember", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("deletes the watch_group_members row for the given group_id + user_id", async () => {
+    const fakeResult = { data: null, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { removeMember } = require("../src/lib/groups");
+    const result = await removeMember("g1", "u2");
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_group_members");
+    expect(chain.delete).toHaveBeenCalled();
+    expect(chain.eq).toHaveBeenCalledWith("group_id", "g1");
+    expect(chain.eq).toHaveBeenCalledWith("user_id", "u2");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("returns { data: null, error } unchanged when the delete fails (e.g. non-owner kicking someone else, blocked by RLS)", async () => {
+    const fakeResult = { data: null, error: { message: "new row violates row-level security policy" } };
+    mockFrom.mockReturnValue(makeChain(fakeResult));
+
+    const { removeMember } = require("../src/lib/groups");
+    const result = await removeMember("g1", "u2");
+
+    expect(result).toBe(fakeResult);
   });
 });
 

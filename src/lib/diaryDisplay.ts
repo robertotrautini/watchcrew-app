@@ -85,6 +85,24 @@ export function genreDisplayLabel(genreId: string, genreName?: string | null): s
 }
 
 /**
+ * Group display label (M9 part 2 Group-Settings screen's switcher). Same
+ * "real value, uuid-prefix placeholder fallback" convention as
+ * `memberDisplayLabel`/`genreDisplayLabel` above, and for the same reason
+ * this function lives HERE rather than in src/lib/groups.ts: that module
+ * eagerly imports src/lib/supabase.ts (constructs a real Supabase/Realtime
+ * client at import time), which would force any screen test that only needs
+ * this pure display-label helper to mock the whole module. This file has no
+ * such import, so it's the safe, already-established home for
+ * presentation-only helpers like this one.
+ */
+export function groupDisplayLabel(groupId: string, name?: string | null): string {
+  if (name != null && name.length > 0) {
+    return name;
+  }
+  return `Gruppe ${groupId.slice(0, 8)}`;
+}
+
+/**
  * genre_id -> real genre name, derived from whatever entries are passed in
  * (via each movie's nested `movie_genres(genre_id, genres(name))`). Used by
  * both the Watchlist and Tagebuch screens to resolve a genre pill's real

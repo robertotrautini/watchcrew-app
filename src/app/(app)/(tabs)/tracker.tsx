@@ -1,14 +1,15 @@
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useDeletePayment, useSetPayment } from "@/hooks/useTrackerPayments";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import {
   assignMemberColors,
@@ -27,6 +28,15 @@ import type { WatchlistEntry } from "@/lib/watchlistTypes";
  * the table shows ONLY entries that already have `paid_at` set -- a movie
  * that's been rated but not yet paid for does NOT appear here. See
  * `getPaidEntries` (src/lib/trackerLogic.ts).
+ *
+ * M9 part 2 addition: a "⚙️" header button navigating to the new
+ * Group-Settings screen (`/group-settings`,
+ * src/app/(app)/(modals)/group-settings.tsx). INTERIM PLACEMENT, not a
+ * permanent decision -- a real Settings hub is M10 scope and doesn't exist
+ * yet, so this screen (checked, along with Watchlist and the root layout,
+ * for any existing settings/menu entry point -- none found) hosts the only
+ * button into Group-Settings for now. Revisit once M10 builds the real
+ * Settings navigation.
  */
 
 function formatPlainDate(dateStr: string | null): string {
@@ -38,12 +48,12 @@ function formatPlainDate(dateStr: string | null): string {
 }
 
 export default function TrackerScreen() {
+  const router = useRouter();
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-
-  // Same "first group = active group" interim pattern already established
-  // in Watchlist/Tagebuch/Movie-Detail (see docs/interim-decisions.md "M5").
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  // M9 part 2: real, persisted active-group resolution (replaces the former
+  // "first group = active group" interim simplification) -- see
+  // src/hooks/useActiveGroup.ts.
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
 
   const groupMembersQuery = useGroupMembers(activeGroupId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
@@ -161,14 +171,24 @@ export default function TrackerScreen() {
     <View className="flex-1 bg-bg-primary" testID="tracker-screen">
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="font-display text-xl text-text-primary">Tracker</Text>
-        <Button
-          size="sm"
-          variant="primary"
-          label="💰"
-          testID="tracker-log-payment-button"
-          accessibilityLabel="Zahlung erfassen"
-          onPress={() => setPaymentModalVisible(true)}
-        />
+        <View className="flex-row gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            label="⚙️"
+            testID="tracker-group-settings-button"
+            accessibilityLabel="Gruppe verwalten"
+            onPress={() => router.push("/group-settings")}
+          />
+          <Button
+            size="sm"
+            variant="primary"
+            label="💰"
+            testID="tracker-log-payment-button"
+            accessibilityLabel="Zahlung erfassen"
+            onPress={() => setPaymentModalVisible(true)}
+          />
+        </View>
       </View>
 
       <View className="flex-row items-center gap-2 px-4 pt-3">

@@ -169,4 +169,40 @@ describe("usePreferencesStore", () => {
     expect(usePreferencesStore.getState().watchlistViewMode).toBe("grid");
     expect(usePreferencesStore.getState().diaryViewMode).toBe("list");
   });
+
+  it("defaults activeGroupId to null when nothing has been persisted yet", () => {
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().activeGroupId).toBeNull();
+  });
+
+  it("setActiveGroupId updates the store's state", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setActiveGroupId("group-42");
+
+    expect(usePreferencesStore.getState().activeGroupId).toBe("group-42");
+  });
+
+  it("persists the updated active group id through the MMKV-backed storage adapter, not just in memory", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setActiveGroupId("group-42");
+
+    const raw = mockStorageMap.get("watchcrew-preferences");
+    expect(raw).toBeDefined();
+    const persisted = JSON.parse(raw as string);
+    expect(persisted.state.activeGroupId).toBe("group-42");
+  });
+
+  it("hydrates activeGroupId from data already present in MMKV storage on module load", () => {
+    mockStorageMap.set(
+      "watchcrew-preferences",
+      JSON.stringify({ state: { activeGroupId: "group-99" }, version: 0 }),
+    );
+
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().activeGroupId).toBe("group-99");
+  });
 });

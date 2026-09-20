@@ -5,10 +5,10 @@ import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "r
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
@@ -79,13 +79,10 @@ function ratedCountFor(entry: WatchlistEntry): number {
 export default function WatchlistScreen() {
   const router = useRouter();
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-
-  // INTERIM SIMPLIFICATION (not a hidden permanent decision): there is no
-  // group-switcher UI yet (arguably M9/M10 scope), so we just use the first
-  // group the user belongs to as "the active group" for now. Revisit once a
-  // real active-group selection concept exists.
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  // M9 part 2: real, persisted active-group resolution (replaces the former
+  // "first group = active group" interim simplification) -- see
+  // src/hooks/useActiveGroup.ts.
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
 
   const groupMembersQuery = useGroupMembers(activeGroupId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);

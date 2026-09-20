@@ -32,6 +32,20 @@ interface PreferencesState {
   setWatchlistViewMode: (mode: WatchlistViewMode) => void;
   diaryViewMode: DiaryViewMode;
   setDiaryViewMode: (mode: DiaryViewMode) => void;
+  /**
+   * The Watch-Group id the user last explicitly picked as "active" (M9 part 2
+   * Group-Settings switcher). `null` means no explicit choice has been made
+   * yet (e.g. first launch, or before M9 part 2 existed). This is a genuine
+   * client preference, not a cache of server data — `src/hooks/useActiveGroup.ts`
+   * is the one place that reads it AND validates it against the user's real,
+   * current group memberships (a stored id can go stale if the user left
+   * that group, or it was hard-deleted by the 2-week retention job), falling
+   * back to the first group from `useUserGroups()` whenever it's null or
+   * stale. Screens should always go through that hook, never read this field
+   * directly.
+   */
+  activeGroupId: string | null;
+  setActiveGroupId: (groupId: string) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -43,6 +57,8 @@ export const usePreferencesStore = create<PreferencesState>()(
       setWatchlistViewMode: (mode) => set({ watchlistViewMode: mode }),
       diaryViewMode: "cards",
       setDiaryViewMode: (mode) => set({ diaryViewMode: mode }),
+      activeGroupId: null,
+      setActiveGroupId: (groupId) => set({ activeGroupId: groupId }),
     }),
     {
       name: "watchcrew-preferences",
