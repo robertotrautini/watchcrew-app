@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   addToWatchlist,
   deleteWatchlistEntry,
-  MovieNotCatalogedError,
   toggleLike,
   type AddToWatchlistParams,
   type DeleteWatchlistEntryParams,
@@ -18,9 +17,9 @@ import {
 // itself to route into React Query's native error channel
 // (isError/error/onError).
 //
-// Re-exported so callers can `instanceof`-check a mutation's `error`
-// without importing from src/lib directly.
-export { MovieNotCatalogedError };
+// M7 part 2: `MovieNotCatalogedError` no longer exists (resolved -- see
+// src/lib/movieDetailMutations.ts's `addToWatchlist`), so it's no longer
+// re-exported here either.
 
 /**
  * `groupId` is accepted alongside the like-toggle target purely so this hook

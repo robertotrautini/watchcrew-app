@@ -1,5 +1,12 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+// M7 part 2 (Add-Movie-Modal): the new "+" button navigates via expo-router,
+// so this screen now needs a router mock too (it previously had none).
+const mockPush = jest.fn();
+jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
+}));
+
 // --- Hook mocks -------------------------------------------------------
 const mockUseCurrentUserId = jest.fn();
 const mockUseUserGroups = jest.fn();
@@ -223,6 +230,17 @@ describe("WatchlistScreen", () => {
     await fireEvent.press(getByTestId("watchlist-view-mode-grid-button"));
 
     expect(mockSetWatchlistViewMode).toHaveBeenCalledWith("grid");
+  });
+
+  it("navigates to the Add-Movie-Modal when the '+' button is tapped", async () => {
+    setUpHappyPath();
+
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    await fireEvent.press(getByTestId("watchlist-add-movie-button"));
+
+    expect(mockPush).toHaveBeenCalledWith("/add-movie");
   });
 
   it("renders in list mode (title + date rows only) when watchlistViewMode is 'list'", async () => {

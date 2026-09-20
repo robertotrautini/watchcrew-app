@@ -5,7 +5,6 @@ import { useRouter } from "expo-router";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import {
-  MovieNotCatalogedError,
   useAddToWatchlist,
   useDeleteWatchlistEntry,
 } from "@/hooks/useMovieDetailMutations";
@@ -56,24 +55,18 @@ const ACTION_LABELS: Record<ActionButtonId, string> = {
 };
 
 /**
- * Generic add-to-watchlist failure alert copy (anything other than the
- * known `MovieNotCatalogedError` case). Interim, undocumented-elsewhere
- * choice made directly during implementation — the `MovieNotCatalogedError`
- * copy right below it is the one mandatory, verbatim string from the task
- * spec and must not be changed.
+ * Add-to-watchlist failure alert copy. Interim, undocumented-elsewhere
+ * choice made directly during implementation. Previously had a
+ * `MovieNotCatalogedError`-specific branch with its own copy — removed in
+ * M7 part 2, since that error case no longer exists (the `upsert_movie`
+ * Edge Function action resolves it before `addToWatchlist`'s DB insert is
+ * ever attempted — see src/lib/movieDetailMutations.ts).
  */
 const GENERIC_ADD_TO_WATCHLIST_ERROR_TITLE = "Fehler";
 const GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE =
   "Der Film konnte nicht zur Watchlist hinzugefügt werden. Bitte versuche es erneut.";
 
-function handleAddToWatchlistError(error: unknown): void {
-  if (error instanceof MovieNotCatalogedError) {
-    Alert.alert(
-      "Film kann nicht hinzugefügt werden",
-      "Dieser Film ist noch nicht im Katalog erfasst — bitte an die Entwicklung melden.",
-    );
-    return;
-  }
+function handleAddToWatchlistError(): void {
   Alert.alert(GENERIC_ADD_TO_WATCHLIST_ERROR_TITLE, GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE);
 }
 

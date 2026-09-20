@@ -130,4 +130,69 @@ describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () =>
 
     expect(result).toEqual({ data: null, error: { message: "boom" } });
   });
+
+  // M7 part 2 (Add-Movie-Modal): the four remaining tmdb-proxy actions this
+  // client had no wrapper for yet — `search` (Film mode), `search_person`
+  // (Regisseur/Besetzung mode), `search_company` (Studio mode), and
+  // `upsert_movie` (the M7 part 1 write action, now wired to a real
+  // caller — see src/lib/movieDetailMutations.ts's rewired `addToWatchlist`).
+  it("searchMovies invokes tmdb-proxy with kind: 'search' and the query", async () => {
+    const results = [{ id: 1, title: "Le Film", original_title: "Le Film", original_language: "fr" }];
+    mockInvoke.mockResolvedValue({ data: { data: results }, error: null });
+
+    const { searchMovies } = require("../../src/lib/tmdbProxy");
+    const result = await searchMovies("le film");
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "search", query: "le film" },
+    });
+    expect(result).toEqual({ data: results, error: null });
+  });
+
+  it("searchPerson invokes tmdb-proxy with kind: 'search_person' and the query", async () => {
+    const results = [{ id: 5, name: "Jane Director" }];
+    mockInvoke.mockResolvedValue({ data: { data: results }, error: null });
+
+    const { searchPerson } = require("../../src/lib/tmdbProxy");
+    const result = await searchPerson("jane");
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "search_person", query: "jane" },
+    });
+    expect(result).toEqual({ data: results, error: null });
+  });
+
+  it("searchCompany invokes tmdb-proxy with kind: 'search_company' and the query", async () => {
+    const results = [{ id: 9, name: "Studio Nine" }];
+    mockInvoke.mockResolvedValue({ data: { data: results }, error: null });
+
+    const { searchCompany } = require("../../src/lib/tmdbProxy");
+    const result = await searchCompany("studio nine");
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "search_company", query: "studio nine" },
+    });
+    expect(result).toEqual({ data: results, error: null });
+  });
+
+  it("upsertMovie invokes tmdb-proxy with kind: 'upsert_movie' and the tmdbId, unwrapping { movieId }", async () => {
+    mockInvoke.mockResolvedValue({ data: { data: { movieId: "movie-uuid-9" } }, error: null });
+
+    const { upsertMovie } = require("../../src/lib/tmdbProxy");
+    const result = await upsertMovie(603);
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "upsert_movie", tmdbId: 603 },
+    });
+    expect(result).toEqual({ data: { movieId: "movie-uuid-9" }, error: null });
+  });
+
+  it("upsertMovie surfaces an edge-function error unchanged (never throws)", async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: { message: "upsert failed" } });
+
+    const { upsertMovie } = require("../../src/lib/tmdbProxy");
+    const result = await upsertMovie(603);
+
+    expect(result).toEqual({ data: null, error: { message: "upsert failed" } });
+  });
 });

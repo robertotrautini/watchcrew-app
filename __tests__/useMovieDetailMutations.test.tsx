@@ -3,18 +3,6 @@ import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
 import React from "react";
 
-// Same shape as the real MovieNotCatalogedError (src/lib/movieDetailMutations.ts)
-// so `instanceof` checks made against the mocked module behave the same way
-// they would against the real one.
-class MockMovieNotCatalogedError extends Error {
-  readonly tmdbId: number;
-  constructor(tmdbId: number) {
-    super(`Movie not yet in catalog. tmdb_id=${tmdbId}`);
-    this.name = "MovieNotCatalogedError";
-    this.tmdbId = tmdbId;
-  }
-}
-
 const mockToggleLike = jest.fn();
 const mockDeleteWatchlistEntry = jest.fn();
 const mockAddToWatchlist = jest.fn();
@@ -23,7 +11,6 @@ jest.mock("@/lib/movieDetailMutations", () => ({
   toggleLike: mockToggleLike,
   deleteWatchlistEntry: mockDeleteWatchlistEntry,
   addToWatchlist: mockAddToWatchlist,
-  MovieNotCatalogedError: MockMovieNotCatalogedError,
 }));
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
@@ -235,12 +222,9 @@ describe("useAddToWatchlist", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
   });
 
-  it("surfaces a MovieNotCatalogedError through React Query's error channel, instanceof-checkable by the caller", async () => {
-    const { MovieNotCatalogedError } = loadHooks();
-    mockAddToWatchlist.mockResolvedValue({
-      data: null,
-      error: new MovieNotCatalogedError(999),
-    });
+  it("surfaces a generic upsertMovie/edge-function error from addToWatchlist through React Query's error channel without invalidating the cache", async () => {
+    const fakeError = { message: "edge function failed" };
+    mockAddToWatchlist.mockResolvedValue({ data: null, error: fakeError });
     const { useAddToWatchlist } = loadHooks();
     const { wrapper, queryClient } = createWrapper();
     const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
@@ -252,7 +236,7 @@ describe("useAddToWatchlist", () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toBeInstanceOf(MovieNotCatalogedError);
+    expect(result.current.error).toEqual(fakeError);
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 

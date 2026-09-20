@@ -68,15 +68,11 @@ jest.mock("@/hooks/useMovieDetail", () => ({
 // (useMovieDetailMutations -> movieDetailMutations -> lib/supabase) would
 // construct a real Supabase client (incl. a Realtime websocket) at import
 // time, which errors out under Jest's Node environment. So every export
-// MovieDetailActionsBar needs from this module is mocked directly instead,
-// including a standalone `MovieNotCatalogedError` stand-in (never actually
-// thrown in these tests, just needs to exist as an importable class).
-class MockMovieNotCatalogedError extends Error {}
+// MovieDetailActionsBar needs from this module is mocked directly instead.
 jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useToggleLike: mockUseToggleLike,
   useDeleteWatchlistEntry: mockUseDeleteWatchlistEntry,
   useAddToWatchlist: mockUseAddToWatchlist,
-  MovieNotCatalogedError: MockMovieNotCatalogedError,
 }));
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS

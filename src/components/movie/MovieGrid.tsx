@@ -27,6 +27,9 @@ const BADGE_ICON_SIZE = 14;
 // search input) — deliberately distinct from the two fixed semantic badge
 // colors above, since "no poster" isn't a watched/watchlist state.
 const PLACEHOLDER_ICON_COLOR = "#8b8b8b";
+// M7 part 2 (Add-Movie-Modal quick-add button): white, for contrast against
+// the same semi-opaque dark badge/score pill background already used here.
+const ADD_BUTTON_ICON_COLOR = "#ffffff";
 
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
@@ -65,6 +68,15 @@ export interface MovieGridProps<T extends MovieGridItem = MovieGridItem> {
   streamingFilter?: MovieGridStreamingFilterProps | null;
   footer?: ReactNode;
   emptyMessage?: string;
+  /**
+   * M7 part 2 (Add-Movie-Modal): optional per-tile quick-add affordance,
+   * rendered as a small "+" button overlay distinct from tapping the tile
+   * itself (which still calls `onPressItem` to navigate to the movie's
+   * detail overlay, unchanged for every existing caller). Omitted entirely
+   * (no prop given) renders no add button at all — every M6 sub-view screen
+   * using this component is unaffected.
+   */
+  onAddItem?: (item: T) => void;
 }
 
 const STREAMING_FILTER_OPTIONS: Array<{ value: StreamingFilterValue; label: string }> = [
@@ -90,6 +102,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   streamingFilter,
   footer,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
+  onAddItem,
 }: MovieGridProps<T>) {
   function renderTile(item: T) {
     const badge = getBadge ? getBadge(item) : null;
@@ -132,6 +145,18 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
                 color={badge === "watched" ? WATCHED_EYE_COLOR : WATCHLIST_BOOKMARK_COLOR}
               />
             </View>
+          ) : null}
+
+          {onAddItem ? (
+            <Pressable
+              testID={`${testID}-add-${item.tmdbId}`}
+              accessibilityRole="button"
+              accessibilityLabel="Zur Watchlist hinzufügen"
+              onPress={() => onAddItem(item)}
+              className="absolute right-1 top-1 items-center justify-center rounded-full bg-black/70 p-1"
+            >
+              <Ionicons name="add" size={BADGE_ICON_SIZE} color={ADD_BUTTON_ICON_COLOR} />
+            </Pressable>
           ) : null}
 
           {hasScore ? (

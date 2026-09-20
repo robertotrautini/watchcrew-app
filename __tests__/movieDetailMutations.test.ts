@@ -3,18 +3,33 @@
 //
 // Same convention as __tests__/watchlist.test.ts: mock "../src/lib/supabase"
 // with jest.fn()-based chain builders, and assert the underlying functions
-// return Supabase's raw `{ data, error }` shape unchanged (never throw) --
-// including the one non-Postgres case (`MovieNotCatalogedError`), which is
-// surfaced through the SAME `{ data: null, error }` shape rather than a
-// thrown exception, so hooks can keep translating `error` into React
-// Query's throw-based channel exactly like every other hook in this repo.
+// return Supabase's raw `{ data, error }` shape unchanged (never throw).
+//
+// M7 part 2: `addToWatchlist` no longer fails fast with `MovieNotCatalogedError`
+// when a movie isn't yet in the local `movies` table -- that gap is now
+// resolved by the M7 part 1 `upsert_movie` Edge Function action. See the
+// `addToWatchlist` describe block below for the rewired two-step
+// upsert-then-insert flow.
 
 const mockFrom = jest.fn();
+const mockUpsertMovie = jest.fn();
 
 jest.mock("../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
   },
+}));
+
+// M7 part 2: `addToWatchlist` now resolves the `movies.id` via the
+// `upsert_movie` Edge Function action (src/lib/tmdbProxy.ts's `upsertMovie`)
+// instead of a doomed `.select()`-then-fail-if-missing lookup against
+// `movies` directly (which has no INSERT policy for `authenticated` — see
+// this file's own module-header comment, updated below). Mocked as its own
+// module so this suite can assert the two steps (upsert, then insert)
+// independently without needing to fake `supabase.functions.invoke`'s shape
+// here too.
+jest.mock("../src/lib/tmdbProxy", () => ({
+  upsertMovie: mockUpsertMovie,
 }));
 
 // A minimal thenable Supabase query-builder mock: every chain method
@@ -132,21 +147,18 @@ describe("addToWatchlist", () => {
     jest.clearAllMocks();
   });
 
-  it("inserts a watchlist_entries row using the movie's id when the movie is found by tmdb_id", async () => {
-    const movieChain = makeChain({ data: { id: "movie-uuid-1" }, error: null });
+  it("calls upsertMovie first, then inserts a watchlist_entries row using the returned movieId", async () => {
+    mockUpsertMovie.mockResolvedValue({ data: { movieId: "movie-uuid-1" }, error: null });
     const insertResult = { data: { id: "we-new-1" }, error: null };
     const entriesChain = makeChain(insertResult);
-    mockFrom.mockReturnValueOnce(movieChain).mockReturnValueOnce(entriesChain);
+    mockFrom.mockReturnValueOnce(entriesChain);
 
     const { addToWatchlist } = require("../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
 
-    expect(mockFrom).toHaveBeenNthCalledWith(1, "movies");
-    expect(movieChain.select).toHaveBeenCalledWith("id");
-    expect(movieChain.eq).toHaveBeenCalledWith("tmdb_id", 603);
-    expect(movieChain.maybeSingle).toHaveBeenCalled();
+    expect(mockUpsertMovie).toHaveBeenCalledWith(603);
 
-    expect(mockFrom).toHaveBeenNthCalledWith(2, "watchlist_entries");
+    expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
     expect(entriesChain.insert).toHaveBeenCalledWith({
       group_id: "group-1",
       movie_id: "movie-uuid-1",
@@ -155,38 +167,20 @@ describe("addToWatchlist", () => {
     expect(result).toBe(insertResult);
   });
 
-  it("throws-as-error a MovieNotCatalogedError (via { data: null, error }) and never attempts an insert when the movie is not found", async () => {
-    const movieChain = makeChain({ data: null, error: null });
-    mockFrom.mockReturnValueOnce(movieChain);
-
-    const {
-      addToWatchlist,
-      MovieNotCatalogedError,
-    } = require("../src/lib/movieDetailMutations");
-    const result = await addToWatchlist({ tmdbId: 999, groupId: "group-1", addedBy: "user-1" });
-
-    expect(result.data).toBeNull();
-    expect(result.error).toBeInstanceOf(MovieNotCatalogedError);
-    // Only the `movies` lookup happened -- no doomed insert attempt into
-    // `movies`, and no `watchlist_entries` insert either.
-    expect(mockFrom).toHaveBeenCalledTimes(1);
-    expect(mockFrom).toHaveBeenCalledWith("movies");
-  });
-
-  it("propagates a real Postgres error from the movies lookup without attempting an insert", async () => {
-    const lookupError = { message: "network error" };
-    const movieChain = makeChain({ data: null, error: lookupError });
-    mockFrom.mockReturnValueOnce(movieChain);
+  it("returns the upsertMovie error unchanged and never attempts a watchlist_entries insert when the upsert fails", async () => {
+    const upsertError = { message: "edge function failed" };
+    mockUpsertMovie.mockResolvedValue({ data: null, error: upsertError });
 
     const { addToWatchlist } = require("../src/lib/movieDetailMutations");
-    const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
+    const result = await addToWatchlist({ tmdbId: 999, groupId: "group-1", addedBy: "user-1" });
 
-    expect(result).toEqual({ data: null, error: lookupError });
-    expect(mockFrom).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ data: null, error: upsertError });
+    // No DB call at all -- the doomed insert never happens.
+    expect(mockFrom).not.toHaveBeenCalled();
   });
 
   it("propagates a raw unique-violation (23505) error from the watchlist_entries insert unchanged (no friendly-message translation)", async () => {
-    const movieChain = makeChain({ data: { id: "movie-uuid-1" }, error: null });
+    mockUpsertMovie.mockResolvedValue({ data: { movieId: "movie-uuid-1" }, error: null });
     const uniqueViolation = {
       code: "23505",
       message:
@@ -194,7 +188,7 @@ describe("addToWatchlist", () => {
     };
     const insertResult = { data: null, error: uniqueViolation };
     const entriesChain = makeChain(insertResult);
-    mockFrom.mockReturnValueOnce(movieChain).mockReturnValueOnce(entriesChain);
+    mockFrom.mockReturnValueOnce(entriesChain);
 
     const { addToWatchlist } = require("../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });

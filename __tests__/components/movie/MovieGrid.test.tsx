@@ -325,6 +325,44 @@ describe("MovieGrid", () => {
     });
   });
 
+  // M7 part 2 (Add-Movie-Modal): optional per-tile quick-add affordance,
+  // separate from `onPressItem` (which still navigates to the movie's
+  // detail overlay, unchanged) -- lets the Add-Movie-Modal add a result
+  // directly to the watchlist without leaving the search screen.
+  describe("quick-add button (onAddItem)", () => {
+    it("renders no add button when onAddItem is not provided", async () => {
+      const { queryByTestId } = await render(
+        <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" />,
+      );
+
+      expect(queryByTestId("grid-add-1")).toBeNull();
+    });
+
+    it("renders an add button per tile when onAddItem is provided", async () => {
+      const items = [makeItem({ tmdbId: 1 }), makeItem({ tmdbId: 2 })];
+      const { getByTestId } = await render(
+        <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" onAddItem={jest.fn()} />,
+      );
+
+      expect(getByTestId("grid-add-1")).toBeTruthy();
+      expect(getByTestId("grid-add-2")).toBeTruthy();
+    });
+
+    it("calls onAddItem (not onPressItem) when the add button is tapped", async () => {
+      const onPressItem = jest.fn();
+      const onAddItem = jest.fn();
+      const item = makeItem({ tmdbId: 1 });
+      const { getByTestId } = await render(
+        <MovieGrid items={[item]} onPressItem={onPressItem} testID="grid" onAddItem={onAddItem} />,
+      );
+
+      await fireEvent.press(getByTestId("grid-add-1"));
+
+      expect(onAddItem).toHaveBeenCalledWith(item);
+      expect(onPressItem).not.toHaveBeenCalled();
+    });
+  });
+
   describe("footer", () => {
     it("renders the footer node when provided", async () => {
       const { Text } = require("react-native");

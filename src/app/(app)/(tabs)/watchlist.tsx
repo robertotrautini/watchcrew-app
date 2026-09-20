@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 
@@ -76,6 +77,7 @@ function ratedCountFor(entry: WatchlistEntry): number {
 }
 
 export default function WatchlistScreen() {
+  const router = useRouter();
   const currentUserId = useCurrentUserId();
   const userGroupsQuery = useUserGroups(currentUserId);
 
@@ -167,17 +169,27 @@ export default function WatchlistScreen() {
     <View className="flex-1 bg-bg-primary" testID="watchlist-screen">
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="font-display text-xl text-text-primary">Watchlist</Text>
-        <View className="flex-row gap-2" testID="watchlist-view-mode-toggle">
-          {VIEW_MODES.map((mode) => (
-            <Button
-              key={mode.key}
-              size="sm"
-              variant={watchlistViewMode === mode.key ? "primary" : "secondary"}
-              label={mode.label}
-              testID={`watchlist-view-mode-${mode.key}-button`}
-              onPress={() => setWatchlistViewMode(mode.key)}
-            />
-          ))}
+        <View className="flex-row items-center gap-2">
+          <View className="flex-row gap-2" testID="watchlist-view-mode-toggle">
+            {VIEW_MODES.map((mode) => (
+              <Button
+                key={mode.key}
+                size="sm"
+                variant={watchlistViewMode === mode.key ? "primary" : "secondary"}
+                label={mode.label}
+                testID={`watchlist-view-mode-${mode.key}-button`}
+                onPress={() => setWatchlistViewMode(mode.key)}
+              />
+            ))}
+          </View>
+          <Button
+            size="sm"
+            variant="primary"
+            label="+"
+            testID="watchlist-add-movie-button"
+            accessibilityLabel="Film hinzufügen"
+            onPress={() => router.push("/add-movie")}
+          />
         </View>
       </View>
 

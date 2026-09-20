@@ -128,3 +128,60 @@ export function getSimilarMovies(tmdbId: number): Promise<TmdbProxyResult<TraktR
 export function getMovieProviders(tmdbId: number): Promise<TmdbProxyResult<TmdbMovieProviders>> {
   return invokeTmdbProxy<TmdbMovieProviders>({ kind: "providers", tmdbId });
 }
+
+// ---------------------------------------------------------------------------
+// M7 part 2 (Add-Movie-Modal): search actions + the M7 part 1 write action.
+// ---------------------------------------------------------------------------
+
+export interface TmdbSearchResult {
+  id: number;
+  title: string;
+  original_title?: string;
+  original_language?: string;
+  release_date?: string;
+  poster_path?: string | null;
+  vote_average?: number;
+  [key: string]: unknown;
+}
+
+export interface TmdbPerson {
+  id: number;
+  name: string;
+  profile_path?: string | null;
+  known_for_department?: string;
+}
+
+export interface TmdbCompany {
+  id: number;
+  name: string;
+  logo_path?: string | null;
+  origin_country?: string;
+}
+
+export interface UpsertMovieResponse {
+  movieId: string;
+}
+
+/** Film mode (M7 part 2): fuzzy DE+EN-merged movie search, per `search`. */
+export function searchMovies(query: string): Promise<TmdbProxyResult<TmdbSearchResult[]>> {
+  return invokeTmdbProxy<TmdbSearchResult[]>({ kind: "search", query });
+}
+
+/** Regisseur/Besetzung mode (M7 part 2): person autocomplete, per `search_person`. */
+export function searchPerson(query: string): Promise<TmdbProxyResult<TmdbPerson[]>> {
+  return invokeTmdbProxy<TmdbPerson[]>({ kind: "search_person", query });
+}
+
+/** Studio mode (M7 part 2): company autocomplete, per `search_company` (server-side fuzzy+prefix+logo scored). */
+export function searchCompany(query: string): Promise<TmdbProxyResult<TmdbCompany[]>> {
+  return invokeTmdbProxy<TmdbCompany[]>({ kind: "search_company", query });
+}
+
+/**
+ * M7 part 1's `upsert_movie` action, now given its first real caller (M7
+ * part 2's rewired `addToWatchlist`, see src/lib/movieDetailMutations.ts):
+ * gets-or-creates the local `movies` row for a TMDB id, idempotently.
+ */
+export function upsertMovie(tmdbId: number): Promise<TmdbProxyResult<UpsertMovieResponse>> {
+  return invokeTmdbProxy<UpsertMovieResponse>({ kind: "upsert_movie", tmdbId });
+}

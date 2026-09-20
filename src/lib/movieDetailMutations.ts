@@ -1,5 +1,6 @@
 import { supabase } from "./supabase";
 import type { RatingUpsertPayload } from "./ratingLogic";
+import { upsertMovie } from "./tmdbProxy";
 
 // M6 part 2a: thin, typed wrappers around the Supabase writes needed for the
 // Movie Detail Overlay (toggle-like, delete-from-watchlist,
@@ -8,26 +9,13 @@ import type { RatingUpsertPayload } from "./ratingLogic";
 // result unchanged so callers (src/hooks/useMovieDetailMutations.ts) branch
 // on `error` the same way they would with the raw supabase-js client.
 //
-// The one non-Postgres case -- `movies` has no INSERT/UPDATE/DELETE policy
-// for `authenticated` at all (writes only happen via a service-role Edge
-// Function, see supabase/migrations/20260919120000_..._rls.sql's own
-// comment) -- is surfaced through the SAME `{ data: null, error }` shape,
-// using `MovieNotCatalogedError` as the `error` value, rather than a thrown
-// exception. That keeps the hook layer's "if (error) throw error" pattern
-// uniform across all three mutations instead of needing a special case for
-// this one.
-
-export class MovieNotCatalogedError extends Error {
-  readonly tmdbId: number;
-
-  constructor(tmdbId: number) {
-    super(
-      `Movie not yet in catalog — requires service-role upsert, not yet implemented (see M6 part 2a decision log). tmdb_id=${tmdbId}`
-    );
-    this.name = "MovieNotCatalogedError";
-    this.tmdbId = tmdbId;
-  }
-}
+// M7 part 2: `addToWatchlist`'s former non-Postgres case -- `movies` has no
+// INSERT/UPDATE RLS policy for `authenticated` -- is now RESOLVED: the M7
+// part 1 `upsert_movie` Edge Function action (service-role-backed) gets-or-
+// creates the local `movies` row first. The former `MovieNotCatalogedError`
+// fail-fast special case has been removed entirely -- see
+// docs/interim-decisions.md "M7 Teil 2 — Add-Movie-Modal" for the decision
+// log.
 
 export interface ToggleLikeParams {
   watchlistEntryId: string;
@@ -98,43 +86,45 @@ export interface AddToWatchlistParams {
 /**
  * Adds a movie (identified by its TMDB id) to a group's watchlist.
  *
- * `movies` is SELECT-only for `authenticated` -- there is no INSERT policy,
- * because catalog writes only happen via a service-role Edge Function (see
- * the migration's own comment). So this never attempts to write `movies`
- * itself: it looks the movie up by `tmdb_id` first (`.maybeSingle()`, so a
- * "not found" resolves to `{ data: null, error: null }` instead of a
- * Postgres error), and:
- *   - found -> inserts the `watchlist_entries` row using that movie's id.
- *   - not found -> returns `{ data: null, error: MovieNotCatalogedError }`,
- *     failing fast instead of attempting a doomed RLS-rejected insert.
+ * M7 part 2 rewire: `movies` is still SELECT-only for `authenticated` (no
+ * INSERT/UPDATE policy -- catalog writes only happen via a service-role Edge
+ * Function, see the migration's own comment), but this no longer fails fast
+ * when the movie isn't cataloged yet. Instead it's a two-step flow:
+ *   1. `upsertMovie(tmdbId)` (src/lib/tmdbProxy.ts) -- the M7 part 1
+ *      `upsert_movie` Edge Function action, idempotent by tmdb_id. Gets the
+ *      existing `movies.id` if already cataloged, or creates the row (plus
+ *      genres) via TMDB data and returns the new id -- either way, this
+ *      never attempts to write `movies` directly from the client.
+ *   2. Inserts the `watchlist_entries` row using the id from step 1.
+ *
+ * Step 1 failing (edge function error) short-circuits with
+ * `{ data: null, error }` unchanged, before any DB call is attempted.
  *
  * A unique-violation on `(group_id, movie_id)` (movie already in that
  * group's watchlist) is deliberately NOT translated into a friendlier
  * shape here -- the raw Postgres/Supabase error (`code: "23505"`) is
  * propagated unchanged. There is no existing repo precedent for a
  * "friendly duplicate-entry message" layer, and building one is arguably
- * UI-layer scope, not this mutation-layer's job.
+ * UI-layer scope (the Add-Movie-Modal's own "Bereits gesehen" duplicate-
+ * warning dialog is a separate, pre-emptive check on already-loaded data,
+ * not a reaction to this constraint -- see src/lib/addMovieLogic.ts).
  */
 export async function addToWatchlist(params: AddToWatchlistParams) {
   const { tmdbId, groupId, addedBy } = params;
 
-  const { data: movie, error: movieError } = await supabase
-    .from("movies")
-    .select("id")
-    .eq("tmdb_id", tmdbId)
-    .maybeSingle();
+  const { data: upsertResult, error: upsertError } = await upsertMovie(tmdbId);
 
-  if (movieError) {
-    return { data: null, error: movieError };
-  }
-
-  if (!movie) {
-    return { data: null, error: new MovieNotCatalogedError(tmdbId) };
+  if (upsertError) {
+    return { data: null, error: upsertError };
   }
 
   return supabase
     .from("watchlist_entries")
-    .insert({ group_id: groupId, movie_id: (movie as { id: string }).id, added_by: addedBy })
+    .insert({
+      group_id: groupId,
+      movie_id: (upsertResult as { movieId: string }).movieId,
+      added_by: addedBy,
+    })
     .select()
     .single();
 }

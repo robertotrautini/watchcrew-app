@@ -7,8 +7,6 @@ const mockAddMutate = jest.fn();
 jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useDeleteWatchlistEntry: () => ({ mutate: mockDeleteMutate, isPending: false }),
   useAddToWatchlist: () => ({ mutate: mockAddMutate, isPending: false }),
-  // eslint-disable-next-line @typescript-eslint/no-extraneous-class
-  MovieNotCatalogedError: class MovieNotCatalogedError extends Error {},
 }));
 
 jest.mock("@/lib/movieDetailNavigation", () => ({
@@ -27,8 +25,6 @@ import {
   navigateToRatingDialog,
   navigateToSimilarMovies,
 } from "@/lib/movieDetailNavigation";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { MovieNotCatalogedError } = require("@/hooks/useMovieDetailMutations");
 
 function createMockRouter() {
   return {
@@ -129,12 +125,6 @@ describe("MovieDetailActionsBar", () => {
     );
 
     const onError = mockAddMutate.mock.calls[0][1].onError;
-
-    onError(new MovieNotCatalogedError());
-    expect(Alert.alert).toHaveBeenCalledWith(
-      "Film kann nicht hinzugefügt werden",
-      "Dieser Film ist noch nicht im Katalog erfasst — bitte an die Entwicklung melden.",
-    );
 
     onError(new Error("boom"));
     expect(Alert.alert).toHaveBeenCalledWith(
