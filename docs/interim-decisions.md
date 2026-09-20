@@ -34,6 +34,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M6 — `trakt_related`: TMDB-ID → Trakt-Slug-Auflösung als Zwischenschritt](#m6--trakt_related-tmdb-id--trakt-slug-auflösung-als-zwischenschritt)
 - [M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside](#m6--person_moviesdirector_moviesstudio_movies-ebenfalls-ohne-cache-aside)
 - [M6 — Studio-Filmografie-Screen: Dedupe-Strategie, Footer-Sichtbarkeit, `movie-detail`-Routenannahme](#m6--studio-filmografie-screen-dedupe-strategie-footer-sichtbarkeit-movie-detail-routenannahme)
+- [M6 — Ähnliche-Filme-Screen: kein Poster-/Score-Backfill, `movie-detail`-Routenannahme](#m6--ähnliche-filme-screen-kein-poster-score-backfill-movie-detail-routenannahme)
 
 ---
 
@@ -384,6 +385,23 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 **Warum das später leicht änderbar ist:** Alle vier Punkte sind isolierte, kleine Code-Stellen in genau dieser einen Datei (ein `Set`-basierter Dedupe-Block, ein Ternary für die `footer`-Prop, eine `router.push`-Zeile, zwei `undefined`-Props) — keine strukturelle Kopplung an `MovieGrid`, `useStudioFilmography` oder andere Sub-View-Screens. Sobald der echte `movie-detail`-Screen landet, muss hier höchstens der Pfad/die Param-Namen angepasst werden, falls sie von der Collection-Screen-Konvention abweichen sollten.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Ähnliche-Filme-Screen: kein Poster-/Score-Backfill, `movie-detail`-Routenannahme
+
+**Problem/Lücke:** Trakts `related`-Response (`src/lib/tmdbProxy.ts`s `TraktRelatedMovie`) liefert nur `title`/`year`/`ids` — kein `poster_path`, kein `vote_average`, und nicht jeder Eintrag hat `ids.tmdb`. Der Task-Auftrag für `src/app/(app)/(modals)/similar/[tmdbId].tsx` legte fest, wie damit umzugehen ist (siehe unten), statt es dem Subagent offenzulassen — hier dokumentiert, weil es dieselbe Kategorie "leicht revidierbare Implementierungswahl" ist wie die übrigen Einträge in diesem Dokument. Zusätzlich: der `movie-detail`-Screen existierte zum Zeitpunkt dieser Arbeit noch nicht (`find src/app -iname "*movie-detail*"` fand nichts).
+
+**Entscheidung (vorläufig):**
+- Kein Poster-/Score-Backfill per zusätzlichem Pro-Item-TMDB-Call: Items werden direkt mit `posterPath: null` / `voteAverage: null` gemappt (bis zu 40 Items, N zusätzliche Calls wären teures Fan-out). `MovieGrid` rendert dafür bereits ein Platzhalter-Icon und blendet die Score-Pille aus — kein UI-Sonderfall nötig.
+- Items ohne `ids.tmdb` werden komplett herausgefiltert (nicht nur ohne Badge/Navigation gerendert) — ohne TMDB-ID gibt es weder einen Badge-/Streaming-Lookup-Schlüssel noch ein Navigationsziel.
+- `year` → `releaseDate`-Platzhalter als `"${year}-01-01"` (fester 1. Januar), da Trakt kein echtes Datum liefert.
+- Badge-Logik: dieselbe `getLibraryBadgeForTmdbId` (watched/watchlist/kein Badge) wie bei den drei anderen Sub-View-Screens, statt eines eigenen vereinfachten "in Bibliothek Ja/Nein"-Flags — für Konsistenz über alle vier Grids hinweg.
+- `movie-detail`-Route/Params: `router.push({ pathname: "/(app)/(modals)/movie-detail", params: { tmdbId: String(item.tmdbId) } })` wenn der Badge `null` ist (Film noch nicht in der aktiven Gruppen-Bibliothek); `params: { tmdbId: String(item.tmdbId), groupId: activeGroupId ?? "", source: "library" }` wenn der Badge `"watched"` oder `"watchlist"` ist. Anders als bei den Schwester-Screens (`collection`, `filmography/*`, die immer nur `tmdbId` übergeben) macht dieser Screen laut eigenem Task-Auftrag also eine Fallunterscheidung nach Bibliotheksstatus — das ist eine explizite Vorgabe dieses Tasks, keine eigenmächtige Abweichung von der Collection-Konvention. Da der `movie-detail`-Screen noch nicht existiert, ist besonders `groupId`/`source` als Parameter-NAME eine Annahme, die beim Landen des parallelen Detail-Overlay-Tasks gegen die tatsächlichen erwarteten Prop-Namen abgeglichen werden muss. Bekannter, erwarteter `tsc`-Fehler in dieser Datei (Pfad `"/(app)/(modals)/movie-detail"` ist noch keine gültige Route) — identisch zur bereits dokumentierten Situation bei `collection`/`filmography/*`.
+
+**Warum das später leicht änderbar ist:** Poster-/Score-Backfill wäre eine rein additive Erweiterung der `.map()`-Funktion (ein weiterer Call, kein Strukturbruch). Die `movie-detail`-Params sind zwei String-Literale in genau einer `onPressItem`-Closure; falls der echte Screen andere Namen erwartet, ist das eine punktuelle Änderung ohne Rückwirkung auf `MovieGrid`, `useSimilarMovies` oder die Badge-/Filter-Logik.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **zusätzlich zu verifizieren, sobald `movie-detail` gelandet ist:** ob `groupId`/`source` die tatsächlich erwarteten Param-Namen für den "bereits in Bibliothek"-Kontext sind.
 
 ---
 
