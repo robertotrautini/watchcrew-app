@@ -81,6 +81,24 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M10 — Fokus-Tracking-Mechanismus: eigener, nicht-persistierter Store + `useFocusEffect`](#m10--fokus-tracking-mechanismus-eigener-nicht-persistierter-store--usefocuseffect)
 - [M10 — Toast-Anzeigedauer](#m10--toast-anzeigedauer)
 - [M10 — Toast: kein Tap-to-Navigate](#m10--toast-kein-tap-to-navigate)
+- [M10 — Push-Infrastruktur: ⚠️ pg_net direkt statt Database-Webhooks/Queue-Poller, Vault als neuer Secret-Store](#m10--push-infrastruktur-️-pg_net-direkt-statt-database-webhooksqueue-poller-vault-als-neuer-secret-store)
+- [M10 — Erstbewertungs-Trigger auf `ratings`: INSERT UND UPDATE, nicht nur UPDATE](#m10--erstbewertungs-trigger-auf-ratings-insert-und-update-nicht-nur-update)
+- [M10 — Release-Reminder: Dedup-Log-Tabelle + tägliches pg_cron um 09:00 UTC](#m10--release-reminder-dedup-log-tabelle--tägliches-pg_cron-um-0900-utc)
+- [M10 — `push_subscriptions`: zusätzliche Gruppenmitgliedschafts-Prüfung in der RLS-INSERT-Policy](#m10--push_subscriptions-zusätzliche-gruppenmitgliedschafts-prüfung-in-der-rls-insert-policy)
+- [M10 — Expo-Push-Zustellbestätigung: nur sofortige Receipt-Prüfung (bekannte Einschränkung)](#m10--expo-push-zustellbestätigung-nur-sofortige-receipt-prüfung-bekannte-einschränkung)
+- [M10 — Push-Notification-Copy: Platzhalter-deutsche Texte](#m10--push-notification-copy-platzhalter-deutsche-texte)
+- [M10 — Push-Registrierung: kein EAS-Projekt konfiguriert (Fakt zur Kenntnisnahme)](#m10--push-registrierung-kein-eas-projekt-konfiguriert-fakt-zur-kenntnisnahme)
+- [M10 — Kein `setNotificationHandler` gesetzt: Koordination mit der parallelen Realtime-Task](#m10--kein-setnotificationhandler-gesetzt-koordination-mit-der-parallelen-realtime-task)
+- [M10 — Deep-Link-Routing-Hook in `(app)/_layout.tsx` statt Root-Layout](#m10--deep-link-routing-hook-in-app_layouttsx-statt-root-layout)
+- [M10 — `expo-notifications`-Config-Plugin ohne Custom-Icon/Farbe](#m10--expo-notifications-config-plugin-ohne-custom-iconfarbe)
+- [M10 — Settings-Hub: Struktur, "Meine Streaming-Dienste"/"Filmtitel in Grid anzeigen" bleiben Geräte-Präferenzen](#m10--settings-hub-struktur-meine-streaming-dienstefilmtitel-in-grid-anzeigen-bleiben-geräte-präferenzen)
+- [M10 — Darstellung-Toggle: eigener Pressable-Toggle statt React-Native-`Switch`](#m10--darstellung-toggle-eigener-pressable-toggle-statt-react-native-switch)
+- [M10 — Tagebuch-Grid-Titel: Asymmetrie zu Watchlist aufgelöst, indem die Präferenz einen Titel ERGÄNZT statt nur zu verstecken](#m10--tagebuch-grid-titel-asymmetrie-zu-watchlist-aufgelöst-indem-die-präferenz-einen-titel-ergänzt-statt-nur-zu-verstecken)
+- [M10 — Changelog: Starter-Array mit einem v1.0.0-Eintrag, Versions-Vergleich als reiner String-Vergleich](#m10--changelog-starter-array-mit-einem-v100-eintrag-versions-vergleich-als-reiner-string-vergleich)
+- [M10 — Konto-löschen: JWT-`sub`-Dekodierung ohne eigene Signaturprüfung, Bestätigungsphrase "LÖSCHEN" im Sheet](#m10--konto-löschen-jwt-sub-dekodierung-ohne-eigene-signaturprüfung-bestätigungsphrase-löschen-im-sheet)
+- [M10 — "Abmelden"/Konto-Löschung: expliziter `router.replace("/")` statt Vertrauen auf den bestehenden Auth-Gate](#m10--abmeldenkonto-löschung-expliziter-routerreplace-statt-vertrauen-auf-den-bestehenden-auth-gate)
+- [M10 — "Benachrichtigungen"-Zeile verlinkt einen Platzhalter-Screen (Abstimmungspunkt mit der parallelen Push-Task)](#m10--benachrichtigungen-zeile-verlinkt-einen-platzhalter-screen-abstimmungspunkt-mit-der-parallelen-push-task)
+- [M10 — `.expo/types/router.d.ts` manuell nachgezogen (kein Entscheid, Tooling-Hinweis)](#m10--exportypesrouterdts-manuell-nachgezogen-kein-entscheid-tooling-hinweis)
 
 ---
 
@@ -1204,6 +1222,224 @@ Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Re
 **Warum das später leicht änderbar ist:** `ToastHost` (`src/components/ui/Toast.tsx`) müsste nur einen `onPress`/`router.push(...)`-Aufruf ergänzen; dafür bräuchte `showToast(...)` einen optionalen zweiten Parameter (Zielroute) statt nur eines reinen Strings — additive Erweiterung der `src/lib/toast.ts`-Signatur, kein Bruch bestehender Aufrufer.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Push-Infrastruktur: ⚠️ pg_net direkt statt Database-Webhooks/Queue-Poller, Vault als neuer Secret-Store
+
+**Problem/Lücke:** ADR 0006 legt nur das WAS fest ("Push läuft über Supabase DB-Webhook/Trigger → Edge Function → Expo Push API"), nicht das WIE. Der Task-Auftrag nannte drei mögliche technische Umsetzungen (pg_net direkt, Supabase-Dashboard-"Database Webhooks", ein `notification_queue` + Poller) und verlangte explizit, EINE konkrete zu wählen statt die Optionen nur aufzuzählen.
+
+**Entscheidung:** `pg_net` (direkt aus den beiden `AFTER INSERT`/`AFTER UPDATE`-Triggern sowie dem `run_release_reminders()`-Cron-Job heraus, via einer gemeinsamen `enqueue_push_notification()`-Hilfsfunktion) statt Dashboard-"Database Webhooks" (nicht in einer git-versionierten SQL-Migration ausdrückbar — hätte die Kernverdrahtung dieses Milestones komplett aus dem Repo-Verlauf verschwinden lassen) und statt einer zusätzlichen `notification_queue`-Tabelle + Poller (`pg_net`s `http_post` ist selbst schon async/nicht-blockierend — dieselbe Eigenschaft, die eine Queue+Poller-Lösung erkaufen würde, nur mit zusätzlicher Latenz durch das Poll-Intervall statt echter Sofortigkeit). Die Edge-Function-URL und der Service-Role-Key werden dafür NICHT hart in die Migration geschrieben (das wäre ein Secret im Git-Verlauf), sondern zur Laufzeit aus **Postgres Vault** (`supabase_vault`, auf jedem Supabase-Projekt bereits vorinstalliert, lokal verifiziert) gelesen — ein Secret-Store, den ADR 0009 NICHT kennt (ADR 0009 nennt nur Edge Function Secrets/GitHub Actions Secrets/EAS Secrets). Die eigentlichen Secret-WERTE werden von keiner Migration geschrieben; ein Operator muss sie einmalig pro Umgebung selbst setzen (Kommando im Migrationskommentar dokumentiert, nicht committed).
+
+**Docker-Verifikation (lokaler `supabase start`/`db reset`-Stack):** Vollständig Ende-zu-Ende bestätigt — `pg_net`/`pg_cron` sind in `pg_available_extensions` vorhanden und wurden erfolgreich aktiviert; nach dem Setzen der beiden Vault-Secrets (Edge-Function-URL auf den internen Docker-Netzwerk-Hostnamen des Kong-Containers zeigend) hat ein echtes `INSERT` in `watchlist_entries` den Trigger ausgelöst, der über `net.http_post` tatsächlich die lokal laufende `send-push`-Edge-Function erreicht hat (`net._http_response` zeigt HTTP 200 mit dem korrekten JSON-Body); dieselbe Kette wurde für den Erstbewertungs-Trigger (`ratings`-INSERT) und für `run_release_reminders()` (inkl. Dedup-Verifikation durch zweifachen Aufruf) wiederholt und bestätigt. Der einzige unverifizierte Teil ist die tatsächliche Zustellung an ein echtes Gerät (kein reales Push-Token verfügbar) — der Testlauf hat dabei sogar einen echten, ungültigen Test-Token über die echte Expo-Push-API als `DeviceNotRegistered` zurückgewiesen bekommen und ihn korrekt aus `push_tokens` gelöscht, was den Dead-Token-Pruning-Pfad ebenfalls Ende-zu-Ende bestätigt.
+
+**Warum das später leicht änderbar ist:** Der gesamte Entscheid ist auf `enqueue_push_notification()` (eine einzige SQL-Funktion) konzentriert — ein späterer Wechsel auf Dashboard-Webhooks oder einen Queue-Poller würde nur diese eine Funktion (bzw. deren Aufrufer-Stellen, die unverändert blieben) ersetzen, nicht die Trigger-Logik selbst.
+
+**Status:** ⚠️ Explizit als echte Infrastruktur-/Secret-Management-Entscheidung geflaggt (nicht nur eine "günstige Implementierungsdetail"-Entscheidung wie der Rest dieses Dokuments) — insbesondere die Einführung von Vault als viertem Secret-Store neben den drei in ADR 0009 genannten verdient deine explizite Bestätigung.
+
+---
+
+## M10 — Erstbewertungs-Trigger auf `ratings`: INSERT UND UPDATE, nicht nur UPDATE
+
+**Problem/Lücke:** Die Spezifikation ("rating transitions from NULL/0 to a real value") liest sich zunächst wie ein reiner `AFTER UPDATE`-Fall. `src/lib/movieDetailMutations.ts`s `saveRating` ist aber ein echtes `UPSERT` (`INSERT ... ON CONFLICT DO UPDATE`) — die sehr häufige "Direkt Bewerten"-Situation (noch keine `ratings`-Zeile für dieses (watchlist_entry_id, member_id)-Paar) läuft dabei als reines `INSERT`, nicht als `UPDATE`, auf Postgres-Ebene ab.
+
+**Entscheidung:** Der Trigger feuert auf `AFTER INSERT OR UPDATE`. Bei `INSERT` gilt jeder echte `NEW.rating`-Wert automatisch als "Erstbewertung" (es gibt kein "vorher"); bei `UPDATE` gilt weiterhin exakt die spezifizierte NULL/0→Wert-Transition. Ohne diese Erweiterung hätte der Trigger den mit Abstand häufigsten Erstbewertungs-Fall (Direktbewertung ohne vorherigen Like-Toggle) schlicht verpasst.
+
+**Warum das später leicht änderbar ist:** Eine einzelne `tg_op`-Fallunterscheidung in `notify_first_rating()` (siehe deren ausführlichen SQL-Kommentar in der Migration).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Release-Reminder: Dedup-Log-Tabelle + tägliches pg_cron um 09:00 UTC
+
+**Problem/Lücke:** Der Task-Auftrag spezifiziert die Milestones (14/7/1 Tage vorher, Tag selbst, "neu hinzugefügt mit <14 Tagen bis Release"), aber keinen Dedup-Mechanismus (ohne einen würde z.B. "Tag selbst" bei jedem täglichen Cron-Lauf erneut feuern) und keine exakte Cron-Uhrzeit.
+
+**Entscheidung:** Neue reine Ledger-Tabelle `release_reminder_log(watchlist_entry_id, reminder_type)` mit `INSERT ... ON CONFLICT DO NOTHING` + `IF FOUND`-Check in `run_release_reminders()` — jedes (Eintrag, Meilenstein)-Paar feuert genau einmal, für immer. Cron-Zeitpunkt: täglich 09:00 UTC (`cron.schedule('release-reminders-daily', '0 9 * * *', ...)`).
+
+**Warum das später leicht änderbar ist:** Die Cron-Uhrzeit ist ein einzelner String; ein `cron.alter_job`/erneutes `cron.schedule` mit demselben Job-Namen genügt für eine spätere Änderung. Die Dedup-Tabelle hat keine Client-Berührungspunkte (RLS ohne jede Policy) und könnte bei Bedarf um eine TTL/Auto-Cleanup ergänzt werden, ohne `run_release_reminders()`s Aufrufer zu ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — `push_subscriptions`: zusätzliche Gruppenmitgliedschafts-Prüfung in der RLS-INSERT-Policy
+
+**Problem/Lücke:** Der Task-Auftrag spezifiziert für `push_subscriptions` wörtlich nur "a user can INSERT/DELETE their own subscription rows only" (RLS `user_id = auth.uid()`), ohne eine Prüfung der tatsächlichen Gruppenmitgliedschaft zu verlangen.
+
+**Entscheidung:** Die INSERT-Policy prüft zusätzlich `public.is_group_member(group_id)` (derselbe Helper, den jede andere gruppen-gebundene Tabelle in diesem Schema bereits verwendet) — ein Nutzer soll sich nicht für Push-Benachrichtigungen einer Gruppe eintragen können, der er gar nicht angehört (konsistent mit ADR 0003).
+
+**Warum das später leicht änderbar ist:** Eine einzelne `and`-Bedingung in einer RLS-Policy; ein Rückbau auf die wörtliche Spec-Fassung wäre eine Ein-Zeilen-Änderung an der Migration (bzw. einer Folge-Migration).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Expo-Push-Zustellbestätigung: nur sofortige Receipt-Prüfung (bekannte Einschränkung)
+
+**Problem/Lücke:** Requirement 4 verlangt Dead-Token-Pruning anhand von Expos "push receipt"-API. Expos eigene Dokumentation empfiehlt, mit der Receipt-Abfrage nach dem Senden mehrere Minuten zu warten, bevor ein Ergebnis zuverlässig vorliegt — eine einzelne Edge-Function-Invocation kann das nicht sinnvoll leisten, ohne selbst minutenlang zu blockieren.
+
+**Entscheidung:** `send-push` prunt in zwei Fällen: (1) sofortige Ticket-Level-Fehler aus der `/send`-Antwort selbst (Expo liefert `DeviceNotRegistered` teils schon hier, z.B. bei offensichtlich fehlerhaften Tokens — im Docker-Verifikationslauf tatsächlich live beobachtet), und (2) ein sofortiger, Best-Effort-`/getReceipts`-Aufruf direkt im Anschluss (ohne Wartezeit). Ein Token, dessen echter Zustellungsfehler von Expo erst SPÄTER als dieser sofortige Check erkannt wird, geht dabei nicht dauerhaft verloren — er wird schlicht beim nächsten Sendeversuch an denselben Token erneut geprüft. Ein separater, zeitversetzter Receipt-Recheck-Job wurde NICHT gebaut (Task-Framing: "mock the HTTP call, TDD the pruning logic", nicht ein zweites Scheduled-Job-System).
+
+**Warum das später leicht änderbar ist:** `fetchExpoPushReceipts()`/die Ticket-ID-Sammlung in `sendPushForEvent()` (`supabase/functions/send-push/push-sender.ts`) sind bereits isolierte Bausteine — ein späterer verzögerter Recheck-Job (z.B. ein zweiter pg_cron-Lauf, der eine `push_ticket_log`-Tabelle abarbeitet) könnte dieselbe `fetchExpoPushReceipts`-Funktion wiederverwenden, ohne den Sende-Pfad selbst zu ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Push-Notification-Copy: Platzhalter-deutsche Texte
+
+**Problem/Lücke:** Weder ADR 0006 noch feature-inventory.md geben exakte Formulierungen für Push-Titel/-Texte vor (diese drei Trigger existieren in der alten App als Web-Push, nicht als native Push-Notification-Texte).
+
+**Entscheidung:** Einfache, generische deutsche Platzhaltertexte in `buildNotificationCopy()` (`supabase/functions/send-push/push-sender.ts`), z.B. „„{Filmname}“ wurde zur Watchlist hinzugefügt." — derselbe Copy-Platzhalter-Status wie M5s Empty-State-Texte.
+
+**Warum das später leicht änderbar ist:** Eine reine `switch`-Funktion mit String-Literalen, keine Aufrufer-seitige Struktur betroffen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Push-Registrierung: kein EAS-Projekt konfiguriert (Fakt zur Kenntnisnahme)
+
+**Problem/Lücke:** `Notifications.getExpoPushTokenAsync()` löst seine `projectId` standardmäßig aus `Constants.expoConfig.extra.eas.projectId` auf — dieses Repo hat weder eine `eas.json` noch einen `extra.eas.projectId`-Eintrag in `app.config.ts` (dieselbe Kategorie Infrastruktur-Lücke wie die bereits bei M4 festgehaltene "EAS Dev Client wird nötig").
+
+**Entscheidung (kein Autonomie-Entscheid, reine Kenntnisnahme):** `usePushRegistration` ruft `getExpoPushTokenAsync()` ohne explizite `projectId` auf (Standardverhalten) und fängt einen daraus resultierenden Fehler ab (loggt eine Warnung, wirft nicht) statt eine erfundene Projekt-ID einzusetzen. Echte Token-Registrierung wird also erst funktionieren, sobald ein echtes EAS-Projekt existiert.
+
+**Warum das später leicht änderbar ist:** n/a — reine Infrastruktur-Voraussetzung, kein Code-Entscheid; sobald ein EAS-Projekt existiert, funktioniert der bestehende Code ohne Änderung (die `projectId` wird automatisch aus `app.config.ts` aufgelöst).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Kein `setNotificationHandler` gesetzt: Koordination mit der parallelen Realtime-Task
+
+**Problem/Lücke:** `expo-notifications` erwartet normalerweise einen registrierten `Notifications.setNotificationHandler(...)`, der bestimmt, ob eine eingehende Push-Notification im Vordergrund als System-Alert angezeigt wird. ADR 0006s "foreground = silent update / in-app toast" wird aber von der PARALLELEN Realtime-Task (`useGroupRealtimeSync.ts`) über Supabase Realtime geleistet, nicht über die Push-Notification selbst.
+
+**Entscheidung:** Dieser Task registriert bewusst KEINEN `setNotificationHandler`. Ohne registrierten Handler zeigt Expo im Vordergrund standardmäßig keinen System-Alert — das entspricht zufällig bereits dem gewünschten Verhalten ("Vordergrund wird von Realtime bedient, nicht von einem Push-Banner"), ist aber ein Koordinationspunkt, den die parallele Realtime-Task explizit bestätigen sollte, keine verifizierte Absprache.
+
+**Warum das später leicht änderbar ist:** Ein einzelner `Notifications.setNotificationHandler(...)`-Aufruf ließe sich jederzeit in `usePushRegistration.ts` (oder andernorts) ergänzen, falls das Standardverhalten doch nicht ausreicht.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — insbesondere: bitte mit der parallelen Realtime-Task abgleichen.
+
+---
+
+## M10 — Deep-Link-Routing-Hook in `(app)/_layout.tsx` statt Root-Layout
+
+**Problem/Lücke:** Der Cold-Start-Tap-auf-Push-Fall (`getLastNotificationResponseAsync`) muss irgendwo gemountet werden, das früh genug läuft, aber nicht so früh, dass es `useAuthGate()`s initialen Redirect überholt.
+
+**Entscheidung:** `usePushNotificationRouting()` (und `usePushRegistration()`) werden in `src/app/(app)/_layout.tsx` gemountet, NICHT im Root-Layout (`src/app/_layout.tsx`) — dieser Layer mountet erst, nachdem `useAuthGate()` bereits in den authentifizierten Bereich umgeleitet hat, sodass ein `router.push("/movie/[tmdbId]")` beim Cold Start nie mit dem initialen Redirect um die Navigation konkurriert.
+
+**Warum das später leicht änderbar ist:** Zwei Hook-Aufrufe in genau einer Datei; ein Verschieben in einen anderen Layout-Layer wäre eine reine Ortsänderung, keine Änderung der Hooks selbst.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — `expo-notifications`-Config-Plugin ohne Custom-Icon/Farbe
+
+**Problem/Lücke:** `expo-notifications` bringt ein eigenes Expo-Config-Plugin mit (Android-Notification-Icon/-Farbe/-Channel, iOS-Entitlements), das optionale `icon`/`color`/`sounds`-Parameter akzeptiert.
+
+**Entscheidung:** Plugin ohne jede Option in `app.config.ts` eingetragen (`"expo-notifications"` als reiner String-Eintrag) — es existiert noch kein dediziertes Notification-Icon-Asset in `assets/`, und ein solches zu entwerfen lag außerhalb des Scopes dieser Backend-lastigen Aufgabe.
+
+**Warum das später leicht änderbar ist:** Eine Umwandlung des Plugin-Eintrags von einem reinen String zu einem `[name, optionsObjekt]`-Tupel, sobald ein echtes Icon-Asset existiert — keine Strukturänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Settings-Hub: Struktur, "Meine Streaming-Dienste"/"Filmtitel in Grid anzeigen" bleiben Geräte-Präferenzen
+
+**Problem/Lücke:** Der M9-Teil-2-Tracker-Button "⚙️ Gruppe verwalten" war explizit als Interim-Platzierung markiert ("Revisit once M10 builds the real Settings navigation") — weder ADR noch feature-inventory.md legen die exakte Struktur des echten Settings-Hubs fest.
+
+**Entscheidung:** Ein einzelner Hub-Screen (`src/app/(app)/(modals)/settings.tsx`) mit einer Liste navigierbarer Sektionen (Meine Streaming-Dienste, Darstellung, Benachrichtigungen, Gruppe verwalten, Changelog, Konto löschen) plus flachen Zeilen darunter (Anzeigename/E-Mail read-only, App-Version, Abmelden) — lose an das Layout der Legacy-App angelehnt, wie vom Nutzer vorab freigegeben. Die Feature-Request-Zeile wird NICHT gebaut (Legacy-only, in der alten App selbst nicht im sichtbaren Menü verlinkt). "Meine Streaming-Dienste" (`selectedStreamingProviderIds`) und "Filmtitel in Grid anzeigen" (`showTitlesInGrid`) werden — wie vom Nutzer vorab bestätigt — als reine Geräte-Präferenzen in `usePreferencesStore` (MMKV) gehalten, nicht in einer neuen Supabase-Tabelle.
+
+**Warum das später leicht änderbar ist:** `SECTIONS`-Array in `settings.tsx` ist eine reine Daten-Liste (Reihenfolge/Label/Route je Zeile änderbar ohne Strukturumbau); eine spätere Migration der beiden Präferenzen von MMKV zu einer Supabase-Tabelle wäre auf die beiden Store-Felder plus ihre zwei Lesestellen (`streaming-services.tsx`, `WatchlistPosterCard`/`watchlist.tsx`/`tagebuch.tsx`) beschränkt.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Darstellung-Toggle: eigener Pressable-Toggle statt React-Native-`Switch`
+
+**Problem/Lücke:** Es gibt noch keinen Toggle/Switch-Baustein in `src/components/ui/`; "Filmtitel in Grid anzeigen" (`src/app/(app)/(modals)/settings/display.tsx`) braucht einen.
+
+**Entscheidung:** Ein einfacher, mit NativeWind-Klassen gestylter `Pressable` (mit `accessibilityRole="switch"` + `accessibilityState={{ checked }}`) statt React Natives nativem `Switch`-Element — konsistent mit dem Look der übrigen Pressable/Button-basierten UI dieser Codebase statt einem plattform-nativen Kontrollelement.
+
+**Warum das später leicht änderbar ist:** Genau eine Stelle (`display.tsx`); ein Wechsel zu einer echten wiederverwendbaren `Toggle`-Komponente unter `src/components/ui/` wäre ein rein lokaler Austausch, sobald ein zweiter Anwendungsfall dafür entsteht.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Tagebuch-Grid-Titel: Asymmetrie zu Watchlist aufgelöst, indem die Präferenz einen Titel ERGÄNZT statt nur zu verstecken
+
+**Problem/Lücke:** Vor M10 zeigte Watchlists Grid-Modus IMMER einen Titel (`WatchlistPosterCard`), während Tagebuchs Grid-Modus NIE einen zeigte (nur der Karten-Modus hatte einen separaten Titel-Text unterhalb der Kachel) — die neue `showTitlesInGrid`-Präferenz sollte laut Task-Brief für beide Screens gelten, traf hier also auf zwei unterschiedliche Ausgangszustände.
+
+**Entscheidung:** Für Watchlist steuert `showTitlesInGrid` (neue `showTitle`-Prop an `WatchlistPosterCard`, Default `true`) weiterhin nur, ob der bereits vorhandene Titel im Grid-Modus sichtbar ist. Für Tagebuch FÜGT die Präferenz (bei `true`) einen neuen Titel-Text unterhalb der `DiaryPosterTile` im Grid-Modus HINZU (analog zum bereits bestehenden Muster im Karten-Modus), statt etwas zu verstecken, das vorher gar nicht existierte. Card-Modus bleibt in beiden Screens unverändert (zeigt immer einen Titel, unabhängig von dieser Präferenz).
+
+**Warum das später leicht änderbar ist:** Zwei unabhängige, klar benannte Stellen (`WatchlistPosterCard`s `showTitle`-Prop, Tagebuchs `tagebuch-grid-title-*`-Text) — ein Rückbau auf "beide Screens identisch behandeln" wäre eine lokale Änderung an jeweils einer Stelle.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Changelog: Starter-Array mit einem v1.0.0-Eintrag, Versions-Vergleich als reiner String-Vergleich
+
+**Problem/Lücke:** Die ~130 Changelog-Einträge der Legacy-App werden laut Vorgabe NICHT migriert; der neue Viewer-Mechanismus (Timeline-UI, Versions-gesehen-Tracking) brauchte trotzdem mindestens einen echten Eintrag zum Testen/Anzeigen.
+
+**Entscheidung:** `src/lib/changelog.ts` enthält genau einen Starter-Eintrag (`version: "1.0.0"`, Titel "Erste Version von WatchCrew", kurze, wahrheitsgemäße Beschreibung der bisher gebauten M0–M9-Kernfeatures). `CURRENT_CHANGELOG_VERSION` wird als reiner String (kein Semver-Parsing/-Vergleich) gegen `usePreferencesStore`s `lastSeenChangelogVersion` verglichen (Ungleichheit inkl. `null` beim ersten Start löst das "Neu"-Badge + einen Toast aus). Öffnen des Changelog-Screens markiert die aktuelle Version sofort als gesehen (`useEffect` beim Mount), passend zum Legacy-Verhalten.
+
+**Warum das später leicht änderbar ist:** Ein reines Daten-Array plus eine Konstante; neue Releases fügen einfach einen weiteren Eintrag hinzu und erhöhen `CURRENT_CHANGELOG_VERSION` — keine Strukturänderung am Viewer selbst.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — Konto-löschen: JWT-`sub`-Dekodierung ohne eigene Signaturprüfung, Bestätigungsphrase "LÖSCHEN" im Sheet
+
+**Problem/Lücke:** Die neue `delete-account`-Edge-Function muss die aufrufende `auth.uid()` strukturell sicher (nie aus dem Request-Body) ermitteln, ohne einen zusätzlichen Auth-API-Roundtrip zu brauchen; zusätzlich braucht eine derart irreversible Aktion eine echte Bestätigungshürde in der UI.
+
+**Entscheidung:** `supabase/functions/delete-account/delete-account.ts`s `extractUserIdFromJwt` dekodiert die `sub`-Claim aus dem `Authorization`-Header-JWT direkt (Base64URL + `JSON.parse`), OHNE die Signatur selbst zu prüfen — sicher, weil Supabase Edge Functions das JWT bereits auf Gateway-Ebene verifizieren (`verify_jwt` bleibt am Standardwert `true`, kein `[functions.delete-account]`-Override in `supabase/config.toml`). Der Request-Body wird zwar gelesen (damit der HTTP-Request sauber abschließt), aber niemals nach einer User-ID durchsucht — strukturell unmöglich, eine fremde ID zu übergeben. Client-seitig (`src/app/(app)/(modals)/settings/delete-account.tsx`) muss der Nutzer exakt "LÖSCHEN" in ein Textfeld in einem `Sheet` eintippen, bevor der endgültige Löschen-Button aktiviert wird — kein einfaches Tap-to-confirm, gegeben die Irreversibilität.
+
+**Warum das später leicht änderbar ist:** Sollte der `verify_jwt`-Default jemals für diese Function deaktiviert werden, müsste `extractUserIdFromJwt` durch eine echte Signaturprüfung ersetzt werden (im Modul-Kommentar von `delete-account.ts` explizit als Trust-Boundary dokumentiert). Die Bestätigungsphrase ist eine einzelne Konstante (`CONFIRMATION_PHRASE`) im Screen, austauschbar ohne Strukturänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — "Abmelden"/Konto-Löschung: expliziter `router.replace("/")` statt Vertrauen auf den bestehenden Auth-Gate
+
+**Problem/Lücke:** `useAuthGate()` (`src/hooks/useAuthGate.ts`) reagiert zwar auf das echte `SIGNED_OUT`-Supabase-Auth-Event via `onAuthStateChange` — aber nur in der Komponenteninstanz, die es tatsächlich noch gemountet hat. Der Settings-Hub bzw. der Konto-löschen-Screen liegen mehrere Navigationen tief im `(app)`-Stack, weit weg von `src/app/index.tsx`, der einzigen Stelle, die den Gate-Hook aufruft — ob `index.tsx` nach der initialen `<Redirect>` überhaupt noch gemountet bleibt, wurde nicht als gesichert angenommen (dieselbe Kategorie Auth-Gate-Lücke, die M9 Teil 2 beim Verlassen der letzten Gruppe bereits gefunden hat).
+
+**Entscheidung:** Sowohl `settings.tsx`s "Abmelden"-Handler als auch `delete-account.tsx`s Erfolgsfall rufen nach `signOut()` explizit `router.replace("/")` auf, statt sich auf ein bereits laufendes `useAuthGate()` in einer möglicherweise nicht mehr gemounteten Komponente zu verlassen. Das erzwingt einen frischen Mount/Re-Evaluate von `index.tsx` in jedem Fall.
+
+**Warum das später leicht änderbar ist:** Zwei identische Einzeiler; sollte sich herausstellen, dass `index.tsx` ohnehin durchgehend gemountet bleibt, wären diese beiden Zeilen redundant, aber harmlos (ein zusätzlicher `replace("/")` auf eine bereits aktive Route ist ein No-Op).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M10 — "Benachrichtigungen"-Zeile verlinkt einen Platzhalter-Screen (Abstimmungspunkt mit der parallelen Push-Task)
+
+**Problem/Lücke:** Der Settings-Hub braucht laut Task-Brief eine "Benachrichtigungen"-Zeile, die zu `/settings/notifications` verlinkt — die echte Push-Subscription-UI wird von einer PARALLEL laufenden M10-Aufgabe gebaut, deren Fertigstellungsstand zum Zeitpunkt dieser Implementierung nicht bekannt war.
+
+**Entscheidung:** `src/app/(app)/(modals)/settings/notifications.tsx` wurde als minimaler Platzhalter-Screen gebaut ("Benachrichtigungs-Einstellungen sind bald verfügbar."), NICHT als Dead-Link ohne Datei — damit die Navigation schon jetzt funktioniert und testbar ist. Der Datei-Kommentar markiert ihn explizit als von der parallelen Task zu ERSETZEN, nicht als finale Implementierung.
+
+**Warum das später leicht änderbar ist:** Eine einzelne Datei, die komplett überschrieben werden kann, sobald die parallele Push-Task ihren echten Screen liefert — die Route (`/settings/notifications`) und der Verlinkungspunkt im Hub ändern sich dabei nicht.
+
+**Status:** Offen für Abstimmung mit der parallelen Push-Notifications-Task — bitte `settings/notifications.tsx` durch deren echten Screen ersetzen (lassen), sobald verfügbar.
+
+---
+
+## M10 — `.expo/types/router.d.ts` manuell nachgezogen (kein Entscheid, Tooling-Hinweis)
+
+**Problem/Lücke:** Dieses Projekt nutzt Expo Routers `typedRoutes`-Experiment (`app.config.ts`); die generierte Typdeklaration (`.expo/types/router.d.ts`, per `.gitignore` ausgeschlossen, wird normalerweise von `expo start`/`expo export` automatisch neu erzeugt) enthielt die sechs neuen `/settings*`-Routen dieser Aufgabe noch nicht. `expo start`/`expo export` liefen in dieser Sandbox-Umgebung nicht bis zur Typgenerierung durch (vermutlich fehlender Netzwerkzugriff für Font-/Asset-Downloads im vollständigen Bundling-Durchlauf).
+
+**Entscheidung (kein Autonomie-Entscheid, reine Kenntnisnahme):** Die Datei wurde für die lokale `tsc --noEmit`-Verifikation dieser Aufgabe manuell um die sechs neuen statischen Routen ergänzt (gleiche Struktur wie die bestehenden Einträge, z.B. `/group-settings`). Da die Datei git-ignoriert ist, hat das keinerlei Auswirkung auf den Commit — beim nächsten echten `expo start`/`eas build` erzeugt die reale Tooling-Pipeline dieselbe Datei ohnehin neu und korrekt aus den tatsächlich vorhandenen Screen-Dateien.
+
+**Warum das später leicht änderbar ist:** n/a — reines Tooling-Artefakt, kein Code-Entscheid; kein Handlungsbedarf.
+
+**Status:** Zur Kenntnisnahme, keine Bestätigung nötig.
 
 ---
 

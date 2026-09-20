@@ -59,6 +59,12 @@ const config: ExpoConfig = {
     // "Gesehen am"/payment-date fields and the Add-Movie-Modal's manual-
     // release-date field — see docs/interim-decisions.md.
     "@react-native-community/datetimepicker",
+    // M10: expo-notifications' config plugin (Android notification-icon/
+    // color/channel setup, iOS entitlements). No custom icon/color/sound
+    // options passed -- no dedicated notification-icon asset exists yet;
+    // this is the library's own plain default, a cheap/reversible detail
+    // logged in docs/interim-decisions.md, not a design decision made here.
+    "expo-notifications",
   ],
   experiments: {
     typedRoutes: true,
