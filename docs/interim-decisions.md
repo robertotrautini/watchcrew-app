@@ -25,6 +25,14 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M5 — "Aktive Gruppe" = erste Gruppe des Nutzers (Übergangslösung)](#m5--aktive-gruppe--erste-gruppe-des-nutzers-übergangslösung)
 - [M5 — "unrated"/"has_ratings" vs. "all_rated"/"missing": rating>0 vs. non-null](#m5--unratedhas_ratings-vs-all_ratedmissing-rating0-vs-non-null)
 - [M5 (Fast-Follow) — profiles-Tabelle + Genre-Namen-Join](#m5-fast-follow--profiles-tabelle--genre-namen-join)
+- [M6 — Cache-Aside für die neuen TMDB-Detail-Actions: gemeinsame Zeile, eigene Keys](#m6--cache-aside-für-die-neuen-tmdb-detail-actions-gemeinsame-zeile-eigene-keys)
+- [M6 — `collection`-Action erfordert sowohl `tmdbId` als auch `collectionId`](#m6--collection-action-erfordert-sowohl-tmdbid-als-auch-collectionid)
+- [M6 — Kino-Priorität: Type 3 vor Type 2 als Fallback](#m6--kino-priorität-type-3-vor-type-2-als-fallback)
+- [M6 — DE-Übersetzungs-Erkennung für die Suche (title === original_title)](#m6--de-übersetzungs-erkennung-für-die-suche-title--original_title)
+- [M6 — Cast-10-Cap wird in der Edge Function angewendet](#m6--cast-10-cap-wird-in-der-edge-function-angewendet)
+- [M6 — `search_company`-Scoring: eigene Fuzzy-/Bonus-Gewichte](#m6--search_company-scoring-eigene-fuzzy-bonus-gewichte)
+- [M6 — `trakt_related`: TMDB-ID → Trakt-Slug-Auflösung als Zwischenschritt](#m6--trakt_related-tmdb-id--trakt-slug-auflösung-als-zwischenschritt)
+- [M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside](#m6--person_moviesdirector_moviesstudio_movies-ebenfalls-ohne-cache-aside)
 
 ---
 
@@ -256,6 +264,107 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - Docker-verifiziert (lokaler `supabase start`/`db reset`-Stack): `auth.users`-Insert erzeugt automatisch die passende `profiles`-Zeile mit E-Mail-Lokalteil-Namen; cross-user SELECT auf `profiles` als `authenticated` funktioniert; direktes UPDATE als `authenticated` betrifft 0 Zeilen (RLS greift); die tatsächliche REST-Query-Form von `getGroupMembers` (zwei GET-Requests gegen `/rest/v1/watch_group_members` und `/rest/v1/profiles?id=in.(...)`) wurde live gegen den lokalen PostgREST-Endpunkt bestätigt.
 
 **Warum das später leicht änderbar ist:** Der E-Mail-Lokalteil-Default ist ausdrücklich Platzhalter-Qualität — eine spätere Settings/Profil-Milestone müsste nur eine `UPDATE-own-row`-RLS-Policy (`using (id = auth.uid())`) plus eine kleine UI ergänzen, keine strukturelle Änderung an `profiles` nötig. Der Genre-Namen-Join ist rein additiv (ein zusätzliches verschachteltes Select-Feld + ein optionales Typ-Feld), keine bestehende Filter-/Sortierlogik musste angefasst werden.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Cache-Aside für die neuen TMDB-Detail-Actions: gemeinsame Zeile, eigene Keys
+
+**Problem/Lücke:** feature-inventory.md/ADR 0005 geben für `details`/`videos`/`credits`/`release_dates`/`collection` keine server-seitige TTL vor (nur die alten, rein clientseitigen, session-only In-Memory-Caches `_similarCache`/`_providerCache` sind erwähnt, und die betreffen ohnehin nur `trakt_related`/`providers`). Der Task-Auftrag verlangt explizit, diese fünf neuen Actions unter der BESTEHENDEN "statische Metadaten, nur bei `null`-Feld neu laden"-Cache-Aside-Regel aus M1 laufen zu lassen, statt eine neue Tabelle zu erfinden.
+
+**Entscheidung (vorläufig):**
+- Alle fünf Actions nutzen dieselbe `movie_metadata_cache`-Zeile (Schlüssel `tmdb_id`) wie der bestehende `kind:"metadata"`-Stub — aber jede unter einem EIGENEN Key im `data`-JSONB-Blob (`data.details`, `data.videos`, `data.credits`, `data.releaseDatesDE`, `data.collection`), um Kollisionen mit den Stub-Keys (`runtime`/`director`/`genres`/`poster`) zu vermeiden.
+- Neue generische Pure-Function `isCacheAsideFieldFresh(data, fieldKey)` in `freshness.ts`: identische "nur bei `null`/`undefined` neu laden, sonst unbegrenzt frisch"-Logik wie `isMetadataFresh`, aber pro einzelnem Feld statt für die ganze Zeile.
+- Generischer Handler `handleCacheAsideField()` in `index.ts`: liest die Zeile, prüft nur das angefragte Feld auf Frische, merged bei einem Refetch nur dieses eine Feld in die bestehenden Daten (`{...cachedRow.data, [fieldKey]: freshValue}`) statt die ganze Zeile zu überschreiben.
+- Als Nebeneffekt musste auch `handleMetadata()` (kind:`"metadata"`) auf denselben Merge-Ansatz umgestellt werden (`{...cachedRow?.data, ...freshData}` statt reinem Overwrite) — sonst hätte ein `kind:"metadata"`-Refetch die inzwischen unter eigenen Keys gecachten M6-Felder in derselben Zeile stillschweigend gelöscht. Rein additive, verhaltensgleiche Änderung, solange keine Feld-Namenskollision zwischen Stub und M6-Keys besteht (durch die Namensräume oben ausgeschlossen).
+- Bekannte, akzeptierte Einschränkung: bei einem Film ohne echte Filmreihe bleibt `data.collection` dauerhaft `null` — das einfache Null-Check-Freshness-Modell interpretiert das als "noch nie geladen" und fragt bei jedem `collection`-Request erneut bei TMDB an. Da für diese Datenklasse ohnehin keine TTL-Vorgabe existiert, wird das als günstig-hinnehmbarer Kompromiss dokumentiert statt mit einem Sentinel-Wert (z.B. `collectionChecked: true`) zu lösen.
+
+**Warum das später leicht änderbar ist:** Die generische `handleCacheAsideField()`-Funktion und `isCacheAsideFieldFresh()` sind reine, kleine Bausteine — eine echte TTL oder ein "no collection"-Sentinel-Wert ließe sich als zusätzlicher Parameter/Feld nachrüsten, ohne die Aufrufer (`index.ts`-Switch-Cases) strukturell zu ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — `collection`-Action erfordert sowohl `tmdbId` als auch `collectionId`
+
+**Problem/Lücke:** Die `collection`-Action liefert TMDB-Collection-Daten anhand einer `collection_id`, nicht anhand einer `tmdb_id` (Film-ID) — aber die Cache-Aside-Zeile (siehe oben) ist nach `tmdb_id` geschlüsselt, nicht nach `collection_id`.
+
+**Entscheidung (vorläufig):** Der Request-Body für `kind:"collection"` verlangt BEIDE Parameter: `tmdbId` (der auslösende Film, dient als Cache-Zeilen-Schlüssel) UND `collectionId` (die tatsächlich abzurufende Filmreihe). Der Client kennt `collectionId` ohnehin aus einem vorherigen `details`-Call (`belongs_to_collection.id`).
+
+**Warum das später leicht änderbar ist:** Reine Request-Validierung in einem `index.ts`-Switch-Case; falls eine collection-eigene Cache-Tabelle (statt Wiederverwendung von `movie_metadata_cache`) gewünscht ist, wäre das eine isolierte Änderung an genau diesem Case plus einer neuen Migration.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Kino-Priorität: Type 3 vor Type 2 als Fallback
+
+**Problem/Lücke:** Der Task-Auftrag benennt TMDB-Type-3 (Theatrical) explizit als "Kino", lässt aber offen, wie Type 2 (Theatrical, limited) einzuordnen ist.
+
+**Entscheidung (vorläufig):** Type 2 wird als Kino-Äquivalent-FALLBACK behandelt — nur verwendet, wenn kein Type-3-Eintrag existiert. Bei Vorhandensein BEIDER Typen gewinnt immer Type 3 (durch einen dedizierten Test in `tmdb-client.test.ts` abgesichert, siehe TDD-Nachweis im Abschlussbericht).
+
+**Warum das später leicht änderbar ist:** Zwei benannte Konstanten (`KINO_TYPE_PRIMARY`, `KINO_TYPE_FALLBACK`) in `tmdb-client.ts`, die Priorisierungslogik ist eine einzelne, pur getestete Funktion (`selectGermanReleaseDate`).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — DE-Übersetzungs-Erkennung für die Suche (title === original_title)
+
+**Problem/Lücke:** feature-inventory.md spezifiziert nur das GEWÜNSCHTE Verhalten ("EN-Titel-Fallback wenn keine DE-Übersetzung"), nicht, wie "keine DE-Übersetzung" aus TMDBs Such-Response technisch zu ERKENNEN ist.
+
+**Entscheidung (vorläufig):** Ein DE-Suchergebnis gilt als unübersetzt, wenn `title === original_title` UND `original_language !== "de"` — TMDB fällt bei fehlender Übersetzung selbst intern auf `original_title` zurück, das ist also ein beobachtbares Signal aus der echten API-Response-Form, kein erfundenes Zusatzkriterium. Filme, deren `original_language` bereits `"de"` ist, werden nie als "unübersetzt" behandelt (ihr `title` IST die korrekte deutsche Fassung).
+
+**Warum das später leicht änderbar ist:** Eine einzelne, pur getestete Funktion (`mergeSearchResults` in `tmdb-client.ts`) — die Erkennungs-Bedingung ist ein einzeiliger Ausdruck, austauschbar ohne Änderungen an der Merge-Struktur drumherum.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — Cast-10-Cap wird in der Edge Function angewendet
+
+**Problem/Lücke:** Der Task-Auftrag erlaubt beide Optionen (Cap in der Edge Function ODER Cap im Client) und verlangt nur eine dokumentierte Wahl.
+
+**Entscheidung (vorläufig):** Der Cap auf 10 Personen (`CAST_DISPLAY_LIMIT`) wird in der Edge Function selbst angewendet (`fetchMovieCredits` in `tmdb-client.ts`), NICHT dem Client überlassen — spart Payload-Größe und hält die "was zeigt die UI"-Regel serverseitig neben der übrigen TMDB-Sonderlogik. `crew` wird bewusst ungekappt durchgereicht, da daraus u.a. der Regisseur extrahiert wird und Crew-Listen i.d.R. kürzer sind.
+
+**Warum das später leicht änderbar ist:** Eine benannte Konstante (`CAST_DISPLAY_LIMIT = 10`) plus ein `.slice()`-Aufruf; eine spätere Verlagerung zum Client wäre eine Ein-Zeilen-Änderung (Cap entfernen), ohne Strukturänderung an der Response-Form.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — `search_company`-Scoring: eigene Fuzzy-/Bonus-Gewichte
+
+**Problem/Lücke:** feature-inventory.md benennt nur die drei Scoring-Faktoren ("Fuzzy-Score + Prefix-Bonus + Logo-Bonus"), aber keine konkreten Gewichte oder den Fuzzy-Algorithmus selbst.
+
+**Entscheidung (vorläufig):** Fuzzy-Score = normalisierte Levenshtein-Ähnlichkeit (0–1, exakter Substring-Treffer = 0.8, exakte Gleichheit = 1). Prefix-Bonus = `+0.5` fest, wenn der Firmenname mit dem Suchbegriff beginnt. Logo-Bonus = `+0.2` fest, wenn `logo_path` gesetzt ist. Werte so gewählt, dass ein Prefix- oder Logo-Treffer einen ansonsten mittelmäßigen Fuzzy-Score klar überholen kann, aber ein exakter Namenstreffer (Score 1) trotzdem kaum zu übertreffen ist.
+
+**Warum das später leicht änderbar ist:** Zwei benannte Konstanten (`PREFIX_MATCH_BONUS`, `HAS_LOGO_BONUS`) plus eine austauschbare `fuzzyScore()`-Hilfsfunktion, alles isoliert in `tmdb-client.ts`, pur getestet in `scoreCompanyMatch`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 — `trakt_related`: TMDB-ID → Trakt-Slug-Auflösung als Zwischenschritt
+
+**Problem/Lücke:** Trakts öffentliche API identifiziert Filme über Trakt-Slug/-ID oder IMDb-ID im `/movies/{id}/related`-Pfad — es gibt dort keinen Endpunkt, der direkt eine TMDB-ID entgegennimmt. feature-inventory.md beschreibt nur das Ergebnis ("Ähnliche Filme via Trakt.tv API"), nicht den API-Vertrag im Detail.
+
+**Entscheidung (vorläufig):** Zweistufige Auflösung in `trakt-client.ts`: zuerst `GET /search/tmdb/{id}?type=movie` (liefert den Trakt-Slug), dann `GET /movies/{slug}/related?limit=40&extended=full`. Beide Schritte sind eigene, mockbare Funktionen (`resolveTraktSlugFromTmdbId`, `fetchTraktRelatedBySlug`), orchestriert von `fetchTraktRelated`. Kann die TMDB-ID nicht aufgelöst werden, wird ein leeres Array zurückgegeben (kein Fehler).
+
+**Warum das später leicht änderbar ist:** Beide Schritte sind isolierte, pur mit Fixture-Daten getestete Funktionen — falls sich Trakts tatsächlicher API-Vertrag von dieser Annahme unterscheidet (nicht verifizierbar ohne echten `TRAKT_API_KEY`/Netzwerkzugriff in dieser Session), betrifft eine Korrektur nur diese zwei Funktionen, nicht die Cap-Logik (`limitRelatedMovies`) oder den Aufrufer in `index.ts`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch — **Achtung, echter Verifikations-Gap:** Der genaue Trakt-API-Vertrag für diese Auflösung konnte in dieser Session nicht gegen die echte API geprüft werden (kein `TRAKT_API_KEY`, kein Auftrag zu echtem Netzwerkzugriff). Vor Prod-Einsatz mit echtem Trakt-Key einmal gegen die echte API verifizieren.
+
+---
+
+## M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside
+
+**Problem/Lücke:** Der Task-Auftrag listet explizit `search`/`search_person`/`search_company`/`trakt_related`/`providers`/`providers_list` als "kein Cache-Aside", sagt aber nichts explizit zu `person_movies`/`director_movies`/`studio_movies`.
+
+**Entscheidung (vorläufig):** Auch diese drei Actions laufen als reines Fetch-Through ohne Cache-Tabelle — sie sind genauso query-/lookup-förmig (Schlüssel ist eine Personen-/Firmen-ID + optionale Seite, kein fester Pro-Film-Cache-Key) und im alten Legacy-Zustand ohne eigene `_cache`-Variable erwähnt (nur `_similarCache`/`_providerCache` sind dort benannt). Konsistent mit der Begründung, die der Task-Auftrag für die explizit genannten Actions gibt.
+
+**Warum das später leicht änderbar ist:** Falls doch gewünscht, wäre das ein zusätzlicher `handleCacheAsideField`-artiger Wrapper um genau diese drei `index.ts`-Cases, ohne Änderung an den zugrunde liegenden `tmdb-client.ts`-Fetch-Funktionen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

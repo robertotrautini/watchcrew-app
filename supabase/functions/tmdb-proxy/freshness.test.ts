@@ -6,6 +6,7 @@
 // module, since Edge Function dev machines may be offline.
 
 import {
+  isCacheAsideFieldFresh,
   isMetadataFresh,
   isStreamingFresh,
   type MetadataCacheRow,
@@ -109,5 +110,46 @@ Deno.test("isMetadataFresh: no row at all needs a fetch", () => {
   assert(
     isMetadataFresh(undefined) === false,
     "expected an undefined metadata row to need a fetch",
+  );
+});
+
+// --- M6 part 1: generic per-field cache-aside freshness -------------------
+
+Deno.test("isCacheAsideFieldFresh: field present (non-null) is fresh", () => {
+  assert(
+    isCacheAsideFieldFresh({ details: { runtime: 118 } }, "details") === true,
+    "expected a present `details` field to be fresh",
+  );
+});
+
+Deno.test("isCacheAsideFieldFresh: field is null needs a refetch", () => {
+  assert(
+    isCacheAsideFieldFresh({ collection: null }, "collection") === false,
+    "expected a null field to need a refetch",
+  );
+});
+
+Deno.test("isCacheAsideFieldFresh: field missing entirely needs a refetch", () => {
+  assert(
+    isCacheAsideFieldFresh({ videos: { key: "abc" } }, "credits") === false,
+    "expected a field absent from data to need a refetch",
+  );
+});
+
+Deno.test("isCacheAsideFieldFresh: falsy-but-present values (0, false, []) count as fresh", () => {
+  assert(
+    isCacheAsideFieldFresh({ credits: { cast: [] } }, "credits") === true,
+    "expected an empty-array field value to still count as fresh (only null/undefined triggers refetch)",
+  );
+});
+
+Deno.test("isCacheAsideFieldFresh: no row data at all needs a fetch", () => {
+  assert(
+    isCacheAsideFieldFresh(null, "details") === false,
+    "expected null row data to need a fetch",
+  );
+  assert(
+    isCacheAsideFieldFresh(undefined, "details") === false,
+    "expected undefined row data to need a fetch",
   );
 });

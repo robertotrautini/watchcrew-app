@@ -74,3 +74,32 @@ export function isStreamingFresh(
   const ageMs = now.getTime() - lastFetchedAt.getTime();
   return ageMs >= 0 && ageMs < STREAMING_TTL_MS;
 }
+
+/**
+ * M6 part 1 — generic per-field variant of `isMetadataFresh` for the new
+ * `details`/`videos`/`credits`/`release_dates`/`collection` actions, which
+ * share the SAME `movie_metadata_cache` row (keyed by tmdb_id) as the
+ * existing `kind: "metadata"` stub but are namespaced under their own keys
+ * in `data` (e.g. `data.details`, `data.videos`, ...) so they never collide
+ * with the stub's `runtime`/`director`/`genres`/`poster` keys.
+ *
+ * Interim decision (see docs/interim-decisions.md): feature-inventory.md
+ * gives no server-side TTL for these actions at all, so — same as
+ * `isMetadataFresh` — this applies the "static, no TTL, refetch only if
+ * still null" rule from ADR 0005 to a single named field instead of the
+ * whole row.
+ *
+ * Known edge case (documented, not fixed here): for a movie with genuinely
+ * no collection, `data.collection` legitimately stays `null` forever, which
+ * this simple null-check reads as "never fetched" and will keep re-fetching
+ * on every request. Accepted as a cheap, documented tradeoff given no TTL
+ * spec exists for this data class.
+ */
+export function isCacheAsideFieldFresh(
+  data: Record<string, unknown> | null | undefined,
+  fieldKey: string,
+): boolean {
+  if (!data) return false;
+  const value = data[fieldKey];
+  return value !== null && value !== undefined;
+}

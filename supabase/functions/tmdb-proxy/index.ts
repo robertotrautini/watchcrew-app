@@ -1,32 +1,111 @@
 // TMDB/Trakt proxy Edge Function implementing the cache-aside pattern from
-// ADR 0005.
+// ADR 0005, extended in M6 part 1 with the actions needed by the
+// Movie-Detail-Overlay (search/details/videos/credits/release_dates/
+// collection/providers/providers_list/trakt_related/search_person/
+// person_movies/director_movies/search_company/studio_movies), per
+// docs/feature-inventory.md Section 3 (old `tmdb.php` behavior).
 //
 // Two Postgres tables (created by a parallel migration task, not by this
 // function):
 //   - movie_metadata_cache(tmdb_id, data jsonb, last_fetched_at)
 //   - streaming_availability_cache(tmdb_id, region, data jsonb, last_fetched_at)
 //
-// Request body: { tmdbId: number, kind: "metadata" | "streaming", region?: string }
+// Request body: { kind: <see ProxyKind below>, ...kind-specific params }
 //
-// The freshness/TTL DECISION (serve cached row vs. fetch fresh) lives in
-// ./freshness.ts as pure functions, unit-tested separately with Deno.test.
-// The actual TMDB fetch calls are stubbed in ./tmdb-client.ts (see TODOs
-// there) — this file only wires the cache-aside mechanism together.
+// Caching split (interim decision, see docs/interim-decisions.md):
+//   - kind: "metadata" | "streaming" — UNCHANGED from M1 (whole-row cache-aside
+//     in their respective tables).
+//   - kind: "details" | "videos" | "credits" | "release_dates" | "collection"
+//     — NEW cache-aside fields, namespaced under their own key inside the
+//     SAME movie_metadata_cache row (keyed by tmdb_id), reusing the existing
+//     "static, no TTL, refetch only if still null" rule from ADR 0005.
+//   - kind: "search" | "search_person" | "search_company" | "trakt_related" |
+//     "providers" | "providers_list" | "person_movies" | "director_movies" |
+//     "studio_movies" — fetch-through every time, NOT persisted in any cache
+//     table (query/lookup-shaped, no fixed per-movie cache key; consistent
+//     with the legacy app's purely in-memory/session-only caches for this
+//     data class, per feature-inventory.md).
+//
+// The freshness/TTL DECISION lives in ./freshness.ts as pure functions,
+// unit-tested separately with Deno.test. The actual TMDB/Trakt fetch calls
+// and their surrounding logic (merging, priority selection, mapping,
+// scoring) live in ./tmdb-client.ts / ./trakt-client.ts, also unit-tested
+// separately.
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import {
+  isCacheAsideFieldFresh,
   isMetadataFresh,
   isStreamingFresh,
   type MetadataCacheRow,
   type StreamingCacheRow,
 } from "./freshness.ts";
-import { fetchMetadataFromTmdb, fetchStreamingFromTmdb } from "./tmdb-client.ts";
+import {
+  fetchCollection,
+  fetchDirectorMovies,
+  fetchGermanReleaseDates,
+  fetchMetadataFromTmdb,
+  fetchMovieCredits,
+  fetchMovieDetails,
+  fetchMovieProviders,
+  fetchMovieVideos,
+  fetchPersonMovies,
+  fetchProvidersList,
+  fetchStreamingFromTmdb,
+  fetchStudioMovies,
+  searchCompany,
+  searchMovies,
+  searchPerson,
+} from "./tmdb-client.ts";
+import { fetchTraktRelated } from "./trakt-client.ts";
+
+type ProxyKind =
+  | "metadata"
+  | "streaming"
+  | "search"
+  | "details"
+  | "videos"
+  | "credits"
+  | "release_dates"
+  | "collection"
+  | "providers"
+  | "providers_list"
+  | "trakt_related"
+  | "search_person"
+  | "person_movies"
+  | "director_movies"
+  | "search_company"
+  | "studio_movies";
 
 interface ProxyRequestBody {
-  tmdbId: number;
-  kind: "metadata" | "streaming";
+  kind: ProxyKind;
+  tmdbId?: number;
   region?: string;
+  query?: string;
+  personId?: number;
+  collectionId?: number;
+  companyId?: number;
+  page?: number;
 }
+
+const VALID_KINDS: ProxyKind[] = [
+  "metadata",
+  "streaming",
+  "search",
+  "details",
+  "videos",
+  "credits",
+  "release_dates",
+  "collection",
+  "providers",
+  "providers_list",
+  "trakt_related",
+  "search_person",
+  "person_movies",
+  "director_movies",
+  "search_company",
+  "studio_movies",
+];
 
 function getSupabaseClient(): SupabaseClient {
   // SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are auto-injected by Supabase
@@ -43,6 +122,8 @@ function getSupabaseClient(): SupabaseClient {
 
   return createClient(supabaseUrl, serviceRoleKey);
 }
+
+// --- kind: "metadata" / "streaming" (M1, unchanged) -------------------------
 
 async function handleMetadata(
   supabase: SupabaseClient,
@@ -66,7 +147,7 @@ async function handleMetadata(
     .from("movie_metadata_cache")
     .upsert({
       tmdb_id: tmdbId,
-      data: freshData,
+      data: { ...(cachedRow?.data ?? {}), ...freshData },
       last_fetched_at: new Date().toISOString(),
     });
 
@@ -109,11 +190,51 @@ async function handleStreaming(
   return freshData;
 }
 
+// --- M6 part 1: shared per-field cache-aside for details/videos/credits/ ---
+// --- release_dates/collection (same movie_metadata_cache row, own keys) ---
+
+async function handleCacheAsideField<T>(
+  supabase: SupabaseClient,
+  tmdbId: number,
+  fieldKey: string,
+  fetchFresh: () => Promise<T>,
+): Promise<T> {
+  const { data: cachedRow, error: readError } = await supabase
+    .from("movie_metadata_cache")
+    .select("tmdb_id, data, last_fetched_at")
+    .eq("tmdb_id", tmdbId)
+    .maybeSingle<MetadataCacheRow>();
+
+  if (readError) throw readError;
+
+  if (isCacheAsideFieldFresh(cachedRow?.data, fieldKey)) {
+    return (cachedRow!.data as Record<string, unknown>)[fieldKey] as T;
+  }
+
+  const freshValue = await fetchFresh();
+
+  const { error: writeError } = await supabase
+    .from("movie_metadata_cache")
+    .upsert({
+      tmdb_id: tmdbId,
+      data: { ...(cachedRow?.data ?? {}), [fieldKey]: freshValue },
+      last_fetched_at: new Date().toISOString(),
+    });
+
+  if (writeError) throw writeError;
+
+  return freshValue;
+}
+
 function jsonResponse(body: unknown, status: number): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function badRequest(message: string): Response {
+  return jsonResponse({ error: message }, 400);
 }
 
 Deno.serve(async (req: Request) => {
@@ -128,30 +249,167 @@ Deno.serve(async (req: Request) => {
     return jsonResponse({ error: "Invalid JSON body" }, 400);
   }
 
-  if (
-    typeof body.tmdbId !== "number" ||
-    (body.kind !== "metadata" && body.kind !== "streaming")
-  ) {
-    return jsonResponse(
-      {
-        error:
-          "Expected { tmdbId: number, kind: 'metadata' | 'streaming', region?: string }",
-      },
-      400,
-    );
+  if (!VALID_KINDS.includes(body.kind)) {
+    return badRequest(`Unknown kind. Expected one of: ${VALID_KINDS.join(", ")}`);
   }
-
-  // Decision: kind: "streaming" requests that omit `region` default to "DE"
-  // (explicitly confirmed by the user, not an autonomous default).
-  const region = body.kind === "streaming" ? (body.region ?? "DE") : undefined;
 
   try {
     const supabase = getSupabaseClient();
-    const data = body.kind === "metadata"
-      ? await handleMetadata(supabase, body.tmdbId)
-      : await handleStreaming(supabase, body.tmdbId, region!);
 
-    return jsonResponse({ data }, 200);
+    switch (body.kind) {
+      // --- unchanged M1 kinds -------------------------------------------
+      case "metadata": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'metadata' }");
+        }
+        return jsonResponse({ data: await handleMetadata(supabase, body.tmdbId) }, 200);
+      }
+      case "streaming": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'streaming', region?: string }");
+        }
+        // Decision: kind: "streaming" requests that omit `region` default to
+        // "DE" (explicitly confirmed by the user, not an autonomous default).
+        const region = body.region ?? "DE";
+        return jsonResponse({ data: await handleStreaming(supabase, body.tmdbId, region) }, 200);
+      }
+
+      // --- M6 part 1: cache-aside actions (movie_metadata_cache, per-field) -
+      case "details": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'details' }");
+        }
+        const tmdbId = body.tmdbId;
+        const data = await handleCacheAsideField(
+          supabase,
+          tmdbId,
+          "details",
+          () => fetchMovieDetails(tmdbId),
+        );
+        return jsonResponse({ data }, 200);
+      }
+      case "videos": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'videos' }");
+        }
+        const tmdbId = body.tmdbId;
+        const data = await handleCacheAsideField(
+          supabase,
+          tmdbId,
+          "videos",
+          () => fetchMovieVideos(tmdbId),
+        );
+        return jsonResponse({ data }, 200);
+      }
+      case "credits": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'credits' }");
+        }
+        const tmdbId = body.tmdbId;
+        const data = await handleCacheAsideField(
+          supabase,
+          tmdbId,
+          "credits",
+          () => fetchMovieCredits(tmdbId),
+        );
+        return jsonResponse({ data }, 200);
+      }
+      case "release_dates": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'release_dates' }");
+        }
+        const tmdbId = body.tmdbId;
+        const data = await handleCacheAsideField(
+          supabase,
+          tmdbId,
+          "releaseDatesDE",
+          () => fetchGermanReleaseDates(tmdbId),
+        );
+        return jsonResponse({ data }, 200);
+      }
+      case "collection": {
+        // Requires BOTH tmdbId (the movie whose row is used as the cache
+        // key, per the "extend the existing metadata cache table" decision)
+        // AND collectionId (the actual TMDB collection to fetch) — see
+        // docs/interim-decisions.md.
+        if (typeof body.tmdbId !== "number" || typeof body.collectionId !== "number") {
+          return badRequest(
+            "Expected { tmdbId: number, collectionId: number, kind: 'collection' }",
+          );
+        }
+        const collectionId = body.collectionId;
+        const data = await handleCacheAsideField(
+          supabase,
+          body.tmdbId,
+          "collection",
+          () => fetchCollection(collectionId),
+        );
+        return jsonResponse({ data }, 200);
+      }
+
+      // --- fetch-through actions (no persistent cache table) --------------
+      case "search": {
+        if (typeof body.query !== "string" || body.query.trim().length === 0) {
+          return badRequest("Expected { query: string, kind: 'search' }");
+        }
+        return jsonResponse({ data: await searchMovies(body.query) }, 200);
+      }
+      case "providers": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'providers' }");
+        }
+        return jsonResponse({ data: await fetchMovieProviders(body.tmdbId) }, 200);
+      }
+      case "providers_list": {
+        return jsonResponse({ data: await fetchProvidersList() }, 200);
+      }
+      case "trakt_related": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'trakt_related' }");
+        }
+        return jsonResponse({ data: await fetchTraktRelated(body.tmdbId) }, 200);
+      }
+      case "search_person": {
+        if (typeof body.query !== "string" || body.query.trim().length === 0) {
+          return badRequest("Expected { query: string, kind: 'search_person' }");
+        }
+        return jsonResponse({ data: await searchPerson(body.query) }, 200);
+      }
+      case "person_movies": {
+        if (typeof body.personId !== "number") {
+          return badRequest("Expected { personId: number, kind: 'person_movies' }");
+        }
+        return jsonResponse({ data: await fetchPersonMovies(body.personId) }, 200);
+      }
+      case "director_movies": {
+        if (typeof body.personId !== "number") {
+          return badRequest("Expected { personId: number, kind: 'director_movies' }");
+        }
+        return jsonResponse({ data: await fetchDirectorMovies(body.personId) }, 200);
+      }
+      case "search_company": {
+        if (typeof body.query !== "string" || body.query.trim().length === 0) {
+          return badRequest("Expected { query: string, kind: 'search_company' }");
+        }
+        return jsonResponse({ data: await searchCompany(body.query) }, 200);
+      }
+      case "studio_movies": {
+        if (typeof body.companyId !== "number") {
+          return badRequest("Expected { companyId: number, kind: 'studio_movies', page?: number }");
+        }
+        return jsonResponse(
+          { data: await fetchStudioMovies(body.companyId, body.page ?? 1) },
+          200,
+        );
+      }
+
+      default: {
+        // Exhaustiveness guard — VALID_KINDS check above should make this
+        // unreachable, but keep TypeScript honest.
+        const _exhaustive: never = body.kind;
+        return badRequest(`Unhandled kind: ${_exhaustive}`);
+      }
+    }
   } catch (error) {
     console.error(error);
     return jsonResponse({ error: "Internal error" }, 500);
