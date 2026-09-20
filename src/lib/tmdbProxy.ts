@@ -129,6 +129,19 @@ export function getMovieProviders(tmdbId: number): Promise<TmdbProxyResult<TmdbM
   return invokeTmdbProxy<TmdbMovieProviders>({ kind: "providers", tmdbId });
 }
 
+/**
+ * M10 Settings hub ("Meine Streaming-Dienste" picker,
+ * src/app/(app)/(modals)/settings/streaming-services.tsx): the full DE-region
+ * TMDB provider catalog, per the `providers_list` action
+ * (supabase/functions/tmdb-proxy/tmdb-client.ts's `fetchProvidersList`,
+ * already implemented server-side since M6 but never given a client wrapper
+ * until now). No params — the server hardcodes `watch_region: "DE"`, same
+ * convention as `getMovieProviders` above.
+ */
+export function getProvidersList(): Promise<TmdbProxyResult<TmdbProviderRef[]>> {
+  return invokeTmdbProxy<TmdbProviderRef[]>({ kind: "providers_list" });
+}
+
 // ---------------------------------------------------------------------------
 // M7 part 2 (Add-Movie-Modal): search actions + the M7 part 1 write action.
 // ---------------------------------------------------------------------------

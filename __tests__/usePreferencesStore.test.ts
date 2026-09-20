@@ -205,4 +205,112 @@ describe("usePreferencesStore", () => {
 
     expect(usePreferencesStore.getState().activeGroupId).toBe("group-99");
   });
+
+  it("defaults selectedStreamingProviderIds to an empty array when nothing has been persisted yet", () => {
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().selectedStreamingProviderIds).toEqual([]);
+  });
+
+  it("setSelectedStreamingProviderIds updates the store's state", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setSelectedStreamingProviderIds([8, 337]);
+
+    expect(usePreferencesStore.getState().selectedStreamingProviderIds).toEqual([8, 337]);
+  });
+
+  it("persists selectedStreamingProviderIds through the MMKV-backed storage adapter, not just in memory", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setSelectedStreamingProviderIds([8]);
+
+    const raw = mockStorageMap.get("watchcrew-preferences");
+    expect(raw).toBeDefined();
+    const persisted = JSON.parse(raw as string);
+    expect(persisted.state.selectedStreamingProviderIds).toEqual([8]);
+  });
+
+  it("hydrates selectedStreamingProviderIds from data already present in MMKV storage on module load", () => {
+    mockStorageMap.set(
+      "watchcrew-preferences",
+      JSON.stringify({ state: { selectedStreamingProviderIds: [2, 9] }, version: 0 }),
+    );
+
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().selectedStreamingProviderIds).toEqual([2, 9]);
+  });
+
+  it("defaults showTitlesInGrid to true when nothing has been persisted yet", () => {
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().showTitlesInGrid).toBe(true);
+  });
+
+  it("setShowTitlesInGrid updates the store's state", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setShowTitlesInGrid(false);
+
+    expect(usePreferencesStore.getState().showTitlesInGrid).toBe(false);
+  });
+
+  it("persists showTitlesInGrid through the MMKV-backed storage adapter, not just in memory", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setShowTitlesInGrid(false);
+
+    const raw = mockStorageMap.get("watchcrew-preferences");
+    expect(raw).toBeDefined();
+    const persisted = JSON.parse(raw as string);
+    expect(persisted.state.showTitlesInGrid).toBe(false);
+  });
+
+  it("hydrates showTitlesInGrid from data already present in MMKV storage on module load", () => {
+    mockStorageMap.set(
+      "watchcrew-preferences",
+      JSON.stringify({ state: { showTitlesInGrid: false }, version: 0 }),
+    );
+
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().showTitlesInGrid).toBe(false);
+  });
+
+  it("defaults lastSeenChangelogVersion to null when nothing has been persisted yet", () => {
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBeNull();
+  });
+
+  it("setLastSeenChangelogVersion updates the store's state", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setLastSeenChangelogVersion("1.0.0");
+
+    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBe("1.0.0");
+  });
+
+  it("persists lastSeenChangelogVersion through the MMKV-backed storage adapter, not just in memory", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setLastSeenChangelogVersion("1.0.0");
+
+    const raw = mockStorageMap.get("watchcrew-preferences");
+    expect(raw).toBeDefined();
+    const persisted = JSON.parse(raw as string);
+    expect(persisted.state.lastSeenChangelogVersion).toBe("1.0.0");
+  });
+
+  it("hydrates lastSeenChangelogVersion from data already present in MMKV storage on module load", () => {
+    mockStorageMap.set(
+      "watchcrew-preferences",
+      JSON.stringify({ state: { lastSeenChangelogVersion: "0.9.0" }, version: 0 }),
+    );
+
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBe("0.9.0");
+  });
 });

@@ -101,6 +101,10 @@ export default function WatchlistScreen() {
 
   const watchlistViewMode = usePreferencesStore((s) => s.watchlistViewMode);
   const setWatchlistViewMode = usePreferencesStore((s) => s.setWatchlistViewMode);
+  // M10 Settings hub ("Filmtitel in Grid anzeigen" toggle,
+  // src/app/(app)/(modals)/settings/display.tsx) — see WatchlistPosterCard's
+  // `showTitle` prop doc comment for why this only affects grid variant.
+  const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
 
   const [sortOption, setSortOption] = useState<WatchlistSortOption>("added");
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
@@ -296,6 +300,7 @@ export default function WatchlistScreen() {
                 streamingAvailability={streamingAvailability}
                 ratedCount={ratedCountFor(item)}
                 totalMembers={totalMembers}
+                showTitle={showTitlesInGrid}
                 testID={`watchlist-entry-${item.id}`}
               />
             </View>

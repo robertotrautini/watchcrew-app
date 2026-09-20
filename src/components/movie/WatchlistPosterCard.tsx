@@ -46,6 +46,15 @@ export interface WatchlistPosterCardProps {
   onPress?: (event: GestureResponderEvent) => void;
   /** Base testID; sub-elements are suffixed, e.g. `${testID}-title`. */
   testID?: string;
+  /**
+   * M10 Settings hub ("Filmtitel in Grid anzeigen" toggle,
+   * `usePreferencesStore`'s `showTitlesInGrid`): whether to render the title
+   * text in "grid" variant. Has no effect on "card" variant, which always
+   * shows its title regardless of this preference (the toggle is scoped to
+   * grid mode only, per the task brief). Defaults to `true` to match the
+   * pre-M10 always-shown behavior.
+   */
+  showTitle?: boolean;
 }
 
 function formatTmdbScore(voteAverage: number): string {
@@ -61,6 +70,7 @@ export function WatchlistPosterCard({
   now,
   onPress,
   testID = "watchlist-poster-card",
+  showTitle = true,
 }: WatchlistPosterCardProps) {
   const dateBadgeText = getDateBadgeText(movie, streamingAvailability, now);
   const dimmed = isEntryDimmed(movie, streamingAvailability, now);
@@ -105,13 +115,15 @@ export function WatchlistPosterCard({
         ) : null}
       </View>
 
-      <Text
-        testID={`${testID}-title`}
-        className="mt-2 font-semibold text-text-primary"
-        numberOfLines={variant === "grid" ? 1 : undefined}
-      >
-        {movie.name}
-      </Text>
+      {variant === "card" || showTitle ? (
+        <Text
+          testID={`${testID}-title`}
+          className="mt-2 font-semibold text-text-primary"
+          numberOfLines={variant === "grid" ? 1 : undefined}
+        >
+          {movie.name}
+        </Text>
+      ) : null}
 
       {variant === "card" ? (
         <>

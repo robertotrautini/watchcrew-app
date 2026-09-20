@@ -31,14 +31,11 @@ import type { WatchlistEntry } from "@/lib/watchlistTypes";
  * that's been rated but not yet paid for does NOT appear here. See
  * `getPaidEntries` (src/lib/trackerLogic.ts).
  *
- * M9 part 2 addition: a "⚙️" header button navigating to the new
- * Group-Settings screen (`/group-settings`,
- * src/app/(app)/(modals)/group-settings.tsx). INTERIM PLACEMENT, not a
- * permanent decision -- a real Settings hub is M10 scope and doesn't exist
- * yet, so this screen (checked, along with Watchlist and the root layout,
- * for any existing settings/menu entry point -- none found) hosts the only
- * button into Group-Settings for now. Revisit once M10 builds the real
- * Settings navigation.
+ * M9 part 2 addition, UPDATED for M10: a "⚙️" header button, now navigating
+ * to the real Settings hub (`/settings`,
+ * src/app/(app)/(modals)/settings.tsx) instead of straight to Group-Settings
+ * -- Group-Settings is one of that hub's sub-sections now (see the hub's own
+ * "Gruppe verwalten" row), not a standalone destination from here anymore.
  */
 
 function formatPlainDate(dateStr: string | null): string {
@@ -184,8 +181,8 @@ export default function TrackerScreen() {
             variant="secondary"
             label="⚙️"
             testID="tracker-group-settings-button"
-            accessibilityLabel="Gruppe verwalten"
-            onPress={() => router.push("/group-settings")}
+            accessibilityLabel="Einstellungen"
+            onPress={() => router.push("/settings")}
           />
           <Button
             size="sm"

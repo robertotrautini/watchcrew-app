@@ -157,6 +157,22 @@ describe("WatchlistPosterCard", () => {
       expect(queryByTestId("watchlist-poster-card-overview")).toBeNull();
     });
 
+    it("hides the title text when showTitle is false (M10 'Filmtitel in Grid anzeigen' toggle off)", async () => {
+      const { queryByTestId } = await render(
+        <WatchlistPosterCard
+          variant="grid"
+          movie={makeMovie()}
+          streamingAvailability={lookup()}
+          ratedCount={0}
+          totalMembers={3}
+          now={NOW}
+          showTitle={false}
+        />,
+      );
+
+      expect(queryByTestId("watchlist-poster-card-title")).toBeNull();
+    });
+
     it("shows the date badge overlay when no progress badge applies", async () => {
       const { getByTestId, queryByTestId } = await render(
         <WatchlistPosterCard

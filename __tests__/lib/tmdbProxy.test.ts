@@ -113,6 +113,19 @@ describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () =>
     expect(result).toEqual({ data: providers, error: null });
   });
 
+  it("getProvidersList invokes tmdb-proxy with kind: 'providers_list' and no other params", async () => {
+    const providers = [{ provider_id: 8, provider_name: "Netflix" }];
+    mockInvoke.mockResolvedValue({ data: { data: providers }, error: null });
+
+    const { getProvidersList } = require("../../src/lib/tmdbProxy");
+    const result = await getProvidersList();
+
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "providers_list" },
+    });
+    expect(result).toEqual({ data: providers, error: null });
+  });
+
   it("maps a functions.invoke error with a message into { data: null, error: { message } } (never throws)", async () => {
     mockInvoke.mockResolvedValue({ data: null, error: { message: "edge function failed" } });
 

@@ -145,6 +145,12 @@ export default function TagebuchScreen() {
 
   const diaryViewMode = usePreferencesStore((s) => s.diaryViewMode);
   const setDiaryViewMode = usePreferencesStore((s) => s.setDiaryViewMode);
+  // M10 Settings hub ("Filmtitel in Grid anzeigen" toggle,
+  // src/app/(app)/(modals)/settings/display.tsx): Tagebuch's grid mode never
+  // showed a title at all before M10 (unlike Watchlist's grid, which always
+  // did) -- this preference now ADDS one below the poster tile when true,
+  // per docs/interim-decisions.md's "M10 — Settings hub" entry.
+  const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
 
   const [sortOption, setSortOption] = useState<DiarySortOption>("my_diary");
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
@@ -356,6 +362,15 @@ export default function TagebuchScreen() {
                     liked={ownRating(entry)?.liked === true}
                     tmdbScore={entry.movie.vote_average}
                   />
+                  {showTitlesInGrid ? (
+                    <Text
+                      testID={`tagebuch-grid-title-${entry.id}`}
+                      className="mt-1 text-xs text-text-primary"
+                      numberOfLines={1}
+                    >
+                      {entry.movie.name}
+                    </Text>
+                  ) : null}
                 </View>
               ))}
             </View>
