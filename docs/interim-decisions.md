@@ -35,6 +35,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M6 — `person_movies`/`director_movies`/`studio_movies` ebenfalls ohne Cache-Aside](#m6--person_moviesdirector_moviesstudio_movies-ebenfalls-ohne-cache-aside)
 - [M6 — Studio-Filmografie-Screen: Dedupe-Strategie, Footer-Sichtbarkeit, `movie-detail`-Routenannahme](#m6--studio-filmografie-screen-dedupe-strategie-footer-sichtbarkeit-movie-detail-routenannahme)
 - [M6 — Ähnliche-Filme-Screen: kein Poster-/Score-Backfill, `movie-detail`-Routenannahme](#m6--ähnliche-filme-screen-kein-poster-score-backfill-movie-detail-routenannahme)
+- [M6 (Teil 1) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call](#m6-teil-1--usemoviedetail-paralleles-fetching-statt-kombiniertem-server-call)
+- [M6 (Teil 1) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung](#m6-teil-1--usemoviedetailmutations-like-toggle-pfad-cache-invalidierung-fehlerbehandlung)
+- [M6 (Teil 1) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details](#m6-teil-1--movie-detail-screen-routen-contract-aktionsleisten-logik-trailer-ui-details)
 
 ---
 
@@ -486,6 +489,62 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 **Entscheidung (vorläufig):** Flach direkt unter `__tests__/` (z. B. `__tests__/useCollection.test.tsx`), passend zur bereits bestehenden Repo-Konvention für alle früheren Hooks (`useCurrentUserId.test.tsx`, `useGroupWatchlist.test.tsx`, `useUserGroups.test.tsx` usw. liegen ebenfalls flach, nicht unter `__tests__/hooks/`). Lib-Tests dagegen liegen unter `__tests__/lib/` und Screen-Tests unter `__tests__/screens/` — beides ebenfalls bereits bestehende, jetzt fortgeführte Konventionen.
 
 **Warum das später leicht änderbar ist:** Reine Datei-Pfad-Frage für Jest — ein `find`+`git mv` in einen `hooks/`-Unterordner würde nichts an Testinhalten oder Imports ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 (Teil 1) — `useMovieDetail`: paralleles Fetching statt kombiniertem Server-Call
+
+**Problem/Lücke:** Der neue Movie-Detail-Screen braucht fünf verschiedene `tmdb-proxy`-Actions (`details`, `videos`, `credits`, `release_dates`, `providers`) gleichzeitig. Weder ADR 0002/0005 noch feature-inventory.md legen fest, ob diese als ein kombinierter Server-Call oder als mehrere Client-Calls geholt werden.
+
+**Entscheidung (vorläufig):**
+- Die fünf Actions bleiben fünf separate Funktionen in `src/lib/movieDetail.ts`, werden aber innerhalb der `queryFn` von `useMovieDetail` per `Promise.all` gleichzeitig (parallel) abgefeuert, statt sequenziell oder über einen neuen kombinierten Server-Endpoint.
+- Fehlerverhalten ist "fail-fast in fester Reihenfolge": schlägt einer oder mehrere der fünf Calls fehl, wirft der Hook den ERSTEN Fehler in der festen Prüfreihenfolge `details → trailer → credits → germanReleaseDate → providers`, statt alle fünf Fehler zu aggregieren — analog zum bestehenden Stil von `useGroupWatchlist`.
+- `region` wird bei allen fünf Calls einheitlich fest als `"DE"` mitgeschickt, für eine simple, einheitliche Helper-Signatur.
+- Neuer Client-seitiger Helper `invokeTmdbProxy` in `src/lib/movieDetail.ts` — der erste Client-Code, der die `tmdb-proxy` Edge Function überhaupt aufruft (bisher gab es dafür noch keinen Helper).
+
+**Warum das später leicht änderbar ist:** Ein Wechsel zu einem einzigen kombinierten "Batch-Detail"-Server-Endpoint würde nur `useMovieDetail`s `queryFn` und `src/lib/movieDetail.ts` betreffen — die Aufrufer (der Screen) kennen nur das fertige `MovieDetailData`-Resultat. Ein Wechsel von Fail-Fast zu einem aggregierten Fehlerobjekt wäre eine lokale Änderung der Catch-Logik, ohne Strukturbruch.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 (Teil 1) — `useMovieDetailMutations`: Like-Toggle-Pfad, Cache-Invalidierung, Fehlerbehandlung
+
+**Problem/Lücke:** Für Like-Toggle, Watchlist-Hinzufügen und Watchlist-Löschen aus dem Movie-Detail-Screen fehlten Implementierungsdetails zu Update- vs. Insert-Pfad, Cache-Invalidierung, Fehlerformat und Nutzer-ID-Herkunft.
+
+**Entscheidung (vorläufig):**
+- Like-Toggle: `.update({ liked })` auf die konkrete Rating-Zeile per `id`, wenn eine existierende Rating-ID bekannt ist (garantiert, dass andere Rating-Felder unangetastet bleiben); `.upsert(..., { onConflict: "watchlist_entry_id,member_id" })`, wenn keine existierende Rating-ID bekannt ist (Insert-oder-Erzeugen-mit-nur-`liked`-gesetzt-Pfad, da `ratings` keine DELETE-Policy hat). Aufrufer/UI entscheidet über den Pfad, je nachdem ob `existingRatingId` mitgegeben wird oder nicht.
+- Cache-Invalidierung: `useDeleteWatchlistEntry`/`useAddToWatchlist` nehmen `groupId` als Mutation-Variable entgegen und invalidieren bei Erfolg exakt den Key `["watchlist", groupId]` — derselbe Key, den `useGroupWatchlist` verwendet. `useToggleLike` invalidiert bewusst KEINEN Cache (im Auftrag nicht gefordert; separat als bekannte Lücke geflaggt, hier nicht behoben, da diese Datei im Rahmen dieser Konsolidierung nicht angefasst werden sollte).
+- Duplicate-Entry-Fehler (Postgres-Code `23505`): keine Übersetzung in eine freundliche Meldung, der rohe Postgres-Fehler wird unverändert durchgereicht (kein Präzedenzfall im Repo für eine Übersetzung von Postgres-Fehlercodes gefunden; als UI-Layer-Scope betrachtet).
+- Aktuelle User-ID wird als Hook-/Mutation-Parameter (`memberId`/`addedBy`) übergeben, nicht intern per `useCurrentUserId()` geholt — hält diese Mutation-Hooks auth-state-agnostisch und leichter testbar/wiederverwendbar, passend zu `watchlist.tsx`/`tagebuch.tsx`, die `useCurrentUserId()` einmal auf Screen-Ebene aufrufen und nach unten durchreichen.
+- `MovieNotCatalogedError` wird auf der `src/lib`-Ebene als `{ data: null, error }` zurückgegeben (never-throws-Konvention), auf Hook-Ebene aber in einen echten geworfenen Fehler umgewandelt, damit UI-Code per `error instanceof MovieNotCatalogedError` auf `mutation.error` prüfen kann.
+
+**Warum das später leicht änderbar ist:** Alle vier Punkte sind lokal isoliert — der Like-Toggle-Pfad ist eine Verzweigung innerhalb einer Mutation-Funktion, die Invalidierungs-Keys sind einzelne String-Arrays, die Fehlerübersetzung wäre eine zusätzliche Catch-Klausel, und die `memberId`-Parameter-Übergabe ist eine Signaturfrage ohne Rückwirkung auf die DB-Queries selbst.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M6 (Teil 1) — Movie-Detail-Screen: Routen-Contract, Aktionsleisten-Logik, Trailer, UI-Details
+
+**Problem/Lücke:** Für den neuen Screen `src/app/(app)/(modals)/movie/[tmdbId].tsx` fehlten Festlegungen zu Routen-Parametern, Aktionsleisten-Sichtbarkeit, Lösch-Bestätigung, Platzhalter-Navigation, Trailer-Wiedergabe und diversem UI-Feinschliff.
+
+**Entscheidung (vorläufig):**
+- Routen-Contract: `tmdbId` als erforderliches dynamisches Segment; optionale Query-Parameter `groupId`, `source` (`"watchlist"`|`"diary"`), `watchlistEntryId` definieren den "Gruppen-Kontext" (`hasGroupContext = Boolean(groupId && source)`); optionaler Parameter `movieJson` = `encodeURIComponent(JSON.stringify(movie))` eines `Movie`-förmigen Objekts, dient nur als sofortiges Instant-Paint, bevor `useGroupWatchlist`s autoritative Daten geladen sind, defensiv geparst (crasht nie bei fehlendem/fehlerhaftem Input). Sobald die echte DB-Zeile geladen ist, gewinnt sie immer gegenüber dem übergebenen JSON. Kein Aufrufer verdrahtet aktuell die Navigation zu diesem Screen (expliziter Follow-up, außerhalb des Scopes dieser Arbeit).
+- `getVisibleActions`/Aktionsleisten-Logik als reine Funktion in `src/lib/movieDetailLogic.ts` extrahiert, erschöpfend unit-getestet (Branch-Matrix für Gruppen- vs. Such-Kontext, "Bewerten"s Watchlist-plus-erschienen-oder-streaming-Gate, "Filmreihe"s `hasCollection`-Gate).
+- Bewertungen-Sektion ("Bewertungen") wird nur gerendert, wenn `source === "diary"` (gewählte Interpretation von "nur für Diary/gesehene Filme", passend zum bereits etablierten Diary/Watchlist-Split via `splitWatchlistAndDiary`).
+- Lösch-Bestätigung über die bestehende `Sheet`-Komponente umgesetzt (nicht `Alert.alert`), für visuelle Konsistenz mit der dokumentierten Sheet/Modal-System-Konvention des Codebase.
+- Platzhalter-Navigation isoliert in `src/lib/movieDetailNavigation.ts`: die echten M6-Teil-2b-Sub-View-Routen zeigen auf ihre TATSÄCHLICHEN existierenden Pfade (`/filmography/director/[personId]`, `/filmography/actor/[personId]`, `/collection/[collectionId]`, `/similar/[tmdbId]`), da diese Routen im Baum bereits existieren; `navigateToRatingDialog`/`navigateToEditFlow` bleiben echte geratene Platzhalter, da M7 noch nicht existiert.
+- Trailer: Inline-`react-native-webview`-YouTube-Embed (`https://www.youtube.com/embed/{key}?playsinline=1`) beim Tap auf den Play-Button über dem Poster; ein separater Vollbild-Umschalter öffnet ein Vollbild-natives RN-`Modal` mit derselben WebView plus `expo-screen-orientation`-Landscape-Lock beim Öffnen / Portrait-Lock beim Schließen — dokumentiert als nativ-sinnvolles Äquivalent zum Legacy-Web-`requestFullscreen()`, kein Byte-für-Byte-Port.
+- Poster-/Trailer-Container nutzt eine 16:9-Aspect-Box (nicht das sonst übliche 2:3-Poster-Verhältnis der App), um einen Layout-Sprung zwischen Poster- und Trailer-Zustand zu vermeiden.
+- Beschreibung "Mehr anzeigen": Off-Screen-Mess-`Text` via `className="absolute opacity-0"` (NativeWind reichte aus, kein Inline-Style-Fallback nötig), um die echte Zeilenzahl per `onTextLayout` zu ermitteln, verglichen gegen `maxLines=3` per reiner `shouldShowMoreToggle`-Hilfsfunktion.
+- Streaming-Anbieter-Sektion zeigt nur Namen (keine Anbieter-Logos) — vermeidet eine Out-of-Scope-Entscheidung zu rohen TMDB-Bildpfaden; die eingeklappte Ansicht zeigt eine geflachte 3-Item-Vorschau (Reihenfolge Flatrate→Leihen→Kaufen), wenn der "Alle Anbieter anzeigen"-Umschalter greifen würde.
+- Score-Badge: schlichte `voteAverage.toFixed(1)`-Pille (kein Stern-Icon), passend zu einer bereits bestehenden schlichten Zahlen-Badge-Konvention an anderer Stelle der App.
+- Aktionsleisten-Copy fest auf Deutsch: Bewerten / Bearbeiten / Ähnliche Filme / Löschen / Filmreihe / Zur Watchlist / Direkt bewerten; Lösch-Bestätigungs-Sheet-Titel "Film löschen?" (bestätigen "Löschen" / abbrechen "Abbrechen"); generischer Fehler-Alert-Titel beim Watchlist-Hinzufügen "Fehler" / Text "Der Film konnte nicht zur Watchlist hinzugefügt werden. Bitte versuche es erneut." (die `MovieNotCatalogedError`-spezifische Alert-Copy ist der auftragsseitig exakt vorgegebene Text, unverändert übernommen).
+
+**Warum das später leicht änderbar ist:** Alle Punkte sind lokal isolierte Implementierungsdetails innerhalb genau dieses einen Screens bzw. seiner extrahierten Helper-Module (`movieDetailLogic.ts`, `movieDetailNavigation.ts`) — Routen-Parameter-Namen, Aktionsleisten-Copy, Trailer-Mechanik und UI-Feinschliff ließen sich jeweils lokal austauschen, ohne `useMovieDetail`/`useMovieDetailMutations` oder andere Screens anzufassen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
