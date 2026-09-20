@@ -11,8 +11,15 @@ import { supabase } from "./supabase";
 // `ratings`) — Watchlist vs Diary is a client-side split
 // (`src/lib/watchlistLogic.ts`'s `splitWatchlistAndDiary`), never two
 // separate queries.
+//
+// M5 fast-follow: `movie_genres` also nests `genres(name)` (a genre's row in
+// `public.genres`), closing the flagged gap where genre pills only had a raw
+// genre_id to show. `genre_id` itself stays selected too — it's still the
+// identity used for filtering/selection state in watchlistLogic.ts/the
+// screens; only the display LABEL needed a real name.
 
-const WATCHLIST_ENTRY_SELECT = "*, movie:movies(*, movie_genres(genre_id)), ratings(*)";
+const WATCHLIST_ENTRY_SELECT =
+  "*, movie:movies(*, movie_genres(genre_id, genres(name))), ratings(*)";
 
 export async function getGroupWatchlistEntries(groupId: string) {
   return supabase.from("watchlist_entries").select(WATCHLIST_ENTRY_SELECT).eq("group_id", groupId);

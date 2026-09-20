@@ -8,6 +8,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useUserGroups } from "@/hooks/useUserGroups";
+import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
   filterByYear,
@@ -113,6 +114,10 @@ export default function WatchlistScreen() {
   // Genre/year pill option sets are computed from the current (pre-sort/
   // filter) watchlist entries, per the task brief.
   const genrePillIds = useMemo(() => getDistinctGenreIds(baseWatchlistEntries), [baseWatchlistEntries]);
+  const genreNamesById = useMemo(
+    () => deriveGenreNamesById(baseWatchlistEntries),
+    [baseWatchlistEntries],
+  );
   const yearPillValues = useMemo(() => getDistinctYears(baseWatchlistEntries), [baseWatchlistEntries]);
 
   const sortedEntries = useMemo(() => {
@@ -205,11 +210,9 @@ export default function WatchlistScreen() {
                 selectedGenreIds.includes(genreId) ? "bg-accent" : "bg-card"
               }`}
             >
-              {/* Genre names aren't available from the current data layer
-                  (movie_genres only carries genre_id, not a joined name) —
-                  see this task's report for this flagged gap. Showing the
-                  raw id is an interim, cheap/reversible placeholder. */}
-              <Text className="text-xs text-text-primary">{genreId}</Text>
+              <Text className="text-xs text-text-primary">
+                {genreDisplayLabel(genreId, genreNamesById.get(genreId))}
+              </Text>
             </Pressable>
           ))}
         </View>

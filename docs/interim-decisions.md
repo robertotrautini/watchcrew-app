@@ -24,6 +24,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M5 — "Kommt noch"-Sortierreihenfolge](#m5--kommt-noch-sortierreihenfolge)
 - [M5 — "Aktive Gruppe" = erste Gruppe des Nutzers (Übergangslösung)](#m5--aktive-gruppe--erste-gruppe-des-nutzers-übergangslösung)
 - [M5 — "unrated"/"has_ratings" vs. "all_rated"/"missing": rating>0 vs. non-null](#m5--unratedhas_ratings-vs-all_ratedmissing-rating0-vs-non-null)
+- [M5 (Fast-Follow) — profiles-Tabelle + Genre-Namen-Join](#m5-fast-follow--profiles-tabelle--genre-namen-join)
 
 ---
 
@@ -238,6 +239,23 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 **Entscheidung (vorläufig):** Beide Definitionen 1:1 wie in der feature-inventory.md unterschiedlich belassen, mit Code-Kommentar an beiden Stellen dokumentiert, damit es nicht wie eine Inkonsistenz wirkt.
 
 **Warum das später leicht änderbar ist:** Falls eine einheitliche Definition gewünscht ist, wäre das eine bewusste Vereinheitlichung in `src/lib/watchlistLogic.ts` — aber Vorsicht: das würde von der Original-App-Spezifikation abweichen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M5 (Fast-Follow) — profiles-Tabelle + Genre-Namen-Join
+
+**Problem/Lücke:** M5 part 2 hatte zwei echte (nicht-kosmetische) Lücken hinterlassen, die als solche geflaggt waren: (1) `ratings.member_id`/`watch_group_members.user_id` sind bloße `auth.users`-UUIDs, keine `profiles`/`display_name`-Tabelle existierte, wodurch `memberDisplayLabel` nur einen UUID-Präfix-Platzhalter zeigen konnte. (2) `public.movie_genres` verknüpfte nur `genre_id`, ohne den zugehörigen `genres.name` zu joinen, wodurch Genre-Filter-Pills in Watchlist und Tagebuch ebenfalls nur einen UUID-Präfix-Platzhalter zeigten.
+
+**Entscheidung (vorläufig):**
+- Neue Migration `supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`: `profiles(id uuid pk → auth.users, display_name text not null, created_at)`, plus ein `AFTER INSERT`-Trigger (`handle_new_user()`, `SECURITY DEFINER`) auf `auth.users`, der automatisch eine `profiles`-Zeile anlegt. `display_name` wird beim Anlegen aus dem E-Mail-Lokalteil (vor dem `@`) abgeleitet — ausdrücklich ein Platzhalter-Default, da es noch keine Profil-Bearbeiten-UI gibt. RLS: `profiles` lesbar für jeden `authenticated`-Nutzer (Namen sind nicht sensibel, ADR 0003 verlangt gegenseitige Sichtbarkeit innerhalb der Gruppe), aber KEINE INSERT/UPDATE-Policy für `authenticated` (der Trigger braucht keine, da `SECURITY DEFINER`).
+- `src/lib/groups.ts`'s `getGroupMembers` joint jetzt `profiles.display_name` per Zwei-Schritt-Query (erst `watch_group_members`, dann `profiles` gefiltert per `.in("id", userIds)`, im JS gemerged) — kein direkter DB-Level-Embed, weil `watch_group_members.user_id` und `profiles.id` beide unabhängig auf `auth.users(id)` verweisen und PostgREST ohne einen direkten FK zwischen den beiden Tabellen selbst nicht embedden kann.
+- `src/lib/watchlist.ts`'s Select erweitert um `movie_genres(genre_id, genres(name))`; `src/lib/watchlistTypes.ts`'s `MovieGenreLink` bekommt ein optionales `genres: { name: string } | null`-Feld (additiv, `genre_id` bleibt unverändert für die bestehende Filter-/Sortierlogik in `watchlistLogic.ts`).
+- `src/lib/diaryDisplay.ts`'s `memberDisplayLabel`/`genreDisplayLabel` nehmen jetzt einen optionalen zweiten Parameter (echter Name) und fallen nur noch auf den UUID-Präfix-Platzhalter zurück, wenn kein Profil-/Genre-Datensatz gefunden wird (defensiv, z.B. fehlendes Profil).
+- Docker-verifiziert (lokaler `supabase start`/`db reset`-Stack): `auth.users`-Insert erzeugt automatisch die passende `profiles`-Zeile mit E-Mail-Lokalteil-Namen; cross-user SELECT auf `profiles` als `authenticated` funktioniert; direktes UPDATE als `authenticated` betrifft 0 Zeilen (RLS greift); die tatsächliche REST-Query-Form von `getGroupMembers` (zwei GET-Requests gegen `/rest/v1/watch_group_members` und `/rest/v1/profiles?id=in.(...)`) wurde live gegen den lokalen PostgREST-Endpunkt bestätigt.
+
+**Warum das später leicht änderbar ist:** Der E-Mail-Lokalteil-Default ist ausdrücklich Platzhalter-Qualität — eine spätere Settings/Profil-Milestone müsste nur eine `UPDATE-own-row`-RLS-Policy (`using (id = auth.uid())`) plus eine kleine UI ergänzen, keine strukturelle Änderung an `profiles` nötig. Der Genre-Namen-Join ist rein additiv (ein zusätzliches verschachteltes Select-Feld + ein optionales Typ-Feld), keine bestehende Filter-/Sortierlogik musste angefasst werden.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

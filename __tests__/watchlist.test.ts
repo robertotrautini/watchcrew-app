@@ -22,7 +22,9 @@ describe("getGroupWatchlistEntries", () => {
     const result = await getGroupWatchlistEntries("group-1");
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
-    expect(mockSelect).toHaveBeenCalledWith("*, movie:movies(*, movie_genres(genre_id)), ratings(*)");
+    expect(mockSelect).toHaveBeenCalledWith(
+      "*, movie:movies(*, movie_genres(genre_id, genres(name))), ratings(*)",
+    );
     expect(mockEq).toHaveBeenCalledWith("group_id", "group-1");
     expect(result).toBe(fakeResult);
   });

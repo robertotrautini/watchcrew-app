@@ -43,6 +43,11 @@ jest.mock("@/hooks/useGroupWatchlist", () => ({
   useGroupWatchlist: mockUseGroupWatchlist,
 }));
 
+const mockUseGroupMembers = jest.fn();
+jest.mock("@/hooks/useGroupMembers", () => ({
+  useGroupMembers: mockUseGroupMembers,
+}));
+
 // Lazily required — same Babel CJS-hoisting reason as
 // __tests__/screens/Login.test.tsx for the screen under test.
 function loadTagebuchScreen() {
@@ -95,7 +100,7 @@ function makeEntry(overrides: Partial<WatchlistEntry> & Pick<WatchlistEntry, "id
   };
 }
 
-function mockHappyPath(entries: WatchlistEntry[]) {
+function mockHappyPath(entries: WatchlistEntry[], groupMembers?: Record<string, unknown>[]) {
   mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
   mockUseUserGroups.mockReturnValue({
     data: [{ group_id: "g1", user_id: CURRENT_USER, role: "owner", joined_at: "2026-01-01" }],
@@ -108,6 +113,12 @@ function mockHappyPath(entries: WatchlistEntry[]) {
     isError: false,
     error: null,
   });
+  mockUseGroupMembers.mockReturnValue({
+    data: groupMembers ?? [],
+    isLoading: false,
+    isError: false,
+    error: null,
+  });
 }
 
 describe("TagebuchScreen", () => {
@@ -115,6 +126,7 @@ describe("TagebuchScreen", () => {
     jest.clearAllMocks();
     const usePreferencesStore = loadPreferencesStore();
     usePreferencesStore.setState({ diaryViewMode: "cards" });
+    mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
   });
 
   describe("loading / error / empty states", () => {
@@ -212,6 +224,23 @@ describe("TagebuchScreen", () => {
 
       const values = getAllByTestId("member-rating-value").map((node) => node.props.children);
       expect(values).toEqual(["4.0", "–", "5.0"]);
+    });
+
+    it("shows the real profile display_name (joined via useGroupMembers) for a member row, falling back to the uuid-prefix placeholder when a profile is missing", async () => {
+      mockHappyPath(
+        [entry],
+        [
+          { user_id: "u1", profiles: { display_name: "Robin" } },
+          { user_id: "u2", profiles: null },
+          { user_id: "u3", profiles: { display_name: "Alex" } },
+        ],
+      );
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { getAllByTestId } = await render(<TagebuchScreen />);
+
+      const names = getAllByTestId("member-rating-name").map((node) => node.props.children);
+      expect(names).toEqual(["Robin", "Mitglied u2", "Alex"]);
     });
 
     it("computes and displays the average-rating badge from the non-null ratings only", async () => {
@@ -394,6 +423,26 @@ describe("TagebuchScreen", () => {
         movie_genres: [{ genre_id: "genre-action" }],
       }),
       ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-05-01" })],
+    });
+
+    it("shows the real genre name (joined via movie_genres(genres(name))) on a genre pill, falling back to the placeholder when missing", async () => {
+      const entryNamedGenre = makeEntry({
+        id: "e-named",
+        movie: makeMovie({
+          tmdb_id: 9,
+          name: "Named",
+          movie_genres: [{ genre_id: "genre-action", genres: { name: "Action" } }],
+        }),
+        ratings: [makeRating({ member_id: "u1", rating: 4 })],
+      });
+      mockHappyPath([entryNamedGenre]);
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { getByTestId, getByText } = await render(<TagebuchScreen />);
+      await fireEvent.press(getByTestId("tagebuch-sort-button"));
+      await fireEvent.press(getByTestId("tagebuch-sort-option-genre"));
+
+      expect(getByText("Action")).toBeTruthy();
     });
 
     it("shows genre pills only when 'Nach Genre' is the active sort option", async () => {

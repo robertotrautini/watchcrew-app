@@ -4,21 +4,20 @@
 // value" formatting, kept separate from the screen component so it's
 // independently unit-testable.
 //
-// --- FLAGGED GAP (see task report) ---
-// `memberDisplayLabel` and `genreDisplayLabel` are PLACEHOLDERS. Neither a
-// group-members-roster query nor a member-display-name source (no
-// `profiles`/`display_name` table exists yet — `ratings.member_id` is only
-// a bare `auth.users` uuid) nor a genre-id -> genre-name lookup (the
-// `public.genres` table exists in the schema but nothing fetches it yet)
-// is wired up anywhere in this codebase as of this task. Building either
-// properly is a real data-layer/architecture decision (new table? new
-// Edge Function? client-side join against `auth.users`, which isn't
-// normally client-readable?) that the project's "zero autonomous
-// decisions" rule requires surfacing to the user first, not inventing here.
-// These two functions exist so the Diary screen's per-member rows and
-// genre pills are still functionally correct (right rows, right filtering)
-// today, with an obviously-a-placeholder label, and can be swapped for a
-// real lookup later with no other code changes.
+// --- M5 FAST-FOLLOW: real names, gap closed ---
+// `memberDisplayLabel`/`genreDisplayLabel` originally rendered
+// unconditional uuid-prefix placeholders (no `profiles` table and no
+// genre-name join existed yet). Both gaps are now closed:
+//  - `supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`
+//    adds a `profiles(id, display_name)` table, auto-populated by a trigger
+//    on `auth.users` insert, joined in per-member by
+//    `src/lib/groups.ts`'s `getGroupMembers`.
+//  - `src/lib/watchlist.ts`'s query now nests `movie_genres(genre_id,
+//    genres(name))`, so a real genre name is available per movie.
+// Both functions now take the real name/display_name as an OPTIONAL second
+// argument and only fall back to the uuid-prefix placeholder when it's
+// missing/empty — defensive insurance for a profile or genre row that's
+// somehow absent, not the expected common case anymore.
 
 import type { WatchlistEntry } from "./watchlistTypes";
 
@@ -59,12 +58,46 @@ export function deriveGroupMemberIds(entries: WatchlistEntry[]): string[] {
   return Array.from(ids).sort();
 }
 
-/** Placeholder member label — see the flagged-gap module comment above. */
-export function memberDisplayLabel(memberId: string): string {
+/**
+ * Member display label. Uses the real `profiles.display_name` when given
+ * (the common case since the M5 fast-follow); falls back to the original
+ * uuid-prefix placeholder only when no name is available (e.g. a missing
+ * profile row — see the module comment above).
+ */
+export function memberDisplayLabel(memberId: string, displayName?: string | null): string {
+  if (displayName != null && displayName.length > 0) {
+    return displayName;
+  }
   return `Mitglied ${memberId.slice(0, 8)}`;
 }
 
-/** Placeholder genre label — see the flagged-gap module comment above. */
-export function genreDisplayLabel(genreId: string): string {
+/**
+ * Genre display label. Uses the real `genres.name` when given (the common
+ * case since the M5 fast-follow); falls back to the original uuid-prefix
+ * placeholder only when no name is available (e.g. a missing genre-catalog
+ * row — see the module comment above).
+ */
+export function genreDisplayLabel(genreId: string, genreName?: string | null): string {
+  if (genreName != null && genreName.length > 0) {
+    return genreName;
+  }
   return `Genre ${genreId.slice(0, 8)}`;
+}
+
+/**
+ * genre_id -> real genre name, derived from whatever entries are passed in
+ * (via each movie's nested `movie_genres(genre_id, genres(name))`). Used by
+ * both the Watchlist and Tagebuch screens to resolve a genre pill's real
+ * name via `genreDisplayLabel(genreId, genreNamesById.get(genreId))`.
+ */
+export function deriveGenreNamesById(entries: WatchlistEntry[]): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const entry of entries) {
+    for (const link of entry.movie.movie_genres ?? []) {
+      if (link.genres?.name) {
+        names.set(link.genre_id, link.genres.name);
+      }
+    }
+  }
+  return names;
 }

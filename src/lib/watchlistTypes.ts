@@ -5,8 +5,11 @@
 // `src/lib/watchlist.ts`/`src/hooks/useGroupWatchlist.ts`:
 //
 //   watchlist_entries.select(
-//     "*, movie:movies(*, movie_genres(genre_id)), ratings(*)"
+//     "*, movie:movies(*, movie_genres(genre_id, genres(name))), ratings(*)"
 //   )
+//
+// The `genres(name)` nested join (M5 fast-follow) resolves the flagged gap
+// where genre pills only had a raw genre_id to show, no display name.
 //
 // Single-table model reminder (frozen across all milestones, see
 // docs/feature-inventory.md): a `watchlist_entries` row is never itself
@@ -15,6 +18,12 @@
 
 export interface MovieGenreLink {
   genre_id: string;
+  // Present when fetched via the nested `movie_genres(genre_id, genres(name))`
+  // select (M5 fast-follow genre-name join) -- optional so hand-built test
+  // fixtures that only cared about `genre_id` keep compiling unchanged, and
+  // so a movie whose genre catalog row is somehow missing degrades to the
+  // existing uuid-prefix placeholder instead of crashing.
+  genres?: { name: string } | null;
 }
 
 export interface Movie {

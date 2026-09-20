@@ -5,10 +5,12 @@ import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { Sheet } from "@/components/ui/Sheet";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useUserGroups } from "@/hooks/useUserGroups";
 import {
   computeAverageRating,
+  deriveGenreNamesById,
   deriveGroupMemberIds,
   formatSeenAtDate,
   genreDisplayLabel,
@@ -42,41 +44,28 @@ import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferences
  * same reason (see src/app/(app)/(tabs)/_layout.tsx's tab bar and
  * src/app/(onboarding)/create-or-join-group.tsx) — not a new decision.
  *
- * --- FLAGGED GAP: group member roster, member display names & genre names ---
- * The per-member rating rows and the genre filter pills need (a) the
- * group's full member roster and (b) human-readable labels for a
- * `member_id` (uuid) and a `genre_id` (uuid). Neither is properly available
- * from this task's building blocks:
- *  - No hook/lib function in scope for this task returns a group's full
- *    membership (`useUserGroups` only returns the CURRENT user's OWN
- *    `watch_group_members` rows — i.e. which groups THEY belong to, not who
- *    ELSE is in a given group). So `deriveGroupMemberIds`
- *    (src/lib/diaryDisplay.ts) approximates the roster as the union of
- *    every `member_id` appearing in ANY rating row across the group's full
- *    entry set — a member who has never rated anything at all won't appear
- *    and so won't get a "–" row. NOTE: the parallel Watchlist task
- *    independently added `getGroupMembers`/`useGroupMembers`
- *    (src/lib/groups.ts / src/hooks/useGroupMembers.ts) for its own
- *    "x/y bewertet" progress badge, which — once both tasks' work is
- *    merged/committed together — would give a real roster and should
- *    replace this approximation as a fast-follow (not wired in here to
- *    keep this task's commit self-contained and not depend on a sibling
- *    task's still-in-flight files).
- *  - No `profiles`/`display_name` table exists — a member is only ever a
- *    bare `auth.users` id, and `auth.users` isn't a table an authenticated
- *    client can normally read directly, so there is no human name to show.
- *  - `public.genres` (name column) exists in the schema, but nothing
- *    fetches/joins it into the Watchlist/Diary data layer yet — only
- *    `movie_genres(genre_id)` is exposed via `useGroupWatchlist`.
- * Building any of these properly is a real architecture decision (new
- * table? new Edge Function? a join that needs different RLS?) that this
- * project's "zero autonomous decisions" rule requires surfacing to the
- * user first — not something to invent silently in this task. So, for now,
- * `memberDisplayLabel`/`genreDisplayLabel` (src/lib/diaryDisplay.ts) render
- * an obvious placeholder label instead of a real name. All the actual
- * filtering/sorting logic (which member rated what, which genre an entry
- * has) is fully correct — only the roster completeness and the on-screen
- * LABELs are approximations/placeholders, trivially swappable later.
+ * --- M5 FAST-FOLLOW: member display names & genre names ---
+ * The per-member rating rows and the genre filter pills previously showed
+ * uuid-prefix placeholders (no `profiles` table and no genre-name join
+ * existed yet). Both are now wired to real data:
+ *  - `useGroupMembers` (src/hooks/useGroupMembers.ts, already added by the
+ *    parallel Watchlist task for its "x/y bewertet" badge) now also returns
+ *    each member's joined `profiles.display_name`
+ *    (`supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`
+ *    adds the table + an auto-provisioning trigger on `auth.users` insert).
+ *    This screen looks up a member's name from that roster and passes it to
+ *    `memberDisplayLabel`, which still falls back to the uuid-prefix
+ *    placeholder if a profile row is somehow missing.
+ *  - The member ROSTER itself (which ids get a row at all) intentionally
+ *    still comes from `deriveGroupMemberIds` (the union-of-ratings
+ *    approximation) rather than switching to `useGroupMembers`'s real
+ *    membership list — that roster-completeness gap (a member who never
+ *    rated anything won't get a "–" row) is a separate, not-yet-flagged
+ *    concern, out of scope for this fast-follow, which only closes the two
+ *    display-NAME gaps.
+ *  - `deriveGenreNamesById` (src/lib/diaryDisplay.ts) resolves a genre_id to
+ *    its real name from `movie.movie_genres[].genres.name`, now nested in
+ *    `useGroupWatchlist`'s query.
  */
 
 const SORT_OPTIONS: { value: DiarySortOption; label: string }[] = [
@@ -139,6 +128,7 @@ export default function TagebuchScreen() {
   const groupsQuery = useUserGroups(userId);
   const activeGroupId = groupsQuery.data?.[0]?.group_id as string | undefined;
   const watchlistQuery = useGroupWatchlist(activeGroupId);
+  const groupMembersQuery = useGroupMembers(activeGroupId);
 
   const diaryViewMode = usePreferencesStore((s) => s.diaryViewMode);
   const setDiaryViewMode = usePreferencesStore((s) => s.setDiaryViewMode);
@@ -157,6 +147,19 @@ export default function TagebuchScreen() {
   // comment above for why this is a UNION-of-ratings approximation rather
   // than a real membership query.
   const groupMemberIds = useMemo(() => deriveGroupMemberIds(rawEntries), [rawEntries]);
+
+  // Real display names, joined via `useGroupMembers` (see the M5 fast-follow
+  // module comment above) — `memberDisplayLabel` falls back to the
+  // uuid-prefix placeholder for any id missing from this map.
+  const displayNameById = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const member of groupMembersQuery.data ?? []) {
+      if (member.profiles?.display_name) {
+        names.set(member.user_id, member.profiles.display_name);
+      }
+    }
+    return names;
+  }, [groupMembersQuery.data]);
 
   const diaryEntries = useMemo(() => {
     if (!userId) return [];
@@ -178,13 +181,17 @@ export default function TagebuchScreen() {
   );
 
   const availableGenreIds = useMemo(() => deriveAvailableGenreIds(diaryEntries), [diaryEntries]);
+  const genreNamesById = useMemo(() => deriveGenreNamesById(diaryEntries), [diaryEntries]);
   const { years: availableYears, hasNoDate: hasNoDateYear } = useMemo(
     () => deriveAvailableYears(diaryEntries, userId ?? ""),
     [diaryEntries, userId],
   );
 
-  const isLoading = !userId || groupsQuery.isLoading || (!!activeGroupId && watchlistQuery.isLoading);
-  const isError = groupsQuery.isError || watchlistQuery.isError;
+  const isLoading =
+    !userId ||
+    groupsQuery.isLoading ||
+    (!!activeGroupId && (watchlistQuery.isLoading || groupMembersQuery.isLoading));
+  const isError = groupsQuery.isError || watchlistQuery.isError || groupMembersQuery.isError;
   const isDiaryEmpty = diaryEntries.length === 0;
   const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
 
@@ -277,7 +284,9 @@ export default function TagebuchScreen() {
                 onPress={() => toggleGenre(genreId)}
                 className="rounded-full border border-border-subtle px-3 py-1"
               >
-                <Text className="text-text-primary">{genreDisplayLabel(genreId)}</Text>
+                <Text className="text-text-primary">
+                  {genreDisplayLabel(genreId, genreNamesById.get(genreId))}
+                </Text>
               </Pressable>
             ))}
           </View>
@@ -388,7 +397,7 @@ export default function TagebuchScreen() {
                   {groupMemberIds.map((memberId) => (
                     <MemberRatingRow
                       key={memberId}
-                      memberLabel={memberDisplayLabel(memberId)}
+                      memberLabel={memberDisplayLabel(memberId, displayNameById.get(memberId))}
                       rating={entry.ratings.find((r) => r.member_id === memberId)?.rating ?? null}
                       starColor={starColor}
                     />

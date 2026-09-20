@@ -19,11 +19,59 @@ export async function getUserGroups(userId: string) {
   return supabase.from("watch_group_members").select("*").eq("user_id", userId);
 }
 
+export interface GroupMemberProfile {
+  display_name: string;
+}
+
+export interface GroupMemberRow extends WatchGroupMembershipRow {
+  // Joined in a second query below (see the M5 fast-follow comment) rather
+  // than a single PostgREST embed — `watch_group_members.user_id` and
+  // `profiles.id` both reference `auth.users(id)` independently, with no
+  // direct FK between `watch_group_members` and `profiles` for PostgREST to
+  // embed through. `null` when the profile row is somehow missing (should
+  // not normally happen given the `handle_new_user` trigger, but is handled
+  // defensively) — callers fall back to the existing uuid-prefix placeholder
+  // in that case (see `src/lib/diaryDisplay.ts`'s `memberDisplayLabel`).
+  profiles: GroupMemberProfile | null;
+}
+
 // M5-part-2 addition (Watchlist screen's "x/y bewertet" progress badge needs
 // a group's total current membership count, which nothing existing exposed
 // — `getUserGroups` above is user-centric, filtered by user_id, not
 // group-centric). Same never-throw tuple-passthrough convention as
-// `getUserGroups`.
+// `getUserGroups` for the "no members / query failed" cases; on success it
+// resolves a NEW plain object (not the raw Supabase result) since the result
+// is the merge of two queries.
+//
+// M5 fast-follow: also joins each member's `profiles.display_name` (closes
+// the flagged gap where a group member was only ever a bare `auth.users`
+// uuid with no human-readable name anywhere) — see
+// `supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`.
 export async function getGroupMembers(groupId: string) {
-  return supabase.from("watch_group_members").select("*").eq("group_id", groupId);
+  const membersResult = await supabase.from("watch_group_members").select("*").eq("group_id", groupId);
+  if (membersResult.error || !membersResult.data || membersResult.data.length === 0) {
+    return membersResult;
+  }
+
+  const memberRows = membersResult.data as WatchGroupMembershipRow[];
+  const userIds = Array.from(new Set(memberRows.map((row) => row.user_id)));
+
+  const profilesResult = await supabase.from("profiles").select("id, display_name").in("id", userIds);
+  if (profilesResult.error) {
+    return profilesResult;
+  }
+
+  const profileById = new Map<string, GroupMemberProfile>(
+    (profilesResult.data ?? []).map((p: { id: string; display_name: string }) => [
+      p.id,
+      { display_name: p.display_name },
+    ]),
+  );
+
+  const data: GroupMemberRow[] = memberRows.map((row) => ({
+    ...row,
+    profiles: profileById.get(row.user_id) ?? null,
+  }));
+
+  return { data, error: null };
 }
