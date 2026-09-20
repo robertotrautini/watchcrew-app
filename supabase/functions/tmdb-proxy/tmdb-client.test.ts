@@ -349,6 +349,10 @@ Deno.test("fetchMovieDetails: normalizes runtime/vote_average/collection and map
   const fetchJson = () =>
     Promise.resolve({
       id: 603,
+      title: "Matrix",
+      overview: "Ein Hacker entdeckt, dass die Realität eine Simulation ist.",
+      poster_path: "/matrix-poster.jpg",
+      release_date: "1999-03-30",
       runtime: 136,
       genres: [{ id: 28, name: "Action" }, { id: 878, name: "Science Fiction" }],
       belongs_to_collection: { id: 2, name: "The Matrix Collection" },
@@ -363,8 +367,41 @@ Deno.test("fetchMovieDetails: normalizes runtime/vote_average/collection and map
       genres: ["Action", "Science Fiction"],
       belongs_to_collection: { id: 2, name: "The Matrix Collection" },
       vote_average: 8.1,
+      title: "Matrix",
+      overview: "Ein Hacker entdeckt, dass die Realität eine Simulation ist.",
+      posterPath: "/matrix-poster.jpg",
+      releaseDate: "1999-03-30",
+      genreIds: [28, 878],
     },
-    "expected normalized details with genres mapped via the static table",
+    "expected normalized details with genres mapped via the static table, plus the M7 title/overview/poster/releaseDate/genreIds additions",
+  );
+});
+
+Deno.test("fetchMovieDetails: missing title/overview/poster/release_date normalize to null, not undefined", async () => {
+  const fetchJson = () =>
+    Promise.resolve({
+      id: 603,
+      runtime: null,
+      genres: [],
+      belongs_to_collection: null,
+      vote_average: null,
+    });
+  const result = await fetchMovieDetails(603, fetchJson);
+  assertEquals(
+    result,
+    {
+      id: 603,
+      runtime: null,
+      genres: [],
+      belongs_to_collection: null,
+      vote_average: null,
+      title: null,
+      overview: null,
+      posterPath: null,
+      releaseDate: null,
+      genreIds: [],
+    },
+    "expected all missing optional fields to normalize to null/[] rather than undefined",
   );
 });
 

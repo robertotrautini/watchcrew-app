@@ -303,6 +303,18 @@ export interface TmdbCollectionRef {
 
 interface RawTmdbMovieDetails {
   id: number;
+  // Added in M7 part 1 (see docs/interim-decisions.md) — title/overview/
+  // poster_path/release_date were not needed by M6's "details" action
+  // consumers (they already had these fields from elsewhere: the search
+  // result, the DB row, or route params) but ARE needed by the new
+  // `upsert_movie` action, which starts from nothing but a bare `tmdbId`
+  // and must insert a full `movies` row. Reusing this same `/movie/{id}`
+  // call/function (rather than a second, separate fetch) for those extra
+  // fields is the whole point of the "reuse fetchMovieDetails" instruction.
+  title?: string;
+  overview?: string | null;
+  poster_path?: string | null;
+  release_date?: string | null;
   runtime: number | null;
   genres?: { id: number; name: string }[];
   belongs_to_collection: TmdbCollectionRef | null;
@@ -315,13 +327,34 @@ export interface NormalizedMovieDetails {
   genres: string[];
   belongs_to_collection: TmdbCollectionRef | null;
   vote_average: number | null;
+  // M7 part 1 additions (additive only — existing fields/shape above are
+  // UNCHANGED, so the already-shipped `kind: "details"` action's response
+  // stays backward compatible for its existing consumers):
+  title: string | null;
+  overview: string | null;
+  posterPath: string | null;
+  releaseDate: string | null;
+  /** Raw TMDB genre IDs, in the same order as `genres` — `mapGenreIds`
+   *  already collapses IDs to (German) names for the `details` action's
+   *  existing consumers, but `upsert_movie` needs the original numeric IDs
+   *  back to upsert `genres.tmdb_genre_id` rows. */
+  genreIds: number[];
 }
 
 export async function fetchMovieDetails(
   tmdbId: number,
   fetchJson: FetchJson = defaultFetchJson,
 ): Promise<NormalizedMovieDetails> {
-  const url = buildUrl(`/movie/${tmdbId}`, {});
+  // M7 part 1 (see docs/interim-decisions.md): `language: "de-DE"` added so
+  // the new title/overview fields come back German-first, consistent with
+  // every other German-preferring action in this file (search, release
+  // dates, genre names). This was NOT previously set (M6 left it unset,
+  // i.e. whatever TMDB's default is) — the only observable effect on the
+  // existing `details` action is that `belongs_to_collection.name` may now
+  // read in German instead of the previous default language; runtime,
+  // genre IDs (mapped via the static table regardless of language), and
+  // vote_average are unaffected.
+  const url = buildUrl(`/movie/${tmdbId}`, { language: "de-DE" });
   const raw = (await fetchJson(url)) as RawTmdbMovieDetails;
   return {
     id: raw.id,
@@ -329,6 +362,11 @@ export async function fetchMovieDetails(
     genres: mapGenreIds((raw.genres ?? []).map((g) => g.id)),
     belongs_to_collection: raw.belongs_to_collection ?? null,
     vote_average: raw.vote_average ?? null,
+    title: raw.title ?? null,
+    overview: raw.overview ?? null,
+    posterPath: raw.poster_path ?? null,
+    releaseDate: raw.release_date ?? null,
+    genreIds: (raw.genres ?? []).map((g) => g.id),
   };
 }
 

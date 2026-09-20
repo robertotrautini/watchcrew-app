@@ -25,6 +25,11 @@
 //     table (query/lookup-shaped, no fixed per-movie cache key; consistent
 //     with the legacy app's purely in-memory/session-only caches for this
 //     data class, per feature-inventory.md).
+//   - kind: "upsert_movie" — M7 part 1. Resolves the "movies/genres/
+//     movie_genres have no authenticated INSERT/UPDATE RLS policy" gap (see
+//     docs/interim-decisions.md "M6-Cleanup / M7-Vorgriff"): authenticated
+//     clients call this action instead of writing to those tables directly.
+//     Idempotent by tmdb_id — see ./movie-upsert.ts.
 //
 // The freshness/TTL DECISION lives in ./freshness.ts as pure functions,
 // unit-tested separately with Deno.test. The actual TMDB/Trakt fetch calls
@@ -58,6 +63,7 @@ import {
   searchPerson,
 } from "./tmdb-client.ts";
 import { fetchTraktRelated } from "./trakt-client.ts";
+import { createSupabaseMovieUpsertDb, upsertMovie } from "./movie-upsert.ts";
 
 type ProxyKind =
   | "metadata"
@@ -75,7 +81,8 @@ type ProxyKind =
   | "person_movies"
   | "director_movies"
   | "search_company"
-  | "studio_movies";
+  | "studio_movies"
+  | "upsert_movie";
 
 interface ProxyRequestBody {
   kind: ProxyKind;
@@ -105,6 +112,7 @@ const VALID_KINDS: ProxyKind[] = [
   "director_movies",
   "search_company",
   "studio_movies",
+  "upsert_movie",
 ];
 
 function getSupabaseClient(): SupabaseClient {
@@ -401,6 +409,16 @@ Deno.serve(async (req: Request) => {
           { data: await fetchStudioMovies(body.companyId, body.page ?? 1) },
           200,
         );
+      }
+
+      // --- M7 part 1: authenticated-client "add a new movie" resolution ---
+      case "upsert_movie": {
+        if (typeof body.tmdbId !== "number") {
+          return badRequest("Expected { tmdbId: number, kind: 'upsert_movie' }");
+        }
+        const db = createSupabaseMovieUpsertDb(supabase);
+        const data = await upsertMovie(body.tmdbId, { db });
+        return jsonResponse({ data }, 200);
       }
 
       default: {
