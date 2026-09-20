@@ -1,36 +1,36 @@
 import { useState } from "react";
-import { Alert, Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { DEFAULT_GROUP_THEME, resolveGroupTheme, type GroupThemeName } from "@/lib/groupTheme";
+import { createWatchGroup, isInvalidInviteTokenError, joinWatchGroupByToken } from "@/lib/groups";
+import { extractInviteToken } from "@/lib/inviteToken";
 
 /**
- * The real "create or join a Watch-Group" onboarding screen content (M3).
- * Shown to an authenticated user with zero Watch-Group memberships yet
- * (see src/lib/authGate.ts's `resolveAuthGate`).
+ * The real "create or join a Watch-Group" onboarding screen content
+ * (M3 UI, M9 part 1 real write-path). Shown to an authenticated user with
+ * zero Watch-Group memberships yet (see src/lib/authGate.ts's
+ * `resolveAuthGate`).
  *
- * --- Scope boundary (do not "helpfully" wire real data here) ---
- * The M1 schema task explicitly left undecided whether app users INSERT
- * `watch_groups` / `watch_group_members` rows directly under RLS, or
- * whether group creation/joining goes through a service-role Edge
- * Function. The full invite-link/join-by-Group-ID flow is separately
- * explicitly M9 scope ("Watch-Gruppen-Verwaltung: Erstellen, Invite-Link
- * generieren/widerrufen, per ID beitreten..."). So this screen is UI-only:
- * both submit actions below are intentional placeholders (see
- * `handleCreateSubmit` / `handleJoinSubmit`) until that decision lands and
- * M9 implements the real thing. This is *not* corner-cutting.
+ * Both submit handlers now call the real M9 RPC wrappers
+ * (`createWatchGroup` / `joinWatchGroupByToken`, src/lib/groups.ts), which
+ * in turn call the SECURITY DEFINER `create_watch_group` /
+ * `join_watch_group_by_token` Postgres functions (see
+ * supabase/migrations/20260920130000_group_invite_and_rpcs.sql) — there is
+ * intentionally no direct client INSERT under RLS for either table.
  *
- * Chosen stub shape: each submit handler shows a plain `Alert.alert`
- * ("Bald verfügbar") rather than calling a separate exported stub
- * function. This was a deliberate pick over an exported stub function:
- * `Alert.alert` is a real module boundary (its own object/property), so
- * jest can `jest.spyOn(Alert, "alert")` and reliably intercept the call —
- * a same-file exported function called directly by local reference would
- * NOT be interceptable that way (the internal call uses the local binding,
- * not the exported property), per the ES/CommonJS interop gotcha already
- * called out in __tests__/StarRating.test.tsx's top comment.
+ * Post-success navigation: does NOT rely on `useAuthGate`'s
+ * `onAuthStateChange` subscription to pick this up automatically — that
+ * subscription only re-evaluates on a Supabase auth event (sign-in/sign-out/
+ * token refresh), not on a plain group-membership data change with the same
+ * session still active, so creating/joining a group here would otherwise
+ * leave the user stranded on this screen until their next auth event. This
+ * screen instead navigates explicitly via `router.replace` to the same
+ * `(app)/(tabs)/tracker` route `src/app/index.tsx` uses for its `'app'` gate
+ * state, once the RPC confirms the new membership exists.
  *
  * Chrome accent: this screen renders with no Watch-Group (and therefore no
  * GroupThemeProvider ancestor) yet — that's exactly why the user is here.
@@ -61,27 +61,24 @@ const THEME_LABELS: Record<GroupThemeName, string> = {
 
 const PLACEHOLDER_TEXT_COLOR = "#888888";
 
-// TODO(M9): replace with a real Supabase call once the create-group
-// data-layer question flagged in the M1 schema task (direct client INSERT
-// under RLS vs. a service-role Edge Function) is resolved, and M9 builds
-// the real "Gruppe erstellen" flow. Intentionally a stub for this UI-only
-// M3 task — see the file-level comment above.
-function handleCreateSubmit(_groupName: string, _theme: GroupThemeName) {
-  Alert.alert("Bald verfügbar", "Das Erstellen einer Gruppe kommt in einem späteren Update.");
-}
+// Same target the root `useAuthGate`/index.tsx redirect uses for its
+// `'app'` gate state — kept as a constant here so both call sites read from
+// one obviously-matching literal instead of two independently-typed route
+// strings.
+const APP_HOME_ROUTE = "/(app)/(tabs)/tracker";
 
-// TODO(M9): replace with a real Supabase call once the join-by-invite-
-// link/Group-ID flow (M9 roadmap scope, ADR 0003) is built. Intentionally a
-// stub for this UI-only M3 task — see the file-level comment above.
-function handleJoinSubmit(_groupCode: string) {
-  Alert.alert("Bald verfügbar", "Das Beitreten zu einer Gruppe kommt in einem späteren Update.");
-}
+const INVALID_INVITE_TOKEN_MESSAGE = "Ungültiger oder deaktivierter Einladungscode.";
 
 export default function CreateOrJoinGroupScreen() {
   const [mode, setMode] = useState<ScreenMode>("select");
   const [groupName, setGroupName] = useState("");
   const [selectedTheme, setSelectedTheme] = useState<GroupThemeName>(DEFAULT_GROUP_THEME);
   const [groupCode, setGroupCode] = useState("");
+
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [isJoining, setIsJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   // Only needed for the raw-hex-prop swatch checkmark badge — see the
   // file-level comment above for why className-based chrome needs no
@@ -100,6 +97,51 @@ export default function CreateOrJoinGroupScreen() {
     setGroupName("");
     setSelectedTheme(DEFAULT_GROUP_THEME);
     setGroupCode("");
+    setCreateError(null);
+    setJoinError(null);
+  }
+
+  async function handleCreateSubmit() {
+    setCreateError(null);
+    setIsCreating(true);
+
+    const { error } = await createWatchGroup(groupName.trim(), selectedTheme);
+
+    setIsCreating(false);
+
+    if (error) {
+      setCreateError(`Erstellen fehlgeschlagen: ${error.message}`);
+      return;
+    }
+
+    router.replace(APP_HOME_ROUTE);
+  }
+
+  async function handleJoinSubmit() {
+    setJoinError(null);
+
+    const token = extractInviteToken(groupCode);
+    if (!token) {
+      setJoinError(INVALID_INVITE_TOKEN_MESSAGE);
+      return;
+    }
+
+    setIsJoining(true);
+
+    const { error } = await joinWatchGroupByToken(token);
+
+    setIsJoining(false);
+
+    if (error) {
+      setJoinError(
+        isInvalidInviteTokenError(error)
+          ? INVALID_INVITE_TOKEN_MESSAGE
+          : `Beitritt fehlgeschlagen: ${error.message}`,
+      );
+      return;
+    }
+
+    router.replace(APP_HOME_ROUTE);
   }
 
   return (
@@ -173,16 +215,24 @@ export default function CreateOrJoinGroupScreen() {
             })}
           </View>
 
+          {createError ? (
+            <Text testID="create-group-error" className="text-sm text-danger">
+              {createError}
+            </Text>
+          ) : null}
+
           <Button
             testID="create-group-submit"
             label="Gruppe erstellen"
-            disabled={!isCreateValid}
-            onPress={() => handleCreateSubmit(groupName.trim(), selectedTheme)}
+            disabled={!isCreateValid || isCreating}
+            loading={isCreating}
+            onPress={handleCreateSubmit}
           />
           <Button
             testID="create-group-back"
             variant="secondary"
             label="Zurück"
+            disabled={isCreating}
             onPress={goBackToSelect}
           />
         </View>
@@ -201,16 +251,24 @@ export default function CreateOrJoinGroupScreen() {
             className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
           />
 
+          {joinError ? (
+            <Text testID="join-group-error" className="text-sm text-danger">
+              {joinError}
+            </Text>
+          ) : null}
+
           <Button
             testID="join-group-submit"
             label="Gruppe beitreten"
-            disabled={!isJoinValid}
-            onPress={() => handleJoinSubmit(groupCode.trim())}
+            disabled={!isJoinValid || isJoining}
+            loading={isJoining}
+            onPress={handleJoinSubmit}
           />
           <Button
             testID="join-group-back"
             variant="secondary"
             label="Zurück"
+            disabled={isJoining}
             onPress={goBackToSelect}
           />
         </View>

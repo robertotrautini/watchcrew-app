@@ -2,10 +2,12 @@ const mockEq = jest.fn();
 const mockIn = jest.fn();
 const mockSelect = jest.fn(() => ({ eq: mockEq, in: mockIn }));
 const mockFrom = jest.fn(() => ({ select: mockSelect }));
+const mockRpc = jest.fn();
 
 jest.mock("../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
+    rpc: mockRpc,
   },
 }));
 
@@ -149,5 +151,100 @@ describe("getGroupMembers", () => {
     const result = await getGroupMembers("g1");
 
     expect(result).toBe(fakeProfilesError);
+  });
+});
+
+describe("createWatchGroup", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("calls the create_watch_group RPC with p_name/p_color_theme and reshapes the returned uuid into { groupId }", async () => {
+    mockRpc.mockResolvedValue({ data: "new-group-id", error: null });
+
+    const { createWatchGroup } = require("../src/lib/groups");
+    const result = await createWatchGroup("Filmfreunde", "blue");
+
+    expect(mockRpc).toHaveBeenCalledWith("create_watch_group", {
+      p_name: "Filmfreunde",
+      p_color_theme: "blue",
+    });
+    expect(result).toEqual({ data: { groupId: "new-group-id" }, error: null });
+  });
+
+  it("passes a group name containing an apostrophe straight through with no client-side escaping", async () => {
+    mockRpc.mockResolvedValue({ data: "new-group-id", error: null });
+
+    const { createWatchGroup } = require("../src/lib/groups");
+    await createWatchGroup("Filmfreunde O'Brien", "gold");
+
+    expect(mockRpc).toHaveBeenCalledWith("create_watch_group", {
+      p_name: "Filmfreunde O'Brien",
+      p_color_theme: "gold",
+    });
+  });
+
+  it("returns { data: null, error } unchanged when the RPC fails, instead of throwing", async () => {
+    const fakeError = { message: "invalid color theme: nope", code: "WC002", details: null, hint: null };
+    mockRpc.mockResolvedValue({ data: null, error: fakeError });
+
+    const { createWatchGroup } = require("../src/lib/groups");
+    const result = await createWatchGroup("Filmfreunde", "nope");
+
+    expect(result).toEqual({ data: null, error: fakeError });
+  });
+});
+
+describe("joinWatchGroupByToken", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("calls the join_watch_group_by_token RPC with p_token and reshapes the returned uuid into { groupId }", async () => {
+    mockRpc.mockResolvedValue({ data: "joined-group-id", error: null });
+
+    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const result = await joinWatchGroupByToken("11111111-1111-1111-1111-111111111111");
+
+    expect(mockRpc).toHaveBeenCalledWith("join_watch_group_by_token", {
+      p_token: "11111111-1111-1111-1111-111111111111",
+    });
+    expect(result).toEqual({ data: { groupId: "joined-group-id" }, error: null });
+  });
+
+  it("returns { data: null, error } unchanged when the RPC fails generically", async () => {
+    const fakeError = { message: "network error", code: null, details: null, hint: null };
+    mockRpc.mockResolvedValue({ data: null, error: fakeError });
+
+    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const result = await joinWatchGroupByToken("some-token");
+
+    expect(result).toEqual({ data: null, error: fakeError });
+  });
+
+  it("surfaces the invalid/disabled-token error unchanged so the caller can branch on its code", async () => {
+    const fakeError = { message: "invalid or disabled invite token", code: "WC003", details: null, hint: null };
+    mockRpc.mockResolvedValue({ data: null, error: fakeError });
+
+    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const result = await joinWatchGroupByToken("bad-token");
+
+    expect(result).toEqual({ data: null, error: fakeError });
+  });
+});
+
+describe("isInvalidInviteTokenError", () => {
+  it("returns true for an error with the WC003 code", () => {
+    const { isInvalidInviteTokenError } = require("../src/lib/groups");
+
+    expect(isInvalidInviteTokenError({ code: "WC003" })).toBe(true);
+  });
+
+  it("returns false for a generic error, and for null/undefined", () => {
+    const { isInvalidInviteTokenError } = require("../src/lib/groups");
+
+    expect(isInvalidInviteTokenError({ code: "WC001" })).toBe(false);
+    expect(isInvalidInviteTokenError(null)).toBe(false);
+    expect(isInvalidInviteTokenError(undefined)).toBe(false);
   });
 });

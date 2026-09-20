@@ -61,6 +61,12 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M8 — Neuer Hook `useTrackerPayments.ts` statt Erweiterung von `useSaveRating.ts`](#m8--neuer-hook-usetrackerpaymentsts-statt-erweiterung-von-usesaveratingts)
 - [M8 — Inline-Löschen-Bestätigung statt Sheet: exakte Copy](#m8--inline-löschen-bestätigung-statt-sheet-exakte-copy)
 - [M8 — Inline-Style-Ausnahme für Zahler-Button-Farben](#m8--inline-style-ausnahme-für-zahler-button-farben)
+- [M9 Teil 1 — ⚠️ SCHEMA-EBENE: `invite_token`/`invite_enabled` als eigene Spalten statt Primärschlüssel-Wiederverwendung (löst ADR-0003-Mehrdeutigkeit auf)](#m9-teil-1--️-schema-ebene-invite_tokeninvite_enabled-als-eigene-spalten-statt-primärschlüssel-wiederverwendung-löst-adr-0003-mehrdeutigkeit-auf)
+- [M9 Teil 1 — Chicken-and-Egg-Lösung: SECURITY-DEFINER-RPCs statt komplexer INSERT-RLS-Policies](#m9-teil-1--chicken-and-egg-lösung-security-definer-rpcs-statt-komplexer-insert-rls-policies)
+- [M9 Teil 1 — Fehlercode-Konvention für die neuen RPCs (`WC001`/`WC002`/`WC003`)](#m9-teil-1--fehlercode-konvention-für-die-neuen-rpcs-wc001wc002wc003)
+- [M9 Teil 1 — Einladungscode-Eingabefeld: Parsing-Regel für Link vs. rohe Token-UUID](#m9-teil-1--einladungscode-eingabefeld-parsing-regel-für-link-vs-rohe-token-uuid)
+- [M9 Teil 1 — Navigation nach Erstellen/Beitreten: expliziter `router.replace` statt Verlass auf `useAuthGate`](#m9-teil-1--navigation-nach-erstellenbeitreten-expliziter-routerreplace-statt-verlass-auf-useauthgate)
+- [M9 Teil 1 — Fehlertext-Konvention (generisch vs. Token-spezifisch)](#m9-teil-1--fehlertext-konvention-generisch-vs-token-spezifisch)
 
 ---
 
@@ -921,6 +927,94 @@ Nur relevant auf dem NEU-Insert-Pfad — ein bereits katalogisierter Film (früh
 **Entscheidung (vorläufig):** Exakt derselbe, bereits dokumentierte und schmal gefasste Ausnahme-Präzedenzfall wie beim M6-Cleanup-Eintrag wird hier ein zweites Mal angewendet: `style={{ backgroundColor: color }}` bzw. `style={{ borderWidth: 1, borderColor: color }}` NUR auf dem einen Zahler-Button-`Pressable`-Element (`src/components/movie/PaymentModal.tsx` und `src/app/(app)/(tabs)/tracker.tsx`s Bearbeiten-Formular), mit Code-Kommentar direkt an beiden Stellen, der auf diesen Präzedenzfall verweist. Alles andere an diesen Komponenten (Layout, Typografie, Zustände) bleibt auf NativeWind-Klassen.
 
 **Warum das später leicht änderbar ist:** Beide Stellen sind isolierte `style`-Props auf jeweils einem einzelnen `Pressable`-Element — betrifft keine andere Stelle der beiden Komponenten und folgt exakt demselben, bereits vom Nutzer zu bestätigenden Präzedenzfall (M6-Cleanup-Eintrag), sodass eine gemeinsame Entscheidung für beide Fälle möglich ist.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 1 — ⚠️ SCHEMA-EBENE: `invite_token`/`invite_enabled` als eigene Spalten statt Primärschlüssel-Wiederverwendung (löst ADR-0003-Mehrdeutigkeit auf)
+
+**⚠️ Dies ist KEINE routinemäßige, günstige Detailentscheidung wie die übrigen Einträge in diesem Dokument — es ist eine Schema-Interpretation, die eine echte ADR-0003-Mehrdeutigkeit auflöst. Bitte explizit bestätigen oder korrigieren, bevor sie als endgültig gilt.**
+
+**Problem/Lücke:** ADR 0003 (`docs/adr/0003-watch-group-data-model.md`) sagt wörtlich:
+
+> "Invite-Link und Group-ID-Beitritt müssen beide auf derselben nicht erratbaren UUID basieren — es gibt keine zusätzliche, kürzere/erratbare Gruppen-ID." (Zeile 41)
+
+und an anderer Stelle:
+
+> "Owner ... kann ... Invite-Link regenerieren/widerrufen" (Zeile 14)
+> "Teilbarer Invite-Link (wiederverwendbar, kein Auto-Ablauf, Owner kann jederzeit widerrufen/regenerieren)" (Zeile 20)
+
+Wörtlich gelesen wäre "dieselbe UUID" `watch_groups.id`, der Primärschlüssel. Das steht aber im Widerspruch zur zweiten Aussage: der Owner kann den Invite-Link "regenerieren" — das kann sich unmöglich auf einen unveränderlichen Primärschlüssel beziehen, der von `watchlist_entries.group_id` etc. per Fremdschlüssel referenziert wird (eine Regenerierung würde entweder alle abhängigen Zeilen brechen oder eine kaskadierende Migration aller FKs erfordern, was ADR 0003 nirgends erwähnt oder beabsichtigt).
+
+**Entscheidung (vorläufig, aber schema-relevant):** ADR 0003s "dieselbe UUID"-Formulierung wird so interpretiert, dass sie sich auf das UUID-*Format/die UUID-Eigenschaft* (nicht erratbar, gleicher Typ wie der Primärschlüssel) bezieht, nicht wörtlich auf die Primärschlüssel-Spalte selbst. Konkret:
+- Neue Spalte `watch_groups.invite_token uuid not null default gen_random_uuid() unique` — eine vom Primärschlüssel `id` komplett unabhängige, aber ebenso nicht erratbare UUID.
+- Neue Spalte `watch_groups.invite_enabled boolean not null default true`.
+- Sowohl der teilbare Invite-LINK als auch der manuelle "Gruppen-ID"-Fallback-Eintrag lösen beide über `invite_token` auf (NICHT über die Primärschlüssel-Spalte `id`) — das erfüllt ADR 0003s Anforderung "beide nutzen dieselbe UUID" (dieselbe Spalte, für beide Zugangswege identisch), ohne den Primärschlüssel anzutasten.
+- "Regenerieren" = Owner setzt `invite_token = gen_random_uuid()` per normalem `UPDATE watch_groups ... WHERE id = ...` — bereits durch die bestehende M1-Owner-only-UPDATE-RLS-Policy auf `watch_groups` abgedeckt (Whole-Row-Policy, keine neue Policy/RPC nötig). "Widerrufen" = `invite_enabled = false`; "Re-Aktivieren"/"Regenerieren impliziert Re-Aktivieren" = `invite_enabled = true` + neuer Token im selben Update.
+- Migration: `supabase/migrations/20260920130000_group_invite_and_rpcs.sql`.
+
+**Warum das später leicht änderbar ist:** Wäre die Interpretation falsch (d.h. ADR 0003 meint wirklich wortwörtlich die Primärschlüssel-UUID und ein "Regenerieren" war z.B. nie ernst gemeint oder sollte anders gelöst werden), wäre die Korrektur eine reine Spalten-Entfernung (`invite_token`/`invite_enabled` raus) plus Anpassung der beiden RPC-Funktionen, die stattdessen direkt auf `id` matchen würden — betrifft nur diese eine Migration plus die beiden RPCs, keine andere Tabelle oder bestehende Business-Logik.
+
+**Status:** ⚠️ Offen für deine finale Bestätigung — diese Entscheidung wurde vom koordinierenden Session bereits vorab getroffen und dieser Implementierungsauftrag explizit angewiesen, sie so umzusetzen (nicht erneut zur Diskussion zu stellen), aber sie bleibt eine echte Schema-Interpretation und ist hier bewusst prominent geflaggt, damit du sie beim Durchgehen dieses Dokuments nicht überliest.
+
+---
+
+## M9 Teil 1 — Chicken-and-Egg-Lösung: SECURITY-DEFINER-RPCs statt komplexer INSERT-RLS-Policies
+
+**Problem/Lücke:** M1 hatte bewusst keine INSERT-Policy für `watch_groups`/`watch_group_members` definiert (die "Nutzer erstellt seine erste Gruppe" / "Nutzer tritt einer Gruppe bei" Fälle lassen sich nicht sauber mit rein deklarativen RLS-Policies lösen, die selbst wieder auf Gruppenmitgliedschaft prüfen, welche zum Insert-Zeitpunkt noch nicht existiert).
+
+**Entscheidung (vorläufig):** Zwei `SECURITY DEFINER`-Postgres-Funktionen (`create_watch_group`, `join_watch_group_by_token`), aufgerufen per `supabase.rpc(...)`, exakt dasselbe Muster wie der bereits bestehende M1-Owner-Succession-Trigger und der M5-Fast-Follow-`handle_new_user()`-Trigger. Beide Funktionen kapseln ihre jeweiligen INSERT(s) in einer einzigen Transaktion (Gruppe + Owner-Mitgliedschaft bzw. Mitgliedschaft-Insert mit `ON CONFLICT DO NOTHING` für Idempotenz). Es wird weiterhin keine INSERT-Policy für `authenticated` auf einer der beiden Tabellen definiert.
+
+**Warum das später leicht änderbar ist:** Beide RPCs sind in sich geschlossene Funktionen mit stabiler Signatur (`p_name`/`p_color_theme` bzw. `p_token` → `uuid`); eine spätere Umstellung auf echte INSERT-RLS-Policies (falls je gewünscht) würde nur diese eine Migration betreffen, nicht die Client-Aufrufer (`src/lib/groups.ts`), solange die RPC-Namen/Signaturen erhalten blieben.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 1 — Fehlercode-Konvention für die neuen RPCs (`WC001`/`WC002`/`WC003`)
+
+**Problem/Lücke:** Ein per `RAISE EXCEPTION` ausgelöster Postgres-Fehler braucht einen eigenen, vom Client zuverlässig unterscheidbaren Errcode, um z.B. "ungültiger/deaktivierter Einladungscode" von einem generischen Fehler zu trennen — Postgres selbst vergibt ohne explizite Angabe den generischen Code `P0001` für jede `RAISE EXCEPTION`, was keine Unterscheidung erlauben würde.
+
+**Entscheidung (vorläufig):** Drei eigene, projektspezifische 5-Zeichen-SQLSTATE-Codes: `WC001` (Aufruf ohne authentifizierten Nutzer, beide RPCs), `WC002` (`create_watch_group`: ungültiger `p_color_theme`-Wert), `WC003` (`join_watch_group_by_token`: Token existiert nicht ODER `invite_enabled = false` — bewusst EIN gemeinsamer Code für beide Fälle, um nicht zu verraten, ob ein Token je existiert hat). Live gegen den lokalen PostgREST-Endpunkt verifiziert: Supabases Client surfaced einen so ausgelösten Fehler als `{ message, code, details, hint }` mit `code` exakt gleich dem gesetzten Errcode — `src/lib/groups.ts`s `isInvalidInviteTokenError()` prüft `error.code === "WC003"`.
+
+**Warum das später leicht änderbar ist:** Reine String-Konstanten in der Migration plus einer Konstante in `src/lib/groups.ts` (`INVALID_INVITE_TOKEN_ERROR_CODE`) — eine spätere feinere Unterscheidung (z.B. "Token existiert nicht" vs. "Token deaktiviert" als zwei Codes) wäre eine additive Änderung an genau diesen zwei Stellen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 1 — Einladungscode-Eingabefeld: Parsing-Regel für Link vs. rohe Token-UUID
+
+**Problem/Lücke:** Das bestehende M3-Eingabefeld ("Einladungscode / Gruppen-ID") musste neu interpretiert werden als Eingabe für den `invite_token` — unklar, ob Nutzer eine rohe UUID einfügen oder einen kompletten Deep-Link/Share-Link einfügen, und beides muss funktionieren, ohne dass eine echte Deep-Link-Infrastruktur existiert.
+
+**Entscheidung (vorläufig):** Neue reine Funktion `extractInviteToken()` (`src/lib/inviteToken.ts`): Eingabe wird getrimmt, dann wird die erste RFC-4122-förmige UUID-Teilzeichenkette irgendwo im String gesucht (Regex `8-4-4-4-12`-Hex-Gruppen, case-insensitive) und kleingeschrieben zurückgegeben. Gibt `null` zurück, wenn keine UUID-förmige Teilzeichenkette gefunden wird (statt den rohen String ungeprüft an das RPC zu senden) — ein Eingabewert ohne jede UUID-Form kann nie ein gültiger Token sein, daher wird kein Netzwerk-Roundtrip dafür verschwendet. Deckt sowohl eine rohe Token-UUID-Eingabe als auch einen vollständigen Deep-Link (egal welches Schema/welche Domain) ab, solange die UUID irgendwo im String vorkommt.
+
+**Warum das später leicht änderbar ist:** Eine reine, exportierte, direkt unit-getestete (`__tests__/inviteToken.test.ts`) Funktion mit einer einzigen Regel — eine strengere Prüfung (z.B. nur ein exaktes App-Deep-Link-Schema akzeptieren) wäre eine isolierte Änderung an dieser einen Funktion.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 1 — Navigation nach Erstellen/Beitreten: expliziter `router.replace` statt Verlass auf `useAuthGate`
+
+**Problem/Lücke:** Der Task-Auftrag ging davon aus, dass die bestehende `useAuthGate`/`index.tsx`-Redirect-Logik (M3) eine neue Gruppenmitgliedschaft automatisch aufgreifen und in die App weiterleiten würde, verlangte aber explizit, das zu VERIFIZIEREN statt anzunehmen. Prüfung ergab: `useAuthGate` re-evaluiert nur bei einem Supabase-Auth-Event (`onAuthStateChange`: Sign-in/Sign-out/Token-Refresh) — eine reine Datenänderung (neue `watch_group_members`-Zeile) bei unverändert bestehender Session löst kein solches Event aus. Ohne Eingriff wäre der Nutzer nach erfolgreichem Erstellen/Beitreten auf diesem Screen "gestrandet", bis zum nächsten Auth-Event (z.B. App-Neustart).
+
+**Entscheidung (vorläufig):** Dieser Screen navigiert nach einem erfolgreichen RPC-Aufruf explizit selbst per `router.replace("/(app)/(tabs)/tracker")` — derselbe Routen-String, den `src/app/index.tsx`s `'app'`-Gate-Zustand verwendet. `useAuthGate`/`index.tsx` selbst bleiben unverändert; sie greifen beim nächsten regulären Auth-Event (z.B. App-Neustart) ohnehin korrekt, da `getUserGroups` dann die neue Mitgliedschaft findet.
+
+**Warum das später leicht änderbar ist:** Eine einzelne `router.replace(...)`-Zeile pro Erfolgsfall in `create-or-join-group.tsx`. Eine spätere, "sauberere" Lösung (z.B. `useAuthGate` einen manuellen `refetch()` spendieren, den dieser Screen nach Erfolg aufruft) wäre eine additive Erweiterung des Hooks, keine Änderung an dieser Navigations-Entscheidung nötig.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M9 Teil 1 — Fehlertext-Konvention (generisch vs. Token-spezifisch)
+
+**Problem/Lücke:** Keine ADR-Vorgabe für die exakte Fehlertext-Copy bei einem fehlgeschlagenen Erstellen/Beitreten.
+
+**Entscheidung (vorläufig):** Token-spezifischer Fall (ungültiger/deaktivierter Einladungscode, sowohl clientseitig durch `extractInviteToken()` als auch serverseitig durch den `WC003`-Errcode erkannt): fester Text `"Ungültiger oder deaktivierter Einladungscode."`. Jeder andere Fehler: Präfix + rohe Supabase-Fehlermeldung, exakt im selben Stil wie das bestehende Login-Screen-Muster (`` `Anmeldung fehlgeschlagen: ${error}` ``) — hier `` `Erstellen fehlgeschlagen: ${error.message}` `` bzw. `` `Beitritt fehlgeschlagen: ${error.message}` ``.
+
+**Warum das später leicht änderbar ist:** Zwei Textstring-Konstanten/Template-Literale in `src/app/(onboarding)/create-or-join-group.tsx`, keine Auswirkung auf die zugrundeliegende Fehlerbehandlungs-Logik.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

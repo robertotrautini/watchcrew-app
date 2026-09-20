@@ -47,6 +47,62 @@ export interface GroupMemberRow extends WatchGroupMembershipRow {
 // the flagged gap where a group member was only ever a bare `auth.users`
 // uuid with no human-readable name anywhere) — see
 // `supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`.
+// M9 part 1: create/join now go through two SECURITY DEFINER Postgres RPCs
+// (supabase/migrations/20260920130000_group_invite_and_rpcs.sql) rather than
+// a direct client INSERT under RLS -- there is intentionally no INSERT
+// policy for `authenticated` on either `watch_groups` or
+// `watch_group_members` (see that migration + the M1 schema task's open
+// questions). Both wrappers follow the same never-throw `{ data, error }`
+// passthrough convention as `getUserGroups`/`getGroupMembers` above, except
+// that on success the raw RPC scalar (the new/joined group's uuid) is
+// reshaped into `{ groupId }` rather than returned bare, so callers get a
+// self-describing field name instead of an anonymous string.
+
+export interface WatchGroupIdResult {
+  groupId: string;
+}
+
+export async function createWatchGroup(name: string, colorTheme: string) {
+  const { data, error } = await supabase.rpc("create_watch_group", {
+    p_name: name,
+    p_color_theme: colorTheme,
+  });
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  return { data: { groupId: data as string }, error: null };
+}
+
+// The Postgres error code the `join_watch_group_by_token` RPC raises
+// specifically for "no group has this invite_token" / "invite_enabled is
+// false" (see the migration's `WC003` errcode) -- deliberately a single
+// shared code for both cases (see that migration's comment on why they're
+// not distinguished further). Supabase's client surfaces a raised Postgres
+// exception as `{ message, code, details, hint }` (confirmed against the
+// real local-Postgres RPC response during this task's Docker verification),
+// with `code` set to exactly the `errcode` the function raised with -- so
+// callers can reliably branch on this constant instead of pattern-matching
+// the (potentially locale-dependent) message text.
+export const INVALID_INVITE_TOKEN_ERROR_CODE = "WC003";
+
+export function isInvalidInviteTokenError(error: { code?: string } | null | undefined): boolean {
+  return error?.code === INVALID_INVITE_TOKEN_ERROR_CODE;
+}
+
+export async function joinWatchGroupByToken(token: string) {
+  const { data, error } = await supabase.rpc("join_watch_group_by_token", {
+    p_token: token,
+  });
+
+  if (error) {
+    return { data: null, error };
+  }
+
+  return { data: { groupId: data as string }, error: null };
+}
+
 export async function getGroupMembers(groupId: string) {
   const membersResult = await supabase.from("watch_group_members").select("*").eq("group_id", groupId);
   if (membersResult.error || !membersResult.data || membersResult.data.length === 0) {
