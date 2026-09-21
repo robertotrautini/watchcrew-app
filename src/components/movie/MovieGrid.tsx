@@ -3,6 +3,8 @@ import { Image } from "expo-image";
 import type { ReactNode } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
+import { FadeInItem } from "@/components/ui/FadeInItem";
+
 /**
  * Shared, presentational movie grid used by the M6 movie-detail sub-views
  * (Filmreihe/collection, Regisseur-/Schauspieler-/Studio-Filmografie,
@@ -113,7 +115,6 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
         testID={`${testID}-item-${item.tmdbId}`}
         accessibilityRole="button"
         onPress={() => onPressItem(item)}
-        className="flex-1"
       >
         <View className="relative">
           {item.posterPath ? (
@@ -239,7 +240,11 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
           numColumns={3}
           columnWrapperClassName="gap-3"
           contentContainerClassName="gap-3"
-          renderItem={({ item }) => renderTile(item)}
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index} className="flex-1">
+              {renderTile(item)}
+            </FadeInItem>
+          )}
           ListFooterComponent={
             footer != null ? <View testID={`${testID}-footer`}>{footer}</View> : null
           }

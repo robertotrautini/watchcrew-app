@@ -128,6 +128,15 @@ describe("LoginScreen", () => {
     });
   });
 
+  // M11 keyboard-avoiding review: the screen now wraps its form in a
+  // `KeyboardAvoidingView` (src/app/(auth)/login.tsx), whose `behavior`
+  // prop is computed by `screenKeyboardAvoidingBehavior` -- that pure,
+  // platform-parameterized decision is unit-tested directly in
+  // __tests__/lib/platformKeyboardAvoiding.test.ts rather than here
+  // (RNTL's rendered-tree API only exposes the underlying host `View`'s
+  // props, which never include `behavior` itself -- it's consumed
+  // internally by `KeyboardAvoidingView`, not forwarded).
+
   it("renders a register link pointing to /(auth)/register", async () => {
     const LoginScreen = loadLoginScreen();
     await render(<LoginScreen />);

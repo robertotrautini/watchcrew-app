@@ -1,9 +1,11 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { Button } from "@/components/ui/Button";
+import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -161,25 +163,28 @@ export default function WatchlistScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="watchlist-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="watchlist-screen">
         <ActivityIndicator testID="watchlist-loading" />
         <Text className="mt-2 text-text-secondary">Watchlist wird geladen…</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="watchlist-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="watchlist-screen">
         <Text testID="watchlist-error" className="text-center text-danger">
           Die Watchlist konnte nicht geladen werden.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="watchlist-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Safe-Area"): same reasoning as tracker.tsx -- `headerShown: false`
+    // tab screen, top inset only (bottom is the Tabs navigator's job).
+    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="watchlist-screen">
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="font-display text-xl text-text-primary">Watchlist</Text>
         <View className="flex-row items-center gap-2">
@@ -292,8 +297,8 @@ export default function WatchlistScreen() {
           numColumns={watchlistViewMode === "grid" ? 3 : 1}
           contentContainerClassName="px-4 pt-3 gap-3"
           columnWrapperClassName={watchlistViewMode === "grid" ? "gap-3" : undefined}
-          renderItem={({ item }) => (
-            <View className={watchlistViewMode === "grid" ? "flex-1" : undefined}>
+          renderItem={({ item, index }) => (
+            <FadeInItem index={index} className={watchlistViewMode === "grid" ? "flex-1" : undefined}>
               <WatchlistPosterCard
                 variant={watchlistViewMode === "grid" ? "grid" : "card"}
                 movie={item.movie}
@@ -303,7 +308,7 @@ export default function WatchlistScreen() {
                 showTitle={showTitlesInGrid}
                 testID={`watchlist-entry-${item.id}`}
               />
-            </View>
+            </FadeInItem>
           )}
         />
       )}
@@ -325,6 +330,6 @@ export default function WatchlistScreen() {
           ))}
         </View>
       </Sheet>
-    </View>
+    </SafeAreaView>
   );
 }

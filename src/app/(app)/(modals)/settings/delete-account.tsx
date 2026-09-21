@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, TextInput, View } from "react-native";
+import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
@@ -44,6 +45,10 @@ export default function SettingsDeleteAccountScreen() {
     if (!isConfirmed || isDeleting) {
       return;
     }
+    // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"):
+    // same "medium impact, right on the confirm tap" destructive-confirm
+    // treatment as the other delete confirmations in this app.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsDeleting(true);
     setErrorMessage(null);
 

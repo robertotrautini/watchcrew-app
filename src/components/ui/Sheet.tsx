@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
-import { Dimensions, Modal, Pressable, Text, View } from "react-native";
+import { Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native";
+
+import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 /**
  * Below this viewport width, the backdrop uses a flatter/less-transparent
@@ -44,35 +46,53 @@ export interface SheetProps {
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable
-        testID="sheet-backdrop"
-        onPress={onClose}
-        className={
-          isSmallScreen ? "flex-1 justify-end bg-black/70" : "flex-1 justify-end bg-black/50"
-        }>
+      {/*
+       * M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+       * Keyboard-Avoiding"): RN's `Modal` opens its own native window
+       * (a separate Android Dialog / iOS UIWindow), so it does NOT inherit
+       * the app's own keyboard-resize handling -- without this, several
+       * Sheet-based dialogs with a real text input (PaymentModal's "Film
+       * suchen…", the delete-account confirmation phrase) would get their
+       * bottom-anchored content (incl. the save/confirm button) covered by
+       * the keyboard. `"height"` on Android rather than leaving it
+       * `undefined`, specifically because Android's usual automatic
+       * `windowSoftInputMode="adjustResize"` behavior applies to the main
+       * Activity window, not to a `Modal`'s own separate Dialog window.
+       */}
+      <KeyboardAvoidingView
+        testID="sheet-keyboard-avoiding-view"
+        behavior={modalKeyboardAvoidingBehavior(Platform.OS)}
+        className="flex-1">
         <Pressable
-          onPress={() => {
-            // Swallow the tap so it doesn't bubble to the backdrop
-            // Pressable above and close the sheet when interacting with
-            // its own content.
-          }}
-          className="rounded-t-xl bg-glass shadow-card">
-          {title ? (
-            <View className="flex-row items-center justify-between border-b border-border-subtle px-4 py-3">
-              <Text className="font-display text-lg text-text-primary">{title}</Text>
-              <Pressable
-                testID="sheet-close-button"
-                onPress={onClose}
-                accessibilityRole="button"
-                accessibilityLabel="Close"
-                className="h-touch-min w-touch-min items-center justify-center">
-                <Text className="text-2xl text-text-primary">×</Text>
-              </Pressable>
-            </View>
-          ) : null}
-          <View className="p-4">{children}</View>
+          testID="sheet-backdrop"
+          onPress={onClose}
+          className={
+            isSmallScreen ? "flex-1 justify-end bg-black/70" : "flex-1 justify-end bg-black/50"
+          }>
+          <Pressable
+            onPress={() => {
+              // Swallow the tap so it doesn't bubble to the backdrop
+              // Pressable above and close the sheet when interacting with
+              // its own content.
+            }}
+            className="rounded-t-xl bg-glass shadow-card">
+            {title ? (
+              <View className="flex-row items-center justify-between border-b border-border-subtle px-4 py-3">
+                <Text className="font-display text-lg text-text-primary">{title}</Text>
+                <Pressable
+                  testID="sheet-close-button"
+                  onPress={onClose}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close"
+                  className="h-touch-min w-touch-min items-center justify-center">
+                  <Text className="text-2xl text-text-primary">×</Text>
+                </Pressable>
+              </View>
+            ) : null}
+            <View className="p-4">{children}</View>
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

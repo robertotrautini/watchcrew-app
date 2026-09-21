@@ -3,10 +3,17 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 
 const mockDeleteMutate = jest.fn();
 const mockAddMutate = jest.fn();
+const mockImpactAsync = jest.fn();
 
 jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useDeleteWatchlistEntry: () => ({ mutate: mockDeleteMutate, isPending: false }),
   useAddToWatchlist: () => ({ mutate: mockAddMutate, isPending: false }),
+}));
+
+// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 
 jest.mock("@/lib/movieDetailNavigation", () => ({
@@ -85,6 +92,7 @@ describe("MovieDetailActionsBar", () => {
     await fireEvent.press(getByTestId("movie-detail-action-loeschen"));
     await fireEvent.press(getByTestId("movie-detail-delete-confirm-button"));
 
+    expect(mockImpactAsync).toHaveBeenCalledWith("medium");
     expect(mockDeleteMutate).toHaveBeenCalledWith(
       { watchlistEntryId: "entry-1", groupId: "group-1" },
       expect.objectContaining({ onSuccess: expect.any(Function) }),

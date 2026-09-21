@@ -103,6 +103,11 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M11 Teil 2 — Job 1 (Inaktivitäts-Cleanup): ⚠️ E-Mail-Provider-Frage bleibt bewusst offen; Schema-/Job-/Vault-Entscheidungen drumherum](#m11-teil-2--job-1-inaktivitäts-cleanup-️-e-mail-provider-frage-bleibt-bewusst-offen-schema-job-vault-entscheidungen-drumherum)
 - [M11 Teil 2 — Job 2 (Empty-Group-Hard-Delete): `emptied_at`-Spalte, Trigger-/RPC-Erweiterung statt neuer Mechanismen, defensiver Doppel-Check im Cleanup](#m11-teil-2--job-2-empty-group-hard-delete-emptied_at-spalte-trigger-rpc-erweiterung-statt-neuer-mechanismen-defensiver-doppel-check-im-cleanup)
 - [M11 Teil 2 — Job 3 (Rechtstexte-Platzhalter): Duplizierte Platzhalter-Konstanten, "Wird bald ergänzt"-Toast, Register-Screen-Ergänzung](#m11-teil-2--job-3-rechtstexte-platzhalter-duplizierte-platzhalter-konstanten-wird-bald-ergänzt-toast-register-screen-ergänzung)
+- [M11 Teil 1 — Haptik: ausgewählte Interaktionen und Intensitäten](#m11-teil-1--haptik-ausgewählte-interaktionen-und-intensitäten)
+- [M11 Teil 1 — Animation: Toast nur Fade-IN, gestaffeltes Grid-/Karten-Fade-in mit gedeckeltem Stagger](#m11-teil-1--animation-toast-nur-fade-in-gestaffeltes-grid-karten-fade-in-mit-gedeckeltem-stagger)
+- [M11 Teil 1 — Keyboard-Avoiding: reine Platform-Funktionen statt gerenderter Prop-Prüfung, Scope auf Login/Register/Sheet](#m11-teil-1--keyboard-avoiding-reine-platform-funktionen-statt-gerenderter-prop-prüfung-scope-auf-loginregistersheet)
+- [M11 Teil 1 — Safe-Area: `SafeAreaView` gezielt pro Screen, nicht global](#m11-teil-1--safe-area-safeareaview-gezielt-pro-screen-nicht-global)
+- [M11 Teil 1 — StatusBar: fest `style="light"`, nicht `colorScheme`-abhängig](#m11-teil-1--statusbar-fest-stylelight-nicht-colorscheme-abhängig)
 
 ---
 
@@ -1518,6 +1523,86 @@ Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Re
 - Register-Screen-Frage ("dein Aufruf, dokumentieren"): JA, ergänzt — ein kleiner Hinweistext unter dem "Konto erstellen"-Button ("Mit der Registrierung akzeptierst du unsere Datenschutzerklärung und Nutzungsbedingungen.") mit denselben zwei tappable Links (identisches `openLegalUrl`-Verhalten, gleiche Platzhalter-Toast-Logik) — gängige App-Store/Play-Store-Erwartung, sehr günstig/reversibel (ein einzelner `<Text>`-Block), daher direkt mitgebaut statt nur als Folgeaufgabe vermerkt.
 
 **Warum das später leicht änderbar ist:** Sobald iubenda eingerichtet ist, genügt es, die beiden `app.config.ts`-Werte auf die echten Embed-URLs zu ändern — `isPlaceholderLegalUrl` erkennt sie dann automatisch nicht mehr als Platzhalter, kein Code in `settings.tsx`/`register.tsx` muss angefasst werden.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 1 — Haptik: ausgewählte Interaktionen und Intensitäten
+
+**Problem/Lücke:** Der Task-Auftrag verlangt explizit eine KLEINE, bewusst gewählte Menge an Haptik-Interaktionen ("nicht jeder einzelne Tap") — welche genauen Interaktionen und welche Intensität (`Haptics.ImpactFeedbackStyle`) war nicht vorgegeben.
+
+**Entscheidung:** `expo-haptics` (`~57.0.3`, per `npx expo install`) neu installiert. Genau diese Interaktionen bekommen einen `Haptics.impactAsync(...)`-Aufruf, jeweils direkt bei der Nutzer-Geste (nicht erst nach einem Server-Roundtrip, außer explizit vermerkt):
+
+- **Light:** jeder Stern-Tap in `StarRating.tsx` (`handleStarPress`).
+- **Light:** der Like-Herz-Tap in `StarRating.tsx` (`handleHeartPress`, neu — ersetzt den direkten `onPress={onToggleLike}`).
+- **Light:** erfolgreiches Hinzufügen zur Watchlist — zentral in `useAddToWatchlist`s `onSuccess` (`src/hooks/useMovieDetailMutations.ts`), NICHT an den einzelnen Call-Sites (`MovieDetailActionsBar`s "Zur Watchlist"/"Direkt bewerten"-Buttons UND Add-Movie-Modals Quick-Add-"+"-Button teilen sich denselben Hook und bekommen die Haptik dadurch automatisch einheitlich, an einer einzigen Stelle).
+- **Medium:** Bestätigen einer destruktiven Lösch-Aktion — an drei Stellen mit identischem Muster (Impuls sofort beim Tap auf den Bestätigen-Button, nicht erst nach Erfolg): `MovieDetailActionsBar.handleDeleteConfirm` (Film aus Watchlist löschen), `tracker.tsx`s `confirmDelete` (Zahlung löschen), `settings/delete-account.tsx`s `handleConfirmDelete` (Konto endgültig löschen).
+
+Bewusst NICHT mit Haptik versehen: Pull-to-Refresh — keiner der Watchlist-/Tagebuch-/Tracker-Screens hat aktuell einen Pull-to-Refresh-Mechanismus gebaut (`RefreshControl` kommt im gesamten `src/`-Baum nicht vor), daher wurde hier bewusst NICHTS ergänzt (das wäre Scope-Creep für diese Aufgabe) — als Nice-to-have für einen späteren Milestone vermerkt, falls Pull-to-Refresh dort einmal gebaut wird.
+
+`expo-haptics`-Aufrufe sind bewusst NICHT in try/catch gewrappt (Bibliothek nootet bereits intern auf nicht unterstützter Android-Hardware, ein zusätzlicher Catch würde nur echte Bugs verschlucken können) — exakt wie im Task-Auftrag vorgegeben.
+
+**Warum das später leicht änderbar ist:** Jeder Aufruf ist ein einzeiliger `Haptics.impactAsync(...)`-Call an einer klar benannten Stelle; Intensität oder Auswahl ändern heißt, einzelne Zeilen zu editieren/entfernen, keine Strukturänderung.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 1 — Animation: Toast nur Fade-IN, gestaffeltes Grid-/Karten-Fade-in mit gedeckeltem Stagger
+
+**Problem/Lücke:** `ToastHost` (`src/components/ui/Toast.tsx`, M10) zeigte/versteckte bisher abrupt (kein Fade/Slide); der Task-Auftrag nennt das explizit als Beispiel für "abruptes Show/Hide". Zusätzlich sollte ein gestaffeltes Fade-in für neu geladene Listen-Einträge (MovieGrid/WatchlistPosterCard/DiaryPosterTile) ergänzt werden — beides ohne eine neue, schwere Animationsbibliothek (`react-native-reanimated` ist zwar bereits eine Dependency dieses Projekts, aber laut Task-Auftrag nur bei "starkem, spezifischem Bedarf" zu verwenden statt der eingebauten `Animated`-API; ein solcher Bedarf wurde hier nicht gesehen).
+
+**Entscheidung:**
+- `Toast.tsx`: Ein Fade+Slide-up-Entrance (`Animated.parallel` auf Opacity + `translateY`, 200ms) beim Erscheinen. Bewusst KEIN gespiegeltes Fade-OUT beim automatischen Verschwinden — ein Fade-out hätte bedeutet, das tatsächliche Unmounten bis zum Animationsende zu verzögern, was die bereits bestehenden, exakten `TOAST_DURATION_MS`-Timing-Tests (`Toast.test.tsx`) verkompliziert/verzögert hätte. Gegeben, dass dies ein Spare-Time-MVP-Projekt ohne Deadline-Druck ist (`CLAUDE.md`), wurde der Mehraufwand für einen derart kurzlebigen Toast als nicht lohnend bewertet — dokumentierter Trade-off, kein Versehen.
+- Neue, wiederverwendbare `FadeInItem`-Komponente (`src/components/ui/FadeInItem.tsx`): ein `Animated.View`-Wrapper mit Fade-in (220ms) und einem index-basierten Stagger-Delay. Die Stagger-Berechnung selbst ist als reine Funktion ausgelagert (`computeStaggerDelayMs`, `src/lib/staggerAnimation.ts`) — 40ms pro Index, gedeckelt bei Index 8 (320ms Maximal-Delay), damit eine lange Liste nicht minutenlang nachstaffelt. Eingesetzt in `MovieGrid.tsx`s `FlatList`-`renderItem`, `watchlist.tsx`s Grid/Karten-`FlatList`-`renderItem` und `tagebuch.tsx`s Grid-/Karten-`.map()`-Blöcken (NICHT in Tagebuchs "Liste"-Modus oder Trackers Tabellen-Zeilen — die wurden im Task-Auftrag nicht genannt und sind reine Text-Zeilen ohne Poster-Kachel-Charakter).
+- Timing-/Easing-Werte (200ms/220ms/40ms-Schritte) sind unverifiziert-visuell gewählte, plausible Defaults — in dieser Umgebung ist keine echte Geräte-/Simulator-Vorschau möglich (siehe Task-Auftrag).
+
+**Warum das später leicht änderbar ist:** `FadeInItem`/`computeStaggerDelayMs` sind eigenständige, kleine Module — Timing-Konstanten sind einzelne benannte Werte, ein Fade-out für den Toast wäre eine lokale Ergänzung in genau einer Datei.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 1 — Keyboard-Avoiding: reine Platform-Funktionen statt gerenderter Prop-Prüfung, Scope auf Login/Register/Sheet
+
+**Problem/Lücke:** Login/Register/`Sheet.tsx` (und darüber PaymentModal/`delete-account.tsx`) hatten kein `KeyboardAvoidingView` — auf kurzen Geräten könnte die Tastatur den Submit-Button verdecken. `RatingDialog`/Add-Movie-Modal wurden geprüft und brauchen KEINS (alle Datumsfelder nutzen `DateField`s nativen Date-Picker statt Tastatur; Add-Movies Such-Textfelder sitzen oben im Screen, keine Verdeckungsgefahr für den restlichen Inhalt). Ein technisches Zwischenproblem: RNTLs (v14) gerenderter Test-Baum exponiert nur HOST-Component-Props, `KeyboardAvoidingView`s eigenes `behavior`-Prop wird intern konsumiert und nie an die zugrunde liegende `View` weitergereicht — direktes `getByTestId(...).props.behavior` in einem Test schlägt fehl, `UNSAFE_getByType` existiert in dieser RNTL-Version nicht mehr.
+
+**Entscheidung:**
+- Die "welchen `behavior`-Wert" Entscheidung wurde in zwei reine, `Platform.OS`-String-parametrisierte Funktionen ausgelagert (`src/lib/platformKeyboardAvoiding.ts`): `screenKeyboardAvoidingBehavior` (iOS: `"padding"`, Android: `undefined` — verlässt sich auf Androids eigenes `windowSoftInputMode: "adjustResize"`) für Login/Register, und `modalKeyboardAvoidingBehavior` (iOS: `"padding"`, Android: `"height"`) für `Sheet.tsx` — Android braucht dort explizit `"height"` statt `undefined`, weil RNs `Modal` ein eigenes natives Fenster (Dialog) öffnet, auf das Androids `adjustResize`-Default (der nur für das Activity-Fenster gilt) NICHT automatisch wirkt. Diese Funktionen sind direkt unit-getestet (`__tests__/lib/platformKeyboardAvoiding.test.ts`); die Komponenten selbst rufen sie nur noch auf (`behavior={screenKeyboardAvoidingBehavior(Platform.OS)}` etc.) — kein fragiler RNTL-Test gegen die reale `KeyboardAvoidingView`-Komponente nötig.
+- `create-or-join-group.tsx` (Onboarding) hat ebenfalls Text-Eingaben, bekam aber bewusst KEIN `KeyboardAvoidingView` — der Task-Auftrag nennt explizit nur Login/Register/Rating-Dialog/Add-Movie als zu prüfende Screens; dieser Screen ist nicht zentriert (Inhalt wächst von oben nach unten, kein `justify-center`), das Überdeckungsrisiko ist geringer, und eine ungefragte Ausweitung auf weitere Screens wäre über die "Review-and-fix, keine erfundenen Fälle"-Vorgabe hinausgegangen.
+
+**Warum das später leicht änderbar ist:** Zwei reine Funktionen mit je einer Zeile Logik — ein dritter Kontext (z.B. `create-or-join-group.tsx`) bräuchte höchstens eine dritte, analoge Funktion plus einen `KeyboardAvoidingView`-Wrapper an einer Stelle.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 1 — Safe-Area: `SafeAreaView` gezielt pro Screen, nicht global
+
+**Problem/Lücke:** Trotz `react-native-safe-area-context` als bestehender Dependency wurde `SafeAreaView`/`useSafeAreaInsets` im gesamten `src/`-Baum bisher NIRGENDS verwendet. Die drei Haupt-Tabs (`tracker.tsx`/`watchlist.tsx`/`tagebuch.tsx`) laufen mit `headerShown: false` (`(tabs)/_layout.tsx`) — ohne eigene Safe-Area-Behandlung rendert ihr Inhalt potenziell unter der Status-Leiste/Notch/Dynamic-Island. Der Movie-Detail-Overlay (`movie/[tmdbId].tsx`) überschreibt den `(modals)`-Gruppen-Default sogar explizit auf `headerShown: false` (eigener manueller Zurück-Button) UND hat eine absolut positionierte Action-Leiste am unteren Bildschirmrand (`bottom-0`, kein Home-Indicator-Inset).
+
+**Entscheidung:**
+- `tracker.tsx`/`watchlist.tsx`/`tagebuch.tsx`: äußerstes Element wird `SafeAreaView` mit `edges={["top"]}` (nicht `["top","bottom"]`) — `bottom` wird bereits vom Tabs-Navigator selbst korrekt behandelt (der Tab-Bar-Container safe-area-paddet sich intern), ein zusätzliches `bottom`-Inset hier würde nur doppelten Abstand erzeugen.
+- `movie/[tmdbId].tsx`: äußeres `SafeAreaView` mit `edges={["top"]}` (der manuelle Zurück-Button sitzt sonst unter der Notch), UND separat die absolut positionierte Action-Leiste selbst wird zu einem `SafeAreaView` mit `edges={["bottom"]}` (Home-Indicator-Inset nur dort, wo er wirklich gebraucht wird, nicht am gesamten Screen-Container, da der `ScrollView`-Inhalt bereits `pb-24` als Abstand zur fixen Leiste hat).
+- `create-or-join-group.tsx` (Onboarding): eigenständiger `headerShown: false`-Screen OHNE Tab-Bar darunter → `edges={["top", "bottom"]}` (beide Insets sind hier tatsächlich diese Screens eigene Verantwortung).
+- Login/Register: bewusst KEIN `SafeAreaView` ergänzt — der Inhalt ist vertikal zentriert (`justify-center`), das Überlappungsrisiko am oberen/unteren Rand ist dadurch strukturell geringer als bei den anderen genannten Screens; nur das (tatsächlich nötige) `KeyboardAvoidingView` wurde dort ergänzt (siehe eigener Eintrag oben). Eine Ausweitung wäre jederzeit eine rein additive, unabhängige Änderung.
+- Add-Movie-Modal und alle anderen `(modals)`-Screens mit dem Gruppen-Default `headerShown: true` brauchten KEINE Änderung — der native Header übernimmt das obere Inset bereits automatisch.
+- `SafeAreaView` (statt `useSafeAreaInsets` + manuellem `style={{paddingTop: insets.top}}`) gewählt, weil es KEINEN `SafeAreaProvider`-Ancestor braucht (native, in sich geschlossene Komponente) und weil es KEIN Inline-`style`-Prop im Sinne der Projekt-Konvention ist (analog zur `Animated`-API-Ausnahme aus dem Task-Auftrag: ein dedizierter Safe-Area-Baustein statt handgerolltem `style`).
+
+**Warum das später leicht änderbar ist:** `edges`-Prop ist pro Stelle ein einzelnes Array — Anpassungen (z.B. Login/Register doch mit Safe-Area versehen) sind lokale, unabhängige Ein-Zeilen-Änderungen ohne Strukturfolgen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 1 — StatusBar: fest `style="light"`, nicht `colorScheme`-abhängig
+
+**Problem/Lücke:** `expo-status-bar` ist zwar eine Dependency, wurde aber nirgends als `<StatusBar>`-Komponente gerendert — ohne das folgt die Status-Leiste dem GERÄTE-eigenen Hell/Dunkel-Modus, während diese App selbst (`tailwind.config.js`s `bg-primary: "#0a0a0a"` etc.) durchgehend ein einziges, festes dunkles Farbschema hat, unabhängig vom System-Farbschema (nur die Gruppen-Akzentfarbe wechselt, nie das Grund-Theme). Auf einem Gerät im Light-Mode wären Status-Leisten-Icons/Text dann dunkel-auf-dunkel — praktisch unsichtbar.
+
+**Entscheidung:** `<StatusBar style="light" />` (aus `expo-status-bar`) fest in `src/app/_layout.tsx` (App-weit, einmalig) — bewusst NICHT an `useColorScheme()` gekoppelt (im Gegensatz zu `ThemeProvider`s `DarkTheme`/`DefaultTheme`-Wahl direkt darüber, die nur React Navigations eigenes natives Chrome betrifft, nicht diese Apps eigenes Farbschema).
+
+**Warum das später leicht änderbar ist:** Eine einzelne Komponenten-Zeile an einer Stelle — sollte die App später doch ein echtes Light-Theme bekommen, würde die `style`-Prop dort schlicht wieder an `colorScheme` gekoppelt.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

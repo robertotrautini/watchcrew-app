@@ -70,6 +70,13 @@ describe("Sheet", () => {
     expect(queryByTestId("sheet-close-button")).toBeNull();
   });
 
+  // M11 keyboard-avoiding review: Sheet now wraps its content in a
+  // `KeyboardAvoidingView` (testID "sheet-keyboard-avoiding-view"), whose
+  // `behavior` is computed by `modalKeyboardAvoidingBehavior` -- see the
+  // identical note in __tests__/screens/Login.test.tsx for why that's
+  // unit-tested directly (__tests__/lib/platformKeyboardAvoiding.test.ts)
+  // rather than via a rendered-tree prop assertion here.
+
   it("calls onClose when the close button is tapped", async () => {
     const onClose = jest.fn();
     const { getByTestId } = await render(

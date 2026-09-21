@@ -17,6 +17,7 @@
 //     enabling them earlier prevents the mount's own `useEffect` (which
 //     subscribes to the toast pub/sub) from ever running.
 
+import { Animated } from "react-native";
 import { act, render } from "@testing-library/react-native";
 
 import { ToastHost } from "@/components/ui/Toast";
@@ -42,6 +43,30 @@ describe("ToastHost", () => {
 
     expect(queryByTestId("toast-host")).toBeTruthy();
     expect(getByTestId("toast-message").props.children).toBe("Neuer Film zur Watchlist hinzugefügt");
+  });
+
+  it("plays a fade+slide-in entrance animation when a toast is shown (M11 animation polish)", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+    await render(<ToastHost />);
+
+    await act(async () => {
+      showToast("Neuer Film zur Watchlist hinzugefügt");
+    });
+
+    // Two Animated.Value drivers (opacity + translateY), each animating
+    // toward its resting value -- confirms the right API is actually wired,
+    // not the visual smoothness/easing of the transition (unverifiable in
+    // this environment, see this task's own instructions).
+    expect(timingSpy).toHaveBeenCalledWith(
+      expect.any(Animated.Value),
+      expect.objectContaining({ toValue: 1 }),
+    );
+    expect(timingSpy).toHaveBeenCalledWith(
+      expect.any(Animated.Value),
+      expect.objectContaining({ toValue: 0 }),
+    );
+
+    timingSpy.mockRestore();
   });
 
   it("auto-dismisses the toast after 4 seconds", async () => {

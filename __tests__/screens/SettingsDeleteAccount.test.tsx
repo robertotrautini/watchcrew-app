@@ -17,6 +17,12 @@ jest.mock("@/lib/auth", () => ({
   signOut: mockSignOut,
 }));
 
+const mockImpactAsync = jest.fn();
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+}));
+
 function loadScreen() {
   return require("@/app/(app)/(modals)/settings/delete-account").default;
 }
@@ -65,6 +71,7 @@ describe("SettingsDeleteAccountScreen", () => {
     await fireEvent.press(getByTestId("delete-account-confirm-button"));
 
     expect(mockDeleteOwnAccount).not.toHaveBeenCalled();
+    expect(mockImpactAsync).not.toHaveBeenCalled();
   });
 
   it("on success: calls deleteOwnAccount, then signOut, then navigates to '/'", async () => {
@@ -77,6 +84,7 @@ describe("SettingsDeleteAccountScreen", () => {
 
     await fireEvent.press(getByTestId("delete-account-confirm-button"));
 
+    expect(mockImpactAsync).toHaveBeenCalledWith("medium");
     await waitFor(() => expect(mockDeleteOwnAccount).toHaveBeenCalled());
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Text } from "react-native";
+import { Animated, Text } from "react-native";
 
 import { Card } from "@/components/ui/Card";
 import { subscribeToToasts } from "@/lib/toast";
@@ -11,6 +11,23 @@ import { subscribeToToasts } from "@/lib/toast";
  * "M10 — Toast-Anzeigedauer".
  */
 const TOAST_DURATION_MS = 4000;
+
+/**
+ * M11 (animation polish, see docs/interim-decisions.md "M11 — Animation"):
+ * a short fade+slide-up entrance, replacing the previous abrupt
+ * show/hide. Deliberately entrance-only, not a mirrored fade-OUT on
+ * dismiss -- animating the exit would mean deferring the actual unmount
+ * until the animation finishes, which would push this component's exact,
+ * already-tested `TOAST_DURATION_MS` dismiss timing (see Toast.test.tsx)
+ * later by the animation's duration. Given this is a spare-time MVP
+ * project (no deadline pressure, per CLAUDE.md), the fade-out was judged
+ * not worth the added complexity/test fragility for a toast that's this
+ * short-lived anyway -- documented trade-off, not an oversight. Timing/
+ * easing values themselves are unverified visually (this environment
+ * cannot render animations), per this task's own instructions.
+ */
+const TOAST_ENTRANCE_DURATION_MS = 200;
+const TOAST_ENTRANCE_TRANSLATE_Y = 12;
 
 /**
  * M10 (Realtime foreground sync, ADR 0006): the single toast host, mounted
@@ -31,6 +48,8 @@ const TOAST_DURATION_MS = 4000;
 export function ToastHost() {
   const [message, setMessage] = useState<string | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y)).current;
 
   useEffect(() => {
     const unsubscribe = subscribeToToasts((nextMessage) => {
@@ -38,6 +57,23 @@ export function ToastHost() {
         clearTimeout(dismissTimer.current);
       }
       setMessage(nextMessage);
+      // Restart the entrance animation from its initial values every time a
+      // toast is (re-)shown, including the "replaces an in-flight toast"
+      // case -- each new message gets its own fresh fade+slide-in.
+      opacity.setValue(0);
+      translateY.setValue(TOAST_ENTRANCE_TRANSLATE_Y);
+      Animated.parallel([
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: TOAST_ENTRANCE_DURATION_MS,
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: TOAST_ENTRANCE_DURATION_MS,
+          useNativeDriver: true,
+        }),
+      ]).start();
       dismissTimer.current = setTimeout(() => setMessage(null), TOAST_DURATION_MS);
     });
 
@@ -47,17 +83,23 @@ export function ToastHost() {
         clearTimeout(dismissTimer.current);
       }
     };
-  }, []);
+  }, [opacity, translateY]);
 
   if (message == null) {
     return null;
   }
 
   return (
-    <Card testID="toast-host" className="absolute bottom-24 left-4 right-4 px-4 py-3">
-      <Text testID="toast-message" className="text-center text-text-primary">
-        {message}
-      </Text>
-    </Card>
+    <Animated.View
+      testID="toast-host"
+      className="absolute bottom-24 left-4 right-4"
+      style={{ opacity, transform: [{ translateY }] }}
+    >
+      <Card className="px-4 py-3">
+        <Text testID="toast-message" className="text-center text-text-primary">
+          {message}
+        </Text>
+      </Card>
+    </Animated.View>
   );
 }

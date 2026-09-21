@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
@@ -145,7 +146,11 @@ export default function CreateOrJoinGroupScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-6 py-8" testID="create-or-join-group-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Safe-Area"): standalone `headerShown: false` onboarding screen (no
+    // tab bar below it either), so both top and bottom insets are this
+    // screen's own responsibility.
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-bg-primary px-6 py-8" testID="create-or-join-group-screen">
       <Text className="mb-8 text-center font-display text-3xl text-text-primary">
         Willkommen bei WatchCrew
       </Text>
@@ -273,6 +278,6 @@ export default function CreateOrJoinGroupScreen() {
           />
         </View>
       ) : null}
-    </View>
+    </SafeAreaView>
   );
 }

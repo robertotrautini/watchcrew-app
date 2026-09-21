@@ -15,6 +15,26 @@ jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+jest.mock("expo-constants", () => ({
+  __esModule: true,
+  default: {
+    expoConfig: {
+      extra: {
+        privacyPolicyUrl: "https://watch-crew.app/privacy",
+        termsOfServiceUrl: "https://watch-crew.app/terms",
+      },
+    },
+  },
+}));
+
+// M11 part 2, Job 3 — the placeholder-gate logic itself is already covered
+// by __tests__/lib/legalLinks.test.ts; here it's mocked so this screen's
+// own tests only assert that it's called with the right URL.
+const mockOpenLegalUrl = jest.fn();
+jest.mock("@/lib/legalLinks", () => ({
+  openLegalUrl: (...args: unknown[]) => mockOpenLegalUrl(...args),
+}));
+
 function loadRegisterScreen() {
   return require("@/app/(auth)/register").default;
 }
@@ -58,6 +78,10 @@ describe("RegisterScreen", () => {
     expect(getByTestId("register-confirm-password-input")).toBeTruthy();
     expect(getByTestId("register-submit-button")).toBeTruthy();
   });
+
+  // M11 keyboard-avoiding review: see the identical note in
+  // __tests__/screens/Login.test.tsx -- the `behavior` decision is
+  // unit-tested directly in __tests__/lib/platformKeyboardAvoiding.test.ts.
 
   it("shows a validation error for an invalid email and does not call signUpWithEmail", async () => {
     const RegisterScreen = loadRegisterScreen();
@@ -171,5 +195,35 @@ describe("RegisterScreen", () => {
     await press(getByTestId("register-login-link"));
 
     expect(mockPush).toHaveBeenCalledWith("/(auth)/login");
+  });
+
+  // M11 part 2, Job 3 (ADR 0011) — legal-notice links.
+  describe("legal notice", () => {
+    it("renders the legal notice with both links", async () => {
+      const RegisterScreen = loadRegisterScreen();
+      const { getByTestId } = await render(<RegisterScreen />);
+
+      expect(getByTestId("register-legal-notice")).toBeTruthy();
+      expect(getByTestId("register-privacy-policy-link")).toBeTruthy();
+      expect(getByTestId("register-terms-of-service-link")).toBeTruthy();
+    });
+
+    it("opens the configured privacy-policy URL when that link is pressed", async () => {
+      const RegisterScreen = loadRegisterScreen();
+      const { getByTestId } = await render(<RegisterScreen />);
+
+      await press(getByTestId("register-privacy-policy-link"));
+
+      expect(mockOpenLegalUrl).toHaveBeenCalledWith("https://watch-crew.app/privacy");
+    });
+
+    it("opens the configured terms-of-service URL when that link is pressed", async () => {
+      const RegisterScreen = loadRegisterScreen();
+      const { getByTestId } = await render(<RegisterScreen />);
+
+      await press(getByTestId("register-terms-of-service-link"));
+
+      expect(mockOpenLegalUrl).toHaveBeenCalledWith("https://watch-crew.app/terms");
+    });
   });
 });

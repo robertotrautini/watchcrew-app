@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Alert, View } from "react-native";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
@@ -108,6 +109,11 @@ export function MovieDetailActionsBar({
     if (!watchlistEntryId || !groupId) {
       return;
     }
+    // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"): a
+    // medium impact right on the confirm tap (not gated on mutation
+    // success) -- destructive-confirm feedback should register the instant
+    // the user commits, not after a network round-trip.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     deleteMutation.mutate(
       { watchlistEntryId, groupId },
       {

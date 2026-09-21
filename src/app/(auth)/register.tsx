@@ -1,9 +1,12 @@
-import { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+import { KeyboardAvoidingView, Platform, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { signUpWithEmail } from "@/lib/auth";
+import { openLegalUrl } from "@/lib/legalLinks";
+import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 /**
  * Source: supabase/config.toml `auth.minimum_password_length = 6` (the
@@ -42,6 +45,15 @@ function validate(email: string, password: string, confirmPassword: string): str
  */
 export default function RegisterScreen() {
   const router = useRouter();
+
+  // M11 part 2, Job 3 (ADR 0011) — see this file's own legal-notice
+  // rendering below; `openLegalUrl` (src/lib/legalLinks.ts) handles the
+  // "still a placeholder" gate identically to the Settings hub.
+  const legalExtra = Constants.expoConfig?.extra as
+    | { privacyPolicyUrl?: string; termsOfServiceUrl?: string }
+    | undefined;
+  const privacyPolicyUrl = legalExtra?.privacyPolicyUrl;
+  const termsOfServiceUrl = legalExtra?.termsOfServiceUrl;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -101,7 +113,15 @@ export default function RegisterScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center gap-4 bg-bg-primary px-6" testID="register-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Keyboard-Avoiding"): same reasoning as login.tsx -- three text inputs
+    // + legal-notice text + two buttons, vertically centered with no
+    // ScrollView, so the submit button could otherwise end up hidden behind
+    // the keyboard on a short-height device.
+    <KeyboardAvoidingView
+      behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
+      className="flex-1 justify-center gap-4 bg-bg-primary px-6"
+      testID="register-screen">
       <Text className="mb-2 font-display text-3xl text-text-primary">Registrieren</Text>
 
       <View className="gap-1">
@@ -164,12 +184,30 @@ export default function RegisterScreen() {
         testID="register-submit-button"
       />
 
+      <Text className="text-center text-xs text-text-secondary" testID="register-legal-notice">
+        Mit der Registrierung akzeptierst du unsere{" "}
+        <Text
+          className="text-xs text-accent underline"
+          testID="register-privacy-policy-link"
+          onPress={() => openLegalUrl(privacyPolicyUrl)}>
+          Datenschutzerklärung
+        </Text>{" "}
+        und{" "}
+        <Text
+          className="text-xs text-accent underline"
+          testID="register-terms-of-service-link"
+          onPress={() => openLegalUrl(termsOfServiceUrl)}>
+          Nutzungsbedingungen
+        </Text>
+        .
+      </Text>
+
       <Button
         variant="secondary"
         label="Bereits ein Konto? Zum Login"
         onPress={goToLogin}
         testID="register-login-link"
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }

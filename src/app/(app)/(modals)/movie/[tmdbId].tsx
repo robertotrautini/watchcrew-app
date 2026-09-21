@@ -2,6 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
 import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
@@ -228,7 +229,7 @@ export default function MovieDetailScreen() {
 
   if (!isValidTmdbId) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="movie-detail-invalid">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="movie-detail-invalid">
         <Stack.Screen options={{ headerShown: false }} />
         <Text className="text-center text-text-primary">Ungültiger Film</Text>
         <Pressable
@@ -239,12 +240,20 @@ export default function MovieDetailScreen() {
         >
           <Ionicons name={router.canGoBack() ? "arrow-back" : "close"} size={22} color="#8b8b8b" />
         </Pressable>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="movie-detail-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Safe-Area"): this screen explicitly overrides the (modals) group's
+    // default native header (`headerShown: false` below), so nothing else
+    // accounts for the top status-bar/notch/Dynamic-Island inset -- the
+    // manual back button rendered right at the top of the ScrollView would
+    // otherwise sit partially under it. `bottom` is handled separately, on
+    // the absolutely-positioned action bar below (its own home-indicator
+    // inset, not this outer container's).
+    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="movie-detail-screen">
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView contentContainerClassName="pb-24">
@@ -305,7 +314,8 @@ export default function MovieDetailScreen() {
         </View>
       </ScrollView>
 
-      <View
+      <SafeAreaView
+        edges={["bottom"]}
         className="absolute bottom-0 left-0 right-0 border-t border-border-subtle bg-bg-primary"
         testID="movie-detail-action-bar"
       >
@@ -321,7 +331,7 @@ export default function MovieDetailScreen() {
           onOpenRatingDialog={handleOpenRatingDialog}
           onDirectRateEntryCreated={handleDirectRateEntryCreated}
         />
-      </View>
+      </SafeAreaView>
 
       <RatingDialog
         visible={ratingDialogVisible}
@@ -339,6 +349,6 @@ export default function MovieDetailScreen() {
         displayNameById={displayNameById}
         starColor={starColor}
       />
-    </View>
+    </SafeAreaView>
   );
 }

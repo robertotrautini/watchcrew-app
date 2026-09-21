@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
 
 import {
   addToWatchlist,
@@ -105,6 +106,13 @@ export function useAddToWatchlist() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"):
+      // centralized here (rather than at each of this hook's call sites --
+      // MovieDetailActionsBar's "zur_watchlist"/"direkt_bewerten" buttons
+      // AND the Add-Movie-Modal's per-tile quick-add "+") so every
+      // successful add-to-watchlist gets the same light confirmation
+      // impact, in exactly one place.
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
   });
 }

@@ -1,5 +1,6 @@
 import { Pressable, View, type GestureResponderEvent } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 
 /**
  * Business rules (docs/feature-inventory.md §4.5 "Star rating", verbatim):
@@ -83,7 +84,18 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
     const locationX = event.nativeEvent.locationX;
     const isLeftHalf = locationX < TOUCH_TARGET_PX / 2;
     const newRating = starIndex + (isLeftHalf ? 0.5 : 1);
+    // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"):
+    // a light impact per star tap -- this is one of the app's most
+    // frequent, most "physical" interactions, so a subtle tactile
+    // confirmation is worth it. `expo-haptics` already no-ops gracefully
+    // on hardware/platforms without haptic support, so no extra try/catch.
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onChange(newRating);
+  }
+
+  function handleHeartPress() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onToggleLike?.();
   }
 
   return (
@@ -125,7 +137,7 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
           testID="star-rating-heart-touch"
           accessibilityRole="button"
           className="w-touch-comfortable h-touch-comfortable items-center justify-center"
-          onPress={onToggleLike}
+          onPress={handleHeartPress}
         >
           <Ionicons
             testID="star-rating-heart-icon"

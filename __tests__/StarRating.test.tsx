@@ -18,6 +18,15 @@ jest.mock("@expo/vector-icons", () => {
   };
 });
 
+// M11 (haptic polish): `expo-haptics` mocked so `Haptics.impactAsync` calls
+// can be asserted without touching a real native module -- same pattern as
+// this file's existing `@expo/vector-icons` mock.
+const mockImpactAsync = jest.fn();
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+}));
+
 const GOLD_STAR_COLOR = "#FFD700";
 const STAR_EMPTY_COLOR = "#575757";
 const LIKE_HEART_COLOR = "#e05c6e";
@@ -27,6 +36,10 @@ function starIcons(icons: Array<{ props: { name: string; color: string } }>) {
 }
 
 describe("StarRating", () => {
+  beforeEach(() => {
+    mockImpactAsync.mockClear();
+  });
+
   describe("rendering full/half/empty breakdown", () => {
     it("renders 5 empty stars for rating=0", async () => {
       const { getAllByTestId } = await render(<StarRating rating={0} starColor={GOLD_STAR_COLOR} />);
@@ -79,6 +92,19 @@ describe("StarRating", () => {
       expect(onChange).toHaveBeenCalledWith(3);
     });
 
+    it("triggers a light haptic impact on tap", async () => {
+      const onChange = jest.fn();
+      const { getByTestId } = await render(
+        <StarRating rating={0} starColor={GOLD_STAR_COLOR} onChange={onChange} />,
+      );
+
+      await fireEvent(getByTestId("star-rating-touch-2"), "press", {
+        nativeEvent: { locationX: 40 },
+      });
+
+      expect(mockImpactAsync).toHaveBeenCalledWith("light");
+    });
+
     it("sets the half-star value when tapping the left half of a star", async () => {
       const onChange = jest.fn();
       const { getByTestId } = await render(
@@ -123,6 +149,7 @@ describe("StarRating", () => {
 
       await fireEvent.press(getByTestId("star-rating-heart-touch"));
       expect(onToggleLike).toHaveBeenCalledTimes(1);
+      expect(mockImpactAsync).toHaveBeenCalledWith("light");
 
       await rerender(
         <StarRating

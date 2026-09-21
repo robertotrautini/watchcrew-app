@@ -1,8 +1,10 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
+import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -236,24 +238,26 @@ export default function TagebuchScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="tagebuch-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="tagebuch-screen">
         <ActivityIndicator testID="tagebuch-loading" />
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-6" testID="tagebuch-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-6" testID="tagebuch-screen">
         <Text testID="tagebuch-error" className="text-center text-text-primary">
           Fehler beim Laden des Tagebuchs.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="tagebuch-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Safe-Area"): same reasoning as tracker.tsx/watchlist.tsx.
+    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="tagebuch-screen">
       <View className="gap-3 px-4 pb-2 pt-6">
         <TextInput
           testID="tagebuch-search-input"
@@ -352,8 +356,8 @@ export default function TagebuchScreen() {
         <ScrollView testID="tagebuch-entry-list" contentContainerClassName="gap-4 px-4 pb-8">
           {diaryViewMode === "grid" ? (
             <View className="flex-row flex-wrap gap-3">
-              {visibleEntries.map((entry) => (
-                <View key={entry.id} testID={`tagebuch-entry-${entry.id}`} className="w-[30%]">
+              {visibleEntries.map((entry, index) => (
+                <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="w-[30%]">
                   <DiaryPosterTile
                     posterUrl={entry.movie.poster}
                     title={entry.movie.name}
@@ -371,7 +375,7 @@ export default function TagebuchScreen() {
                       {entry.movie.name}
                     </Text>
                   ) : null}
-                </View>
+                </FadeInItem>
               ))}
             </View>
           ) : diaryViewMode === "list" ? (
@@ -407,8 +411,8 @@ export default function TagebuchScreen() {
             </View>
           ) : (
             // "cards" (default)
-            visibleEntries.map((entry) => (
-              <View key={entry.id} testID={`tagebuch-entry-${entry.id}`} className="gap-2">
+            visibleEntries.map((entry, index) => (
+              <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="gap-2">
                 <DiaryPosterTile
                   posterUrl={entry.movie.poster}
                   title={entry.movie.name}
@@ -431,7 +435,7 @@ export default function TagebuchScreen() {
                     />
                   ))}
                 </View>
-              </View>
+              </FadeInItem>
             ))
           )}
         </ScrollView>
@@ -457,6 +461,6 @@ export default function TagebuchScreen() {
           ))}
         </View>
       </Sheet>
-    </View>
+    </SafeAreaView>
   );
 }

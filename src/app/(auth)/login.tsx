@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Text, TextInput } from 'react-native';
 import { Link } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { signInWithEmail } from '@/lib/auth';
+import { screenKeyboardAvoidingBehavior } from '@/lib/platformKeyboardAvoiding';
 
 // Basic (not RFC-perfect) email shape check — good enough to catch obvious
 // typos ("foo", "foo@") before spending a network round-trip, without
@@ -55,7 +56,20 @@ export default function LoginScreen() {
   }
 
   return (
-    <View className="flex-1 justify-center bg-bg-primary px-6" testID="login-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Keyboard-Avoiding"): this screen has no ScrollView and is vertically
+    // centered (`justify-center`) with the submit button directly below the
+    // two text inputs -- on a short-height device with the keyboard open,
+    // the button (and any validation/API error text) could otherwise end
+    // up hidden behind the keyboard. `behavior={undefined}` on Android
+    // relies on that platform's own default `windowSoftInputMode:
+    // "adjustResize"` window behavior (this screen is a plain in-Activity
+    // route, not an RN `Modal`, so that default does apply here -- unlike
+    // src/components/ui/Sheet.tsx, see that file's own comment).
+    <KeyboardAvoidingView
+      behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
+      className="flex-1 justify-center bg-bg-primary px-6"
+      testID="login-screen">
       <Text className="mb-8 text-center font-display-bold text-3xl text-text-primary">
         WatchCrew
       </Text>
@@ -111,6 +125,6 @@ export default function LoginScreen() {
         className="mt-6 text-center text-text-secondary">
         Noch kein Konto? Jetzt registrieren
       </Link>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

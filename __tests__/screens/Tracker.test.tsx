@@ -21,6 +21,13 @@ jest.mock("@react-native-community/datetimepicker", () => {
   };
 });
 
+// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+const mockImpactAsync = jest.fn();
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+}));
+
 const mockUseCurrentUserId = jest.fn();
 const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
@@ -299,6 +306,7 @@ describe("TrackerScreen", () => {
       await fireEvent.press(getByTestId("tracker-row-e1-delete-button"));
       await fireEvent.press(getByTestId("tracker-row-e1-delete-confirm-button"));
 
+      expect(mockImpactAsync).toHaveBeenCalledWith("medium");
       expect(mockDeletePaymentMutate).toHaveBeenCalledWith(
         { groupId: "g1", watchlistEntryId: "e1" },
         expect.objectContaining({ onSuccess: expect.any(Function) }),

@@ -1,6 +1,8 @@
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { Button } from "@/components/ui/Button";
@@ -141,6 +143,10 @@ export default function TrackerScreen() {
     if (!activeGroupId) {
       return;
     }
+    // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"):
+    // same "medium impact, right on the confirm tap" treatment as the
+    // Movie-Detail-Overlay's delete confirmation (MovieDetailActionsBar).
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     deletePaymentMutation.mutate(
       { groupId: activeGroupId, watchlistEntryId: entryId },
       {
@@ -154,25 +160,33 @@ export default function TrackerScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="tracker-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="tracker-screen">
         <ActivityIndicator testID="tracker-loading" />
         <Text className="mt-2 text-text-secondary">Tracker wird geladen…</Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="tracker-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="tracker-screen">
         <Text testID="tracker-error" className="text-center text-danger">
           Der Tracker konnte nicht geladen werden.
         </Text>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="tracker-screen">
+    // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+    // Safe-Area"): this tab screen renders with `headerShown: false`
+    // (src/app/(app)/(tabs)/_layout.tsx), so nothing else accounts for the
+    // top status-bar/notch/Dynamic-Island inset -- without this, the
+    // "Tracker" title row would render partially underneath it on affected
+    // devices. The bottom edge is already handled by the Tabs navigator's
+    // own tab bar (which safe-area-pads itself), so only `top` is added
+    // here, not `bottom`.
+    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="tracker-screen">
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="font-display text-xl text-text-primary">Tracker</Text>
         <View className="flex-row gap-2">
@@ -381,6 +395,6 @@ export default function TrackerScreen() {
         displayNameById={displayNameById as Map<string, string>}
         memberColors={memberColors}
       />
-    </View>
+    </SafeAreaView>
   );
 }

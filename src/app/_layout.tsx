@@ -8,6 +8,7 @@ import {
 import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
@@ -52,6 +53,19 @@ export default function RootLayout() {
     // that need to read/mutate Supabase server-state via query hooks.
     <QueryClientProvider client={queryClient}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+            StatusBar"): this app's own color palette (tailwind.config.js's
+            `bg-primary`/`text-primary` etc.) is a single fixed dark theme --
+            it does NOT follow `useColorScheme()` the way `ThemeProvider`
+            above does (that only affects React Navigation's own native
+            chrome, e.g. the header/tab-bar background React Navigation
+            manages internally). Without an explicit `<StatusBar>` here, the
+            OS default status-bar style would still follow the DEVICE's own
+            light/dark setting, silently flipping to dark (on-light)
+            icons/text on a light-mode device -- invisible against this
+            app's near-black background. `style="light"` is therefore a
+            fixed, deliberate choice, not a `colorScheme`-driven one. */}
+        <StatusBar style="light" />
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />

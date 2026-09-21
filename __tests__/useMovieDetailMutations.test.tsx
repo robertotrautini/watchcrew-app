@@ -6,11 +6,18 @@ import React from "react";
 const mockToggleLike = jest.fn();
 const mockDeleteWatchlistEntry = jest.fn();
 const mockAddToWatchlist = jest.fn();
+const mockImpactAsync = jest.fn();
 
 jest.mock("@/lib/movieDetailMutations", () => ({
   toggleLike: mockToggleLike,
   deleteWatchlistEntry: mockDeleteWatchlistEntry,
   addToWatchlist: mockAddToWatchlist,
+}));
+
+// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
@@ -198,6 +205,36 @@ describe("useDeleteWatchlistEntry", () => {
 describe("useAddToWatchlist", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it("triggers a light haptic impact on a successful add", async () => {
+    mockAddToWatchlist.mockResolvedValue({ data: { id: "we-new-1" }, error: null });
+    const { useAddToWatchlist } = loadHooks();
+    const { wrapper } = createWrapper();
+
+    const { result } = await renderHook(() => useAddToWatchlist(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockImpactAsync).toHaveBeenCalledWith("light");
+  });
+
+  it("does not trigger a haptic impact when the add fails", async () => {
+    mockAddToWatchlist.mockResolvedValue({ data: null, error: { message: "boom" } });
+    const { useAddToWatchlist } = loadHooks();
+    const { wrapper } = createWrapper();
+
+    const { result } = await renderHook(() => useAddToWatchlist(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockImpactAsync).not.toHaveBeenCalled();
   });
 
   it("adds the movie to the group's watchlist and invalidates the group's watchlist cache on success", async () => {
