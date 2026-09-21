@@ -100,6 +100,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M10 — "Benachrichtigungen"-Zeile verlinkt einen Platzhalter-Screen (Abstimmungspunkt mit der parallelen Push-Task)](#m10--benachrichtigungen-zeile-verlinkt-einen-platzhalter-screen-abstimmungspunkt-mit-der-parallelen-push-task)
 - [M10 — `.expo/types/router.d.ts` manuell nachgezogen (kein Entscheid, Tooling-Hinweis)](#m10--exportypesrouterdts-manuell-nachgezogen-kein-entscheid-tooling-hinweis)
 - [M10 (Nachzügler) — Benachrichtigungen-Screen: echte Umsetzung ersetzt den Platzhalter](#m10-nachzügler--benachrichtigungen-screen-echte-umsetzung-ersetzt-den-platzhalter)
+- [M11 Teil 2 — Job 1 (Inaktivitäts-Cleanup): ⚠️ E-Mail-Provider-Frage bleibt bewusst offen; Schema-/Job-/Vault-Entscheidungen drumherum](#m11-teil-2--job-1-inaktivitäts-cleanup-️-e-mail-provider-frage-bleibt-bewusst-offen-schema-job-vault-entscheidungen-drumherum)
+- [M11 Teil 2 — Job 2 (Empty-Group-Hard-Delete): `emptied_at`-Spalte, Trigger-/RPC-Erweiterung statt neuer Mechanismen, defensiver Doppel-Check im Cleanup](#m11-teil-2--job-2-empty-group-hard-delete-emptied_at-spalte-trigger-rpc-erweiterung-statt-neuer-mechanismen-defensiver-doppel-check-im-cleanup)
+- [M11 Teil 2 — Job 3 (Rechtstexte-Platzhalter): Duplizierte Platzhalter-Konstanten, "Wird bald ergänzt"-Toast, Register-Screen-Ergänzung](#m11-teil-2--job-3-rechtstexte-platzhalter-duplizierte-platzhalter-konstanten-wird-bald-ergänzt-toast-register-screen-ergänzung)
 
 ---
 
@@ -1455,6 +1458,66 @@ Verworfene Alternative: ein `watchlist_entry_id=in.(id1,id2,...)`-Filter (von Re
 - `settings.tsx`s Modul-Kommentar wurde aktualisiert (Platzhalter-Hinweis entfernt), die Zeilen-Copy/Route selbst (`"Benachrichtigungen"` → `/settings/notifications`) blieben unverändert, da schon vorher korrekt.
 
 **Warum das später leicht änderbar ist:** Erklärungstext ist ein einzelner String in einer Datei; das Lade-vs-Disabled-Verhalten ist eine einzelne bedingte Verzweigung (`isLoading ? <ActivityIndicator /> : <Pressable ...>`), austauschbar ohne Strukturänderung. Kein Schema-/Route-/Hook-Vertrag wurde angefasst — `useGroupPushSubscription` blieb exakt wie von der parallelen Task geliefert.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 2 — Job 1 (Inaktivitäts-Cleanup): ⚠️ E-Mail-Provider-Frage bleibt bewusst offen; Schema-/Job-/Vault-Entscheidungen drumherum
+
+**Problem/Lücke:** ADR 0004 spezifiziert Job 1 bereits vollständig auf Business-Regel-Ebene (1 Jahr Inaktivität → Warn-Mail → 14 Tage Gnadenfrist → Löschung), flaggt aber selbst ausdrücklich, dass die Wahl des transaktionalen E-Mail-Versandwegs (Supabase Auth selbst vs. Drittanbieter wie Resend) noch nicht entschieden ist und vor Implementierung dieses Features explizit bestätigt werden muss — keine kleine Implementierungsdetail-Frage, sondern eine echte Architektur-/Kosten-/API-Key-Entscheidung.
+
+**⚠️ NICHT autonom entschieden:** Der tatsächliche E-Mail-Versand wurde bewusst NICHT gebaut. `public.send_inactivity_warning_email(user_id)` ist ein reiner Stub — `raise notice` + ein Log-Eintrag in der neuen `email_notification_log`-Tabelle, mit explizitem `-- TODO: wire to real email provider once ADR 0004's open email-provider question is resolved`-Kommentar in der Migration (`supabase/migrations/20260921100000_account_inactivity_cleanup.sql`). Diese Frage braucht deine explizite Bestätigung, BEVOR der echte Versand angeschlossen wird.
+
+**Entscheidungen (cheap/reversible, um den Rest des Jobs trotzdem vollständig bauen zu können):**
+- `profiles.inactivity_warning_sent_at timestamptz` (nullable) erweitert die bestehende M5-`profiles`-Tabelle, statt eine neue Tabelle anzulegen (wie im Task-Auftrag verlangt) — `NULL` heißt "keine Warnung ausstehend".
+- Neue reine Ledger-Tabelle `email_notification_log` (RLS aktiv, aber ohne jede Policy — gleiche Konvention wie `release_reminder_log` aus M10) statt eines generischen `email_queue`-Namens, da hier nichts tatsächlich "in eine Queue eingereiht" wird, sondern nur protokolliert, dass eine Mail fällig gewesen wäre.
+- `run_inactivity_warnings()` macht zusätzlich zum Spec-Wortlaut einen "Gnadenfrist-Erholung"-Schritt: Ein Nutzer, der sich nach einer Warnung wieder einloggt (`last_sign_in_at` > `inactivity_warning_sent_at`), bekommt sein Flag automatisch zurückgesetzt — ohne diesen Schritt könnte ein einmal gewarnter Nutzer nach einer späteren, komplett neuen Inaktivitätsperiode NIE wieder gewarnt werden (das Flag bliebe für immer non-null). Kein Trigger auf `auth.users`-UPDATE nötig dafür — läuft als Teil desselben täglichen Jobs.
+- Nutzer mit `last_sign_in_at is null` (nie eingeloggt, z. B. unbestätigte Registrierung) werden explizit von Warnung/Löschung ausgeschlossen — es gibt keine Login-Baseline, gegen die "über 1 Jahr inaktiv" gemessen werden könnte.
+- Zweiter Job-Teil (echte Löschung) braucht Service-Role/Admin-API-Zugriff (`auth.admin.deleteUser`), den eine reine SQL-Funktion nicht hat — deshalb eine neue Edge Function `supabase/functions/cleanup-inactive-accounts/`, aufgerufen über `invoke_inactivity_cleanup()`, die exakt dasselbe Vault-Secret-basierte `pg_net`-Aufrufmuster wiederverwendet wie `enqueue_push_notification()` aus M10 (keine neue Aufruf-Architektur erfunden). Neues, eigenes Vault-Secret-Paar (`inactivity_cleanup_edge_function_url`/`inactivity_cleanup_service_role_key`) statt Wiederverwendung von `push_edge_function_url`/`push_service_role_key` — gleicher Secret-WERT (der Projekt-Service-Role-Key ist überall derselbe), aber ein eigener Name pro Concern, konsistent mit der Namensgebung der Push-Migration selbst.
+- Die Eligibility-Query für die Löschung ("wer ist wirklich noch inaktiv") lebt bewusst in der Edge Function (`listWarnedProfiles`/`getLastSignInAt`/`deleteUser`, injizierbare Deps, Deno.test-abgedeckt), NICHT in einer SQL-RPC-Funktion — vermeidet eine zusätzliche `SECURITY DEFINER`-Funktion, die `auth.users` lesbar macht, wenn die Edge Function das über `auth.admin.getUserById` ohnehin schon kann.
+- Cron-Zeitpunkte: `inactivity-warnings-daily` täglich 05:00 UTC, `inactivity-cleanup-daily` täglich 05:15 UTC (danach, damit eine frisch gesetzte Warnung nicht im selben Lauf sofort wieder geprüft wird) — reine Zeitstring-Wahl.
+
+**Docker-Verifikation (lokaler `supabase start`-Stack, echte Migration angewendet):** Ende-zu-Ende bestätigt — ein Testnutzer mit `last_sign_in_at` vor 400 Tagen und noch keiner Warnung wurde von `run_inactivity_warnings()` korrekt gewarnt (`inactivity_warning_sent_at` gesetzt, `email_notification_log`-Zeile angelegt, `raise notice` sichtbar); ein nie eingeloggter Nutzer und ein kürzlich aktiver Nutzer blieben unangetastet; ein Nutzer, der nach einer vor 20 Tagen gesetzten Warnung vor 5 Tagen wieder eingeloggt war, bekam sein Flag korrekt automatisch zurückgesetzt (Gnadenfrist-Erholung bestätigt); ein Nutzer mit unverändert alter `last_sign_in_at` seit der Warnung blieb korrekt weiterhin markiert (kein erneutes Warnen). `invoke_inactivity_cleanup()` hat ohne konfigurierte Vault-Secrets korrekt nur gewarnt und ist nicht fehlgeschlagen (Fresh-Environment-Sicherheit bestätigt). Die Edge-Function-Logik selbst (`runInactivityCleanup`) ist zusätzlich mit 7 grünen `Deno.test`-Fällen abgedeckt (`supabase/functions/cleanup-inactive-accounts/cleanup-inactive-accounts.test.ts`, per Docker/`denoland/deno:latest` ausgeführt) — inklusive Grenzfall "Login exakt zum Warnzeitpunkt" (zählt als weiterhin inaktiv, keine neue Aktivität) und "ein Löschfehler bei einem Nutzer stoppt die restliche Sweep-Verarbeitung nicht".
+
+**Warum das später leicht änderbar ist:** Der gesamte E-Mail-Teil ist auf eine einzige Funktion (`send_inactivity_warning_email`) konzentriert — sobald die Anbieter-Frage entschieden ist, ersetzt eine einzelne Funktionskörper-Änderung (z. B. ein `net.http_post` an Resend, oder ein Aufruf von Supabases eigenem Auth-E-Mail-System) den Stub, ohne dass `run_inactivity_warnings()` selbst angefasst werden muss. Die Vault-Secret-Namen/Cron-Zeiten sind einzelne Strings.
+
+**Status:** ⚠️ Der E-Mail-Provider-Teil ist EXPLIZIT NICHT entschieden und braucht deine Bestätigung, bevor der echte Versand gebaut wird (siehe ADR 0004). Alle anderen Punkte dieses Eintrags: offen für deine finale Bestätigung / Änderungswunsch wie der Rest dieses Dokuments.
+
+---
+
+## M11 Teil 2 — Job 2 (Empty-Group-Hard-Delete): `emptied_at`-Spalte, Trigger-/RPC-Erweiterung statt neuer Mechanismen, defensiver Doppel-Check im Cleanup
+
+**Problem/Lücke:** ADR 0003 spezifiziert die Business-Regel bereits vollständig (2 Wochen Soft-Retention nach dem Austritt des letzten Mitglieds, wieder beitretbar über die Gruppen-ID, danach Hard-Delete durch einen geplanten Job) — offen war nur, WO "wann wurde die Gruppe leer" getrackt wird und WO das Zurücksetzen bei einem Rejoin passiert.
+
+**Entscheidung:**
+- Neue Spalte `watch_groups.emptied_at timestamptz` (nullable, `NULL` = "aktuell mindestens ein Mitglied bzw. nie leer gewesen").
+- Der bereits bestehende M1-Trigger `handle_owner_succession()` (feuert bei jedem `DELETE` auf `watch_group_members`) wird um genau einen neuen Zweig erweitert: Findet er KEINEN Nachfolger (die Gruppe ist jetzt leer — exakt der Fall, den der ursprüngliche M1-Kommentar bereits als "group row is intentionally left in place (empty)" beschrieb), stempelt er `emptied_at = now()`. Kein neuer Trigger, keine neue Tabelle — dieselbe Stelle, die laut Task-Auftrag ohnehin "der sauberste Ort dafür" ist.
+- Der bestehende M9-RPC `join_watch_group_by_token()` wird um ein unbedingtes `update watch_groups set emptied_at = null where id = v_group_id` nach dem eigentlichen Beitritts-INSERT erweitert — unbedingt (nicht "nur falls gesetzt") ist bewusst die einfachste Variante, da ein No-Op-Update auf eine bereits-`null`-Spalte (der Normalfall: Beitritt zu einer nie-leeren Gruppe) keinen Unterschied macht und die Korrektheit nicht davon abhängt, welcher Fall vorliegt.
+- `cleanup_empty_groups()` verlässt sich NICHT ausschließlich auf `emptied_at`, sondern prüft zusätzlich defensiv `not exists (select 1 from watch_group_members where group_id = g.id)` — genau wie im Task-Auftrag verlangt ("finds watch_groups rows with zero rows in watch_group_members ... not assumed").
+- FK-Kaskaden wurden verifiziert, nicht angenommen: `watchlist_entries.group_id` und `ratings.watchlist_entry_id` (beide bereits `on delete cascade` seit M1), sowie `push_subscriptions.group_id` (M10) — ein Hard-Delete von `watch_groups` räumt bereits alles kaskadierend ab, keine neue Kaskade nötig.
+- Cron-Zeitpunkt: `cleanup-empty-groups-daily` täglich 05:30 UTC (nach den beiden Job-1-Cronjobs) — reine Zeitstring-Wahl.
+
+**Docker-Verifikation (lokaler `supabase start`-Stack, echte Migration angewendet):** Ende-zu-Ende bestätigt mit einer echten Test-Gruppe (2 Mitglieder + einem Watchlist-Eintrag): Owner-Austritt übergibt Ownership korrekt ans verbleibende Mitglied, `emptied_at` bleibt `null`; Austritt des letzten Mitglieds setzt `emptied_at` korrekt; ein anschließender `join_watch_group_by_token()`-Aufruf als `authenticated`-Rolle (über `request.jwt.claims`/`auth.uid()` simuliert) löscht `emptied_at` korrekt wieder; nach erneutem Leerwerden und künstlichem Zurückdatieren von `emptied_at` auf 15 Tage hat `cleanup_empty_groups()` die Gruppe UND den zugehörigen `watchlist_entries`-Eintrag korrekt kaskadierend hart gelöscht (0 verbleibende Zeilen in beiden Tabellen, per Query bestätigt).
+
+**Warum das später leicht änderbar ist:** Die gesamte Logik hängt an einer einzigen Spalte plus zwei bereits bestehenden Funktionskörpern (keine neuen Funktionssignaturen, keine neuen Trigger-Bindungen) — ein Rückbau oder eine andere Fristlänge wäre eine einzelne `interval`-Änderung in `cleanup_empty_groups()`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 2 — Job 3 (Rechtstexte-Platzhalter): Duplizierte Platzhalter-Konstanten, "Wird bald ergänzt"-Toast, Register-Screen-Ergänzung
+
+**Problem/Lücke:** ADR 0011 legt fest, dass Datenschutzerklärung/AGB später über ein iubenda-Embed kommen, das noch nicht existiert — der Task-Auftrag verlangt ausdrücklich nur die Plumbing (Config-Felder + Settings-Zeilen + Fallback-Verhalten), keine echten Rechtstexte.
+
+**Entscheidung:**
+- `app.config.ts`'s `extra.privacyPolicyUrl`/`extra.termsOfServiceUrl` bekommen Platzhalter-Default-Werte (`https://watch-crew.app/privacy`/`https://watch-crew.app/terms`) statt leerer Strings — bewusst erkennbare, dokumentierte Platzhalter statt eines stillen leeren Werts.
+- Neues Modul `src/lib/legalLinks.ts` als einzige Quelle der Wahrheit für "ist das noch ein Platzhalter" (`isPlaceholderLegalUrl`) und für das eigentliche Öffnen (`openLegalUrl`, via `expo-linking`'s `Linking.openURL`, kein In-App-WebView — wie im Task-Auftrag als "einfachster verlässlicher Weg" vorgegeben). Die beiden Platzhalter-URL-Konstanten sind dort noch einmal wörtlich dupliziert (mit Kommentar, dass sie exakt mit `app.config.ts`s Defaults übereinstimmen müssen) statt von dort importiert — `app.config.ts` läuft in einem reinen Node/TS-Kontext zur Build-Zeit außerhalb von Metros `@/`-Alias-Auflösung, ein direkter Import von dort wäre kein verlässlicher Weg gewesen.
+- Ist die konfigurierte URL (noch) ein Platzhalter, wird `showToast("Wird bald ergänzt")` gezeigt (Wiederverwendung des bestehenden M10-Toast-Systems) statt eines `Alert.alert` oder eines neuen UI-Elements.
+- Settings-Hub: zwei neue Zeilen ("Datenschutzerklärung"/"Nutzungsbedingungen") im selben Pressable-Zeilen-Stil wie die bestehenden `SECTIONS`, aber mit eigenem Press-Handler (`openLegalUrl`) statt `router.push`, da es keine interne Route ist.
+- Register-Screen-Frage ("dein Aufruf, dokumentieren"): JA, ergänzt — ein kleiner Hinweistext unter dem "Konto erstellen"-Button ("Mit der Registrierung akzeptierst du unsere Datenschutzerklärung und Nutzungsbedingungen.") mit denselben zwei tappable Links (identisches `openLegalUrl`-Verhalten, gleiche Platzhalter-Toast-Logik) — gängige App-Store/Play-Store-Erwartung, sehr günstig/reversibel (ein einzelner `<Text>`-Block), daher direkt mitgebaut statt nur als Folgeaufgabe vermerkt.
+
+**Warum das später leicht änderbar ist:** Sobald iubenda eingerichtet ist, genügt es, die beiden `app.config.ts`-Werte auf die echten Embed-URLs zu ändern — `isPlaceholderLegalUrl` erkennt sie dann automatisch nicht mehr als Platzhalter, kein Code in `settings.tsx`/`register.tsx` muss angefasst werden.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

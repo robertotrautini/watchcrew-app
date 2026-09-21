@@ -9,6 +9,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
 import { signOut } from "@/lib/auth";
 import { CURRENT_CHANGELOG_VERSION } from "@/lib/changelog";
+import { openLegalUrl } from "@/lib/legalLinks";
 import { showToast } from "@/lib/toast";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
@@ -50,6 +51,32 @@ const SECTIONS: SettingsSection[] = [
   { key: "changelog", label: "Changelog", route: "/settings/changelog" },
   { key: "delete-account", label: "Konto löschen", route: "/settings/delete-account" },
 ];
+
+/**
+ * M11 part 2, Job 3 (ADR 0011) — legal document rows. Not a `route`
+ * (these don't navigate to an in-app screen) -- pressing one either opens
+ * the configured URL in the system browser (simplest reliable approach,
+ * per this task's brief -- no in-app WebView) or, while iubenda hasn't been
+ * set up yet and the config still holds the placeholder default (see
+ * src/lib/legalLinks.ts), shows a "Wird bald ergänzt" toast instead of a
+ * broken link.
+ */
+interface LegalSection {
+  key: string;
+  label: string;
+  url: string | undefined;
+}
+
+function legalSections(): LegalSection[] {
+  const extra = Constants.expoConfig?.extra as
+    | { privacyPolicyUrl?: string; termsOfServiceUrl?: string }
+    | undefined;
+
+  return [
+    { key: "privacy-policy", label: "Datenschutzerklärung", url: extra?.privacyPolicyUrl },
+    { key: "terms-of-service", label: "Nutzungsbedingungen", url: extra?.termsOfServiceUrl },
+  ];
+}
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -125,6 +152,20 @@ export default function SettingsScreen() {
                 ) : null}
                 <Text className="text-text-secondary">{"›"}</Text>
               </View>
+            </Pressable>
+          ))}
+        </View>
+
+        <View testID="settings-legal-sections" className="gap-2">
+          {legalSections().map((section) => (
+            <Pressable
+              key={section.key}
+              testID={`settings-section-${section.key}`}
+              className="flex-row items-center justify-between rounded-lg border border-border-subtle bg-card px-4 py-3"
+              onPress={() => openLegalUrl(section.url)}
+            >
+              <Text className="text-text-primary">{section.label}</Text>
+              <Text className="text-text-secondary">{"›"}</Text>
             </Pressable>
           ))}
         </View>

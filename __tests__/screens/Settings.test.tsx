@@ -7,9 +7,26 @@ jest.mock("expo-router", () => ({
   Stack: { Screen: () => null },
 }));
 
+// Mutable so individual tests can swap in a "real URL" value without
+// needing jest.doMock/resetModules gymnastics -- see the "legal document
+// rows" describe block below, reset to the placeholder defaults in
+// beforeEach like every other piece of this test file's shared mock state.
+const mockExtra = {
+  privacyPolicyUrl: "https://watch-crew.app/privacy",
+  termsOfServiceUrl: "https://watch-crew.app/terms",
+};
 jest.mock("expo-constants", () => ({
   __esModule: true,
-  default: { expoConfig: { version: "1.0.0" } },
+  default: {
+    get expoConfig() {
+      return { version: "1.0.0", extra: mockExtra };
+    },
+  },
+}));
+
+const mockOpenURL = jest.fn();
+jest.mock("expo-linking", () => ({
+  openURL: (...args: unknown[]) => mockOpenURL(...args),
 }));
 
 const mockUseCurrentUserId = jest.fn();
@@ -65,6 +82,8 @@ function loadSettingsScreen() {
 describe("SettingsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockExtra.privacyPolicyUrl = "https://watch-crew.app/privacy";
+    mockExtra.termsOfServiceUrl = "https://watch-crew.app/terms";
     mockUseCurrentUserId.mockReturnValue("u1");
     mockUseCurrentUserEmail.mockReturnValue("robin@example.com");
     mockUseOwnProfile.mockReturnValue({ data: { display_name: "robin" }, isLoading: false });
@@ -206,5 +225,47 @@ describe("SettingsScreen", () => {
     await render(<SettingsScreen />);
 
     expect(mockShowToast).not.toHaveBeenCalled();
+  });
+
+  // M11 part 2, Job 3 (ADR 0011) — legal document placeholder rows.
+  describe("legal document rows", () => {
+    it("renders both the privacy-policy and terms-of-service rows", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      expect(getByTestId("settings-section-privacy-policy")).toBeTruthy();
+      expect(getByTestId("settings-section-terms-of-service")).toBeTruthy();
+    });
+
+    it("opens the configured URL when a real privacy-policy URL is set", async () => {
+      mockExtra.privacyPolicyUrl = "https://www.iubenda.com/privacy-policy/12345678";
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      await fireEvent.press(getByTestId("settings-section-privacy-policy"));
+
+      expect(mockOpenURL).toHaveBeenCalledWith("https://www.iubenda.com/privacy-policy/12345678");
+      expect(mockShowToast).not.toHaveBeenCalled();
+    });
+
+    it("shows a 'Wird bald ergänzt' toast instead of opening a URL when the config still has the placeholder value", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      await fireEvent.press(getByTestId("settings-section-privacy-policy"));
+
+      expect(mockOpenURL).not.toHaveBeenCalled();
+      expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
+    });
+
+    it("also gates the terms-of-service row on its own placeholder value", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      await fireEvent.press(getByTestId("settings-section-terms-of-service"));
+
+      expect(mockOpenURL).not.toHaveBeenCalled();
+      expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
+    });
   });
 });

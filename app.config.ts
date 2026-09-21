@@ -75,6 +75,16 @@ const config: ExpoConfig = {
     supabasePublishableKey: "sb_publishable_KFJgGHttxOlTEGMXrV6aYw_C8CdlO39",
     sentryDsn:
       "https://81fe18bbee281b14d29e1a416e7df5e2@o4512112781557760.ingest.de.sentry.io/4512112790995024",
+    // M11 part 2 (Job 3) — plumbing only, per ADR 0011: the real content
+    // comes from an iubenda-generated embed once that account is set up
+    // (NOT this task's job to write). These are placeholder URLs, not real
+    // pages yet — src/lib/legalLinks.ts's `isPlaceholderLegalUrl` MUST keep
+    // recognizing these exact strings so the Settings hub/Register screen
+    // show a "Wird bald ergänzt" message instead of opening a broken link.
+    // Replace both with the real iubenda embed URLs once that account
+    // exists.
+    privacyPolicyUrl: "https://watch-crew.app/privacy",
+    termsOfServiceUrl: "https://watch-crew.app/terms",
   },
 };
 
