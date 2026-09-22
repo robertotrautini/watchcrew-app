@@ -3,16 +3,31 @@ appId: com.watchcrew.app
 # tabs-tour.yaml — screenshots the 3 main-shell tabs (Tracker/Watchlist/
 # Tagebuch, src/app/(app)/(tabs)/_layout.tsx) plus the Settings hub
 # (src/app/(app)/(modals)/settings.tsx), reached via the "⚙️" button on the
-# Tracker tab (testID tracker-group-settings-button).
+# Tracker tab (testID tracker-group-settings-button), and the Group-Settings
+# screen (src/app/(app)/(modals)/group-settings.tsx) reached from the
+# Settings hub's "Gruppe verwalten" row (testID
+# settings-section-group-settings).
 #
 # PRECONDITION: the signed-in account must already have at least one
 # Watch-Group — with zero groups, the auth gate (src/hooks/useAuthGate.ts)
 # keeps the user on the onboarding screen and none of these tabs exist yet.
 # This flow does not create a group itself (see onboarding-explore.yaml's
-# header comment for why that's a separate, explicitly-confirmed decision).
-# If run against a zero-group account, this flow is expected to fail at the
-# first assertVisible("Tracker") step — that failure is itself useful
-# signal, not a bug in the flow.
+# header comment for why that's a separate, explicitly-confirmed decision;
+# create-test-group.yaml is the dedicated flow for that). If run against a
+# zero-group account, this flow is expected to fail at the first
+# assertVisible("Tracker") step — that failure is itself useful signal, not
+# a bug in the flow.
+#
+# The "Group-Settings screen" section below (steps 05+) was added in the
+# same session as create-test-group.yaml but is UNVERIFIED by an actual
+# run: the Maestro test account hit a real, reproducible backend blocker
+# (create_watch_group RPC missing from the Supabase dev project's PostgREST
+# schema cache — see create-test-group.yaml's own run history / the
+# session's report) before ever reaching a group-having state, so this
+# section could not be exercised live. The testID chain is real (read
+# straight from settings.tsx/group-settings.tsx source, not guessed) but
+# treat it as needing its first real run once that backend blocker is
+# resolved.
 
 - launchApp:
     clearState: false
@@ -43,3 +58,16 @@ appId: com.watchcrew.app
     visible: "Abmelden"
     timeout: 10000
 - takeScreenshot: 04-settings-hub
+
+# --- Group-Settings screen (via Settings hub's "Gruppe verwalten" row) ---
+# UNVERIFIED (see header comment) — testID confirmed against
+# src/app/(app)/(modals)/settings.tsx's SECTIONS array (key
+# "group-settings" -> testID "settings-section-group-settings") and
+# src/app/(app)/(modals)/group-settings.tsx's own "Mitglieder" section
+# label.
+- tapOn:
+    id: "settings-section-group-settings"
+- extendedWaitUntil:
+    visible: "Mitglieder"
+    timeout: 10000
+- takeScreenshot: 05-group-settings

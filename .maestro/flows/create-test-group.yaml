@@ -1,0 +1,57 @@
+appId: com.watchcrew.app
+---
+# create-test-group.yaml — creates a REAL, persisted, throwaway Watch-Group
+# for the Maestro test account (robintrautmann@gmx.de) via the onboarding
+# "Gruppe erstellen" form (src/app/(onboarding)/create-or-join-group.tsx).
+#
+# Deliberately NOT a mock/stub/SQL-seed: this exercises the real
+# `create_watch_group` SECURITY DEFINER RPC end-to-end (see that screen's own
+# module comment) -- the best possible test of that exact write path, and a
+# prerequisite for every other tabs-tour/movie-detail flow, which all assume
+# the account already has at least one group (see their own PRECONDITION
+# comments).
+#
+# Idempotency note: this flow is expected to run exactly once against a
+# genuinely zero-group account. If the account already has a group (this
+# flow already ran, or the account was seeded some other way), the "select"
+# screen never appears -- the `runFlow: when: visible: "Willkommen bei
+# WatchCrew"` guard below simply does nothing and the flow ends on whatever
+# screen the account actually lands on instead (documented here rather than
+# hidden, same idiom as login.yaml's own guarded `runFlow` blocks).
+#
+# Same clearState:false idiom as every other flow in this directory (see
+# login.yaml's header comment for the full "why" -- clearState:true wipes the
+# dev-client's native Metro-server pointer on this build).
+
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "Willkommen bei WatchCrew|Tracker"
+    timeout: 10000
+- takeScreenshot: 01-launch-state
+
+- runFlow:
+    when:
+      visible: "Willkommen bei WatchCrew"
+    commands:
+      - assertVisible: "Gruppe erstellen"
+      - tapOn: "Gruppe erstellen"
+      - assertVisible: "Gruppenname"
+
+      - tapOn:
+          id: "create-group-name-input"
+      - inputText: "Maestro Test Gruppe"
+      - hideKeyboard
+      # Default Gold theme is already pre-selected (DEFAULT_GROUP_THEME) --
+      # no swatch tap needed, per the task's "leave the default Gold theme
+      # selected" instruction.
+      - takeScreenshot: 02-create-group-form-filled
+
+      - tapOn:
+          id: "create-group-submit"
+      # Real Supabase RPC round-trip (create_watch_group), then an explicit
+      # router.replace to /(app)/(tabs)/tracker -- wait generously.
+      - extendedWaitUntil:
+          visible: "Tracker"
+          timeout: 15000
+      - takeScreenshot: 03-post-create-tracker

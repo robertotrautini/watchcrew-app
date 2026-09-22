@@ -11,6 +11,22 @@ appId: com.watchcrew.app
 # mocked) — if the search comes back empty this flow fails at the
 # assertVisible for the movie title, which is itself the honest result to
 # report rather than something to force past.
+#
+# The "add to watchlist for real" section below (steps 04+) was added in the
+# same session as create-test-group.yaml but is UNVERIFIED by an actual run
+# — the Maestro test account never reached a group-having state in that
+# session (real, reproducible backend blocker: create_watch_group RPC
+# missing from the Supabase dev project's PostgREST schema cache — see that
+# session's report), so this flow could never even get past its own
+# PRECONDITION. The "Zur Watchlist" testID is real (src/components/movie/
+# MovieDetailActionsBar.tsx's `movie-detail-action-${id}` pattern with
+# id "zur_watchlist", confirmed reachable for a tmdbId opened WITHOUT
+# groupId/source route params — exactly how add-movie.tsx's film-search
+# `handlePressItem` navigates here when the tapped movie isn't already in
+# the group's library — via src/lib/movieDetailLogic.ts's
+# `getVisibleActionsWithoutGroupContext`), but the back-navigation-then-
+# revisit-Watchlist steps are an untested guess at the right shape and may
+# need adjustment once this can actually run.
 
 - launchApp:
     clearState: false
@@ -40,3 +56,27 @@ appId: com.watchcrew.app
     visible: "Inception"
     timeout: 10000
 - takeScreenshot: 03-movie-detail-overlay
+
+# --- Add to watchlist for real (exercises upsert_movie + addToWatchlist) ---
+# UNVERIFIED (see header comment).
+- tapOn:
+    id: "movie-detail-action-zur_watchlist"
+# handleAddToWatchlist (MovieDetailActionsBar.tsx) has no onSuccess
+# navigation/toast wired for this specific button (unlike "direkt_bewerten")
+# -- give the mutation a moment to land before navigating away, so the
+# Watchlist-tab re-check below isn't racing the write.
+- extendedWaitUntil:
+    visible: "Zur Watchlist"
+    timeout: 10000
+- takeScreenshot: 04-after-add-to-watchlist-tap
+
+# movie-detail.tsx has headerShown:false with its own manual back button
+# (testID movie-detail-back-button); add-movie.tsx uses the (modals) group's
+# default native Stack header instead (no stable testID to target) -- the
+# Android hardware back gesture is the one mechanism that reliably works for
+# both, so it's used here instead of guessing a native header back-button
+# selector.
+- back
+- back
+- assertVisible: "Watchlist"
+- takeScreenshot: 05-watchlist-with-real-entry
