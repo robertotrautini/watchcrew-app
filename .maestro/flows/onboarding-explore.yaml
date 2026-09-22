@@ -1,0 +1,38 @@
+appId: com.watchcrew.app
+---
+# onboarding-explore.yaml — visual verification of the "create or join
+# group" onboarding screen's two sub-forms (src/app/(onboarding)/
+# create-or-join-group.tsx), for an authenticated account with zero
+# Watch-Groups.
+#
+# Deliberately non-destructive: navigates INTO both the "Gruppe erstellen"
+# and "Gruppe beitreten" forms to screenshot them, then backs out via each
+# form's own "Zurück" button WITHOUT submitting either one — this flow
+# creates no Watch-Group and joins no Watch-Group. Creating a real group
+# (or joining one) is a real, persisted backend write and a decision this
+# flow intentionally leaves for an explicit, separate confirmation rather
+# than making it implicitly as a side effect of a screenshot pass.
+#
+# Assumes the app is already on the onboarding screen (run login.yaml
+# first, or launch the app with an already-authenticated, zero-group
+# session).
+
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "Willkommen bei WatchCrew"
+    timeout: 10000
+- takeScreenshot: 01-onboarding-select
+
+- tapOn: "Gruppe erstellen"
+- assertVisible: "Gruppenname"
+- assertVisible: "Farbthema"
+- takeScreenshot: 02-onboarding-create-form
+- tapOn: "Zurück"
+- assertVisible: "Gruppe beitreten"
+
+- tapOn: "Gruppe beitreten"
+- assertVisible: "Einladungscode / Gruppen-ID"
+- takeScreenshot: 03-onboarding-join-form
+- tapOn: "Zurück"
+- assertVisible: "Gruppe erstellen"

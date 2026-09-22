@@ -1,0 +1,42 @@
+appId: com.watchcrew.app
+---
+# movie-detail.yaml — reaches the Add-Movie modal (src/app/(app)/(modals)/
+# add-movie.tsx) via the Watchlist tab's "+" button, searches for a known
+# film, and opens its Movie-Detail-Overlay (src/app/(app)/(modals)/movie/
+# [tmdbId].tsx) to screenshot it.
+#
+# PRECONDITION: same as tabs-tour.yaml — the signed-in account needs an
+# active Watch-Group to reach the Watchlist tab at all. Also depends on the
+# TMDB search proxy being reachable from the device (real network call, not
+# mocked) — if the search comes back empty this flow fails at the
+# assertVisible for the movie title, which is itself the honest result to
+# report rather than something to force past.
+
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "Tracker"
+    timeout: 10000
+
+- tapOn: "Watchlist"
+- assertVisible: "Watchlist"
+- tapOn:
+    id: "watchlist-add-movie-button"
+- extendedWaitUntil:
+    visible: "Filmtitel suchen…"
+    timeout: 10000
+- takeScreenshot: 01-add-movie-search
+
+- tapOn:
+    id: "add-movie-film-search-input"
+- inputText: "Inception"
+- extendedWaitUntil:
+    visible: "Inception"
+    timeout: 10000
+- takeScreenshot: 02-add-movie-results
+
+- tapOn: "Inception"
+- extendedWaitUntil:
+    visible: "Inception"
+    timeout: 10000
+- takeScreenshot: 03-movie-detail-overlay

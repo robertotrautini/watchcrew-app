@@ -1,2 +1,6 @@
 appId: com.watchcrew.app
-# Flows added once real UI exists (see M3+) — see docs/adr/0008-testing-strategy.md
+# Real flows live in .maestro/flows/ (see docs/adr/0008-testing-strategy.md).
+# login.yaml and onboarding-explore.yaml are the currently-passing flows
+# against the disposable Maestro test account; tabs-tour.yaml and
+# movie-detail.yaml require that account to have an active Watch-Group
+# first (see their own header comments) and are not yet green.

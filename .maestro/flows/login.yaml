@@ -1,0 +1,83 @@
+appId: com.watchcrew.app
+---
+# login.yaml — real E2E login flow (M0/M2 "mandatory visual verification"
+# requirement, finally exercised for real in this flow).
+#
+# Uses the disposable Maestro test account (robintrautmann@gmx.de) the user
+# explicitly authorized for E2E testing.
+#
+# Deliberately does NOT use `launchApp: {clearState: true}`: on this
+# Expo dev-client build, `clearState` does a full `pm clear`, which wipes
+# not only the JS session (SecureStore-backed auth token) but ALSO the
+# dev-client's own native "last connected Metro server" pointer -- so a
+# cleared-state relaunch lands on the dev-client's native
+# "Development servers" picker screen, not the app's Login screen at all
+# (confirmed by hand: see .maestro debug artifacts from this flow's first
+# authoring pass). Recovering from that needs a manual tap on the dev
+# server entry + dismissing the native dev menu, which isn't something
+# this flow can (or should) reach into. If a genuinely logged-out start is
+# needed, sign out via the Settings screen's "Abmelden" button first
+# (a separate, deliberate flow step) rather than clearState here.
+
+- launchApp:
+    clearState: false
+# `takeScreenshot` right after `launchApp` can race the Activity draw and
+# still catch the Android launcher (confirmed by hand: a screenshot here
+# once came back showing the home screen, with every later assertion still
+# passing) -- wait for real content first. Maestro's text matcher is a
+# FULL match against a node's text (confirmed by hand), not substring
+# search, so this waits for any of the 3 possible landing screens by their
+# own exact text rather than a shared "WatchCrew" substring.
+- extendedWaitUntil:
+    visible: "WatchCrew|Willkommen bei WatchCrew|Tracker"
+    timeout: 10000
+- takeScreenshot: 01-launch-state
+
+# The auth session (SecureStore-backed) persists across app launches, same
+# as a real user would experience -- so if an earlier run of this same
+# flow already signed in, relaunching lands straight past Login on
+# whichever screen this account resolves to (onboarding or Tracker), and
+# there is no Login screen to fill in. Only exercise the actual
+# signInWithEmail round-trip when the Login screen is genuinely showing.
+- runFlow:
+    when:
+      visible: "E-Mail"
+    commands:
+      - assertVisible: "WatchCrew"
+      - assertVisible: "Passwort"
+      # Target the TextInputs by testID (src/app/(auth)/login.tsx), not by
+      # the adjacent "E-Mail"/"Passwort" label text -- tapping the plain
+      # Text label does not reliably focus the input below it (confirmed
+      # by hand: it left focus on whichever field was already focused, so
+      # both inputText calls landed in the email field, e.g.
+      # "robintrautmann@gmx.dethrice700$").
+      - tapOn:
+          id: "login-email-input"
+      - eraseText
+      - inputText: "robintrautmann@gmx.de"
+      - hideKeyboard
+      - tapOn:
+          id: "login-password-input"
+      - eraseText
+      - inputText: "thrice700$"
+      - hideKeyboard
+      - tapOn: "Anmelden"
+      # Either destination can take a moment (Supabase auth round-trip +
+      # first group-membership query), so wait generously rather than
+      # asserting immediately.
+      - extendedWaitUntil:
+          visible: "Willkommen bei WatchCrew|Tracker"
+          timeout: 15000
+      - takeScreenshot: 02-post-login
+
+- runFlow:
+    when:
+      visible: "Willkommen bei WatchCrew"
+    commands:
+      - takeScreenshot: 03-onboarding-no-group
+
+- runFlow:
+    when:
+      visible: "Tracker"
+    commands:
+      - takeScreenshot: 03-tracker-has-group

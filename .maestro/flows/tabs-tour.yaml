@@ -1,0 +1,45 @@
+appId: com.watchcrew.app
+---
+# tabs-tour.yaml — screenshots the 3 main-shell tabs (Tracker/Watchlist/
+# Tagebuch, src/app/(app)/(tabs)/_layout.tsx) plus the Settings hub
+# (src/app/(app)/(modals)/settings.tsx), reached via the "⚙️" button on the
+# Tracker tab (testID tracker-group-settings-button).
+#
+# PRECONDITION: the signed-in account must already have at least one
+# Watch-Group — with zero groups, the auth gate (src/hooks/useAuthGate.ts)
+# keeps the user on the onboarding screen and none of these tabs exist yet.
+# This flow does not create a group itself (see onboarding-explore.yaml's
+# header comment for why that's a separate, explicitly-confirmed decision).
+# If run against a zero-group account, this flow is expected to fail at the
+# first assertVisible("Tracker") step — that failure is itself useful
+# signal, not a bug in the flow.
+
+- launchApp:
+    clearState: false
+- extendedWaitUntil:
+    visible: "Tracker"
+    timeout: 10000
+
+# --- Tracker tab ---
+- assertVisible: "Tracker"
+- takeScreenshot: 01-tab-tracker
+
+# --- Watchlist tab ---
+- tapOn: "Watchlist"
+- assertVisible: "Watchlist"
+- takeScreenshot: 02-tab-watchlist
+
+# --- Tagebuch tab ---
+- tapOn: "Tagebuch"
+- assertVisible: "Suche im Tagebuch"
+- takeScreenshot: 03-tab-tagebuch
+
+# --- Settings hub (via Tracker tab's ⚙️ button) ---
+- tapOn: "Tracker"
+- assertVisible: "Tracker"
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible: "Abmelden"
+    timeout: 10000
+- takeScreenshot: 04-settings-hub
