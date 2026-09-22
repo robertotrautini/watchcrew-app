@@ -6,8 +6,11 @@ jest.mock("@/lib/auth", () => ({
 }));
 
 const mockLink = jest.fn((_props: { href: string; children?: unknown }) => null);
+const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
   Link: (props: { href: string; children?: unknown }) => mockLink(props),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
 // Required lazily (not statically imported) for the same reason as
@@ -86,6 +89,27 @@ describe("LoginScreen", () => {
     await waitFor(() =>
       expect(mockSignInWithEmail).toHaveBeenCalledWith("a@b.com", "secret123"),
     );
+  });
+
+  it("navigates back to \"/\" on successful sign-in so useAuthGate re-evaluates", async () => {
+    // Root cause of the real "tap Anmelden, nothing happens" bug: the root
+    // `useAuthGate` subscription (src/hooks/useAuthGate.ts) only lives on
+    // `src/app/index.tsx`, which unmounts (and unsubscribes) the moment its
+    // own `<Redirect>` sends the user to /login -- the exact same gap M9's
+    // Group-Settings screen and M10's Settings sign-out handler already hit
+    // and worked around with an explicit `router.replace("/")`. Login never
+    // got that same fix, so a successful `signInWithPassword` fired a
+    // SIGNED_IN event nobody was listening for anymore, leaving the user
+    // stuck on the login screen with no error and no navigation.
+    mockSignInWithEmail.mockResolvedValue({ data: {}, error: null });
+    const LoginScreen = loadLoginScreen();
+    const { getByTestId } = await render(<LoginScreen />);
+
+    await fireEvent.changeText(getByTestId("login-email-input"), "a@b.com");
+    await fireEvent.changeText(getByTestId("login-password-input"), "secret123");
+    await fireEvent.press(getByTestId("login-submit-button"));
+
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
   });
 
   it("shows a loading state and disables the submit button while sign-in is pending", async () => {

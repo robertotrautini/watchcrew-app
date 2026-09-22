@@ -108,6 +108,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M11 Teil 1 — Keyboard-Avoiding: reine Platform-Funktionen statt gerenderter Prop-Prüfung, Scope auf Login/Register/Sheet](#m11-teil-1--keyboard-avoiding-reine-platform-funktionen-statt-gerenderter-prop-prüfung-scope-auf-loginregistersheet)
 - [M11 Teil 1 — Safe-Area: `SafeAreaView` gezielt pro Screen, nicht global](#m11-teil-1--safe-area-safeareaview-gezielt-pro-screen-nicht-global)
 - [M11 Teil 1 — StatusBar: fest `style="light"`, nicht `colorScheme`-abhängig](#m11-teil-1--statusbar-fest-stylelight-nicht-colorscheme-abhängig)
+- [M3-Nachbesserung (Live-Bug-Fix) — Login: fehlender expliziter `router.replace("/")` nach erfolgreichem Sign-in](#m3-nachbesserung-live-bug-fix--login-fehlender-expliziter-routerreplace-nach-erfolgreichem-sign-in)
 
 ---
 
@@ -1629,6 +1630,20 @@ Bewusst NICHT mit Haptik versehen: Pull-to-Refresh — keiner der Watchlist-/Tag
 **Entscheidung:** `preview`-Profil um `"android": {"buildType": "apk"}` ergänzt. `development`- und `production`-Profile unverändert gelassen (production bleibt bewusst AAB-fähig für eine spätere echte Store-Submission).
 
 **Warum das später leicht änderbar ist:** Eine einzelne `eas.json`-Zeile — für einen AAB-Build würde man einfach ein anderes Profil (`production`) oder den Wert direkt ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M3-Nachbesserung (Live-Bug-Fix) — Login: fehlender expliziter `router.replace("/")` nach erfolgreichem Sign-in
+
+**Problem/Lücke:** Realer, gemeldeter Produktions-Bug: manuell im Supabase-Dashboard angelegter (auto-confirmed) Nutzer, korrekte Credentials im Login-Screen auf dem echten Pixel 6 Pro eingegeben, "Anmelden" getippt — keine Fehlermeldung, kein Ladeindikator-Hänger, keine Navigation. Ursache: `src/app/(auth)/login.tsx` (M3) verließ sich beim erfolgreichen Sign-in ausschließlich auf `useAuthGate()`s `onAuthStateChange`-Listener, um die Navigation weg vom Login-Screen auszulösen. Dieser Listener lebt aber ausschließlich in `src/app/index.tsx` — und diese Komponente unmounted (und deabonniert damit ihren Listener) in dem Moment, in dem ihr eigenes `<Redirect href="/(auth)/login" />` beim allerersten Kaltstart-Check greift. Zum Zeitpunkt des tatsächlichen Login-Tap ist also niemand mehr auf das `SIGNED_IN`-Event abonniert — exakt dieselbe Auth-Gate-Lücken-Kategorie, die M9 Teil 2 (Gruppen-Verlassen) und M10 (Abmelden/Konto-Löschung, siehe [M10 — "Abmelden"/Konto-Löschung](#m10--abmeldenkonto-löschung-expliziter-routerreplace-statt-vertrauen-auf-den-bestehenden-auth-gate)) bereits gefunden und mit einem expliziten `router.replace("/")` behoben hatten. Der Login-Screen selbst — obwohl der ursprüngliche, älteste Betroffene dieser Lücken-Kategorie — hatte diesen Fix nie bekommen und wurde dadurch zum einzigen verbliebenen Fall, der im laufenden Betrieb tatsächlich reproduzierbar war (jeder normale Nutzer, der sich nach Cold-Start/Registrierung einloggt, ist betroffen; nur ein App-Neustart nach dem Login "korrigierte" es scheinbar, da `index.tsx` dabei neu mountet und `getSession()` die längst gültige Session vorfindet).
+
+**Entscheidung:** `login.tsx`s `handleSubmit` ruft nach einem fehlerfreien `signInWithEmail(...)`-Ergebnis jetzt explizit `router.replace("/")` auf (analog zu `settings.tsx`s Abmelden-Handler) — das erzwingt einen frischen Mount von `index.tsx` und damit eine garantierte Neu-Auswertung von `useAuthGate()` unabhängig davon, ob irgendwo noch ein alter Listener aktiv ist. TDD: neuer Testfall `"navigates back to \"/\" on successful sign-in so useAuthGate re-evaluates"` in `__tests__/screens/Login.test.tsx` (rot ohne Fix, grün danach); alle 9 bestehenden Login-Tests sowie die verwandten `useAuthGate`/`routeIndex`/`Settings`/`Register`-Suiten (108 Tests) bleiben grün, `tsc --noEmit` sauber.
+
+**Warum das später leicht änderbar ist:** Ein einzeiliger `router.replace("/")`-Aufruf, identisch zum bereits etablierten Muster aus M9/M10 — kein struktureller Eingriff.
+
+**Verifikation auf dem echten Gerät:** Noch offen — reiner JS-Fix (keine native Code-Änderung), daher genügt zum Testen entweder ein neuer EAS-Build oder (falls ein Dev-Client + Metro-Workflow eingerichtet wird) ein Hot-Reload der laufenden Session; ein weiterer ~25-minütiger Cloud-Build-Zyklus wurde hier bewusst nicht selbst angestoßen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

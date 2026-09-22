@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Text, TextInput } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { signInWithEmail } from '@/lib/auth';
@@ -15,13 +15,21 @@ const EMAIL_SHAPE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * Real M3 Login screen content. Client-side validation only checks
  * non-empty password + plausible email shape before calling
  * `signInWithEmail` (src/lib/auth.ts, M1) — it does not attempt to
- * pre-verify credentials. On success there is no manual navigation: the
- * root `useAuthGate`/`index.tsx` redirect (src/hooks/useAuthGate.ts,
- * untouched here) reacts to the Supabase auth-state-change and routes away
- * from `/login` once a session exists. This screen only owns its own local
- * loading/error UI state.
+ * pre-verify credentials.
+ *
+ * On success, this explicitly calls `router.replace("/")` rather than
+ * relying purely on the root `useAuthGate`/`index.tsx` redirect
+ * (src/hooks/useAuthGate.ts) to react to the Supabase auth-state-change on
+ * its own. `useAuthGate`'s `onAuthStateChange` subscription only lives on
+ * `index.tsx`, which unmounts (and unsubscribes) the moment its own
+ * `<Redirect>` first sends the user to `/login` -- so by the time a
+ * `SIGNED_IN` event fires here, nobody is listening for it anymore. Same
+ * gap M9's Group-Settings screen and M10's Settings sign-out handler
+ * already hit and worked around with the identical explicit
+ * `router.replace("/")` call — see those files' own comments.
  */
 export default function LoginScreen() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -52,7 +60,10 @@ export default function LoginScreen() {
 
     if (error) {
       setApiError(error.message);
+      return;
     }
+
+    router.replace('/');
   }
 
   return (
