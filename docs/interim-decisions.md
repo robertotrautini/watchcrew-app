@@ -1608,4 +1608,30 @@ Bewusst NICHT mit Haptik versehen: Pull-to-Refresh — keiner der Watchlist-/Tag
 
 ---
 
+---
+
+## M11 Teil 2 (EAS-Cloud-Build-Erstsetup) — Lokale portable Node-22-Laufzeit nur für `eas-cli`-Aufrufe
+
+**Problem/Lücke:** `npx eas-cli init`/`build:configure`/`build` scheiterten auf diesem Raspberry-Pi-Host (System-Node: `nodejs` 20.19.2 via apt, kein `nvm`/`fnm`/`n` installiert) mit `Error reading Expo config at app.config.ts: Unexpected token '{'` (`SyntaxError` in Node-internem `compileSourceTextModule`). Ursache: `npx eas-cli` lädt sein EIGENES, npx-gecachtes `@expo/require-utils`@55.0.8 (unabhängig von diesem Projekts eigenem, funktionierenden `@expo/config`@57.0.9 in `node_modules/`) — diese ältere `require-utils`-Version verlässt sich auf Node's natives TS-Type-Stripping-`require()`, das auf Node 20.19.2 fehlerhaft/inkompatibel ist. Das Projekt selbst deklariert bereits `"engines": {"node": ">=22"}` in `package.json` (keine neue Entscheidung von mir — das stand schon so da), das ist also ein bereits vorausgesetzter, aber auf diesem Host nie eingerichteter Node-Major.
+
+**Entscheidung:** Portable Node-v22.20.0-linux-arm64-Distribution von nodejs.org in einen Scratch-Ordner (`/tmp/.../scratchpad/node22/node-v22.20.0-linux-arm64/`, NICHT im Repo) entpackt und deren `bin/`-Verzeichnis nur für die einzelnen `eas-cli`-Bash-Aufrufe dieser Session vorne an `PATH` gehängt (kein systemweiter Eingriff, kein `apt`/`nvm`-Setup, keine Änderung an `scripts/android-build-env.sh`, das bewusst für die — separat abgebrochene — lokale Android-Build-Route gilt, nicht für EAS). Die eigentlichen App-/Build-Prozesse (Metro, Gradle, etc.) liefen weiterhin unverändert auf System-Node 20; nur der `eas-cli`-Client-Prozess selbst brauchte Node 22.
+
+**Warum das später leicht änderbar ist:** Reine Host-Tooling-Randbedingung, kein Code/Config-Entscheid. Falls der Nutzer künftig öfter `eas-cli` lokal braucht, wäre die naheliegende dauerhafte Lösung ein echter Node-Version-Manager (nvm/fnm) statt des Ad-hoc-Scratch-Downloads hier — trivial nachrüstbar, ändert nichts an App-Code oder `eas.json`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M11 Teil 2 (EAS-Cloud-Build-Erstsetup) — `eas.json`: `preview`-Profil auf `android.buildType: "apk"` statt AAB-Default
+
+**Problem/Lücke:** `eas build:configure --platform android` generierte ein Standard-`eas.json` mit `preview`-Profil ohne explizites `android.buildType` — EAS' Default ist dort `app-bundle` (AAB), das NICHT per `adb install` auf ein Gerät installierbar ist (nur für Play-Store-Submission gedacht). Für die reale Geräte-Verifikation auf dem angeschlossenen Pixel 6 Pro wird eine direkt installierbare APK gebraucht.
+
+**Entscheidung:** `preview`-Profil um `"android": {"buildType": "apk"}` ergänzt. `development`- und `production`-Profile unverändert gelassen (production bleibt bewusst AAB-fähig für eine spätere echte Store-Submission).
+
+**Warum das später leicht änderbar ist:** Eine einzelne `eas.json`-Zeile — für einen AAB-Build würde man einfach ein anderes Profil (`production`) oder den Wert direkt ändern.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
 Neue Einträge werden von den Implementierungs-Subagents laufend ergänzt, sobald weitere Milestones reversible Detailentscheidungen treffen.

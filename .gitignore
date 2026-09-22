@@ -24,3 +24,8 @@ yarn-error.*
 example
 /ios
 /android
+
+# Device-verification screenshots + downloaded EAS build artifacts (local
+# real-device visual verification, not build output tracked in the repo).
+.scratch-screenshots/
+*.apk

@@ -6,6 +6,10 @@ import type { ExpoConfig } from "expo/config";
 const config: ExpoConfig = {
   name: "WatchCrew",
   slug: "watchcrew",
+  // EAS account that owns this project (set during `eas init` — EAS
+  // requires this on a dynamic app.config.ts since it can't write it in
+  // automatically). See docs/interim-decisions.md.
+  owner: "rt-software-service",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -85,6 +89,15 @@ const config: ExpoConfig = {
     // exists.
     privacyPolicyUrl: "https://watch-crew.app/privacy",
     termsOfServiceUrl: "https://watch-crew.app/terms",
+    // EAS project link (created via `eas init` during the EAS Cloud Build
+    // setup) — required so `eas build` knows which EAS project to upload
+    // to, and so `Notifications.getExpoPushTokenAsync()` (M10) can resolve
+    // its projectId automatically instead of falling back to the
+    // warn-and-skip path documented in docs/interim-decisions.md (M10 —
+    // "Push-Registrierung: kein EAS-Projekt konfiguriert").
+    eas: {
+      projectId: "5fa29efd-5cbe-4283-975c-9108f61720bf",
+    },
   },
 };
 
