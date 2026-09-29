@@ -109,6 +109,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M11 Teil 1 — Safe-Area: `SafeAreaView` gezielt pro Screen, nicht global](#m11-teil-1--safe-area-safeareaview-gezielt-pro-screen-nicht-global)
 - [M11 Teil 1 — StatusBar: fest `style="light"`, nicht `colorScheme`-abhängig](#m11-teil-1--statusbar-fest-stylelight-nicht-colorscheme-abhängig)
 - [M3-Nachbesserung (Live-Bug-Fix) — Login: fehlender expliziter `router.replace("/")` nach erfolgreichem Sign-in](#m3-nachbesserung-live-bug-fix--login-fehlender-expliziter-routerreplace-nach-erfolgreichem-sign-in)
+- [M3-Nachbesserung (Live-Bug-Fix) — `useAuthGate`: Race Condition bei parallelen `evaluate()`-Aufrufen überschrieb korrekten Zustand](#m3-nachbesserung-live-bug-fix--useauthgate-race-condition-bei-parallelen-evaluate-aufrufen-überschrieb-korrekten-zustand)
 
 ---
 
@@ -1644,6 +1645,22 @@ Bewusst NICHT mit Haptik versehen: Pull-to-Refresh — keiner der Watchlist-/Tag
 **Warum das später leicht änderbar ist:** Ein einzeiliger `router.replace("/")`-Aufruf, identisch zum bereits etablierten Muster aus M9/M10 — kein struktureller Eingriff.
 
 **Verifikation auf dem echten Gerät:** Noch offen — reiner JS-Fix (keine native Code-Änderung), daher genügt zum Testen entweder ein neuer EAS-Build oder (falls ein Dev-Client + Metro-Workflow eingerichtet wird) ein Hot-Reload der laufenden Session; ein weiterer ~25-minütiger Cloud-Build-Zyklus wurde hier bewusst nicht selbst angestoßen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M3-Nachbesserung (Live-Bug-Fix) — `useAuthGate`: Race Condition bei parallelen `evaluate()`-Aufrufen überschrieb korrekten Zustand
+
+**Problem/Lücke:** Realer, gemeldeter Bug: Nutzer legt erfolgreich eine Watch-Group an (Gruppe + Mitgliedschaftszeile serverseitig verifiziert vorhanden), landet nach einem Kaltstart der App aber wieder im Onboarding, als hätte er keine Gruppe. Ursache lag ausschließlich clientseitig in `src/hooks/useAuthGate.ts`: `evaluate()` wird aus zwei unabhängigen Stellen ausgelöst — dem direkten `supabase.auth.getSession().then(evaluate)`-Aufruf und dem `onAuthStateChange`-Listener (der laut Design von auth-js zusätzlich einmal für die bereits aufgelöste initiale Session feuert). Keiner der beiden Aufrufe hatte eine Sequenzierung (kein `AbortController`, kein Request-Zähler) — liefen die beiden `getUserGroups()`-Promises out-of-order zurück, gewann schlicht der zuletzt aufgelöste `setState`-Aufruf, selbst wenn er einen bereits überholten/veralteten Request beantwortete. Zusätzlich wurde JEDER Fehler aus `getUserGroups()` stillschweigend (kein `console.error`/`console.warn`, kein Sentry-Capture) in "0 Gruppen" → Onboarding-Zustand übersetzt, sodass ein echter transienter Fehler nicht von "Nutzer hat wirklich keine Gruppe" unterscheidbar war.
+
+**Entscheidung:** Zwei Fixes in `useAuthGate()`:
+1. Ein monoton hochzählender `requestIdRef`-Zähler: Jeder `evaluate()`-Aufruf erfasst beim Start seine eigene Request-ID; `setState` wird nur noch ausgeführt, wenn diese ID beim Auflösen des `getUserGroups()`-Promises noch die aktuellste ist — ein überholter, spät auflösender Aufruf wird verworfen, statt einen bereits korrekten neueren Zustand zu überschreiben.
+2. Der Fehlerfall loggt jetzt via `console.warn("useAuthGate: getUserGroups failed, falling back to 'onboarding'", error)` (gleiche Konvention wie `src/hooks/usePushRegistration.ts`) — das bestehende Verhalten "Fallback auf 'onboarding' bei Fehler" (siehe [M3 — Fallback bei Gruppen-Lookup-Fehler](#m3--fallback-bei-gruppen-lookup-fehler) oben) bleibt unverändert, nur "still" wird zu "laut".
+
+TDD: neuer Testfall `"keeps the later-started evaluate() call's result when an earlier-started call's request resolves after it (stale-response race)"` in `__tests__/useAuthGate.test.tsx` (rot ohne Fix — schlug mit `Received: "onboarding"` statt `"app"` fehl, grün danach); der bestehende Fehlerfall-Test wurde erweitert, um zusätzlich `console.warn` zu prüfen. Volle Suite (109 Test-Dateien / 992 Tests) bleibt grün, `tsc --noEmit` sauber.
+
+**Warum das später leicht änderbar ist:** Rein interner Implementierungsdetail-Fix innerhalb eines Hooks (Request-ID-Ref + eine `console.warn`-Zeile) — keine Schema-/API-/Business-Regel-Änderung, kein anderer Aufrufer betroffen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

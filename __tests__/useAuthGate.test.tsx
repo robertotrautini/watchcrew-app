@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from "@testing-library/react-native";
+import { act, renderHook, waitFor } from "@testing-library/react-native";
 
 const mockGetSession = jest.fn();
 const mockOnAuthStateChange = jest.fn();
@@ -86,14 +86,62 @@ describe("useAuthGate", () => {
     await waitFor(() => expect(result.current).toBe("app"));
   });
 
-  it("falls back to 'onboarding' when the group-membership query errors, rather than getting stuck loading", async () => {
+  it("falls back to 'onboarding' when the group-membership query errors, rather than getting stuck loading -- but logs the error instead of failing silently", async () => {
+    const consoleWarnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+    const groupsError = { message: "network error" };
     mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
-    mockGetUserGroups.mockResolvedValue({ data: null, error: { message: "network error" } });
+    mockGetUserGroups.mockResolvedValue({ data: null, error: groupsError });
     const useAuthGate = loadUseAuthGate();
 
     const { result } = await renderHook(() => useAuthGate());
 
     await waitFor(() => expect(result.current).toBe("onboarding"));
+    expect(consoleWarnSpy).toHaveBeenCalledWith(expect.stringContaining("useAuthGate"), groupsError);
+
+    consoleWarnSpy.mockRestore();
+  });
+
+  it("keeps the later-started evaluate() call's result when an earlier-started call's request resolves after it (stale-response race)", async () => {
+    // Reproduces the real cold-launch bug: `supabase.auth.getSession().then(evaluate)`
+    // and the `onAuthStateChange` subscription (which auth-js also fires for the
+    // resolved initial session) both trigger `evaluate()` independently. Here the
+    // FIRST-started call's `getUserGroups()` resolves LAST, with a stale
+    // empty-groups result -- it must not clobber the correct 'app' state that the
+    // SECOND-started (and faster-resolving) call already produced.
+    let resolveFirstGetUserGroups!: (value: { data: unknown[] | null; error: unknown }) => void;
+    const firstCallPromise = new Promise<{ data: unknown[] | null; error: unknown }>((resolve) => {
+      resolveFirstGetUserGroups = resolve;
+    });
+
+    mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+    mockGetUserGroups
+      .mockImplementationOnce(() => firstCallPromise)
+      .mockImplementationOnce(() => Promise.resolve({ data: [{ group_id: "g1" }], error: null }));
+
+    const useAuthGate = loadUseAuthGate();
+    const { result } = await renderHook(() => useAuthGate());
+
+    // Wait until the first (getSession-triggered) evaluate() call has actually
+    // reached its getUserGroups() call before firing the second one, so call
+    // order is deterministic.
+    await waitFor(() => expect(mockGetUserGroups).toHaveBeenCalledTimes(1));
+
+    expect(mockOnAuthStateChange).toHaveBeenCalledTimes(1);
+    const authStateChangeCallback = mockOnAuthStateChange.mock.calls[0][0];
+    await authStateChangeCallback("SIGNED_IN", fakeSession("u1"));
+
+    // The later-started call already resolved (immediately) and should have set
+    // the correct 'app' state.
+    await waitFor(() => expect(result.current).toBe("app"));
+
+    // Now let the earlier-started call's stale, empty-groups response resolve.
+    // It must be discarded, not overwrite the already-correct 'app' state.
+    await act(async () => {
+      resolveFirstGetUserGroups({ data: [], error: null });
+      await firstCallPromise;
+    });
+
+    expect(result.current).toBe("app");
   });
 
   it("re-evaluates when the Supabase auth state changes (e.g. sign-in after starting signed out)", async () => {

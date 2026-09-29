@@ -1,5 +1,5 @@
 import type { Session } from "@supabase/supabase-js";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { resolveAuthGate, type AuthGateStatus } from "@/lib/authGate";
 import { getUserGroups } from "@/lib/groups";
@@ -25,25 +25,47 @@ export type AuthGateState = "loading" | AuthGateStatus;
  * should always land somewhere navigable. This is a reasonable default for
  * the navigation-shell scaffold; screens further into M3 may want a
  * dedicated error state instead, which would be a business-rule call for
- * that later task, not this one.
+ * that later task, not this one. The error itself is still logged
+ * (`console.warn`, same convention as `src/hooks/usePushRegistration.ts`) so
+ * a real transient failure is distinguishable from "user genuinely has no
+ * group" in the logs/Sentry breadcrumbs, even though the UI behavior is the
+ * same either way.
+ *
+ * `evaluate()` is triggered from two independent places below — the direct
+ * `supabase.auth.getSession().then(evaluate)` call, and the
+ * `onAuthStateChange` subscription (which auth-js also fires once for the
+ * already-resolved initial session, by design). Both call `getUserGroups()`,
+ * an async request with no ordering guarantee: a `requestIdRef` counter
+ * tags each `evaluate()` invocation with the id that was current when it
+ * started, and its `setState` is skipped if a newer call has since started
+ * — otherwise a slow, superseded call could resolve after a faster, later
+ * one and overwrite the correct state with stale data (confirmed real bug:
+ * a just-created group briefly "disappearing" back to onboarding on the
+ * next cold launch).
  */
 export function useAuthGate(): AuthGateState {
   const [state, setState] = useState<AuthGateState>("loading");
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
     let isMounted = true;
 
     async function evaluate(session: Session | null) {
+      const requestId = ++requestIdRef.current;
+
       if (!session) {
-        if (isMounted) {
+        if (isMounted && requestId === requestIdRef.current) {
           setState(resolveAuthGate({ session: null, groups: null }));
         }
         return;
       }
 
       const { data, error } = await getUserGroups(session.user.id);
-      if (!isMounted) {
+      if (!isMounted || requestId !== requestIdRef.current) {
         return;
+      }
+      if (error) {
+        console.warn("useAuthGate: getUserGroups failed, falling back to 'onboarding'", error);
       }
       setState(resolveAuthGate({ session, groups: error ? [] : data }));
     }
