@@ -110,6 +110,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M11 Teil 1 — StatusBar: fest `style="light"`, nicht `colorScheme`-abhängig](#m11-teil-1--statusbar-fest-stylelight-nicht-colorscheme-abhängig)
 - [M3-Nachbesserung (Live-Bug-Fix) — Login: fehlender expliziter `router.replace("/")` nach erfolgreichem Sign-in](#m3-nachbesserung-live-bug-fix--login-fehlender-expliziter-routerreplace-nach-erfolgreichem-sign-in)
 - [M3-Nachbesserung (Live-Bug-Fix) — `useAuthGate`: Race Condition bei parallelen `evaluate()`-Aufrufen überschrieb korrekten Zustand](#m3-nachbesserung-live-bug-fix--useauthgate-race-condition-bei-parallelen-evaluate-aufrufen-überschrieb-korrekten-zustand)
+- [Datenbank-Nachbesserung (Live-Bug-Fix) — Fehlende Base-Table-GRANTs für `authenticated`/`service_role` auf allen public-Tabellen](#datenbank-nachbesserung-live-bug-fix--fehlende-base-table-grants-für-authenticatedservice_role-auf-allen-public-tabellen)
 
 ---
 
@@ -1663,6 +1664,30 @@ TDD: neuer Testfall `"keeps the later-started evaluate() call's result when an e
 **Warum das später leicht änderbar ist:** Rein interner Implementierungsdetail-Fix innerhalb eines Hooks (Request-ID-Ref + eine `console.warn`-Zeile) — keine Schema-/API-/Business-Regel-Änderung, kein anderer Aufrufer betroffen.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## Datenbank-Nachbesserung (Live-Bug-Fix) — Fehlende Base-Table-GRANTs für `authenticated`/`service_role` auf allen public-Tabellen
+
+**Problem/Lücke:** Bestätigter Bug auf dem echten `watchcrew-dev`-Projekt (`vketnadfeyovguikpaao`): keine einzige bisherige Migration hatte jemals ein explizites `GRANT` auf eine `public`-Tabelle gesetzt. Alle CRUD-RLS-Policies (angelegt in `20260919120000_watch_group_core_schema_and_rls.sql` und den folgenden Migrationen) setzen aber voraus, dass `authenticated`/`service_role` überhaupt erst die Basis-Tabellenrechte (`SELECT`/`INSERT`/`UPDATE`/`DELETE`) besitzen, bevor RLS greifen kann — RLS filtert Zeilen, ersetzt aber nicht das Postgres-Privilegienmodell darunter. Per `pg_default_acl` auf dem Remote-Projekt verifiziert: die Default-Privileges für von der Rolle `postgres` neu angelegte Objekte in `public` enthielten für `authenticated`/`service_role` nur `TRUNCATE`/`REFERENCES`/`TRIGGER`, nie `SELECT`/`INSERT`/`UPDATE`/`DELETE`. Da alle Migrationen als `postgres` laufen, war jede neu angelegte Tabelle von diesem Loch betroffen — Clients und Edge Functions (`tmdb-proxy`, `cleanup-inactive-accounts`, die per `service_role`-Key direkt über PostgREST zugreifen) schlagen bei direkten Lese-/Schreibzugriffen mit `42501 permission denied` fehl, unabhängig davon, ob die jeweilige RLS-Policy korrekt wäre.
+
+**Entscheidung:** Neue Migration `20260930090000_grant_authenticated_service_role_table_privileges.sql` mit expliziten, pro Tabelle exakt auf die jeweilige bestehende RLS-Policy-Abdeckung zugeschnittenen `GRANT`-Statements (kein pauschales `GRANT ALL`):
+- `watch_groups`/`watch_group_members`: `SELECT, UPDATE, DELETE` für `authenticated` (kein `INSERT` — die einzigen Insert-Pfade sind die `SECURITY DEFINER`-RPCs `create_watch_group`/`join_watch_group_by_token`, die als `postgres` laufen).
+- `movies`, `genres`, `movie_genres`, `movie_metadata_cache`, `streaming_availability_cache`: `SELECT` für `authenticated` (Read-only-Katalog/Cache); volles CRUD für `service_role` (Edge-Function-Schreibzugriff).
+- `watchlist_entries`: volles CRUD für `authenticated`.
+- `ratings`: `SELECT, INSERT, UPDATE` für `authenticated` (kein `DELETE` — keine entsprechende RLS-Policy existiert).
+- `profiles`: `SELECT` für `authenticated` und `service_role` (Schreibpfad ausschließlich der `SECURITY DEFINER`-Trigger `handle_new_user`).
+- `push_tokens`: `INSERT, UPDATE, DELETE` für `authenticated` (bewusst kein `SELECT` — write-only vom Client), `SELECT` für `service_role`.
+- `push_subscriptions`: `SELECT, INSERT, DELETE` für `authenticated` (kein `UPDATE` — keine entsprechende RLS-Policy).
+- `release_reminder_log`/`email_notification_log`: bewusst unangetastet — keine RLS-Policies, nur von `SECURITY DEFINER`-Funktionen unter `postgres` berührt.
+- `anon` bewusst unangetastet — keine RLS-Policy zielt irgendwo auf `anon`/`public`.
+- Zusätzlich `ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated, service_role` als Root-Cause-Fix, damit künftige `CREATE TABLE`-Migrationen dasselbe Loch nicht erneut reproduzieren (wirkt nur auf künftig angelegte Tabellen, nicht rückwirkend).
+
+Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben ("ok du kannst pushen"). Migration per `npx supabase db push` angewendet; Erfolg per Read-only-Query gegen `information_schema.role_table_grants` (gefiltert auf `table_schema = 'public'` und `grantee in ('authenticated', 'service_role')`) verifiziert — alle oben aufgeführten Grants sind exakt wie in der Migration vorhanden, `release_reminder_log`/`email_notification_log`/`anon` unverändert.
+
+**Warum das später leicht änderbar ist:** Reine additive `GRANT`-Statements, kein Schema-/RLS-Eingriff — ein fehlendes oder zu weit gefasstes Recht lässt sich pro Tabelle mit einer weiteren `GRANT`/`REVOKE`-Migration nachschärfen, ohne bestehende Policies anzufassen.
+
+**Status:** ✅ Umgesetzt und auf `watchcrew-dev` (`vketnadfeyovguikpaao`) angewendet, Grants verifiziert. Nicht mehr offen.
 
 ---
 
