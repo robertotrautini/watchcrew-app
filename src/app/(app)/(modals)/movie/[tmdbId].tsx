@@ -18,6 +18,7 @@ import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { resolveDetailEntryContext } from "@/lib/movieDetailEntryContext";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { useToggleLike } from "@/hooks/useMovieDetailMutations";
 import { resolveGroupTheme } from "@/lib/groupTheme";
@@ -74,10 +75,8 @@ export default function MovieDetailScreen() {
   const isValidTmdbId =
     typeof rawTmdbId === "string" && rawTmdbId.trim() !== "" && Number.isFinite(tmdbId);
 
-  const groupId = params.groupId;
-  const source = params.source;
-  const watchlistEntryId = params.watchlistEntryId;
-  const hasGroupContext = Boolean(groupId && source);
+  const routeGroupId = params.groupId;
+  const routeHasGroupContext = Boolean(routeGroupId && params.source);
 
   const currentUserId = useCurrentUserId();
   // M9 part 2: real, persisted active-group resolution (replaces the former
@@ -88,7 +87,20 @@ export default function MovieDetailScreen() {
   // else, not `activeGroupId`.
   const { activeGroupId } = useActiveGroup(currentUserId);
 
-  const groupWatchlistQuery = useGroupWatchlist(hasGroupContext ? groupId : undefined);
+  // Without route group context, also watch the ACTIVE group's watchlist so
+  // the action bar reacts once this movie gets added to it ("Zur Watchlist").
+  const groupWatchlistQuery = useGroupWatchlist(
+    routeHasGroupContext ? routeGroupId : activeGroupId,
+  );
+  const { groupId, source, watchlistEntryId, hasGroupContext } = resolveDetailEntryContext({
+    routeGroupId,
+    routeSource: params.source,
+    routeWatchlistEntryId: params.watchlistEntryId,
+    tmdbId,
+    activeGroupId,
+    currentUserId,
+    activeGroupEntries: routeHasGroupContext ? undefined : groupWatchlistQuery.data?.entries,
+  });
   const groupMembersQuery = useGroupMembers(hasGroupContext ? groupId : undefined);
 
   const watchlistEntry = groupWatchlistQuery.data?.entries.find(

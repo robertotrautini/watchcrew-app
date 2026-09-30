@@ -1,9 +1,11 @@
+import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
+import { Button } from "@/components/ui/Button";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -20,6 +22,7 @@ import {
   genreDisplayLabel,
   memberDisplayLabel,
 } from "@/lib/diaryDisplay";
+import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
 import { resolveGroupTheme } from "@/lib/groupTheme";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { searchEntries, sortDiary, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
@@ -132,6 +135,7 @@ function deriveAvailableYears(
 }
 
 export default function TagebuchScreen() {
+  const router = useRouter();
   const userId = useCurrentUserId();
   // M9 part 2: real, persisted active-group resolution (replaces the former
   // "first group = active group" interim simplification) -- see
@@ -232,6 +236,18 @@ export default function TagebuchScreen() {
     return entry.ratings.find((r) => r.member_id === userId);
   }
 
+  function openEntry(entry: WatchlistEntry) {
+    if (!activeGroupId) {
+      return;
+    }
+    navigateToMovieDetail(router, {
+      tmdbId: entry.movie.tmdb_id,
+      groupId: activeGroupId,
+      source: "diary",
+      watchlistEntryId: entry.id,
+    });
+  }
+
   function seenDateLabel(entry: WatchlistEntry): string {
     const ownSeenAt = ownRating(entry)?.seen_at ?? null;
     return ownSeenAt ? `Gesehen am ${formatSeenAtDate(ownSeenAt)}` : "Kein Datum";
@@ -272,16 +288,15 @@ export default function TagebuchScreen() {
         <View className="flex-row items-center justify-between">
           <View className="flex-row gap-2" testID="tagebuch-view-mode-toggle">
             {VIEW_MODES.map((mode) => (
-              <Pressable
+              <Button
                 key={mode.value}
+                size="sm"
+                variant={diaryViewMode === mode.value ? "primary" : "secondary"}
+                label={mode.label}
                 testID={`tagebuch-view-mode-${mode.value}`}
-                accessibilityRole="button"
                 accessibilityState={{ selected: diaryViewMode === mode.value }}
                 onPress={() => setDiaryViewMode(mode.value)}
-                className="rounded-lg border border-border-subtle px-3 py-2"
-              >
-                <Text className="text-text-primary">{mode.label}</Text>
-              </Pressable>
+              />
             ))}
           </View>
 
@@ -359,6 +374,11 @@ export default function TagebuchScreen() {
             <View className="flex-row flex-wrap gap-3">
               {visibleEntries.map((entry, index) => (
                 <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="w-[30%]">
+                  <Pressable
+                    testID={`tagebuch-entry-press-${entry.id}`}
+                    accessibilityRole="button"
+                    onPress={() => openEntry(entry)}
+                  >
                   <DiaryPosterTile
                     posterUrl={buildTmdbImageUrl(entry.movie.poster)}
                     title={entry.movie.name}
@@ -376,6 +396,7 @@ export default function TagebuchScreen() {
                       {entry.movie.name}
                     </Text>
                   ) : null}
+                  </Pressable>
                 </FadeInItem>
               ))}
             </View>
@@ -385,9 +406,11 @@ export default function TagebuchScreen() {
                 const ownSeenAt = ownRating(entry)?.seen_at ?? null;
                 const average = computeAverageRating(entry);
                 return (
-                  <View
+                  <Pressable
                     key={entry.id}
                     testID={`tagebuch-entry-${entry.id}`}
+                    accessibilityRole="button"
+                    onPress={() => openEntry(entry)}
                     className="flex-row items-center justify-between border-b border-border-subtle py-2"
                   >
                     <Text
@@ -406,14 +429,20 @@ export default function TagebuchScreen() {
                     <Text testID={`tagebuch-list-tmdb-${entry.id}`} className="w-10 text-text-secondary">
                       {entry.movie.vote_average != null ? entry.movie.vote_average.toFixed(1) : "–"}
                     </Text>
-                  </View>
+                  </Pressable>
                 );
               })}
             </View>
           ) : (
             // "cards" (default)
             visibleEntries.map((entry, index) => (
-              <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="gap-2">
+              <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`}>
+                <Pressable
+                  testID={`tagebuch-entry-press-${entry.id}`}
+                  accessibilityRole="button"
+                  onPress={() => openEntry(entry)}
+                  className="gap-2"
+                >
                 <DiaryPosterTile
                   posterUrl={buildTmdbImageUrl(entry.movie.poster)}
                   title={entry.movie.name}
@@ -436,6 +465,7 @@ export default function TagebuchScreen() {
                     />
                   ))}
                 </View>
+                </Pressable>
               </FadeInItem>
             ))
           )}

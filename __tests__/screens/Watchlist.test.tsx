@@ -289,6 +289,26 @@ describe("WatchlistScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/add-movie");
   });
 
+  describe("tapping an entry opens the movie detail overlay", () => {
+    const EXPECTED = {
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "1", groupId: "g1", source: "watchlist", watchlistEntryId: "e1" },
+    };
+
+    it.each(["cards", "grid", "list"] as const)("in %s mode", async (mode) => {
+      setUpPreferencesStore(mode);
+      setUpHappyPath();
+
+      const WatchlistScreen = loadWatchlistScreen();
+      const { getByTestId } = await render(<WatchlistScreen />);
+
+      const target = mode === "list" ? "watchlist-list-row-e1" : "watchlist-entry-e1";
+      await fireEvent.press(getByTestId(target));
+
+      expect(mockPush).toHaveBeenCalledWith(EXPECTED);
+    });
+  });
+
   it("renders in list mode (title + date rows only) when watchlistViewMode is 'list'", async () => {
     setUpPreferencesStore("list");
     setUpHappyPath();

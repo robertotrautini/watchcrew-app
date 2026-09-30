@@ -17,6 +17,7 @@ import {
   type SeenAtMode,
 } from "@/lib/ratingLogic";
 import type { Rating } from "@/lib/watchlistTypes";
+import { toLocalIsoDate } from "@/lib/localDate";
 
 /**
  * M7 part 2b: the shared Rating-Dialog, used for all three contexts named
@@ -109,7 +110,7 @@ function initialManualDateInput(ownRating: Rating | null): string {
   if (ownRating?.seen_at) {
     return formatDateForInput(ownRating.seen_at);
   }
-  return formatDateForInput(new Date().toISOString().slice(0, 10));
+  return formatDateForInput(toLocalIsoDate(new Date()));
 }
 
 export function RatingDialog({

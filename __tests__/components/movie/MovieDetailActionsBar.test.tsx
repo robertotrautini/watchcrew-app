@@ -174,7 +174,7 @@ describe("MovieDetailActionsBar", () => {
 
     await fireEvent.press(getByTestId("movie-detail-action-filmreihe"));
 
-    expect(navigateToCollection).toHaveBeenCalledWith(router, 99);
+    expect(navigateToCollection).toHaveBeenCalledWith(router, 99, 42);
   });
 
   it("'bewerten' and 'bearbeiten' call onOpenRatingDialog with watchlistEntryId and the matching mode", async () => {

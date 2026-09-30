@@ -4,6 +4,7 @@ import DateTimePicker, {
   type DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 
+import { isoDateToLocalDate, toLocalIsoDate } from "@/lib/localDate";
 import { cn } from "@/lib/utils";
 
 /**
@@ -71,7 +72,7 @@ export function DateField({
     if (event.type === "dismissed" || !selectedDate) {
       return;
     }
-    onChangeIso(selectedDate.toISOString().slice(0, 10));
+    onChangeIso(toLocalIsoDate(selectedDate));
   }
 
   return (
@@ -95,7 +96,7 @@ export function DateField({
       {pickerVisible ? (
         <DateTimePicker
           testID={`${testID}-picker`}
-          value={valueIso ? new Date(`${valueIso}T00:00:00Z`) : new Date()}
+          value={valueIso ? isoDateToLocalDate(valueIso) : new Date()}
           mode="date"
           display={Platform.OS === "ios" ? "spinner" : "default"}
           onChange={handleChange}

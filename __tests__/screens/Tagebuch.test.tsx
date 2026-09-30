@@ -55,7 +55,9 @@ jest.mock("@/hooks/useGroupMembers", () => ({
 // own realtime/focus wiring is mocked as a no-op here, same as
 // __tests__/screens/Watchlist.test.tsx, so this file keeps testing only its
 // own concerns without needing a real Supabase client.
+const mockPush = jest.fn();
 jest.mock("expo-router", () => ({
+  useRouter: () => ({ push: mockPush }),
   useFocusEffect: (callback: () => void | (() => void)) => {
     const React = require("react");
     React.useEffect(() => callback(), []);
@@ -371,6 +373,43 @@ describe("TagebuchScreen", () => {
       expect(getByTestId(`tagebuch-entry-seen-date-${entryNoOwnDate.id}`).props.children).toBe(
         "Kein Datum",
       );
+    });
+  });
+
+  describe("tapping an entry opens the movie detail overlay", () => {
+    const diaryEntry = makeEntry({
+      id: "e1",
+      movie: makeMovie({ tmdb_id: 1, name: "Alpha" }),
+      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-01-10" })],
+    });
+    const EXPECTED = {
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "1", groupId: "g1", source: "diary", watchlistEntryId: "e1" },
+    };
+
+    it.each(["cards", "grid", "list"] as const)("in %s mode", async (mode) => {
+      loadPreferencesStore().setState({ diaryViewMode: mode });
+      mockHappyPath([diaryEntry]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      const target = mode === "list" ? "tagebuch-entry-e1" : "tagebuch-entry-press-e1";
+      await fireEvent.press(getByTestId(target));
+
+      expect(mockPush).toHaveBeenCalledWith(EXPECTED);
+    });
+  });
+
+  describe("view-mode toggle active state", () => {
+    it("marks only the current mode button with the active (primary) styling, like Watchlist", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "grid" });
+      mockHappyPath([]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-view-mode-grid").props.className).toContain("bg-accent");
+      expect(getByTestId("tagebuch-view-mode-cards").props.className).not.toContain("bg-accent");
+      expect(getByTestId("tagebuch-view-mode-list").props.className).not.toContain("bg-accent");
     });
   });
 

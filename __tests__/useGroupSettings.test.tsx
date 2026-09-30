@@ -55,6 +55,8 @@ describe("useRenameGroup", () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockRenameWatchGroup).toHaveBeenCalledWith("g1", "Neuer Name");
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
+    // The "Deine Gruppen" switcher reads ["userGroups", userId] (group name embedded there).
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["userGroups"] });
   });
 
   it("surfaces a rename error through React Query's error channel without invalidating the cache", async () => {

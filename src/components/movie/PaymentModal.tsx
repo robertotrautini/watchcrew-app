@@ -15,6 +15,7 @@ import {
 } from "@/lib/trackerLogic";
 import { useSetPayment } from "@/hooks/useTrackerPayments";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
+import { toLocalIsoDate } from "@/lib/localDate";
 
 /**
  * M8 (Bezahl-Tracker): the "Zahlung erfassen" modal ("💰" button on the
@@ -43,7 +44,7 @@ export interface PaymentModalProps {
 }
 
 function todayIso(now: Date): string {
-  return now.toISOString().slice(0, 10);
+  return toLocalIsoDate(now);
 }
 
 export function PaymentModal({

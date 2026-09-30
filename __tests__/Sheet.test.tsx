@@ -1,6 +1,12 @@
 import { Text } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
+// Host View passthrough so the `edges` prop is observable on the rendered tree.
+jest.mock("react-native-safe-area-context", () => {
+  const { View } = require("react-native");
+  return { SafeAreaView: (props: Record<string, unknown>) => <View {...props} /> };
+});
+
 import { Sheet } from "../src/components/ui/Sheet";
 
 describe("Sheet", () => {
@@ -22,6 +28,28 @@ describe("Sheet", () => {
     );
 
     expect(queryByText("sheet content")).toBeNull();
+  });
+
+  it("uses an opaque surface (not the translucent bg-glass) so content behind the sheet cannot bleed through", async () => {
+    const { getByTestId } = await render(
+      <Sheet visible onClose={jest.fn()}>
+        <Text>sheet content</Text>
+      </Sheet>,
+    );
+
+    const className = getByTestId("sheet-surface").props.className as string;
+    expect(className).toContain("bg-bg-primary");
+    expect(className).not.toContain("bg-glass");
+  });
+
+  it("pads the sheet content by the bottom safe-area inset", async () => {
+    const { getByTestId } = await render(
+      <Sheet visible onClose={jest.fn()}>
+        <Text>sheet content</Text>
+      </Sheet>,
+    );
+
+    expect(getByTestId("sheet-safe-area").props.edges).toEqual(["bottom"]);
   });
 
   it("calls onClose when the backdrop is tapped", async () => {

@@ -1,5 +1,15 @@
 import { type ReactNode } from "react";
-import { Dimensions, KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from "react-native";
+import {
+  Dimensions,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
@@ -15,7 +25,8 @@ import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
  * a Sheet opening and closing.
  */
 const SMALL_SCREEN_WIDTH_THRESHOLD = 380;
-const isSmallScreen = Dimensions.get("window").width < SMALL_SCREEN_WIDTH_THRESHOLD;
+const isSmallScreen =
+  Dimensions.get("window").width < SMALL_SCREEN_WIDTH_THRESHOLD;
 
 export interface SheetProps {
   /** Whether the sheet is currently shown. */
@@ -45,7 +56,12 @@ export interface SheetProps {
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
       {/*
        * M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
        * Keyboard-Avoiding"): RN's `Modal` opens its own native window
@@ -62,34 +78,47 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       <KeyboardAvoidingView
         testID="sheet-keyboard-avoiding-view"
         behavior={modalKeyboardAvoidingBehavior(Platform.OS)}
-        className="flex-1">
+        className="flex-1"
+      >
         <Pressable
           testID="sheet-backdrop"
           onPress={onClose}
           className={
-            isSmallScreen ? "flex-1 justify-end bg-black/70" : "flex-1 justify-end bg-black/50"
-          }>
+            isSmallScreen
+              ? "flex-1 justify-end bg-black/70"
+              : "flex-1 justify-end bg-black/50"
+          }
+        >
           <Pressable
             onPress={() => {
               // Swallow the tap so it doesn't bubble to the backdrop
               // Pressable above and close the sheet when interacting with
               // its own content.
             }}
-            className="rounded-t-xl bg-glass shadow-card">
-            {title ? (
-              <View className="flex-row items-center justify-between border-b border-border-subtle px-4 py-3">
-                <Text className="font-display text-lg text-text-primary">{title}</Text>
-                <Pressable
-                  testID="sheet-close-button"
-                  onPress={onClose}
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                  className="h-touch-min w-touch-min items-center justify-center">
-                  <Text className="text-2xl text-text-primary">×</Text>
-                </Pressable>
-              </View>
-            ) : null}
-            <View className="p-4">{children}</View>
+            testID="sheet-surface"
+            // Opaque on purpose: bg-glass (.7 alpha) let the tab bar and the
+            // screen behind the Modal bleed through the sheet.
+            className="rounded-t-xl bg-bg-primary shadow-card"
+          >
+            <SafeAreaView edges={["bottom"]} testID="sheet-safe-area">
+              {title ? (
+                <View className="flex-row items-center justify-between border-b border-border-subtle px-4 py-3">
+                  <Text className="font-display text-lg text-text-primary">
+                    {title}
+                  </Text>
+                  <Pressable
+                    testID="sheet-close-button"
+                    onPress={onClose}
+                    accessibilityRole="button"
+                    accessibilityLabel="Close"
+                    className="h-touch-min w-touch-min items-center justify-center"
+                  >
+                    <Text className="text-2xl text-text-primary">×</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              <View className="p-4">{children}</View>
+            </SafeAreaView>
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>

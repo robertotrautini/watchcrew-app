@@ -210,6 +210,16 @@ describe("TrackerScreen", () => {
     expect(rows.map((r) => r.props.testID)).toEqual(["tracker-row-e2", "tracker-row-e1"]);
   });
 
+  it("renders the date cell single-line with a column wide enough for DD.MM.YYYY (no '30.09.202 / 6' wrap)", async () => {
+    setUpHappyPath();
+    const TrackerScreen = loadTrackerScreen();
+    const { getByTestId } = await render(<TrackerScreen />);
+
+    const dateCell = getByTestId("tracker-row-e1-date");
+    expect(dateCell.props.numberOfLines).toBe(1);
+    expect(dateCell.props.className).toMatch(/\bw-28\b/);
+  });
+
   it("filters the table via the search field", async () => {
     setUpHappyPath();
     const TrackerScreen = loadTrackerScreen();

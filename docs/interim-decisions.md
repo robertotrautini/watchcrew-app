@@ -117,6 +117,8 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Detail-Overlay ignorierte Live-`details` (Titel "Film", kein Poster, Overview leer)](#m12-vorbereitung-live-bug-fix--detail-overlay-ignorierte-live-details-titel-film-kein-poster-overview-leer)
 - [M12-Vorbereitung (Live-Bug-Fix) — Release-Datum im Detail-Overlay roh als ISO-Datetime](#m12-vorbereitung-live-bug-fix--release-datum-im-detail-overlay-roh-als-iso-datetime)
 - [M12-Vorbereitung (Live-Bug-Fix) — Modal-Header zeigten rohe Routennamen (`add-movie`, `similar/[tmdbId]`)](#m12-vorbereitung-live-bug-fix--modal-header-zeigten-rohe-routennamen-add-movie-similartmdbid)
+- [M12-Vorbereitung (Live-Bug-Fix) — Navigation & Header: Watchlist/Tagebuch nicht antippbar, Filmreihe-Referenz ungültig, rohe Header-Titel, Regie/Schauspieler-Taps wirkungslos](#m12-vorbereitung-live-bug-fix-—-navigation--header-watchlisttagebuch-nicht-antippbar-filmreihe-referenz-ungültig-rohe-header-titel-regieschauspieler-taps-wirkungslos)
+- [M12-Vorbereitung (Live-Bug-Fix) — Sheets/Dialoge & Datum: durchscheinende Sheets, UTC-Datum, umbrechende Tracker-Datumsspalte, veraltete Action-Bar, Gruppen-Chip nach Umbenennen](#m12-vorbereitung-live-bug-fix-—-sheetsdialoge--datum-durchscheinende-sheets-utc-datum-umbrechende-tracker-datumsspalte-veraltete-action-bar-gruppen-chip-nach-umbenennen)
 
 ---
 
@@ -1790,6 +1792,38 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Ein `icon`-Feld je Eintrag in `TAB_SCREENS`.
 
 **Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Navigation & Header: Watchlist/Tagebuch nicht antippbar, Filmreihe-Referenz ungültig, rohe Header-Titel, Regie/Schauspieler-Taps wirkungslos
+
+**Problem/Lücke:** Beim Geräte-Test: (1) Einträge in Watchlist und Tagebuch reagierten nicht auf Taps. (2) Filmreihen-Navigation lieferte "Ungültige Filmreihen-Referenz", weil die `tmdbId` nicht mitgegeben wurde. (3) Modal-Header von Settings, Filmreihe und Filmografie zeigten rohe Routennamen (Nachzügler zum Eintrag "Modal-Header zeigten rohe Routennamen"). (4) Tap auf Regisseur/Schauspieler im Detail öffnete die Filmografie nicht. (5) Tagebuch-Ansichtsmodus-Buttons ohne erkennbaren aktiven Zustand.
+
+**Entscheidung:** Watchlist- und Tagebuch-Einträge navigieren über `navigateToMovieDetail` (`src/lib/movieDetailNavigation.ts`); die Filmreihen-Navigation übergibt jetzt die `tmdbId`. Header-Titel (eigene Wahl, per `Stack.Screen options.title` in `(modals)/_layout.tsx`): `settings` → "Einstellungen", `settings/streaming-services` → "Meine Streaming-Dienste", `settings/display` → "Darstellung", `settings/notifications` → "Benachrichtigungen", `settings/changelog` → "Changelog", `settings/delete-account` → "Konto löschen", `collection/[collectionId]` → "Filmreihe", Filmografie → "Filmografie: Regisseur" / "Filmografie: Schauspieler:in" / "Filmografie: Studio". Regie/Schauspieler-Taps: `pointerEvents="none"` auf dem unsichtbaren Mess-Text in `MovieDetailDescription.tsx` — die Ursache ist aus dem Code ABGELEITET, nicht auf dem Gerät bestätigt. Tagebuch-Ansichtsmodus-Buttons nutzen die `Button`-Varianten primary (aktiv) / secondary (inaktiv). Tests: `__tests__/movieDetailNavigation.test.tsx`, `modalsLayout.test.tsx`, `screens/Watchlist|Tagebuch|MovieDetail.test.tsx`, `components/movie/MovieDetailDescription.test.tsx`.
+
+**Warum das später leicht änderbar ist:** Navigation in einer Helper-Funktion; Titel sind reine Strings im Layout; Button-Varianten sind je eine Prop.
+
+**Offene Punkte:** Die Ursache des Regie/Schauspieler-Tap-Problems (Mess-Text fängt Touches ab) ist nicht am Gerät belegt — falls der Fix nicht greift, erneut analysieren. Die Titelwahl (s.o.) ist deine Entscheidung.
+
+**Verifikation auf dem echten Gerät:** Noch offen — Maestro-/adb-Runde auf dem Pixel 6 Pro (siehe Bericht).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Sheets/Dialoge & Datum: durchscheinende Sheets, UTC-Datum, umbrechende Tracker-Datumsspalte, veraltete Action-Bar, Gruppen-Chip nach Umbenennen
+
+**Problem/Lücke:** Beim Geräte-Test: (1) Sortieren-/Zahlungs-Sheet halbtransparent und mit Speichern-Button unter der System-Navigation; RatingDialog schien durch. (2) Datumsvorgaben nutzten UTC (`toISOString().slice(0,10)`) und lagen abends/nachts einen Tag daneben. (3) Zahlungsdatum in der Tracker-Spalte brach um. (4) Nach "Zur Watchlist" aus der Suche blieb die Action-Bar im Detail unverändert (Detail ohne Route-Gruppen-Kontext beobachtete keine Watchlist). (5) Nach Gruppe umbenennen aktualisierte sich der Chip "Deine Gruppen" nicht.
+
+**Entscheidung:** `Sheet.tsx`: opakes `bg-bg-primary` plus unterer `SafeAreaView`. Lokale Datums-Helper in `src/lib/localDate.ts` ersetzen die UTC-Schnitte in `RatingDialog`, `PaymentModal` und `DateField`. Tracker-Datumsspalte `w-28`. Detail ohne Route-Gruppen-Kontext beobachtet die Watchlist der aktiven Gruppe (`src/lib/movieDetailEntryContext.ts`, `movie/[tmdbId].tsx`). `useRenameGroup` invalidiert zusätzlich `["userGroups"]`. Tests: `__tests__/Sheet.test.tsx`, `lib/localDate.test.ts`, `components/movie/localDateDefaults.test.tsx`, `lib/movieDetailEntryContext.test.ts`, `useGroupSettings.test.tsx`, `screens/Tracker.test.tsx`.
+
+**Warum das später leicht änderbar ist:** Sheet-Hintergrund = eine Klasse; Datum = ein Helper-Modul; Spaltenbreite = eine Klasse; Invalidierung = eine Zeile.
+
+**Offene Punkte:** (a) Einheitliche Datumsformate ungeklärt: Zahlung speichert/zeigt `YYYY-MM-DD`, Bewertung `DD.MM.YYYY`. (b) `resolvePaymentDate`-Fallback und `daysSincePayment` rechnen weiterhin UTC-basiert. (c) Kein Erfolgs-Feedback nach Umbenennen und nach "Zur Watchlist". (d) "Button-busy" >10 s nicht reproduziert. (e) `navigationBarTranslucent` am Modal nicht gesetzt.
+
+**Verifikation auf dem echten Gerät:** Noch offen — Maestro-/adb-Runde auf dem Pixel 6 Pro (siehe Bericht).
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

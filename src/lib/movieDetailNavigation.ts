@@ -43,10 +43,36 @@ export function navigateToActorFilmography(router: Router, personId: number): vo
 /**
  * Real M6-part-2b route: `src/app/(app)/(modals)/collection/[collectionId].tsx`.
  */
-export function navigateToCollection(router: Router, collectionId: number): void {
+export function navigateToCollection(router: Router, collectionId: number, tmdbId: number): void {
   router.push({
     pathname: "/collection/[collectionId]",
-    params: { collectionId: String(collectionId) },
+    // The collection screen (and its `collection` tmdb-proxy cache key) needs
+    // the ORIGINATING movie's tmdbId too, not just the collection id.
+    params: { collectionId: String(collectionId), tmdbId: String(tmdbId) },
+  });
+}
+
+export interface MovieDetailTarget {
+  tmdbId: number;
+  groupId: string;
+  source: "watchlist" | "diary";
+  watchlistEntryId: string;
+}
+
+/**
+ * Opens the movie-detail overlay (`(modals)/movie/[tmdbId].tsx`) from a
+ * Watchlist/Tagebuch entry, with the group context the overlay needs for
+ * seen/rating/edit actions. Same param shape add-movie.tsx pushes.
+ */
+export function navigateToMovieDetail(router: Router, target: MovieDetailTarget): void {
+  router.push({
+    pathname: "/movie/[tmdbId]",
+    params: {
+      tmdbId: String(target.tmdbId),
+      groupId: target.groupId,
+      source: target.source,
+      watchlistEntryId: target.watchlistEntryId,
+    },
   });
 }
 

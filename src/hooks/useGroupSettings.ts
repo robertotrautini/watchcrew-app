@@ -33,6 +33,9 @@ export function useRenameGroup() {
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
+      // Prefix match: the group switcher chips read the name from every
+      // ["userGroups", userId] query.
+      queryClient.invalidateQueries({ queryKey: ["userGroups"] });
     },
   });
 }

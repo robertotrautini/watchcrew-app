@@ -13,6 +13,7 @@ import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
+import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
 import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
@@ -155,6 +156,18 @@ export default function WatchlistScreen() {
     setSortSheetVisible(false);
   }
 
+  function openEntry(entry: WatchlistEntry) {
+    if (!activeGroupId) {
+      return;
+    }
+    navigateToMovieDetail(router, {
+      tmdbId: entry.movie.tmdb_id,
+      groupId: activeGroupId,
+      source: "watchlist",
+      watchlistEntryId: entry.id,
+    });
+  }
+
   function toggleGenre(genreId: string) {
     setSelectedGenreIds((current) =>
       current.includes(genreId) ? current.filter((id) => id !== genreId) : [...current, genreId],
@@ -279,13 +292,15 @@ export default function WatchlistScreen() {
           keyExtractor={(entry) => entry.id}
           contentContainerClassName="px-4 pt-3"
           renderItem={({ item }) => (
-            <View
+            <Pressable
               testID={`watchlist-list-row-${item.id}`}
+              accessibilityRole="button"
+              onPress={() => openEntry(item)}
               className="flex-row items-center justify-between border-b border-border-subtle py-3"
             >
               <Text className="flex-1 text-text-primary">{item.movie.name}</Text>
               <Text className="text-text-secondary">{formatPlainDate(item.movie.release_date)}</Text>
-            </View>
+            </Pressable>
           )}
         />
       ) : (
@@ -306,6 +321,7 @@ export default function WatchlistScreen() {
                 ratedCount={ratedCountFor(item)}
                 totalMembers={totalMembers}
                 showTitle={showTitlesInGrid}
+                onPress={() => openEntry(item)}
                 testID={`watchlist-entry-${item.id}`}
               />
             </FadeInItem>

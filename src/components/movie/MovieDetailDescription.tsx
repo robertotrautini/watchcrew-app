@@ -39,6 +39,7 @@ export function MovieDetailDescription({ overview }: MovieDetailDescriptionProps
     <>
       <Text
         testID="movie-detail-description-measure"
+        pointerEvents="none"
         className={`absolute opacity-0 ${TEXT_CLASSNAME}`}
         onTextLayout={handleMeasureLayout}
       >

@@ -174,7 +174,7 @@ export function MovieDetailActionsBar({
             label={label}
             onPress={() => {
               if (collectionId != null) {
-                navigateToCollection(router, collectionId);
+                navigateToCollection(router, collectionId, tmdbId);
               }
             }}
           />

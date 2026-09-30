@@ -232,7 +232,7 @@ export default function TrackerScreen() {
           <View className="flex-row px-4 pt-3" testID="tracker-table-header">
             <Text className="flex-1 text-xs text-text-secondary">Film</Text>
             <Text className="w-24 text-xs text-text-secondary">Bezahlt von</Text>
-            <Text className="w-20 text-right text-xs text-text-secondary">Datum</Text>
+            <Text className="w-28 text-right text-xs text-text-secondary">Datum</Text>
           </View>
           <FlatList
             testID="tracker-list"
@@ -257,7 +257,10 @@ export default function TrackerScreen() {
                   >
                     <Text className="flex-1 text-text-primary">{entry.movie.name}</Text>
                     <Text className="w-24 text-text-secondary">{payerName}</Text>
-                    <Text className="w-20 text-right text-text-secondary">
+                    <Text
+                      testID={`tracker-row-${entry.id}-date`}
+                      numberOfLines={1}
+                      className="w-28 text-right text-text-secondary">
                       {formatPlainDate(entry.paid_at)}
                     </Text>
                   </Pressable>

@@ -14,6 +14,16 @@ export default function ModalsLayout() {
     <Stack screenOptions={{ headerShown: true }}>
       <Stack.Screen name="add-movie" options={{ title: "Film hinzufügen" }} />
       <Stack.Screen name="similar/[tmdbId]" options={{ title: "Ähnliche Filme" }} />
+      <Stack.Screen name="settings" options={{ title: "Einstellungen" }} />
+      <Stack.Screen name="settings/streaming-services" options={{ title: "Meine Streaming-Dienste" }} />
+      <Stack.Screen name="settings/display" options={{ title: "Darstellung" }} />
+      <Stack.Screen name="settings/notifications" options={{ title: "Benachrichtigungen" }} />
+      <Stack.Screen name="settings/changelog" options={{ title: "Changelog" }} />
+      <Stack.Screen name="settings/delete-account" options={{ title: "Konto löschen" }} />
+      <Stack.Screen name="collection/[collectionId]" options={{ title: "Filmreihe" }} />
+      <Stack.Screen name="filmography/director/[personId]" options={{ title: "Filmografie: Regisseur" }} />
+      <Stack.Screen name="filmography/actor/[personId]" options={{ title: "Filmografie: Schauspieler:in" }} />
+      <Stack.Screen name="filmography/studio/[companyId]" options={{ title: "Filmografie: Studio" }} />
     </Stack>
   );
 }

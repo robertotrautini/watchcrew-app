@@ -12,6 +12,15 @@ describe("MovieDetailDescription", () => {
     expect(queryByTestId("movie-detail-description-measure")).toBeNull();
   });
 
+  // Root cause (bug 5): Yoga positions an `absolute` child without insets at
+  // the parent's start edge, so the invisible full-width measurement Text
+  // overlaid (and swallowed taps on) director/cast rows above the description.
+  it("makes the invisible measurement text touch-transparent so it cannot swallow taps", async () => {
+    const { getByTestId } = await render(<MovieDetailDescription overview={OVERVIEW} />);
+
+    expect(getByTestId("movie-detail-description-measure").props.pointerEvents).toBe("none");
+  });
+
   it("does not show the toggle before any textLayout event has fired", async () => {
     const { queryByTestId } = await render(<MovieDetailDescription overview={OVERVIEW} />);
 

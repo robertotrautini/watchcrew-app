@@ -202,6 +202,43 @@ describe("MovieDetailScreen", () => {
     expect(getByText("Test Movie")).toBeTruthy();
   });
 
+  it("switches the action bar to the in-watchlist actions once the movie appears in the active group's watchlist (no route group context)", async () => {
+    mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "active-group-1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [] },
+    });
+    mockUseGroupWatchlist.mockImplementation((groupId: string | undefined) => ({
+      data:
+        groupId === "active-group-1"
+          ? {
+              entries: [
+                {
+                  id: "entry-new",
+                  group_id: "active-group-1",
+                  movie_id: "movie-1",
+                  added_at: "2026-01-01T00:00:00Z",
+                  added_by: "user-1",
+                  paid_by_member_id: null,
+                  paid_at: null,
+                  movie: { id: "movie-1", tmdb_id: 42, name: "Test Movie", release_date: null, poster: null, overview: null, runtime: null, director: null, director_id: null, vote_average: null },
+                  ratings: [],
+                },
+              ],
+              streamingAvailability: new Map(),
+            }
+          : undefined,
+    }));
+
+    const MovieDetailScreen = loadMovieDetailScreen();
+    const { getByTestId, queryByTestId } = await render(<MovieDetailScreen />);
+
+    expect(queryByTestId("movie-detail-action-zur_watchlist")).toBeNull();
+    expect(queryByTestId("movie-detail-action-direkt_bewerten")).toBeNull();
+    expect(getByTestId("movie-detail-action-loeschen")).toBeTruthy();
+  });
+
   describe("live TMDB details when the movie is not stored locally (opened from search)", () => {
     function mockLiveDetails() {
       mockUseMovieDetail.mockReturnValue({
