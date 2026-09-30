@@ -283,6 +283,23 @@ describe("TagebuchScreen", () => {
       expect(names).toEqual(["Robin", "Mitglied u2", "Alex"]);
     });
 
+    it("expands a bare stored TMDB poster path into a full image URL for the tile", async () => {
+      mockHappyPath([
+        makeEntry({
+          id: "e9",
+          movie: makeMovie({ tmdb_id: 9, name: "Bare", poster: "/bare.jpg" }),
+          ratings: [makeRating({ member_id: "u1", rating: 4 })],
+        }),
+      ]);
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("poster-card-image").props.source).toEqual([
+        { uri: "https://image.tmdb.org/t/p/w342/bare.jpg" },
+      ]);
+    });
+
     it("computes and displays the average-rating badge from the non-null ratings only", async () => {
       mockHappyPath([entry]);
       const TagebuchScreen = loadTagebuchScreen();

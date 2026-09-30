@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
+import { Image } from "@/components/ui/Image";
 import { Text, View } from "react-native";
 
 /**

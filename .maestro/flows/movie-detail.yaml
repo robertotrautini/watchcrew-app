@@ -59,15 +59,27 @@ appId: com.watchcrew.app
 
 # --- Add to watchlist for real (exercises upsert_movie + addToWatchlist) ---
 # UNVERIFIED (see header comment).
-- tapOn:
-    id: "movie-detail-action-zur_watchlist"
-# handleAddToWatchlist (MovieDetailActionsBar.tsx) has no onSuccess
-# navigation/toast wired for this specific button (unlike "direkt_bewerten")
-# -- give the mutation a moment to land before navigating away, so the
-# Watchlist-tab re-check below isn't racing the write.
-- extendedWaitUntil:
-    visible: "Zur Watchlist"
-    timeout: 10000
+# Idempotent: when the movie is NOT yet on the watchlist the overlay opens
+# without group context and offers "zur_watchlist" -> tap it. When it is
+# already on the watchlist (re-run with the same account) the overlay opens
+# with watchlist context (add-movie.tsx `handlePressItem` passes groupId +
+# source) and that action is absent, so the add step is skipped instead of
+# failing the flow.
+- runFlow:
+    when:
+      visible:
+        id: "movie-detail-action-zur_watchlist"
+    commands:
+      - tapOn:
+          id: "movie-detail-action-zur_watchlist"
+      # handleAddToWatchlist (MovieDetailActionsBar.tsx) has no onSuccess
+      # navigation/toast wired for this specific button (unlike
+      # "direkt_bewerten") -- give the mutation a moment to land before
+      # navigating away, so the Watchlist-tab re-check below isn't racing
+      # the write.
+      - extendedWaitUntil:
+          visible: "Zur Watchlist"
+          timeout: 10000
 - takeScreenshot: 04-after-add-to-watchlist-tap
 
 # movie-detail.tsx has headerShown:false with its own manual back button

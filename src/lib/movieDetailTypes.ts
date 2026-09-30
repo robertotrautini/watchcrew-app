@@ -23,6 +23,11 @@ export interface NormalizedMovieDetails {
   genres: string[];
   belongs_to_collection: TmdbCollectionRef | null;
   vote_average: number | null;
+  /** Additive fields (tmdb-proxy `details` also returns these; see tmdb-client.ts `NormalizedMovieDetails`). */
+  title?: string | null;
+  overview?: string | null;
+  posterPath?: string | null;
+  releaseDate?: string | null;
 }
 
 /** `videos` action response shape (tmdb-client.ts `TmdbVideo`) — already trailer-selected server-side. */

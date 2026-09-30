@@ -10,5 +10,10 @@ import { Stack } from "expo-router";
  * their own `<Stack.Screen options={{...}}>` export.
  */
 export default function ModalsLayout() {
-  return <Stack screenOptions={{ headerShown: true }} />;
+  return (
+    <Stack screenOptions={{ headerShown: true }}>
+      <Stack.Screen name="add-movie" options={{ title: "Film hinzufügen" }} />
+      <Stack.Screen name="similar/[tmdbId]" options={{ title: "Ähnliche Filme" }} />
+    </Stack>
+  );
 }

@@ -1,9 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import type { ReactNode } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { Image } from "@/components/ui/Image";
+import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
 /**
  * Shared, presentational movie grid used by the M6 movie-detail sub-views
@@ -32,8 +33,6 @@ const PLACEHOLDER_ICON_COLOR = "#8b8b8b";
 // M7 part 2 (Add-Movie-Modal quick-add button): white, for contrast against
 // the same semi-opaque dark badge/score pill background already used here.
 const ADD_BUTTON_ICON_COLOR = "#ffffff";
-
-const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w342";
 
 const DEFAULT_EMPTY_MESSAGE = "Keine Filme gefunden.";
 
@@ -91,10 +90,6 @@ function formatScore(voteAverage: number): string {
   return voteAverage.toFixed(1);
 }
 
-function buildPosterUrl(posterPath: string): string {
-  return `${TMDB_IMAGE_BASE_URL}${posterPath}`;
-}
-
 export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   items,
   onPressItem,
@@ -120,7 +115,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
           {item.posterPath ? (
             <Image
               testID={`${testID}-item-${item.tmdbId}-poster`}
-              source={{ uri: buildPosterUrl(item.posterPath) }}
+              source={{ uri: buildTmdbImageUrl(item.posterPath) as string }}
               accessibilityLabel={item.title}
               className="aspect-[2/3] w-full rounded-lg bg-card"
               contentFit="cover"

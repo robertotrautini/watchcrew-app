@@ -21,6 +21,8 @@ import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { useToggleLike } from "@/hooks/useMovieDetailMutations";
 import { resolveGroupTheme } from "@/lib/groupTheme";
+import { formatDateForInput } from "@/lib/ratingLogic";
+import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import {
   formatRuntime,
   getVisibleActions,
@@ -132,15 +134,17 @@ export default function MovieDetailScreen() {
 
   const toggleLikeMutation = useToggleLike();
 
-  // Placeholder fallback copy — interim, undocumented-elsewhere choice, see
-  // the hand-off report's decision log.
-  const title = storedMovie?.name ?? "Film";
-  const posterUrl = storedMovie?.poster ?? null;
-  const overview = storedMovie?.overview ?? null;
+  // Stored movie (DB row / instant-paint JSON) wins; the live TMDB `details`
+  // payload fills in when the movie isn't stored yet (e.g. opened straight
+  // from a search result, which carries only `tmdbId`). "Film" stays the
+  // last-resort placeholder while neither has resolved.
+  const title = storedMovie?.name ?? liveDetails?.title ?? "Film";
+  const posterUrl = buildTmdbImageUrl(storedMovie?.poster ?? liveDetails?.posterPath ?? null, "w780");
+  const overview = storedMovie?.overview ?? liveDetails?.overview ?? null;
   const runtimeLabel = formatRuntime(pickRuntime(storedMovie?.runtime ?? null, liveDetails?.runtime ?? null));
   const releaseInfo = pickPreferredReleaseDate(
     movieDetailQuery.data?.germanReleaseDate ?? null,
-    storedMovie?.release_date ?? null,
+    storedMovie?.release_date ?? liveDetails?.releaseDate ?? null,
   );
   const genres = pickGenres(liveDetails?.genres ?? null, storedMovie?.movie_genres ?? null);
   const voteAverage = liveDetails?.vote_average ?? storedMovie?.vote_average ?? null;
@@ -289,7 +293,10 @@ export default function MovieDetailScreen() {
             isTogglingLike={toggleLikeMutation.isPending}
           />
 
-          <MovieDetailMetaRow runtimeLabel={runtimeLabel} releaseInfo={releaseInfo} />
+          <MovieDetailMetaRow
+            runtimeLabel={runtimeLabel}
+            releaseInfo={releaseInfo ? { ...releaseInfo, date: formatDateForInput(releaseInfo.date) } : null}
+          />
 
           <MovieDetailGenreTags genres={genres} />
 

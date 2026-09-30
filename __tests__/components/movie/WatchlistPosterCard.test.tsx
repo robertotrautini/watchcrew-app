@@ -223,3 +223,21 @@ describe("WatchlistPosterCard", () => {
     });
   });
 });
+
+describe("WatchlistPosterCard poster URL", () => {
+  it("expands a bare stored TMDB poster path into a full image URL", async () => {
+    const { getByTestId } = await render(
+      <WatchlistPosterCard
+        variant="card"
+        movie={makeMovie({ poster: "/abc.jpg" })}
+        streamingAvailability={new Map()}
+        ratedCount={0}
+        totalMembers={2}
+        now={NOW}
+      />,
+    );
+    expect(getByTestId("watchlist-poster-card-poster").props.source).toEqual({
+      uri: "https://image.tmdb.org/t/p/w342/abc.jpg",
+    });
+  });
+});

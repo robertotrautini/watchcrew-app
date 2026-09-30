@@ -112,6 +112,11 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M3-Nachbesserung (Live-Bug-Fix) — `useAuthGate`: Race Condition bei parallelen `evaluate()`-Aufrufen überschrieb korrekten Zustand](#m3-nachbesserung-live-bug-fix--useauthgate-race-condition-bei-parallelen-evaluate-aufrufen-überschrieb-korrekten-zustand)
 - [Datenbank-Nachbesserung (Live-Bug-Fix) — Fehlende Base-Table-GRANTs für `authenticated`/`service_role` auf allen public-Tabellen](#datenbank-nachbesserung-live-bug-fix--fehlende-base-table-grants-für-authenticatedservice_role-auf-allen-public-tabellen)
 - [M10-Nachbesserung (Live-Bug-Fix) — `useGroupRealtimeSync`: von mehreren gleichzeitig gemounteten Tabs unabhängig aufgebauter Channel führte zu `.on()` nach `.subscribe()`-Absturz](#m10-nachbesserung-live-bug-fix--usegrouprealtimesync-von-mehreren-gleichzeitig-gemounteten-tabs-unabhängig-aufgebauter-channel-führte-zu-on-nach-subscribe-absturz)
+- [M12-Vorbereitung (Live-Bug-Fix) — expo-image: `className` wurde von NativeWind verworfen (Poster mit Größe 0)](#m12-vorbereitung-live-bug-fix--expo-image-classname-wurde-von-nativewind-verworfen-poster-mit-größe-0)
+- [M12-Vorbereitung (Live-Bug-Fix) — Gespeicherter Poster-Pfad ohne TMDB-Basis-URL](#m12-vorbereitung-live-bug-fix--gespeicherter-poster-pfad-ohne-tmdb-basis-url)
+- [M12-Vorbereitung (Live-Bug-Fix) — Detail-Overlay ignorierte Live-`details` (Titel "Film", kein Poster, Overview leer)](#m12-vorbereitung-live-bug-fix--detail-overlay-ignorierte-live-details-titel-film-kein-poster-overview-leer)
+- [M12-Vorbereitung (Live-Bug-Fix) — Release-Datum im Detail-Overlay roh als ISO-Datetime](#m12-vorbereitung-live-bug-fix--release-datum-im-detail-overlay-roh-als-iso-datetime)
+- [M12-Vorbereitung (Live-Bug-Fix) — Modal-Header zeigten rohe Routennamen (`add-movie`, `similar/[tmdbId]`)](#m12-vorbereitung-live-bug-fix--modal-header-zeigten-rohe-routennamen-add-movie-similartmdbid)
 
 ---
 
@@ -1701,6 +1706,76 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Rein interne Implementierungsdetail-Änderung innerhalb eines einzelnen Hooks (ein modul-weites Map + Referenzzählung) — keine Änderung der öffentlichen Hook-Signatur, keine Schema-/API-Änderung, kein Aufrufer (`watchlist.tsx`/`tracker.tsx`/`tagebuch.tsx`) muss angepasst werden.
 
 **Verifikation auf dem echten Gerät:** Noch offen — reiner JS-Fix (keine native Code-Änderung); die nächste Maestro-Runde auf dem Pixel 6 Pro (derselbe Flow, der den Absturz ursprünglich reproduziert hat) sollte den Watchlist-Tab jetzt ohne Absturz laden, wurde hier aber nicht selbst angestoßen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — expo-image: `className` wurde von NativeWind verworfen (Poster mit Größe 0)
+
+**Problem/Lücke:** Auf dem echten Gerät (Pixel 6 Pro, Maestro) rendern Such-Grid, Ähnliche-Filme-Grid und Detail-Poster keine Bilder, nur Platzhalter/leere Flächen. Root Cause: `MovieGrid.tsx`, `DiaryPosterTile.tsx` und `MovieDetailPosterTrailer.tsx` importieren `Image` aus `expo-image` und setzen Größe/Rundung ausschließlich per `className` (`aspect-[2/3] w-full ...`). NativeWind v4 wrappt aber nur React-Native-Core-Komponenten automatisch; `expo-image` ist nirgends per `cssInterop` registriert (`grep cssInterop src` = leer), `className` wurde daher still ignoriert und das Bild hatte Höhe 0.
+
+**Entscheidung:** Neues Modul `src/components/ui/Image.tsx` registriert `expo-image`s `Image` per `cssInterop(Image, { className: "style" })` und re-exportiert es; die drei Komponenten importieren jetzt von dort. TDD: `__tests__/components/ui/Image.test.tsx` (rot ohne die Registrierung, grün mit). Jest hat kein kompiliertes NativeWind-CSS, daher prüft der Test die Registrierung, nicht das gerenderte Style.
+
+**Warum das später leicht änderbar ist:** Nur ein Modul + drei Import-Zeilen; alternativ ließe sich `className` durch explizites `style` ersetzen.
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Gespeicherter Poster-Pfad ohne TMDB-Basis-URL
+
+**Problem/Lücke:** `movies.poster` speichert (korrekt, `movie-upsert.ts:265`, per Test fixiert) nur den rohen TMDB-Pfad (`/abc.jpg`). `WatchlistPosterCard` (RN-`Image`, `source={{ uri: movie.poster }}`), Tagebuch (`DiaryPosterTile posterUrl={entry.movie.poster}`) und Detail-Overlay (`posterUrl = storedMovie?.poster`) benutzten den Pfad direkt als URL, nur `MovieGrid` baute die Basis-URL selbst zusammen. Daher auch Watchlist-Karten ohne Poster.
+
+**Entscheidung:** Neuer Helper `src/lib/tmdbImage.ts` (`buildTmdbImageUrl(path, size = "w342")`; `null` für leer, absolute `http(s)`-URLs bleiben unverändert). Genutzt in `MovieGrid` (ersetzt die lokale Kopie), `WatchlistPosterCard`, `tagebuch.tsx` (beide Tile-Aufrufe) und im Detail-Overlay (Größe `w780`, Wahl der Größen `w342` Grid/Karten und `w780` Detail ist eine Schätzung). DB-Spalte/Edge Function bleiben unverändert (kein Datenbestand muss migriert werden).
+
+**Warum das später leicht änderbar ist:** Größen-Konstanten leicht anpassbar; alternativ könnte die Edge Function künftig volle URLs speichern (würde Migration der Bestandsdaten erfordern, deshalb nicht gewählt).
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Detail-Overlay ignorierte Live-`details` (Titel "Film", kein Poster, Overview leer)
+
+**Problem/Lücke:** Aus der Suche geöffnete Filme (nicht in der Watchlist) haben nur `tmdbId` als Route-Param; `movie/[tmdbId].tsx` leitete Titel/Poster/Overview/Release-Datum ausschließlich aus `storedMovie` (DB-Zeile oder `movieJson`) ab, daher der Fallback `"Film"`. Die `details`-Action liefert `title`/`overview`/`posterPath`/`releaseDate` längst mit (seit M7 part 1, per curl gegen das Live-Proxy verifiziert), der Client-Typ `NormalizedMovieDetails` kannte sie aber nicht.
+
+**Entscheidung:** `NormalizedMovieDetails` (`movieDetailTypes.ts`) additiv um die vier Felder erweitert (optional); Screen nutzt `storedMovie?.x ?? liveDetails?.x` (DB-Zeile behält Vorrang), "Film" bleibt letzter Platzhalter. Tests in `__tests__/screens/MovieDetail.test.tsx` (Titel, Poster-URL, gespeicherter Bare-Pfad).
+
+**Warum das später leicht änderbar ist:** Reine Screen-Ableitung, keine API-Änderung.
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Release-Datum im Detail-Overlay roh als ISO-Datetime
+
+**Problem/Lücke:** Die deutsche `release_dates`-Action liefert `2010-07-29T00:00:00.000Z`; `MovieDetailMetaRow` zeigte den String unformatiert ("Kino 2010-07-29T00:00:00.000Z"), während die Watchlist-Karte über `watchlistDateBadge` formatiert.
+
+**Entscheidung:** Der Screen formatiert das Datum für die Meta-Zeile mit dem bereits vorhandenen `formatDateForInput` (`ratingLogic.ts`, schneidet auf `YYYY-MM-DD` und liefert `DD.MM.YYYY`) — "Kino 29.07.2010". `releaseInfo.date` selbst bleibt roh (wird für `isReleased` und den RatingDialog weiterverwendet). Test siehe oben.
+
+**Warum das später leicht änderbar ist:** Einzeiliger Aufruf im Screen.
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Modal-Header zeigten rohe Routennamen (`add-movie`, `similar/[tmdbId]`)
+
+**Problem/Lücke:** `(modals)/_layout.tsx` schaltet `headerShown: true` für alle Modals, vergibt aber keine Titel; Expo Router fällt dann auf den Routennamen zurück. In `docs/feature-inventory.md`, `docs/adr/` und `planning-report.html` sind keine Header-Titel für diese beiden Screens dokumentiert.
+
+**Entscheidung:** Eigene Wahl: `add-movie` → "Film hinzufügen" (Funktion des Screens), `similar/[tmdbId]` → "Ähnliche Filme" (Button-Label/Feature-Name aus feature-inventory 2.10). Gesetzt per `Stack.Screen options.title` im Layout; Test `__tests__/modalsLayout.test.tsx`. Nicht angefasst: `collection/…`, `filmography/…` und `settings/…` haben vermutlich dasselbe Problem (eigene Titel-Entscheidung nötig).
+
+**Warum das später leicht änderbar ist:** Zwei Strings im Layout.
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

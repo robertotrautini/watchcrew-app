@@ -1,6 +1,7 @@
 import { Image, Text, View, type GestureResponderEvent } from "react-native";
 
 import { Card } from "../ui/Card";
+import { buildTmdbImageUrl } from "../../lib/tmdbImage";
 import { getDateBadgeText, isEntryDimmed, type DateBadgeMovie } from "../../lib/watchlistDateBadge";
 import type { StreamingAvailabilityLookup } from "../../lib/watchlistTypes";
 
@@ -72,6 +73,7 @@ export function WatchlistPosterCard({
   testID = "watchlist-poster-card",
   showTitle = true,
 }: WatchlistPosterCardProps) {
+  const posterUrl = buildTmdbImageUrl(movie.poster);
   const dateBadgeText = getDateBadgeText(movie, streamingAvailability, now);
   const dimmed = isEntryDimmed(movie, streamingAvailability, now);
   const showProgressBadge = ratedCount > 0 && ratedCount < totalMembers;
@@ -87,7 +89,7 @@ export function WatchlistPosterCard({
       <View testID={`${testID}-poster-wrapper`} className="relative">
         <Image
           testID={`${testID}-poster`}
-          source={movie.poster ? { uri: movie.poster } : undefined}
+          source={posterUrl ? { uri: posterUrl } : undefined}
           className="aspect-[2/3] w-full rounded-lg bg-card"
         />
 

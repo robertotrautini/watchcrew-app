@@ -202,6 +202,80 @@ describe("MovieDetailScreen", () => {
     expect(getByText("Test Movie")).toBeTruthy();
   });
 
+  describe("live TMDB details when the movie is not stored locally (opened from search)", () => {
+    function mockLiveDetails() {
+      mockUseMovieDetail.mockReturnValue({
+        isLoading: false,
+        data: {
+          details: {
+            id: 27205,
+            title: "Inception",
+            overview: "Ein Dieb der Traeume stiehlt.",
+            posterPath: "/poster123.jpg",
+            releaseDate: "2010-07-15",
+            runtime: 148,
+            genres: ["Action"],
+            belongs_to_collection: null,
+            vote_average: 8.4,
+          },
+          trailer: null,
+          credits: null,
+          germanReleaseDate: { category: "Kino", release_date: "2010-07-29T00:00:00.000Z" },
+          providers: null,
+        },
+      });
+    }
+
+    it("shows the live title instead of the 'Film' placeholder", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockLiveDetails();
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByText, queryByText } = await render(<MovieDetailScreen />);
+
+      expect(getByText("Inception")).toBeTruthy();
+      expect(queryByText("Film")).toBeNull();
+    });
+
+    it("renders the poster from the live posterPath as a full TMDB image URL", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockLiveDetails();
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-poster-image").props.source).toEqual([
+        { uri: "https://image.tmdb.org/t/p/w780/poster123.jpg" },
+      ]);
+    });
+
+    it("formats an ISO-datetime release date as DD.MM.YYYY", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockLiveDetails();
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-release-date").props.children).toBe("Kino 29.07.2010");
+    });
+
+    it("turns a stored bare poster path into a full TMDB image URL", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        movieJson: encodeURIComponent(
+          JSON.stringify({ id: "m", tmdb_id: 42, name: "Stored", poster: "/stored.jpg", release_date: null }),
+        ),
+      });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-poster-image").props.source).toEqual([
+        { uri: "https://image.tmdb.org/t/p/w780/stored.jpg" },
+      ]);
+    });
+  });
+
   // M7 consolidation (Item 2): RatingDialog wiring smoke tests -- the real
   // dialog is now rendered by this screen (see the module comment above the
   // hook mocks), replacing the former placeholder-route navigation.

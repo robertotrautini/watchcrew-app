@@ -21,6 +21,7 @@ import {
   memberDisplayLabel,
 } from "@/lib/diaryDisplay";
 import { resolveGroupTheme } from "@/lib/groupTheme";
+import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { searchEntries, sortDiary, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
 import type { DiarySortOption, WatchlistEntry, YearFilterValue } from "@/lib/watchlistTypes";
 import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferencesStore";
@@ -359,7 +360,7 @@ export default function TagebuchScreen() {
               {visibleEntries.map((entry, index) => (
                 <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="w-[30%]">
                   <DiaryPosterTile
-                    posterUrl={entry.movie.poster}
+                    posterUrl={buildTmdbImageUrl(entry.movie.poster)}
                     title={entry.movie.name}
                     starColor={starColor}
                     averageRating={computeAverageRating(entry)}
@@ -414,7 +415,7 @@ export default function TagebuchScreen() {
             visibleEntries.map((entry, index) => (
               <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="gap-2">
                 <DiaryPosterTile
-                  posterUrl={entry.movie.poster}
+                  posterUrl={buildTmdbImageUrl(entry.movie.poster)}
                   title={entry.movie.name}
                   starColor={starColor}
                   averageRating={computeAverageRating(entry)}
