@@ -56,7 +56,42 @@ import { useFocusedGroupScreen } from "@/stores/useFocusedGroupScreen";
  *    for a small, chatty group app where an unfiltered `ratings` stream is
  *    cheap. See docs/interim-decisions.md "M10 — Realtime-Filterung für
  *    `ratings`".
+ *
+ * --- Shared subscription per active group (Live-Bug-Fix, see
+ * docs/interim-decisions.md) ---
+ * This hook is called from all THREE group tabs at once (Tracker/Watchlist/
+ * Tagebuch — see each screen's own call site), and expo-router's tab
+ * navigator keeps a visited tab screen mounted after it loses focus (no
+ * `unmountOnBlur`). So as soon as a user has visited more than one of the
+ * three tabs, more than one mounted screen is calling this hook for the
+ * SAME `groupId` at the same time.
+ *
+ * supabase-js's `RealtimeClient.channel(topic)` dedupes by topic string —
+ * calling it twice with the same topic returns the SAME channel object
+ * instead of creating a second one (see
+ * node_modules/@supabase/realtime-js's `RealtimeClient.channel()`). Its
+ * `.on()` also throws once that shared channel has already had
+ * `.subscribe()` called on it ("cannot add `postgres_changes` callbacks for
+ * <topic> after `subscribe()`."). So if every mounted screen independently
+ * built its own `.channel(...).on(...).on(...).subscribe()` chain, the
+ * SECOND screen's effect would get back the FIRST screen's already-
+ * subscribed channel instance and its own `.on()` calls would throw —
+ * exactly the confirmed, 100%-reproducible Watchlist-tab crash this fix
+ * addresses.
+ *
+ * The fix: treat the channel as a shared, ref-counted resource per
+ * `groupId`, built (channel + both `.on()` registrations + the single
+ * `.subscribe()`) exactly once by whichever screen mounts first, and only
+ * torn down via `removeChannel` once the LAST concurrently-mounted consumer
+ * for that `groupId` has unmounted (or the `groupId` itself changes).
  */
+type GroupSyncEntry = {
+  channel: ReturnType<typeof supabase.channel>;
+  refCount: number;
+};
+
+const activeGroupSyncs = new Map<string, GroupSyncEntry>();
+
 export function useGroupRealtimeSync(groupId: string | undefined): void {
   const queryClient = useQueryClient();
 
@@ -79,31 +114,46 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
       // that's the parallel Push-infrastructure task's delivery path.
     }
 
-    const channel = supabase
-      .channel(`group-realtime-sync-${groupId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "watchlist_entries", filter: `group_id=eq.${groupId}` },
-        (payload) => handleRelevantChange(classifyWatchlistEntriesChange(payload)),
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "ratings" },
-        (payload) => {
-          const watchlistEntryId = extractWatchlistEntryId(payload);
-          const cached = queryClient.getQueryData<GroupWatchlistData>(["watchlist", groupId]);
-          const belongsToActiveGroup =
-            watchlistEntryId != null && (cached?.entries ?? []).some((entry) => entry.id === watchlistEntryId);
-          if (!belongsToActiveGroup) {
-            return;
-          }
-          handleRelevantChange(classifyRatingsChange(payload));
-        },
-      )
-      .subscribe();
+    let entry = activeGroupSyncs.get(groupId);
+    if (!entry) {
+      const channel = supabase
+        .channel(`group-realtime-sync-${groupId}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "watchlist_entries", filter: `group_id=eq.${groupId}` },
+          (payload) => handleRelevantChange(classifyWatchlistEntriesChange(payload)),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "ratings" },
+          (payload) => {
+            const watchlistEntryId = extractWatchlistEntryId(payload);
+            const cached = queryClient.getQueryData<GroupWatchlistData>(["watchlist", groupId]);
+            const belongsToActiveGroup =
+              watchlistEntryId != null && (cached?.entries ?? []).some((entry) => entry.id === watchlistEntryId);
+            if (!belongsToActiveGroup) {
+              return;
+            }
+            handleRelevantChange(classifyRatingsChange(payload));
+          },
+        )
+        .subscribe();
+
+      entry = { channel, refCount: 0 };
+      activeGroupSyncs.set(groupId, entry);
+    }
+    entry.refCount += 1;
 
     return () => {
-      supabase.removeChannel(channel);
+      const current = activeGroupSyncs.get(groupId);
+      if (!current) {
+        return;
+      }
+      current.refCount -= 1;
+      if (current.refCount <= 0) {
+        activeGroupSyncs.delete(groupId);
+        supabase.removeChannel(current.channel);
+      }
     };
   }, [groupId, queryClient]);
 }

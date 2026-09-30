@@ -111,6 +111,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M3-Nachbesserung (Live-Bug-Fix) — Login: fehlender expliziter `router.replace("/")` nach erfolgreichem Sign-in](#m3-nachbesserung-live-bug-fix--login-fehlender-expliziter-routerreplace-nach-erfolgreichem-sign-in)
 - [M3-Nachbesserung (Live-Bug-Fix) — `useAuthGate`: Race Condition bei parallelen `evaluate()`-Aufrufen überschrieb korrekten Zustand](#m3-nachbesserung-live-bug-fix--useauthgate-race-condition-bei-parallelen-evaluate-aufrufen-überschrieb-korrekten-zustand)
 - [Datenbank-Nachbesserung (Live-Bug-Fix) — Fehlende Base-Table-GRANTs für `authenticated`/`service_role` auf allen public-Tabellen](#datenbank-nachbesserung-live-bug-fix--fehlende-base-table-grants-für-authenticatedservice_role-auf-allen-public-tabellen)
+- [M10-Nachbesserung (Live-Bug-Fix) — `useGroupRealtimeSync`: von mehreren gleichzeitig gemounteten Tabs unabhängig aufgebauter Channel führte zu `.on()` nach `.subscribe()`-Absturz](#m10-nachbesserung-live-bug-fix--usegrouprealtimesync-von-mehreren-gleichzeitig-gemounteten-tabs-unabhängig-aufgebauter-channel-führte-zu-on-nach-subscribe-absturz)
 
 ---
 
@@ -1688,6 +1689,20 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Reine additive `GRANT`-Statements, kein Schema-/RLS-Eingriff — ein fehlendes oder zu weit gefasstes Recht lässt sich pro Tabelle mit einer weiteren `GRANT`/`REVOKE`-Migration nachschärfen, ohne bestehende Policies anzufassen.
 
 **Status:** ✅ Umgesetzt und auf `watchcrew-dev` (`vketnadfeyovguikpaao`) angewendet, Grants verifiziert. Nicht mehr offen.
+
+---
+
+## M10-Nachbesserung (Live-Bug-Fix) — `useGroupRealtimeSync`: von mehreren gleichzeitig gemounteten Tabs unabhängig aufgebauter Channel führte zu `.on()` nach `.subscribe()`-Absturz
+
+**Problem/Lücke:** Bestätigter, auf einem echten Gerät per Maestro zweimal reproduzierter, 100%-deterministischer Absturz: der Watchlist-Tab crasht sofort mit dem React-Render-Error `cannot add \`postgres_changes\` callbacks for realtime:group-realtime-sync-<groupId> after \`subscribe()\`.`, ausgelöst in `src/hooks/useGroupRealtimeSync.ts:84` (ein `.on("postgres_changes", ...)`-Aufruf), aufgerufen aus `src/app/(app)/(tabs)/watchlist.tsx:83` (`WatchlistScreen`). Root Cause: `useGroupRealtimeSync(activeGroupId)` wird von ALLEN DREI Gruppen-Tabs (Tracker/Watchlist/Tagebuch) mit derselben `activeGroupId` aufgerufen, und `expo-router`s Tab-Navigator hält einen einmal besuchten Tab-Screen weiter gemountet (kein `unmountOnBlur`) — sobald ein Nutzer mehr als einen der drei Tabs besucht hat, rufen also mehrere gleichzeitig gemountete Screens den Hook für dieselbe Gruppe auf. Jeder Hook-Aufruf baute bislang unabhängig seine eigene `.channel(...).on(...).on(...).subscribe()`-Kette auf demselben Topic-String (`group-realtime-sync-<groupId>`) auf. `@supabase/realtime-js`s `RealtimeClient.channel(topic)` dedupliziert aber nach Topic-String — ein zweiter Aufruf mit demselben Topic liefert dasselbe (bereits `.subscribe()`te) Channel-Objekt statt eines neuen zurück (siehe `node_modules/@supabase/realtime-js/dist/main/RealtimeClient.js`s `channel()`). Und `RealtimeChannel.on()` wirft genau dann eine Exception, wenn der Channel bereits "joined"/"joining" ist. Landet die App also (Standard-Tab-Reihenfolge: Tracker zuerst) zunächst auf Tracker — der dort zuerst mountende Hook-Aufruf baut Channel + `subscribe()` auf — und wechselt der Nutzer danach zum Watchlist-Tab, bekommt dessen Hook-Instanz beim `.channel(...)`-Aufruf das bereits abonnierte Tracker-Channel-Objekt zurück; ihre eigenen `.on(...)`-Aufrufe darauf werfen dann exakt den gemeldeten Fehler.
+
+**Entscheidung:** `useGroupRealtimeSync.ts` behandelt den Channel jetzt als geteilte, referenzgezählte Ressource pro `groupId` (modul-weites `Map<string, { channel, refCount }>`): Channel-Aufbau + beide `.on()`-Registrierungen + der einzige `.subscribe()`-Aufruf laufen exakt einmal — ausgelöst vom zuerst mountenden Screen — und werden erst per `supabase.removeChannel(...)` abgebaut, wenn der LETZTE der gleichzeitig gemounteten Konsumenten für diese `groupId` unmounted (oder sich die `groupId` ändert; jeder Konsument inkrementiert/dekrementiert nur den `refCount` seines Map-Eintrags). TDD: neuer Testfall in `__tests__/useGroupRealtimeSync.test.tsx` mit einem für diesen Test lokal installierten, gegenüber `@supabase/realtime-js`s echtem Verhalten treuen Mock (Topic-Deduplizierung + `.on()`-Wurf nach `.subscribe()`, exakter Original-Fehlertext) — reproduziert den exakten gemeldeten Fehler 1:1 bei zwei gleichzeitig für dieselbe `groupId` gemounteten Hook-Aufrufen (rot ohne Fix, mit genau der gemeldeten Fehlermeldung an `useGroupRealtimeSync.ts:84`; grün danach, inklusive der Prüfung `mockChannelFn` genau einmal statt zweimal aufgerufen). Alle 17 Tests der Datei sowie die volle Suite (109 Testdateien/993 Tests) bleiben grün, `tsc --noEmit` sauber.
+
+**Warum das später leicht änderbar ist:** Rein interne Implementierungsdetail-Änderung innerhalb eines einzelnen Hooks (ein modul-weites Map + Referenzzählung) — keine Änderung der öffentlichen Hook-Signatur, keine Schema-/API-Änderung, kein Aufrufer (`watchlist.tsx`/`tracker.tsx`/`tagebuch.tsx`) muss angepasst werden.
+
+**Verifikation auf dem echten Gerät:** Noch offen — reiner JS-Fix (keine native Code-Änderung); die nächste Maestro-Runde auf dem Pixel 6 Pro (derselbe Flow, der den Absturz ursprünglich reproduziert hat) sollte den Watchlist-Tab jetzt ohne Absturz laden, wurde hier aber nicht selbst angestoßen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
 ---
 

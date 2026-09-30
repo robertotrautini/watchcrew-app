@@ -226,6 +226,87 @@ describe("useGroupRealtimeSync", () => {
     });
   });
 
+  describe("BUG REPRO: concurrently-mounted screens sharing the same active group (real Watchlist-tab crash)", () => {
+    // Tracker/Watchlist/Tagebuch all call this hook with the SAME
+    // `activeGroupId` (see this hook's own module comment), and
+    // expo-router/react-navigation keeps visited tab screens mounted (no
+    // `unmountOnBlur`) -- so once a user has visited more than one of the
+    // three tabs, more than one mounted screen calls this hook for the same
+    // group at once.
+    //
+    // supabase-js's REAL `RealtimeClient.channel(topic)` dedupes by topic
+    // string: "If a channel with the same topic already exists it will be
+    // returned instead of creating a duplicate connection" (see
+    // node_modules/@supabase/realtime-js/dist/main/RealtimeClient.js's
+    // `channel()` doc comment/implementation). And its REAL `.on()` throws
+    // once the channel is joined/joining: "cannot add `postgres_changes`
+    // callbacks for <topic> after `subscribe()`." (RealtimeChannel.js's
+    // `on()`). The default mock elsewhere in this file (a single canned
+    // `mockChannel` returned unconditionally) does NOT model this dedup, so
+    // this describe block installs a faithful, topic-keyed replacement for
+    // this test only, matching the exact real-world contract that produced
+    // the confirmed crash.
+    it("does not throw supabase-js's real 'cannot add postgres_changes callbacks after subscribe()' error when two screens mount for the same groupId", async () => {
+      const channelsByTopic = new Map<string, { channel: { on: jest.Mock; subscribe: jest.Mock }; subscribed: boolean }>();
+
+      mockChannelFn.mockImplementation((topic: string) => {
+        const existing = channelsByTopic.get(topic);
+        if (existing) {
+          return existing.channel;
+        }
+        const entry: { channel: { on: jest.Mock; subscribe: jest.Mock }; subscribed: boolean } = {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          channel: null as any,
+          subscribed: false,
+        };
+        const on = jest.fn((type: string, config: { table: string; filter?: string }, callback: (payload: unknown) => void) => {
+          if (entry.subscribed) {
+            // The exact real supabase-js error text (RealtimeChannel.js's `on()`).
+            throw new Error(`cannot add \`${type}\` callbacks for realtime:${topic} after \`subscribe()\`.`);
+          }
+          registeredHandlers.push({ table: config.table, filter: config.filter, callback });
+          return entry.channel;
+        });
+        const subscribe = jest.fn(() => {
+          entry.subscribed = true;
+          return entry.channel;
+        });
+        entry.channel = { on, subscribe };
+        channelsByTopic.set(topic, entry);
+        return entry.channel;
+      });
+
+      mockRemoveChannel.mockImplementation((channel: { on: jest.Mock; subscribe: jest.Mock }) => {
+        for (const [topic, entry] of channelsByTopic) {
+          if (entry.channel === channel) {
+            channelsByTopic.delete(topic);
+          }
+        }
+      });
+
+      const { useGroupRealtimeSync } = loadHook();
+
+      // Two independent call sites for the SAME groupId, mounted in the same
+      // commit -- standing in for Tracker + Watchlist both being mounted at
+      // once with the same active group.
+      let renderError: unknown = null;
+      await act(async () => {
+        try {
+          renderHook(() => {
+            useGroupRealtimeSync("group-1");
+            useGroupRealtimeSync("group-1");
+          });
+        } catch (err) {
+          renderError = err;
+        }
+      });
+
+      expect(renderError).toBeNull();
+      // Exactly one real channel/subscription for the shared group, not two.
+      expect(mockChannelFn).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("ratings change handling (no group_id column -- client-side membership check)", () => {
     it("ignores a ratings change for an entry NOT in the active group's cached watchlist", async () => {
       mockGetQueryData.mockReturnValue({ entries: [{ id: "we-other-group" }], streamingAvailability: new Map() });
