@@ -20,3 +20,17 @@ describe("(app)/(tabs) TAB_SCREENS", () => {
     expect(titles).not.toContain("news");
   });
 });
+
+// Regression: tabs without `tabBarIcon` fall back to React Navigation's
+// MissingIcon (box with X). Every tab needs a real Ionicons glyph.
+import { Ionicons } from "@expo/vector-icons";
+
+describe("(app)/(tabs) tab icons", () => {
+  it("gives every tab an icon name that exists in the Ionicons glyph map", () => {
+    for (const tab of TAB_SCREENS) {
+      expect(typeof tab.icon).toBe("string");
+      expect(Object.keys(Ionicons.glyphMap)).toContain(tab.icon);
+      expect(Object.keys(Ionicons.glyphMap)).toContain(`${tab.icon}-outline`);
+    }
+  });
+});

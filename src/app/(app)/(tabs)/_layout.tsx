@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router/js-tabs';
 import { useColorScheme } from 'react-native';
 
@@ -14,9 +15,9 @@ import { resolveGroupTheme } from '@/lib/groupTheme';
  * being checkable via the interim web visual check.
  */
 export const TAB_SCREENS = [
-  { name: 'tracker', title: 'Tracker' },
-  { name: 'watchlist', title: 'Watchlist' },
-  { name: 'tagebuch', title: 'Tagebuch' },
+  { name: 'tracker', title: 'Tracker', icon: 'film' },
+  { name: 'watchlist', title: 'Watchlist', icon: 'bookmark' },
+  { name: 'tagebuch', title: 'Tagebuch', icon: 'book' },
 ] as const;
 
 /**
@@ -45,7 +46,17 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
       }}>
       {TAB_SCREENS.map((tab) => (
-        <Tabs.Screen key={tab.name} name={tab.name} options={{ title: tab.title }} />
+        <Tabs.Screen key={tab.name} name={tab.name} options={{
+            title: tab.title,
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons
+                name={focused ? tab.icon : (`${tab.icon}-outline` as `${typeof tab.icon}-outline`)}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
       ))}
     </Tabs>
   );

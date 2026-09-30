@@ -1781,4 +1781,18 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 
 ---
 
+## M12-Vorbereitung (Live-Bug-Fix) — Tab-Bar-Icons als "Kasten mit X" (fehlendes `tabBarIcon`)
+
+**Problem/Lücke:** `(tabs)/_layout.tsx` setzte kein `tabBarIcon`; React Navigation fällt dann auf `MissingIcon` (Kasten mit X) zurück. Das Zahnrad funktionierte, weil es ein Emoji-Text ("⚙️") ist, kein Icon-Font. Kein Font-/Build-Problem — `Ionicons` wird bereits auf anderen Screens genutzt.
+
+**Entscheidung:** Eigene Wahl: Ionicons `film` (Tracker), `bookmark` (Watchlist), `book` (Tagebuch); aktiv gefüllt, inaktiv `-outline`, Farbe/Größe von der Tab-Bar. Test `__tests__/tabsLayout.test.ts`.
+
+**Warum das später leicht änderbar ist:** Ein `icon`-Feld je Eintrag in `TAB_SCREENS`.
+
+**Verifikation auf dem echten Gerät:** Noch offen — nächste Maestro-Runde auf dem Pixel 6 Pro.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
 Neue Einträge werden von den Implementierungs-Subagents laufend ergänzt, sobald weitere Milestones reversible Detailentscheidungen treffen.
