@@ -36,6 +36,8 @@ export function useRenameGroup() {
       // Prefix match: the group switcher chips read the name from every
       // ["userGroups", userId] query.
       queryClient.invalidateQueries({ queryKey: ["userGroups"] });
+      // "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
+      queryClient.invalidateQueries({ queryKey: ["groupNames"] });
     },
   });
 }

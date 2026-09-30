@@ -12,13 +12,18 @@ describe("MovieDetailDescription", () => {
     expect(queryByTestId("movie-detail-description-measure")).toBeNull();
   });
 
-  // Root cause (bug 5): Yoga positions an `absolute` child without insets at
-  // the parent's start edge, so the invisible full-width measurement Text
-  // overlaid (and swallowed taps on) director/cast rows above the description.
-  it("makes the invisible measurement text touch-transparent so it cannot swallow taps", async () => {
+  // Root cause (bug 5, re-diagnosed on device): Yoga positions an `absolute`
+  // child without insets at the parent's start edge, so the invisible
+  // full-width, multi-line measurement Text overlaid (and swallowed taps on)
+  // the director/cast rows. `pointerEvents="none"` on a Text is NOT honoured
+  // by the Android native Text view, so the measurement Text must instead sit
+  // in a zero-height, overflow-hidden wrapper that has no hit area at all.
+  it("clips the invisible measurement text inside a zero-height overflow-hidden wrapper so it has no hit area", async () => {
     const { getByTestId } = await render(<MovieDetailDescription overview={OVERVIEW} />);
 
-    expect(getByTestId("movie-detail-description-measure").props.pointerEvents).toBe("none");
+    const wrapperClassName = getByTestId("movie-detail-description-measure-wrapper").props.className;
+    expect(wrapperClassName).toContain("h-0");
+    expect(wrapperClassName).toContain("overflow-hidden");
   });
 
   it("does not show the toggle before any textLayout event has fired", async () => {

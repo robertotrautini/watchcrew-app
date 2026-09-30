@@ -119,6 +119,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Modal-Header zeigten rohe Routennamen (`add-movie`, `similar/[tmdbId]`)](#m12-vorbereitung-live-bug-fix--modal-header-zeigten-rohe-routennamen-add-movie-similartmdbid)
 - [M12-Vorbereitung (Live-Bug-Fix) — Navigation & Header: Watchlist/Tagebuch nicht antippbar, Filmreihe-Referenz ungültig, rohe Header-Titel, Regie/Schauspieler-Taps wirkungslos](#m12-vorbereitung-live-bug-fix-—-navigation--header-watchlisttagebuch-nicht-antippbar-filmreihe-referenz-ungültig-rohe-header-titel-regieschauspieler-taps-wirkungslos)
 - [M12-Vorbereitung (Live-Bug-Fix) — Sheets/Dialoge & Datum: durchscheinende Sheets, UTC-Datum, umbrechende Tracker-Datumsspalte, veraltete Action-Bar, Gruppen-Chip nach Umbenennen](#m12-vorbereitung-live-bug-fix-—-sheetsdialoge--datum-durchscheinende-sheets-utc-datum-umbrechende-tracker-datumsspalte-veraltete-action-bar-gruppen-chip-nach-umbenennen)
+- [M12-Vorbereitung (Live-Bug-Fix) — Gruppen-Chip nach Umbenennen (`groupNames`) & Regie/Schauspieler-Taps (Mess-Text-Overlay)](#m12-vorbereitung-live-bug-fix-—-gruppen-chip-nach-umbenennen-groupnames--regieschauspieler-taps-mess-text-overlay)
 
 ---
 
@@ -1824,6 +1825,24 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offene Punkte:** (a) Einheitliche Datumsformate ungeklärt: Zahlung speichert/zeigt `YYYY-MM-DD`, Bewertung `DD.MM.YYYY`. (b) `resolvePaymentDate`-Fallback und `daysSincePayment` rechnen weiterhin UTC-basiert. (c) Kein Erfolgs-Feedback nach Umbenennen und nach "Zur Watchlist". (d) "Button-busy" >10 s nicht reproduziert. (e) `navigationBarTranslucent` am Modal nicht gesetzt.
 
 **Verifikation auf dem echten Gerät:** Noch offen — Maestro-/adb-Runde auf dem Pixel 6 Pro (siehe Bericht).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Gruppen-Chip nach Umbenennen (`groupNames`) & Regie/Schauspieler-Taps (Mess-Text-Overlay)
+
+**Problem/Lücke:** Geräte-Test Pixel 6 Pro: (1) Nach Umbenennen zeigte der Chip "Deine Gruppen" weiter den alten Namen. (2) Antippen von Regisseur/Schauspieler im Detail löste nichts aus; der frühere Fix `pointerEvents="none"` auf dem Mess-Text half nicht.
+
+**Ursache:** (1) Der Chip liest den Namen über `useGroupNames` (Query-Key `["groupNames", groupIds]`, `src/hooks/useGroupDetails.ts`); `useRenameGroup` invalidierte nur `groupDetails`/`userGroups`. (2) Der unsichtbare Mess-Text in `MovieDetailDescription` ist `absolute` ohne Insets: Yoga setzt ihn an den Parent-Start, er ist vollbreit und mehrzeilig und lag damit über Titel/Genre/Regie/Cast. Am Gerät kam nicht einmal `onTouchStart` der Pressables an (temporäre Logs, danach entfernt; `uiautomator` zeigte die Elemente nur als klickbar); "Mehr anzeigen" darunter funktionierte. `pointerEvents` auf `Text` wird von der nativen Android-Text-View nicht zuverlässig beachtet.
+
+**Entscheidung:** (1) `useRenameGroup` invalidiert zusätzlich `["groupNames"]`. (2) Mess-Text liegt in einem Wrapper `absolute h-0 w-full overflow-hidden` (testID `movie-detail-description-measure-wrapper`) und hat damit keine Trefferfläche; `pointerEvents`-Prop entfernt. Tests: `__tests__/useGroupSettings.test.tsx` (rot/grün), `__tests__/components/movie/MovieDetailDescription.test.tsx` (Test auf Wrapper-Klassen ersetzt; Test und Fix in einem Schritt, kein separater Rot-Lauf; jest kann das native Hit-Testing nicht abbilden, nur die Struktur).
+
+**Warum das später leicht änderbar ist:** Eine Invalidierungs-Zeile; ein Wrapper mit zwei Klassen.
+
+**Offene Punkte:** Andere `absolute`-Elemente ohne Insets im Projekt nicht systematisch geprüft.
+
+**Verifikation auf dem echten Gerät:** Pixel 6 Pro, Kaltstart: Umbenennen auf "Testrename" und zurück aktualisiert den Chip sofort (PASS); Regisseur- und Schauspieler-Tap öffnen "Filmografie: Regisseur" bzw. "Filmografie: Schauspieler:in" (PASS). Screenshots in `.scratch-screenshots/verify-fixes-2026-10-01/`.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

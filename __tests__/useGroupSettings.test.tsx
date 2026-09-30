@@ -57,6 +57,8 @@ describe("useRenameGroup", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
     // The "Deine Gruppen" switcher reads ["userGroups", userId] (group name embedded there).
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["userGroups"] });
+    // The "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupNames"] });
   });
 
   it("surfaces a rename error through React Query's error channel without invalidating the cache", async () => {
