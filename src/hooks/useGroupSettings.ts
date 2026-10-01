@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { showToast } from "@/lib/toast";
 
 import {
   regenerateInviteToken,
@@ -38,6 +39,7 @@ export function useRenameGroup() {
       queryClient.invalidateQueries({ queryKey: ["userGroups"] });
       // "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
       queryClient.invalidateQueries({ queryKey: ["groupNames"] });
+      showToast("Gruppe umbenannt");
     },
   });
 }

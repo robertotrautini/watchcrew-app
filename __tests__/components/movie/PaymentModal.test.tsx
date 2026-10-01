@@ -1,5 +1,7 @@
 import { fireEvent, render, within } from "@testing-library/react-native";
 
+jest.mock("@/lib/toast", () => ({ showToast: jest.fn() }));
+
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return {
@@ -15,6 +17,7 @@ jest.mock("@/hooks/useTrackerPayments", () => ({
   useSetPayment: () => ({ mutate: mockSetPaymentMutate, isPending: mockSetPaymentIsPending }),
 }));
 
+import { showToast } from "@/lib/toast";
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import type { GroupMemberRow } from "@/lib/groups";
 import type { Rating, WatchlistEntry } from "@/lib/watchlistTypes";
@@ -172,6 +175,7 @@ describe("PaymentModal", () => {
 
     const onSuccess = mockSetPaymentMutate.mock.calls[0][1].onSuccess;
     onSuccess();
+    expect(showToast).toHaveBeenCalledWith("Zahlung gespeichert");
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
   });

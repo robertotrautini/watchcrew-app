@@ -1,5 +1,8 @@
 import { Alert } from "react-native";
+import { showToast } from "@/lib/toast";
 import { act, fireEvent, render, within } from "@testing-library/react-native";
+
+jest.mock("@/lib/toast", () => ({ showToast: jest.fn() }));
 
 jest.mock("@expo/vector-icons", () => {
   const { View } = require("react-native");
@@ -325,7 +328,8 @@ describe("RatingDialog", () => {
       await act(async () => onSuccess());
 
       expect(onSaved).toHaveBeenCalled();
-      expect(Alert.alert).toHaveBeenCalledWith("Gespeichert", "Deine Bewertung wurde gespeichert.");
+      expect(showToast).toHaveBeenCalledWith("Bewertung gespeichert");
+      expect(Alert.alert).not.toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
     });
 

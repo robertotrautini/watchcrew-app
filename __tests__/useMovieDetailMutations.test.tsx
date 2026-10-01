@@ -15,6 +15,9 @@ jest.mock("@/lib/movieDetailMutations", () => ({
 }));
 
 // M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+const mockShowToast = jest.fn();
+jest.mock("@/lib/toast", () => ({ showToast: (m: string) => mockShowToast(m) }));
+
 jest.mock("expo-haptics", () => ({
   impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
@@ -220,6 +223,7 @@ describe("useAddToWatchlist", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockImpactAsync).toHaveBeenCalledWith("light");
+    expect(mockShowToast).toHaveBeenCalledWith("Zur Watchlist hinzugefügt");
   });
 
   it("does not trigger a haptic impact when the add fails", async () => {
@@ -235,6 +239,7 @@ describe("useAddToWatchlist", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(mockImpactAsync).not.toHaveBeenCalled();
+    expect(mockShowToast).not.toHaveBeenCalled();
   });
 
   it("adds the movie to the group's watchlist and invalidates the group's watchlist cache on success", async () => {

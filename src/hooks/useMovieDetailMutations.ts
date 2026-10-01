@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { showToast } from "@/lib/toast";
 import * as Haptics from "expo-haptics";
 
 import {
@@ -113,6 +114,7 @@ export function useAddToWatchlist() {
       // successful add-to-watchlist gets the same light confirmation
       // impact, in exactly one place.
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      showToast("Zur Watchlist hinzugefügt");
     },
   });
 }

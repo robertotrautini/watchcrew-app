@@ -17,6 +17,7 @@ import {
   type SeenAtMode,
 } from "@/lib/ratingLogic";
 import type { Rating } from "@/lib/watchlistTypes";
+import { showToast } from "@/lib/toast";
 import { toLocalIsoDate } from "@/lib/localDate";
 
 /**
@@ -78,14 +79,11 @@ export interface RatingDialogProps {
 }
 
 /**
- * Interim decision (docs/interim-decisions.md "M7 Teil 2b"): success/error
- * feedback uses `Alert.alert` (same as `MovieDetailActionsBar`'s existing
- * add-to-watchlist error handling -- no toast library exists in this repo
- * yet) rather than introducing a new toast/snackbar pattern for this one
- * dialog.
+ * Error feedback uses `Alert.alert`; success feedback uses the app toast
+ * (`showToast`, replaces the earlier native success alert -- see
+ * docs/interim-decisions.md "Erfolgs-Toasts").
  */
-const SAVE_SUCCESS_TITLE = "Gespeichert";
-const SAVE_SUCCESS_MESSAGE = "Deine Bewertung wurde gespeichert.";
+const SAVE_SUCCESS_TOAST = "Bewertung gespeichert";
 const SAVE_ERROR_TITLE = "Fehler";
 const SAVE_ERROR_MESSAGE = "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.";
 const RESET_ERROR_MESSAGE = "Die Bewertung konnte nicht zurückgesetzt werden. Bitte versuche es erneut.";
@@ -198,7 +196,7 @@ export function RatingDialog({
       {
         onSuccess: () => {
           onSaved?.();
-          Alert.alert(SAVE_SUCCESS_TITLE, SAVE_SUCCESS_MESSAGE);
+          showToast(SAVE_SUCCESS_TOAST);
           onClose();
         },
         onError: () => {

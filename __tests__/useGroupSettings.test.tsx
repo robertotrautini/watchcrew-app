@@ -11,6 +11,9 @@ const mockSetInviteEnabled = jest.fn();
 const mockRegenerateInviteToken = jest.fn();
 const mockRemoveMember = jest.fn();
 
+const mockShowToast = jest.fn();
+jest.mock("@/lib/toast", () => ({ showToast: (m: string) => mockShowToast(m) }));
+
 jest.mock("@/lib/groups", () => ({
   renameWatchGroup: mockRenameWatchGroup,
   setInviteEnabled: mockSetInviteEnabled,
@@ -59,6 +62,7 @@ describe("useRenameGroup", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["userGroups"] });
     // The "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupNames"] });
+    expect(mockShowToast).toHaveBeenCalledWith("Gruppe umbenannt");
   });
 
   it("surfaces a rename error through React Query's error channel without invalidating the cache", async () => {

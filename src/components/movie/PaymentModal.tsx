@@ -15,6 +15,7 @@ import {
 } from "@/lib/trackerLogic";
 import { useSetPayment } from "@/hooks/useTrackerPayments";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
+import { showToast } from "@/lib/toast";
 import { toLocalIsoDate } from "@/lib/localDate";
 import { formatDateForInput } from "@/lib/ratingLogic";
 
@@ -29,6 +30,9 @@ import { formatDateForInput } from "@/lib/ratingLogic";
  * this is deliberately NOT restricted to "everyone in the group has rated
  * it" (see `getUnpaidDiaryEntries`, src/lib/trackerLogic.ts).
  */
+/** Success toast copy; the Sheet is an RN Modal, so the toast becomes visible as the sheet finishes closing. */
+const PAYMENT_SAVED_TOAST = "Zahlung gespeichert";
+
 export interface PaymentModalProps {
   visible: boolean;
   onClose: () => void;
@@ -105,6 +109,7 @@ export function PaymentModal({
       {
         onSuccess: () => {
           onSaved?.();
+          showToast(PAYMENT_SAVED_TOAST);
           onClose();
         },
       },
