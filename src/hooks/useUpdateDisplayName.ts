@@ -21,6 +21,9 @@ export function useUpdateDisplayName() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["ownProfile"] });
       queryClient.invalidateQueries({ queryKey: ["groupDetails"] });
+      // Tracker payer column, Tagebuch, rating dialog and payment modal build
+      // their name maps from useGroupMembers.
+      queryClient.invalidateQueries({ queryKey: ["groupMembers"] });
       queryClient.invalidateQueries({ queryKey: ["watchlist"] });
     },
   });

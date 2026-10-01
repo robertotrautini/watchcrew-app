@@ -22,6 +22,7 @@ import {
   getLastPaidAtByMember,
   getPaidEntries,
 } from "@/lib/trackerLogic";
+import { showToast } from "@/lib/toast";
 import { searchEntries } from "@/lib/watchlistLogic";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
 
@@ -125,6 +126,7 @@ export default function TrackerScreen() {
       },
       {
         onSuccess: () => {
+          showToast("Zahlung gespeichert");
           setEditingEntryId(null);
         },
       },

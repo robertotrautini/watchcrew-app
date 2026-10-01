@@ -1,10 +1,12 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // M9 part 2: the new "⚙️" header button navigates via expo-router, same
 // router mocking convention as __tests__/screens/Watchlist.test.tsx's
 // "+" Add-Movie button.
 // M10: also needs `useFocusEffect` now (src/hooks/useRegisterFocusedGroupScreen.ts).
 const mockPush = jest.fn();
+const mockShowToast = jest.fn();
+jest.mock("@/lib/toast", () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }));
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
   useFocusEffect: (callback: () => void | (() => void)) => {
@@ -277,6 +279,22 @@ describe("TrackerScreen", () => {
         },
         expect.objectContaining({ onSuccess: expect.any(Function) }),
       );
+    });
+
+    it("shows the 'Zahlung gespeichert' toast once the edit save succeeded", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId } = await render(<TrackerScreen />);
+
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      await fireEvent.press(getByTestId("tracker-row-e1-edit-button"));
+      await fireEvent.press(getByTestId("tracker-row-e1-edit-save-button"));
+      expect(mockShowToast).not.toHaveBeenCalled();
+
+      await act(async () => {
+        mockSetPaymentMutate.mock.calls[0][1].onSuccess();
+      });
+      expect(mockShowToast).toHaveBeenCalledWith("Zahlung gespeichert");
     });
 
     it("Abbrechen discards the edit and returns to the Bearbeiten/Löschen buttons", async () => {

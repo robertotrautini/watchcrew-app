@@ -125,6 +125,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Anzeigename bei Registrierung, Änderung in den Einstellungen, einheitlicher Namens-Fallback](#m12-vorbereitung-live-bug-fix-—-anzeigename-bei-registrierung-änderung-in-den-einstellungen-einheitlicher-namens-fallback)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung „Ähnliche Filme“: Poster/Score serverseitig per TMDB-Anreicherung](#m12-vorbereitung-live-bug-fix-—-nachbesserung-ähnliche-filme-poster-score-serverseitig-per-tmdb-anreicherung)
 
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Anzeigenamen-Cache & Toast beim Bearbeiten einer Zahlung](#m12-vorbereitung-live-bug-fix--nachbesserung-anzeigenamen-cache--toast-beim-bearbeiten-einer-zahlung)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -1917,6 +1918,22 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offene Punkte:** Edge Function `tmdb-proxy` muss neu deployt werden (bisher NICHT deployt); ohne Deploy bleiben die Platzhalter. Latenz steigt (bis zu 40 TMDB-Calls, ca. 5 Wellen à 8).
 
 **Verifikation auf dem echten Gerät:** Noch nicht erfolgt (Darstellung von 40 Postern, Ladezeit der Ansicht).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Anzeigenamen-Cache & Toast beim Bearbeiten einer Zahlung
+
+**Problem/Lücke:** (1) Nach dem Ändern des Anzeigenamens in den Einstellungen zeigten Tracker-Zahler, Tagebuch, Bewertungsdialog und Zahlungs-Sheet den alten Namen bis zum App-Neustart. (2) Das Speichern einer bearbeiteten Zahlung im Tracker zeigte keinen Toast.
+
+**Ursache:** (1) Alle diese Stellen bauen ihre Namenslisten aus `useGroupMembers` (Query-Key `["groupMembers", groupId]`); `useUpdateDisplayName` invalidierte nur `ownProfile`, `groupDetails`, `watchlist`. (2) Nur der `PaymentModal`-Pfad rief `showToast`; `saveEdit` in `tracker.tsx` nicht.
+
+**Entscheidung:** (1) Zusätzlich Präfix-Key `["groupMembers"]` invalidieren (alle Gruppen, minimal). (2) `showToast("Zahlung gespeichert")` im `onSuccess` von `saveEdit`; Löschen zeigt bewusst keinen Toast. Tests: `useUpdateDisplayName.test.tsx`, `Tracker.test.tsx`.
+
+**Warum das später leicht änderbar ist:** Je eine Zeile in `useUpdateDisplayName.ts` bzw. `tracker.tsx`.
+
+**Verifikation auf dem echten Gerät:** siehe Bericht der Nachbesserung (Pixel 6 Pro).
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

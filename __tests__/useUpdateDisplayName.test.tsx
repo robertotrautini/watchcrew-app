@@ -37,7 +37,7 @@ describe("useUpdateDisplayName", () => {
 
     expect(mockUpdateOwnDisplayName).toHaveBeenCalledWith("Robin");
     const keys = invalidate.mock.calls.map((c) => (c[0] as { queryKey: unknown[] }).queryKey[0]);
-    expect(keys).toEqual(expect.arrayContaining(["ownProfile", "groupDetails"]));
+    expect(keys).toEqual(expect.arrayContaining(["ownProfile", "groupDetails", "groupMembers", "watchlist"]));
     await unmount();
   });
 
