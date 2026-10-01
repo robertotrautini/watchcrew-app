@@ -3,8 +3,8 @@ import { Redirect, useSegments } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { useColorScheme } from 'react-native';
 
+import { useGroupTheme } from '@/components/GroupThemeProvider';
 import { Colors } from '@/constants/theme';
-import { resolveGroupTheme } from '@/lib/groupTheme';
 import { WATCHLIST_ROUTE } from '@/lib/homeRoute';
 import { usePreferencesStore } from '@/stores/usePreferencesStore';
 
@@ -42,11 +42,9 @@ export function getInitialTabName(trackerEnabled: boolean) {
  * The main app shell's tab bar. Colors: active tab uses the group-theme
  * accent color, inactive tabs use the neutral `textSecondary` token
  * (constants/theme.ts) — per the task's design-token instruction. This
- * layout renders above/outside any specific Watch-Group's
- * GroupThemeProvider (a user could belong to several groups with different
- * themes), so it falls back to the default group theme's accent (Gold —
- * see groupTheme.ts's DEFAULT_GROUP_THEME) rather than any one group's
- * color. `expo-router`'s Tabs (React Navigation bottom-tabs under the hood)
+ * layout sits inside ActiveGroupThemeProvider (src/app/(app)/_layout.tsx),
+ * so the accent follows the ACTIVE group's color_theme (Gold fallback while
+ * unknown). `expo-router`'s Tabs (React Navigation bottom-tabs under the hood)
  * is configured via `screenOptions`/tint-color props, not `className` —
  * there is no NativeWind styling surface for this native navigator chrome,
  * same as the (now superseded) native tab bar it replaces.
@@ -54,7 +52,7 @@ export function getInitialTabName(trackerEnabled: boolean) {
 export default function TabsLayout() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
-  const { colors: groupColors } = resolveGroupTheme(undefined);
+  const { colors: groupColors } = useGroupTheme();
   const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
   const segments = useSegments() as string[];
 

@@ -31,14 +31,28 @@ export const PERSIST_THROTTLE_MS = 1000;
  * changes; the app version is part of the buster too, so every release
  * starts with a clean cache instead of stale shapes.
  */
-const CACHE_SCHEMA_VERSION = "1";
+const CACHE_SCHEMA_VERSION = "2";
 export const PERSIST_BUSTER = `${Constants.expoConfig?.version ?? "0"}-${CACHE_SCHEMA_VERSION}`;
 
 /** Transient lookup queries that make no sense to restore. */
 const NON_PERSISTED_ROOTS = new Set(["movieSearch", "personSearch", "companySearch"]);
 
+/**
+ * True when `value` survives a JSON round trip unchanged in shape: only
+ * primitives, arrays and plain objects. Map/Set/Date/class instances are
+ * restored as `{}`/strings and would crash consumers after a restart.
+ */
+export function isJsonSafe(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return typeof value !== "function" && typeof value !== "symbol" && typeof value !== "bigint";
+  if (Array.isArray(value)) return value.every(isJsonSafe);
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+  return Object.values(value as Record<string, unknown>).every(isJsonSafe);
+}
+
 export function shouldPersistQuery(query: Query): boolean {
   if (query.state.status !== "success") return false;
+  if (!isJsonSafe(query.state.data)) return false;
   return !NON_PERSISTED_ROOTS.has(String(query.queryKey[0]));
 }
 

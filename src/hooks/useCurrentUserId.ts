@@ -1,6 +1,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 
+import { readStoredSession } from "@/lib/storedSession";
 import { supabase } from "@/lib/supabase";
 
 /**
@@ -16,21 +17,29 @@ export function useCurrentUserId(): string | undefined {
 
   useEffect(() => {
     let isMounted = true;
+    let latest = 0;
 
-    function applySession(session: Session | null) {
-      if (isMounted) {
-        setUserId(session?.user.id);
+    // Offline cold start with an expired access token: auth-js reports
+    // `session: null` although the session is stored (see readStoredSession).
+    async function applySession(session: Session | null, event?: string) {
+      const id = ++latest;
+      let effective = session;
+      if (!effective && event !== "SIGNED_OUT") {
+        effective = (await readStoredSession()) ?? null;
+      }
+      if (isMounted && id === latest) {
+        setUserId(effective?.user.id);
       }
     }
 
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
-      applySession(data.session ?? null);
+      void applySession(data.session ?? null);
     });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      applySession(session);
+    } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
+      void applySession(session, event);
     });
 
     return () => {

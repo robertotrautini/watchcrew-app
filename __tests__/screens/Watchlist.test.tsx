@@ -311,6 +311,17 @@ describe("WatchlistScreen", () => {
     expect(mockPush).toHaveBeenCalledWith("/add-movie");
   });
 
+  it("navigates to the Settings hub when the gear button is tapped (lock-out guard)", async () => {
+    setUpHappyPath();
+
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    await fireEvent.press(getByTestId("watchlist-settings-button"));
+
+    expect(mockPush).toHaveBeenCalledWith("/settings");
+  });
+
   describe("tapping an entry opens the movie detail overlay", () => {
     const EXPECTED = {
       pathname: "/movie/[tmdbId]",

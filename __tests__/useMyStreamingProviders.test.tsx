@@ -52,4 +52,33 @@ describe("useMyStreamingProviders", () => {
     const { result } = await renderHook(() => load()([1], true), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
+
+  it("does not crash when an old/JSON-restored cache entry is `{}` (persisted Map)", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    queryClient.setQueryData(["streamingProviders", [1]], JSON.parse(JSON.stringify(new Map([[1, {}]]))));
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = await renderHook(() => load()([1], true), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(typeof result.current.data.get).toBe("function");
+    expect(result.current.data.get(1)).toBeUndefined();
+  });
+
+  it("keeps a JSON-safe shape in the query cache", async () => {
+    mockGetRows.mockResolvedValue({ data: [], error: null });
+    mockBatch.mockResolvedValue({
+      data: { "1": { flatrate: [{ provider_id: 8 }], rent: [], buy: [] } },
+      error: null,
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const { result } = await renderHook(() => load()([1], true), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    const cached = queryClient.getQueryCache().getAll()[0].state.data;
+    expect(JSON.parse(JSON.stringify(cached))).toEqual(cached);
+    expect(result.current.data.get(1)).toEqual({ flatrate: [{ provider_id: 8 }], rent: [], buy: [] });
+  });
 });

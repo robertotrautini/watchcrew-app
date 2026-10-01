@@ -1,9 +1,13 @@
 import type { Session } from "@supabase/supabase-js";
+import { useIsRestoring } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { resolveAuthGate, type AuthGateStatus } from "@/lib/authGate";
 import { getUserGroups } from "@/lib/groups";
+import { queryClient } from "@/lib/queryClient";
+import { readStoredSession } from "@/lib/storedSession";
 import { supabase } from "@/lib/supabase";
+import { userGroupsQueryOptions } from "@/hooks/useUserGroups";
 
 /**
  * The full set of states the root navigation shell can be in.
@@ -42,16 +46,37 @@ export type AuthGateState = "loading" | AuthGateStatus;
  * one and overwrite the correct state with stale data (confirmed real bug:
  * a just-created group briefly "disappearing" back to onboarding on the
  * next cold launch).
+ *
+ * Offline cold start: when `getUserGroups` fails (no network), the persisted
+ * `userGroups` query cache (src/lib/queryPersistence.ts) decides instead --
+ * >=1 cached group -> 'app' (the tabs then render from the cache), nothing
+ * cached -> 'onboarding' as before. The evaluation therefore waits until the
+ * async cache restoration is finished (`useIsRestoring`). Likewise, an
+ * expired access token that cannot be refreshed offline makes auth-js report
+ * `session: null` although the session is still stored; `readStoredSession`
+ * recovers it (never on SIGNED_OUT).
  */
 export function useAuthGate(): AuthGateState {
   const [state, setState] = useState<AuthGateState>("loading");
   const requestIdRef = useRef(0);
+  const isRestoring = useIsRestoring();
 
   useEffect(() => {
+    if (isRestoring) {
+      return;
+    }
     let isMounted = true;
 
-    async function evaluate(session: Session | null) {
+    async function evaluate(initialSession: Session | null, event?: string) {
       const requestId = ++requestIdRef.current;
+
+      let session = initialSession;
+      if (!session && event !== "SIGNED_OUT") {
+        session = (await readStoredSession()) ?? null;
+        if (!isMounted || requestId !== requestIdRef.current) {
+          return;
+        }
+      }
 
       if (!session) {
         if (isMounted && requestId === requestIdRef.current) {
@@ -67,7 +92,10 @@ export function useAuthGate(): AuthGateState {
       if (error) {
         console.warn("useAuthGate: getUserGroups failed, falling back to 'onboarding'", error);
       }
-      setState(resolveAuthGate({ session, groups: error ? [] : data }));
+      const cachedGroups = error
+        ? queryClient.getQueryData<unknown[]>(userGroupsQueryOptions(session.user.id).queryKey)
+        : undefined;
+      setState(resolveAuthGate({ session, groups: error ? (cachedGroups ?? []) : data }));
     }
 
     supabase.auth.getSession().then(({ data }: { data: { session: Session | null } }) => {
@@ -76,15 +104,15 @@ export function useAuthGate(): AuthGateState {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event: string, session: Session | null) => {
-      void evaluate(session);
+    } = supabase.auth.onAuthStateChange((event: string, session: Session | null) => {
+      void evaluate(session, event);
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [isRestoring]);
 
   return state;
 }

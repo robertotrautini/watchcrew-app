@@ -13,6 +13,24 @@ export interface GroupWatchlistData {
 }
 
 /**
+ * Shape actually stored in the (JSON-persisted) query cache: the availability
+ * lookup is a plain array of tmdb ids (a `Map` would be restored as `{}`);
+ * `select` rebuilds the Map for consumers.
+ */
+interface CachedGroupWatchlistData {
+  entries: WatchlistEntry[];
+  streamingAvailableIds: number[];
+}
+
+function toGroupWatchlistData(cached: CachedGroupWatchlistData): GroupWatchlistData {
+  const ids = Array.isArray(cached?.streamingAvailableIds) ? cached.streamingAvailableIds : [];
+  return {
+    entries: Array.isArray(cached?.entries) ? cached.entries : [],
+    streamingAvailability: new Map(ids.map((id) => [id, true] as [number, boolean])),
+  };
+}
+
+/**
  * Wraps `getGroupWatchlistEntries` (src/lib/watchlist.ts) + the cache-backed
  * `loadStreamingRows` (src/lib/streamingAvailability.ts) in a single TanStack Query.
  *
@@ -25,7 +43,7 @@ export interface GroupWatchlistData {
 export function useGroupWatchlist(groupId: string | undefined) {
   return useQuery({
     queryKey: ["watchlist", groupId],
-    queryFn: async (): Promise<GroupWatchlistData> => {
+    queryFn: async (): Promise<CachedGroupWatchlistData> => {
       const { data: entries, error: entriesError } = await getGroupWatchlistEntries(
         groupId as string
       );
@@ -65,9 +83,10 @@ export function useGroupWatchlist(groupId: string | undefined) {
 
       return {
         entries: safeEntries,
-        streamingAvailability: buildStreamingAvailabilityLookup(availabilityRows ?? []),
+        streamingAvailableIds: [...buildStreamingAvailabilityLookup(availabilityRows ?? []).keys()],
       };
     },
+    select: toGroupWatchlistData,
     enabled: !!groupId,
   });
 }

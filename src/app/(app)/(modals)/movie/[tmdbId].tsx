@@ -21,7 +21,7 @@ import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { resolveDetailEntryContext } from "@/lib/movieDetailEntryContext";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
 import { useToggleLike } from "@/hooks/useMovieDetailMutations";
-import { resolveGroupTheme } from "@/lib/groupTheme";
+import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { formatDateForInput } from "@/lib/ratingLogic";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import {
@@ -188,7 +188,7 @@ export default function MovieDetailScreen() {
     }
   }
 
-  const starColor = resolveGroupTheme(undefined).colors.starColor;
+  const starColor = useGroupTheme().colors.starColor;
 
   // Two NEW decision points not pre-specified anywhere upstream — flagged
   // explicitly in the hand-off report for user confirmation.

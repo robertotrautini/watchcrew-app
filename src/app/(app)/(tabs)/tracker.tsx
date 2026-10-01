@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,6 +5,7 @@ import * as Haptics from "expo-haptics";
 
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { Button } from "@/components/ui/Button";
+import { SettingsButton } from "@/components/ui/SettingsButton";
 import { DateField } from "@/components/ui/DateField";
 import { formatDateForInput } from "@/lib/ratingLogic";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -51,7 +51,6 @@ function formatPlainDate(dateStr: string | null): string {
 }
 
 export default function TrackerScreen() {
-  const router = useRouter();
   const currentUserId = useCurrentUserId();
   // M9 part 2: real, persisted active-group resolution (replaces the former
   // "first group = active group" interim simplification) -- see
@@ -193,14 +192,7 @@ export default function TrackerScreen() {
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="font-display text-xl text-text-primary">Tracker</Text>
         <View className="flex-row gap-2">
-          <Button
-            size="sm"
-            variant="secondary"
-            label="⚙️"
-            testID="tracker-group-settings-button"
-            accessibilityLabel="Einstellungen"
-            onPress={() => router.push("/settings")}
-          />
+          <SettingsButton testID="tracker-group-settings-button" />
           <Button
             size="sm"
             variant="primary"

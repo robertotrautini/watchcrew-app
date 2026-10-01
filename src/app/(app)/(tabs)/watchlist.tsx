@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { Button } from "@/components/ui/Button";
+import { SettingsButton } from "@/components/ui/SettingsButton";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -268,6 +269,7 @@ export default function WatchlistScreen() {
               />
             ))}
           </View>
+          <SettingsButton testID="watchlist-settings-button" />
           <Button
             size="sm"
             variant="primary"

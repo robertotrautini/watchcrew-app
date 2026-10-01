@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { Button } from "@/components/ui/Button";
+import { SettingsButton } from "@/components/ui/SettingsButton";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -31,7 +32,7 @@ import {
 } from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
 import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "@/lib/movieProviderFilter";
-import { resolveGroupTheme } from "@/lib/groupTheme";
+import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { searchEntries, sortDiary, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
 import type { DiarySortOption, WatchlistEntry, YearFilterValue } from "@/lib/watchlistTypes";
@@ -51,17 +52,8 @@ import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferences
  * (src/hooks/useActiveGroup.ts) -- a real, persisted active-group choice
  * (Group-Settings switcher), falling back to the first group only when
  * nothing has been explicitly picked yet or the stored choice has gone
- * stale. This screen's own color THEME handling is UNCHANGED by that: no
- * hook/lib function this screen calls fetches the group's `color_theme`
- * (that's `useGroupDetails`, added for the new Group-Settings screen, not
- * consumed here) — `useUserGroups`/`useActiveGroup` only expose the user's
- * OWN `watch_group_members` rows (group_id/user_id/role/joined_at), not the
- * group's own data. So this screen still falls back to
- * `resolveGroupTheme(undefined)` (-> Gold/default), the exact same
- * already-established fallback used elsewhere in this codebase for the
- * same reason (see src/app/(app)/(tabs)/_layout.tsx's tab bar and
- * src/app/(onboarding)/create-or-join-group.tsx) — not a new decision, and
- * out of scope for this task to change.
+ * stale. The star color comes from `useGroupTheme()` (ActiveGroupThemeProvider in
+ * src/app/(app)/_layout.tsx supplies the ACTIVE group's color_theme).
  *
  * --- M5 FAST-FOLLOW: member display names & genre names ---
  * The per-member rating rows and the genre filter pills previously showed
@@ -195,7 +187,7 @@ export default function TagebuchScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSortSheetVisible, setSortSheetVisible] = useState(false);
 
-  const starColor = resolveGroupTheme(undefined).colors.starColor;
+  const starColor = useGroupTheme().colors.starColor;
 
   const rawEntries = useMemo(() => watchlistQuery.data?.entries ?? [], [watchlistQuery.data]);
 
@@ -330,7 +322,11 @@ export default function TagebuchScreen() {
     // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
     // Safe-Area"): same reasoning as tracker.tsx/watchlist.tsx.
     <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="tagebuch-screen">
-      <View className="gap-3 px-4 pb-2 pt-6">
+      <View className="gap-3 px-4 pb-2 pt-4">
+        <View className="flex-row items-center justify-between">
+          <Text className="font-display text-xl text-text-primary">Tagebuch</Text>
+          <SettingsButton testID="tagebuch-settings-button" />
+        </View>
         <TextInput
           testID="tagebuch-search-input"
           value={searchQuery}

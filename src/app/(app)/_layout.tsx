@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { ActiveGroupThemeProvider } from '@/components/ActiveGroupThemeProvider';
 import { useChangelogStartupToast } from '@/hooks/useChangelogStartupToast';
 import { useCurrentUserId } from '@/hooks/useCurrentUserId';
 import { usePushNotificationRouting } from '@/hooks/usePushNotificationRouting';
@@ -27,9 +28,11 @@ export default function AppLayout() {
   useChangelogStartupToast();
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="(modals)" options={{ presentation: "modal", headerShown: false }} />
-    </Stack>
+    <ActiveGroupThemeProvider>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(modals)" options={{ presentation: "modal", headerShown: false }} />
+      </Stack>
+    </ActiveGroupThemeProvider>
   );
 }

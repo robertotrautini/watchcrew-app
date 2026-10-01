@@ -185,4 +185,37 @@ describe("useGroupWatchlist", () => {
 
     expect(mockGetGroupWatchlistEntries).not.toHaveBeenCalled();
   });
+
+  it("keeps a JSON-safe shape in the query cache and rebuilds the Map in select", async () => {
+    mockGetGroupWatchlistEntries.mockResolvedValue({
+      data: [{ id: "e1", movie: { tmdb_id: 42 }, ratings: [] }],
+      error: null,
+    });
+    mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({
+      data: [{ tmdb_id: 42, region: "DE", data: { flatrate: [{ provider_id: 8 }], rent: [], buy: [] }, last_fetched_at: new Date().toISOString() }],
+      error: null,
+    });
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const useGroupWatchlist = loadUseGroupWatchlist();
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    const cached = queryClient.getQueryCache().getAll()[0].state.data;
+    expect(JSON.parse(JSON.stringify(cached))).toEqual(cached);
+    expect(result.current.data.streamingAvailability.get(42)).toBe(true);
+  });
+
+  it("does not crash on an old JSON-restored cache entry whose Map became `{}`", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
+    queryClient.setQueryData(["watchlist", "group-1"], { entries: [], streamingAvailability: {} });
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+    const useGroupWatchlist = loadUseGroupWatchlist();
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data.streamingAvailability.get(1)).toBeUndefined();
+  });
 });

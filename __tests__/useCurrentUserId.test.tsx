@@ -13,6 +13,9 @@ jest.mock("@/lib/supabase", () => ({
   },
 }));
 
+const mockReadStoredSession = jest.fn();
+jest.mock("@/lib/storedSession", () => ({ readStoredSession: mockReadStoredSession }));
+
 // Lazily required (not statically imported) — same Babel CJS-hoisting reason
 // as __tests__/useAuthGate.test.tsx: a top-level `import` would run before
 // the `jest.mock` factory above is wired up.
@@ -27,6 +30,7 @@ function fakeSession(userId: string) {
 describe("useCurrentUserId", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockReadStoredSession.mockResolvedValue(null);
     mockOnAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: mockUnsubscribe } },
     });
@@ -85,5 +89,27 @@ describe("useCurrentUserId", () => {
     await unmount();
 
     expect(mockUnsubscribe).toHaveBeenCalled();
+  });
+
+  it("falls back to the stored session when auth-js reports null (offline refresh failure)", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: null } });
+    mockReadStoredSession.mockResolvedValue(fakeSession("u9"));
+    const useCurrentUserId = loadUseCurrentUserId();
+
+    const { result } = await renderHook(() => useCurrentUserId());
+
+    await waitFor(() => expect(result.current).toBe("u9"));
+  });
+
+  it("does not use the stored session on SIGNED_OUT", async () => {
+    mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+    const useCurrentUserId = loadUseCurrentUserId();
+    const { result } = await renderHook(() => useCurrentUserId());
+    await waitFor(() => expect(result.current).toBe("u1"));
+
+    mockReadStoredSession.mockResolvedValue(fakeSession("u1"));
+    await mockOnAuthStateChange.mock.calls[0][0]("SIGNED_OUT", null);
+
+    await waitFor(() => expect(result.current).toBeUndefined());
   });
 });

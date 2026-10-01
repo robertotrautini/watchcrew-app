@@ -1,6 +1,17 @@
+import { createContext, useContext } from "react";
 import { View, type ViewProps } from "react-native";
 
-import { resolveGroupTheme } from "@/lib/groupTheme";
+import { resolveGroupTheme, type ResolvedGroupTheme } from "@/lib/groupTheme";
+
+const GroupThemeContext = createContext<ResolvedGroupTheme>(resolveGroupTheme(undefined));
+
+/**
+ * The resolved theme of the nearest GroupThemeProvider (Gold without one).
+ * For raw hex values (tab bar tint, star color) that a className cannot reach.
+ */
+export function useGroupTheme(): ResolvedGroupTheme {
+  return useContext(GroupThemeContext);
+}
 
 export interface GroupThemeProviderProps extends ViewProps {
   /**
@@ -21,8 +32,13 @@ export interface GroupThemeProviderProps extends ViewProps {
  * convention.
  */
 export function GroupThemeProvider({ themeName, className, ...rest }: GroupThemeProviderProps) {
-  const { className: themeClassName } = resolveGroupTheme(themeName);
+  const theme = resolveGroupTheme(themeName);
+  const themeClassName = theme.className;
   const mergedClassName = className ? `${themeClassName} ${className}` : themeClassName;
 
-  return <View className={mergedClassName} {...rest} />;
+  return (
+    <GroupThemeContext.Provider value={theme}>
+      <View className={mergedClassName} {...rest} />
+    </GroupThemeContext.Provider>
+  );
 }

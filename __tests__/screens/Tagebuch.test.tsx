@@ -406,6 +406,16 @@ describe("TagebuchScreen", () => {
     });
   });
 
+  it("navigates to the Settings hub when the gear button is tapped (lock-out guard)", async () => {
+    mockHappyPath([]);
+    const TagebuchScreen = loadTagebuchScreen();
+    const { getByTestId } = await render(<TagebuchScreen />);
+
+    await fireEvent.press(getByTestId("tagebuch-settings-button"));
+
+    expect(mockPush).toHaveBeenCalledWith("/settings");
+  });
+
   describe("tapping an entry opens the movie detail overlay", () => {
     const diaryEntry = makeEntry({
       id: "e1",

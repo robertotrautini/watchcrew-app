@@ -100,6 +100,29 @@ describe("shouldPersistQuery", () => {
   });
 });
 
+describe("shouldPersistQuery JSON-safety guard", () => {
+  const q = (data: unknown) =>
+    ({ queryKey: ["x"], state: { status: "success", data } }) as unknown as Query;
+
+  it("persists plain objects/arrays/primitives/null", () => {
+    expect(shouldPersistQuery(q({ a: [1, "b", null, { c: true }] }))).toBe(true);
+    expect(shouldPersistQuery(q(null))).toBe(true);
+  });
+  it("refuses Map/Set/Date/class instances anywhere in the data", () => {
+    expect(shouldPersistQuery(q(new Map([[1, 2]])))).toBe(false);
+    expect(shouldPersistQuery(q({ nested: [new Set([1])] }))).toBe(false);
+    expect(shouldPersistQuery(q({ at: new Date() }))).toBe(false);
+    class Foo {}
+    expect(shouldPersistQuery(q({ foo: new Foo() }))).toBe(false);
+  });
+});
+
+describe("cache schema version", () => {
+  it("is bumped to 2 so previously persisted Map-as-{} shapes are dropped", () => {
+    expect(PERSIST_BUSTER.endsWith("-2")).toBe(true);
+  });
+});
+
 describe("clearPersistedQueryCache", () => {
   it("clears memory cache and persisted storage", async () => {
     const qc = new QueryClient();

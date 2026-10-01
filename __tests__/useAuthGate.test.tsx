@@ -1,4 +1,6 @@
+import { IsRestoringProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
+import React from "react";
 
 const mockGetSession = jest.fn();
 const mockOnAuthStateChange = jest.fn();
@@ -11,6 +13,11 @@ jest.mock("@/lib/supabase", () => ({
       onAuthStateChange: mockOnAuthStateChange,
     },
   },
+}));
+
+const mockReadStoredSession = jest.fn();
+jest.mock("@/lib/storedSession", () => ({
+  readStoredSession: mockReadStoredSession,
 }));
 
 const mockGetUserGroups = jest.fn();
@@ -43,6 +50,8 @@ function loadUseAuthGate() {
 describe("useAuthGate", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockReadStoredSession.mockResolvedValue(null);
+    require("@/lib/queryClient").queryClient.clear();
     mockOnAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: mockUnsubscribe } },
     });
@@ -170,5 +179,101 @@ describe("useAuthGate", () => {
     await unmount();
 
     expect(mockUnsubscribe).toHaveBeenCalledTimes(1);
+  });
+
+  describe("offline cold start (persisted query cache)", () => {
+    const networkError = { message: "Network request failed" };
+    function seedCachedGroups(groups: unknown[]) {
+      require("@/lib/queryClient").queryClient.setQueryData(["userGroups", "u1"], groups);
+    }
+
+    it("resolves 'app' from the cached userGroups when getUserGroups fails with a network error", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      seedCachedGroups([{ group_id: "g1" }]);
+      mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+      mockGetUserGroups.mockResolvedValue({ data: null, error: networkError });
+      const useAuthGate = loadUseAuthGate();
+
+      const { result } = await renderHook(() => useAuthGate());
+
+      await waitFor(() => expect(result.current).toBe("app"));
+    });
+
+    it("still falls back to 'onboarding' on error when nothing is cached", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+      mockGetUserGroups.mockResolvedValue({ data: null, error: networkError });
+      const useAuthGate = loadUseAuthGate();
+
+      const { result } = await renderHook(() => useAuthGate());
+
+      await waitFor(() => expect(result.current).toBe("onboarding"));
+    });
+
+    it("falls back to 'onboarding' when the cached groups are empty", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      seedCachedGroups([]);
+      mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+      mockGetUserGroups.mockResolvedValue({ data: null, error: networkError });
+      const useAuthGate = loadUseAuthGate();
+
+      const { result } = await renderHook(() => useAuthGate());
+
+      await waitFor(() => expect(result.current).toBe("onboarding"));
+    });
+
+    it("waits for the persisted cache restoration before evaluating (stays 'loading')", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      seedCachedGroups([{ group_id: "g1" }]);
+      mockGetSession.mockResolvedValue({ data: { session: fakeSession("u1") } });
+      mockGetUserGroups.mockResolvedValue({ data: null, error: networkError });
+      const useAuthGate = loadUseAuthGate();
+      let restoring = true;
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <IsRestoringProvider value={restoring}>{children}</IsRestoringProvider>
+      );
+
+      const { result, rerender } = await renderHook(() => useAuthGate(), { wrapper });
+      await act(async () => {
+        await Promise.resolve();
+      });
+      expect(result.current).toBe("loading");
+      expect(mockGetUserGroups).not.toHaveBeenCalled();
+
+      restoring = false;
+      await rerender({});
+      await waitFor(() => expect(result.current).toBe("app"));
+    });
+
+    it("uses the stored session when auth-js returns null because the offline token refresh failed", async () => {
+      jest.spyOn(console, "warn").mockImplementation(() => {});
+      seedCachedGroups([{ group_id: "g1" }]);
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: { name: "AuthRetryableFetchError", status: 0 },
+      });
+      mockReadStoredSession.mockResolvedValue(fakeSession("u1"));
+      mockGetUserGroups.mockResolvedValue({ data: null, error: networkError });
+      const useAuthGate = loadUseAuthGate();
+
+      const { result } = await renderHook(() => useAuthGate());
+      // auth-js also emits INITIAL_SESSION(null) in that situation.
+      await waitFor(() => expect(mockOnAuthStateChange).toHaveBeenCalled());
+      await mockOnAuthStateChange.mock.calls[0][0]("INITIAL_SESSION", null);
+
+      await waitFor(() => expect(result.current).toBe("app"));
+    });
+
+    it("does not resurrect a stored session on SIGNED_OUT", async () => {
+      mockGetSession.mockResolvedValue({ data: { session: null } });
+      const useAuthGate = loadUseAuthGate();
+      const { result } = await renderHook(() => useAuthGate());
+      await waitFor(() => expect(result.current).toBe("auth"));
+      expect(mockReadStoredSession).toHaveBeenCalledTimes(1);
+      mockReadStoredSession.mockResolvedValue(fakeSession("u1"));
+      await mockOnAuthStateChange.mock.calls[0][0]("SIGNED_OUT", null);
+      await waitFor(() => expect(result.current).toBe("auth"));
+      expect(mockReadStoredSession).toHaveBeenCalledTimes(1);
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { render } from "@testing-library/react-native";
 
-import { GroupThemeProvider } from "../src/components/GroupThemeProvider";
+import { GroupThemeProvider, useGroupTheme } from "../src/components/GroupThemeProvider";
 
 describe("GroupThemeProvider", () => {
   it("applies the matching .theme-<name> class for a known theme name", async () => {
@@ -44,5 +44,26 @@ describe("GroupThemeProvider", () => {
     );
 
     expect(getByText("hello crew")).toBeTruthy();
+  });
+});
+
+describe("useGroupTheme", () => {
+  function Probe() {
+    const theme = useGroupTheme();
+    return <Text testID="probe">{`${theme.name}:${theme.colors.accent}`}</Text>;
+  }
+
+  it("returns the resolved theme of the nearest provider", async () => {
+    const { getByTestId } = await render(
+      <GroupThemeProvider themeName="blue">
+        <Probe />
+      </GroupThemeProvider>,
+    );
+    expect(getByTestId("probe").props.children).toBe("blue:#4e8ac8");
+  });
+
+  it("falls back to gold without a provider", async () => {
+    const { getByTestId } = await render(<Probe />);
+    expect(getByTestId("probe").props.children).toBe("gold:#c8a44e");
   });
 });

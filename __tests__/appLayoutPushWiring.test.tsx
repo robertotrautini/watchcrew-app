@@ -27,6 +27,12 @@ jest.mock("@/hooks/useChangelogStartupToast", () => ({
   useChangelogStartupToast: mockUseChangelogStartupToast,
 }));
 
+// Theme wiring has its own test (ActiveGroupThemeProvider.test.tsx); here a
+// passthrough keeps this test free of a QueryClient.
+jest.mock("@/components/ActiveGroupThemeProvider", () => ({
+  ActiveGroupThemeProvider: ({ children }: { children?: unknown }) => children,
+}));
+
 jest.mock("expo-router", () => {
   const actualReact = require("react");
   return {

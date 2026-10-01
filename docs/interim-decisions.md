@@ -132,6 +132,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Passwort vergessen, Auth-Deep-Link (Reset + Signup-Bestätigung)](#m12-vorbereitung-live-bug-fix--nachbesserung-passwort-vergessen-auth-deep-link-reset--signup-bestätigung)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Offline-Stufe 1: Query-Cache-Persistenz (MMKV), Offline-Banner](#m12-vorbereitung-live-bug-fix--nachbesserung-offline-stufe-1-query-cache-persistenz-mmkv-offline-banner)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Erscheinungsdatum pro Gruppe bearbeiten](#m12-vorbereitung-live-bug-fix--nachbesserung-erscheinungsdatum-pro-gruppe-bearbeiten)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Geräte-Test Welle 2: Map-Cache-Absturz, Settings-Aussperrung, Gruppenfarbe, Offline-Kaltstart](#m12-vorbereitung-live-bug-fix--nachbesserung-gerate-test-welle-2-map-cache-absturz-settings-aussperrung-gruppenfarbe-offline-kaltstart)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2062,6 +2063,26 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offener Punkt:** Migration `20261001090000` muss auf dem Remote angewendet werden (`supabase db push`), bis dahin schlägt das Speichern fehl (Spalte fehlt).
 
 **Gerätetest nötig:** Datum ändern (Sheet, nativer Picker), Badge/„Kommt noch“/Jahresfilter/Sortierung danach, Zurücksetzen, Detailansicht-Anzeige, zweite Gruppe mit demselben Film bleibt unverändert, Realtime-Sync auf zweitem Gerät.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Geräte-Test Welle 2: Map-Cache-Absturz, Settings-Aussperrung, Gruppenfarbe, Offline-Kaltstart
+
+**Problem/Lücke:** Vier am Pixel 6 Pro reproduzierte Fehler: (1) Absturz „Render Error: undefined is not a function“ (`watchlistLogic.ts:152`, `providersByTmdbId.get`) bei aktiver Sortierung „Meine Streaming-Dienste“ nach Force-Stop, bei jedem Start; (2) bei ausgeschaltetem „Tracker aktiv“ waren die Einstellungen unerreichbar (Zahnrad nur im Tracker-Tab); (3) Gruppenfarbe wechselte nur Swatch/Header-Punkt, nie die App; (4) Offline-Kaltstart landete im Onboarding.
+
+**Ursache:** (1) Die Offline-Persistenz serialisiert den Query-Cache als JSON; `useMyStreamingProviders` (und `useGroupWatchlist.streamingAvailability`) legten eine `Map` im Cache ab, die als `{}` wiederhergestellt wurde. (2) Kein Einstiegspunkt außerhalb des Trackers. (3) Der Tab-Layout-Code nutzte hart `resolveGroupTheme(undefined)` und kein `GroupThemeProvider` umschloss die App. (4) `useAuthGate` rief `getUserGroups` direkt auf (nicht über den persistierten Cache) und fiel bei Fehler auf `onboarding`; zusätzlich meldet auth-js 2.116 bei abgelaufenem Access-Token offline `session: null` (+ `INITIAL_SESSION(null)`), obwohl die Session im Storage bleibt (nur ein nicht-retrybarer Fehler räumt sie ab).
+
+**Entscheidung:**
+- **Cache JSON-sicher (Klasse, nicht nur Instanz):** Alle `queryFn`-Ergebnisse unter `src/` geprüft; nur diese zwei Hooks hatten eine `Map`. Sie speichern jetzt Arrays (`[tmdbId, providers][]` bzw. `streamingAvailableIds: number[]`) und bauen die `Map` in einem modulweiten `select` (nicht-Array/alte Form ergibt leere Map statt Absturz). Zusätzlich verwirft `shouldPersistQuery` per `isJsonSafe()` jede Query, deren Daten Map/Set/Date/Klasseninstanzen enthalten (Schutz für künftige Hooks; Tests dazu). `CACHE_SCHEMA_VERSION` 1 → 2, damit schon persistierte falsche Formen auf Geräten verworfen werden.
+- **Einstellungen:** Neue gemeinsame `SettingsButton` (`src/components/ui/SettingsButton.tsx`, Prop `testID`) in Tracker (`tracker-group-settings-button`, unverändert), Watchlist (`watchlist-settings-button`) und Tagebuch (`tagebuch-settings-button`). Tagebuch bekam dafür eine Kopfzeile mit Titel „Tagebuch“ (wie Watchlist/Tracker).
+- **Gruppenfarbe:** `GroupThemeProvider` stellt zusätzlich einen Context bereit (`useGroupTheme()`, Gold ohne Provider). Neuer `ActiveGroupThemeProvider` (aktive Gruppe via `useActiveGroup` + `useGroupDetails().color_theme`) umschließt in `src/app/(app)/_layout.tsx` Tabs und Modals; Tab-Leiste und die Roh-Hex-Sternfarbe (Tagebuch, Film-Detail) lesen `useGroupTheme()`, Klassen wie `bg-accent` folgen über die `.theme-*`-CSS-Variablen. `useSetGroupTheme` invalidiert `groupDetails` → Live-Update. Fallback Gold, solange Details unbekannt sind. Onboarding bleibt Gold (noch keine Gruppe).
+- **Offline-Kaltstart:** `useAuthGate` wartet auf `useIsRestoring()`, liest bei `getUserGroups`-Fehler `queryClient.getQueryData(userGroupsQueryOptions(userId).queryKey)` und wertet ≥ 1 gecachte Gruppe als `app`, sonst `onboarding` (Warn-Log und Request-ID-Race-Guard unverändert). Auth-Session offline: bei `session: null` (außer Event `SIGNED_OUT`) liest `readStoredSession()` (`src/lib/storedSession.ts`) die Session direkt aus SecureStore (`auth.storageKey` + `largeSecureStore`); in `useAuthGate` und `useCurrentUserId` (Letzteres, damit die Tabs die Cache-Queries mit der User-ID überhaupt abfragen). Nach Reconnect refresht auth-js den Token selbst.
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) Das Singleton `queryClient` wird in `useAuthGate` direkt importiert statt `useQueryClient()` (Hook läuft auch in Tests ohne Provider). (b) Warten auf Cache-Restore verzögert den Gate-Start minimal, auch online. (c) `readStoredSession` greift auf das nicht öffentlich typisierte `supabase.auth.storageKey` zu.
+
+**Warum das später leicht änderbar ist:** Kleine, isolierte Helper (`isJsonSafe`, `SettingsButton`, `ActiveGroupThemeProvider`, `readStoredSession`); die Cache-Version steuert künftige Formänderungen.
+
+**Gerätetest nötig:** Siehe Verifikationsreport Welle 2 (`.scratch-screenshots/verify-wave2-2026-10-01/`).
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
