@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { loadStreamingRows } from "@/lib/streamingAvailability";
+import { refreshReleaseDates } from "@/lib/tmdbProxy";
 import { getGroupWatchlistEntries } from "@/lib/watchlist";
 import { buildStreamingAvailabilityLookup, getEffectiveReleaseDate } from "@/lib/watchlistLogic";
 import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
@@ -30,6 +31,19 @@ function toGroupWatchlistData(cached: CachedGroupWatchlistData): GroupWatchlistD
   };
 }
 
+/** True when the refresh found at least one new release date (list must be re-read). */
+async function refreshDatelessReleaseDates(datelessTmdbIds: number[]): Promise<boolean> {
+  if (datelessTmdbIds.length === 0) {
+    return false;
+  }
+  try {
+    const { data } = await refreshReleaseDates(datelessTmdbIds);
+    return Object.values(data ?? {}).some((date) => date != null);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Wraps `getGroupWatchlistEntries` (src/lib/watchlist.ts) + the cache-backed
  * `loadStreamingRows` (src/lib/streamingAvailability.ts) in a single TanStack Query.
@@ -51,7 +65,7 @@ export function useGroupWatchlist(groupId: string | undefined) {
         throw entriesError;
       }
 
-      const safeEntries = (entries ?? []) as unknown as WatchlistEntry[];
+      let safeEntries = (entries ?? []) as unknown as WatchlistEntry[];
 
       const tmdbIds = Array.from(
         new Set(
@@ -73,12 +87,24 @@ export function useGroupWatchlist(groupId: string | undefined) {
         )
       );
 
-      const { data: availabilityRows, error: availabilityError } = await loadStreamingRows(
-        tmdbIds,
-        datelessTmdbIds
-      );
+      // ADR 0005 (replaces the legacy cron): re-check the TMDB release date of
+      // date-less films via ONE batched Edge Function call (server-side 24h TTL,
+      // writes movies.release_date). Best effort -- never fails the list.
+      const [{ data: availabilityRows, error: availabilityError }, datesFound] = await Promise.all([
+        loadStreamingRows(tmdbIds, datelessTmdbIds),
+        refreshDatelessReleaseDates(datelessTmdbIds),
+      ]);
       if (availabilityError) {
         throw availabilityError;
+      }
+
+      if (datesFound) {
+        const { data: reread, error: rereadError } = await getGroupWatchlistEntries(
+          groupId as string
+        );
+        if (!rereadError && reread) {
+          safeEntries = reread as unknown as WatchlistEntry[];
+        }
       }
 
       return {

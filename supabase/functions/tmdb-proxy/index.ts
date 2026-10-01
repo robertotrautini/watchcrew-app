@@ -33,6 +33,10 @@
 //     docs/interim-decisions.md "M6-Cleanup / M7-Vorgriff"): authenticated
 //     clients call this action instead of writing to those tables directly.
 //     Idempotent by tmdb_id — see ./movie-upsert.ts.
+//   - kind: "refresh_release_dates" — lazy replacement for the legacy cron
+//     that refilled NULL release dates (ADR 0005): batch re-check (24h TTL)
+//     of date-less films, writes `movies.release_date`; see
+//     ./release-date-refresh.ts.
 //
 // The freshness/TTL DECISION lives in ./freshness.ts as pure functions,
 // unit-tested separately with Deno.test. The actual TMDB/Trakt fetch calls
@@ -68,6 +72,10 @@ import { fetchTraktRelated } from "./trakt-client.ts";
 import { enrichRelatedWithPosters } from "./related-posters.ts";
 import { createSupabaseMovieUpsertDb, upsertMovie } from "./movie-upsert.ts";
 import { MAX_PROVIDERS_BATCH_SIZE, resolveProvidersBatch } from "./providers-cache.ts";
+import {
+  MAX_RELEASE_DATE_BATCH_SIZE,
+  refreshReleaseDatesBatch,
+} from "./release-date-refresh.ts";
 
 type ProxyKind =
   | "metadata"
@@ -87,12 +95,13 @@ type ProxyKind =
   | "director_movies"
   | "search_company"
   | "studio_movies"
-  | "upsert_movie";
+  | "upsert_movie"
+  | "refresh_release_dates";
 
 interface ProxyRequestBody {
   kind: ProxyKind;
   tmdbId?: number;
-  /** `kind: "providers_batch"` only: ids to resolve in one round trip. */
+  /** `kind: "providers_batch"` / `"refresh_release_dates"` only: ids to resolve in one round trip. */
   tmdbIds?: number[];
   region?: string;
   query?: string;
@@ -128,6 +137,7 @@ const VALID_KINDS: ProxyKind[] = [
   "search_company",
   "studio_movies",
   "upsert_movie",
+  "refresh_release_dates",
 ];
 
 function getSupabaseClient(): SupabaseClient {
@@ -480,6 +490,49 @@ Deno.serve(async (req: Request) => {
         }
         const db = createSupabaseMovieUpsertDb(supabase);
         const data = await upsertMovie(body.tmdbId, { db }, body.manualReleaseDate);
+        return jsonResponse({ data }, 200);
+      }
+
+      case "refresh_release_dates": {
+        if (
+          !Array.isArray(body.tmdbIds) ||
+          body.tmdbIds.length > MAX_RELEASE_DATE_BATCH_SIZE ||
+          !body.tmdbIds.every((id) => typeof id === "number")
+        ) {
+          return badRequest(
+            `Expected { tmdbIds: number[] (max ${MAX_RELEASE_DATE_BATCH_SIZE}), kind: 'refresh_release_dates' }`,
+          );
+        }
+        const data = await refreshReleaseDatesBatch(body.tmdbIds, {
+          readRows: async (ids) => {
+            const { data: rows, error } = await supabase
+              .from("movie_metadata_cache")
+              .select("tmdb_id, data, last_fetched_at")
+              .in("tmdb_id", ids);
+            if (error) throw error;
+            return (rows ?? []) as MetadataCacheRow[];
+          },
+          fetchReleaseDate: async (id) => {
+            const german = await fetchGermanReleaseDates(id);
+            if (german?.release_date) return german.release_date;
+            return (await fetchMovieDetails(id)).releaseDate || null;
+          },
+          updateMovieReleaseDate: async (id, date) => {
+            const { error } = await supabase
+              .from("movies")
+              .update({ release_date: date })
+              .eq("tmdb_id", id)
+              .is("release_date", null);
+            if (error) throw error;
+          },
+          writeRows: async (rows) => {
+            const fetchedAt = new Date().toISOString();
+            const { error } = await supabase.from("movie_metadata_cache").upsert(
+              rows.map((r) => ({ tmdb_id: r.tmdb_id, data: r.data, last_fetched_at: fetchedAt })),
+            );
+            if (error) throw error;
+          },
+        });
         return jsonResponse({ data }, 200);
       }
 

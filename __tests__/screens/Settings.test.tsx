@@ -318,4 +318,39 @@ describe("SettingsScreen", () => {
       expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
     });
   });
+  // Inventory 2.7 — data-source attributions (TMDB/Trakt/JustWatch terms), text only.
+  describe("Datenquellen attributions", () => {
+    it("renders the section with TMDB, Trakt and JustWatch notices (no KinoCheck)", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId, queryByText, getByText } = await render(<SettingsScreen />);
+
+      expect(getByTestId("settings-attributions")).toBeTruthy();
+      expect(getByText("Datenquellen")).toBeTruthy();
+      expect(
+        getByTestId("settings-attribution-tmdb-text").props.children,
+      ).toBe(
+        "Dieses Produkt verwendet die TMDB-API, wird von TMDB aber weder unterstützt noch zertifiziert.",
+      );
+      expect(getByTestId("settings-attribution-trakt-text").props.children).toBe(
+        "Ähnliche Filme werden von Trakt bereitgestellt.",
+      );
+      expect(getByTestId("settings-attribution-justwatch-text").props.children).toBe(
+        "Streaming-Daten: JustWatch via TMDB",
+      );
+      expect(queryByText(/KinoCheck/)).toBeNull();
+    });
+
+    it.each([
+      ["tmdb", "https://www.themoviedb.org"],
+      ["trakt", "https://trakt.tv"],
+      ["justwatch", "https://www.justwatch.com"],
+    ])("opens the %s site on press", async (key, url) => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      await fireEvent.press(getByTestId(`settings-attribution-${key}`));
+
+      expect(mockOpenURL).toHaveBeenCalledWith(url);
+    });
+  });
 });

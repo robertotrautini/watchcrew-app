@@ -7,9 +7,11 @@ const mockGetGroupWatchlistEntries = jest.fn();
 const mockGetStreamingAvailabilityForTmdbIds = jest.fn();
 
 const mockGetMoviesProvidersBatch = jest.fn();
+const mockRefreshReleaseDates = jest.fn();
 
 jest.mock("@/lib/tmdbProxy", () => ({
   getMoviesProvidersBatch: (...args: unknown[]) => mockGetMoviesProvidersBatch(...args),
+  refreshReleaseDates: (...args: unknown[]) => mockRefreshReleaseDates(...args),
 }));
 
 jest.mock("@/lib/watchlist", () => ({
@@ -42,6 +44,82 @@ describe("useGroupWatchlist", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetMoviesProvidersBatch.mockResolvedValue({ data: {}, error: null });
+    mockRefreshReleaseDates.mockResolvedValue({ data: {}, error: null });
+  });
+
+  describe("release-date refresh of date-less films (ADR 0005)", () => {
+    beforeEach(() => {
+      mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({ data: [], error: null });
+    });
+
+    it("calls the refresh ONCE with only the date-less ids (override counts as dated) and re-reads entries when a date was found", async () => {
+      mockGetGroupWatchlistEntries
+        .mockResolvedValueOnce({
+          data: [
+            { id: "e1", movie: { tmdb_id: 1, release_date: null }, ratings: [] },
+            { id: "e2", movie: { tmdb_id: 2, release_date: "2020-01-01" }, ratings: [] },
+            { id: "e3", movie: { tmdb_id: 3, release_date: null }, release_date_override: "2027-01-01", ratings: [] },
+          ],
+          error: null,
+        })
+        .mockResolvedValueOnce({
+          data: [{ id: "e1", movie: { tmdb_id: 1, release_date: "2026-12-24" }, ratings: [] }],
+          error: null,
+        });
+      mockRefreshReleaseDates.mockResolvedValue({ data: { "1": "2026-12-24" }, error: null });
+      const useGroupWatchlist = loadUseGroupWatchlist();
+
+      const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.data).toBeDefined());
+      expect(mockRefreshReleaseDates).toHaveBeenCalledTimes(1);
+      expect(mockRefreshReleaseDates).toHaveBeenCalledWith([1]);
+      expect(mockGetGroupWatchlistEntries).toHaveBeenCalledTimes(2);
+      expect(result.current.data.entries[0].movie.release_date).toBe("2026-12-24");
+    });
+
+    it("does not re-read entries when no date was found, and ignores refresh errors", async () => {
+      mockGetGroupWatchlistEntries.mockResolvedValue({
+        data: [{ id: "e1", movie: { tmdb_id: 1, release_date: null }, ratings: [] }],
+        error: null,
+      });
+      mockRefreshReleaseDates.mockResolvedValue({ data: { "1": null }, error: null });
+      const useGroupWatchlist = loadUseGroupWatchlist();
+      const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.data).toBeDefined());
+      expect(mockGetGroupWatchlistEntries).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the list when the refresh fails or throws", async () => {
+      mockGetGroupWatchlistEntries.mockResolvedValue({
+        data: [{ id: "e1", movie: { tmdb_id: 1, release_date: null }, ratings: [] }],
+        error: null,
+      });
+      mockRefreshReleaseDates.mockRejectedValue(new Error("down"));
+      const useGroupWatchlist = loadUseGroupWatchlist();
+      const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.data).toBeDefined());
+      expect(result.current.data.entries).toHaveLength(1);
+    });
+
+    it("makes no refresh call when every film has a date", async () => {
+      mockGetGroupWatchlistEntries.mockResolvedValue({
+        data: [{ id: "e1", movie: { tmdb_id: 2, release_date: "2020-01-01" }, ratings: [] }],
+        error: null,
+      });
+      const useGroupWatchlist = loadUseGroupWatchlist();
+      const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+        wrapper: createWrapper(),
+      });
+      await waitFor(() => expect(result.current.data).toBeDefined());
+      expect(mockRefreshReleaseDates).not.toHaveBeenCalled();
+    });
   });
 
   it("fetches entries, then fetches streaming availability for the entries' tmdb_ids", async () => {

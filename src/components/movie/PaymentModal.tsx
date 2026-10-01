@@ -172,7 +172,7 @@ export function PaymentModal({
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => setSelectedPayerId(member.user_id)}
-                  className="items-center rounded-full px-3 py-1"
+                  className={isSelected ? "items-center rounded-full px-3 py-1" : "items-center rounded-full border px-3 py-1"}
                   // Inline style exception (documented, narrow -- see
                   // docs/interim-decisions.md "M8", same precedent as the
                   // M6-Cleanup MovieGrid progress-bar-fill exception):
@@ -180,7 +180,7 @@ export function PaymentModal({
                   // (src/lib/trackerLogic.ts), one per member, with no fixed
                   // enumerable set NativeWind's JIT could pre-generate
                   // classes for.
-                  style={isSelected ? { backgroundColor: color } : { borderWidth: 1, borderColor: color }}
+                  style={isSelected ? { backgroundColor: color } : { borderColor: color }}
                 >
                   <Text className={isSelected ? "text-xs text-bg-primary" : "text-xs text-text-primary"}>
                     {memberDisplayLabel(member.user_id, member.profiles?.display_name)}

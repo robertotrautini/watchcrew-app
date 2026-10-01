@@ -301,7 +301,11 @@ export default function TrackerScreen() {
                                   accessibilityRole="button"
                                   accessibilityState={{ selected: isSelected }}
                                   onPress={() => setEditPayerId(member.user_id)}
-                                  className="items-center rounded-full px-3 py-1"
+                                  className={
+                                    isSelected
+                                      ? "items-center rounded-full px-3 py-1"
+                                      : "items-center rounded-full border px-3 py-1"
+                                  }
                                   // Inline style exception -- same documented,
                                   // narrow precedent as PaymentModal.tsx and
                                   // the M6-Cleanup MovieGrid progress-bar
@@ -310,7 +314,7 @@ export default function TrackerScreen() {
                                   style={
                                     isSelected
                                       ? { backgroundColor: color }
-                                      : { borderWidth: 1, borderColor: color }
+                                      : { borderColor: color }
                                   }
                                 >
                                   <Text

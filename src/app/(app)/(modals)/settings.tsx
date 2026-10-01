@@ -1,4 +1,5 @@
 import Constants from "expo-constants";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
@@ -78,6 +79,40 @@ function legalSections(): LegalSection[] {
     { key: "terms-of-service", label: "Nutzungsbedingungen", url: extra?.termsOfServiceUrl },
   ];
 }
+
+/**
+ * Inventory 2.7 -- data-source attributions (TMDB/Trakt/JustWatch terms).
+ * Text only (logo assets need a separate user decision). KinoCheck is
+ * deliberately absent: the app does not use it (trailers come from
+ * TMDB -> YouTube, similar movies from Trakt).
+ */
+interface AttributionEntry {
+  key: string;
+  text: string;
+  linkLabel: string;
+  url: string;
+}
+
+const ATTRIBUTIONS: AttributionEntry[] = [
+  {
+    key: "tmdb",
+    text: "Dieses Produkt verwendet die TMDB-API, wird von TMDB aber weder unterstützt noch zertifiziert.",
+    linkLabel: "themoviedb.org",
+    url: "https://www.themoviedb.org",
+  },
+  {
+    key: "trakt",
+    text: "Ähnliche Filme werden von Trakt bereitgestellt.",
+    linkLabel: "trakt.tv",
+    url: "https://trakt.tv",
+  },
+  {
+    key: "justwatch",
+    text: "Streaming-Daten: JustWatch via TMDB",
+    linkLabel: "justwatch.com",
+    url: "https://www.justwatch.com",
+  },
+];
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -189,6 +224,24 @@ export default function SettingsScreen() {
             >
               <Text className="text-text-primary">{section.label}</Text>
               <Text className="text-text-secondary">{"›"}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View testID="settings-attributions" className="mt-4 gap-2">
+          <Text className="px-1 text-sm text-text-secondary">Datenquellen</Text>
+          {ATTRIBUTIONS.map((entry) => (
+            <Pressable
+              key={entry.key}
+              testID={`settings-attribution-${entry.key}`}
+              accessibilityRole="link"
+              className="gap-1 rounded-lg border border-border-subtle bg-card px-4 py-3"
+              onPress={() => void Linking.openURL(entry.url)}
+            >
+              <Text testID={`settings-attribution-${entry.key}-text`} className="text-sm text-text-primary">
+                {entry.text}
+              </Text>
+              <Text className="text-xs text-accent">{entry.linkLabel}</Text>
             </Pressable>
           ))}
         </View>

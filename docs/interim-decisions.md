@@ -133,6 +133,8 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Offline-Stufe 1: Query-Cache-Persistenz (MMKV), Offline-Banner](#m12-vorbereitung-live-bug-fix--nachbesserung-offline-stufe-1-query-cache-persistenz-mmkv-offline-banner)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Erscheinungsdatum pro Gruppe bearbeiten](#m12-vorbereitung-live-bug-fix--nachbesserung-erscheinungsdatum-pro-gruppe-bearbeiten)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Geräte-Test Welle 2: Map-Cache-Absturz, Settings-Aussperrung, Gruppenfarbe, Offline-Kaltstart](#m12-vorbereitung-live-bug-fix--nachbesserung-gerate-test-welle-2-map-cache-absturz-settings-aussperrung-gruppenfarbe-offline-kaltstart)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Datenquellen-Attribution (Settings), Inline-Style-Audit](#m12-vorbereitung-live-bug-fix--nachbesserung-datenquellen-attribution-settings-inline-style-audit)
+- [M12-Vorbereitung — Entscheidung Legacy-Cron "Erscheinungsdatum nachtragen" entfällt, Lazy-Refresh date-loser Filme](#m12-vorbereitung--entscheidung-legacy-cron-erscheinungsdatum-nachtragen-entfällt-lazy-refresh-date-loser-filme)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2083,6 +2085,38 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Kleine, isolierte Helper (`isJsonSafe`, `SettingsButton`, `ActiveGroupThemeProvider`, `readStoredSession`); die Cache-Version steuert künftige Formänderungen.
 
 **Gerätetest nötig:** Siehe Verifikationsreport Welle 2 (`.scratch-screenshots/verify-wave2-2026-10-01/`).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Datenquellen-Attribution (Settings), Inline-Style-Audit
+
+**Problem/Lücke:** (1) Inventar 2.7 verlangt Attributions-Links (TMDB, Trakt, KinoCheck); TMDB und JustWatch fordern Nennung in den Nutzungsbedingungen. Die App zeigte nichts an. (2) Globale Regel „CSS-Klassen statt Inline-Styles“: Audit der `style={{...}}`-Nutzungen in `src/`.
+
+**Entscheidung:**
+- **Attribution:** Neuer Abschnitt „Datenquellen“ im Settings-Hub (`settings.tsx`), nur Text, keine Logos (Logo-Assets brauchen eine Nutzerentscheidung). Drei Zeilen im Stil der Legal-Zeilen (Card-Pressable): TMDB-Pflichthinweis (deutsch), „Ähnliche Filme werden von Trakt bereitgestellt.“, „Streaming-Daten: JustWatch via TMDB“; jede öffnet die Seite per `Linking.openURL` (`expo-linking`, wie `legalLinks.ts`), testIDs `settings-attribution-tmdb/-trakt/-justwatch`. KinoCheck bewusst NICHT genannt: im Code nicht verwendet (Trailer = TMDB/YouTube, Ähnliche Filme = Trakt). Der englische TMDB-Originaltext steht nicht im Inventar und wurde nicht ergänzt.
+- **Inline-Styles:** Statisches umgestellt: `borderWidth: 1` der Zahler-Buttons (`PaymentModal.tsx`, `tracker.tsx`) ist jetzt Klasse `border` (nur unselektiert, wie zuvor); inline bleibt nur die Laufzeitfarbe. Bleibt inline (begründet): `MovieGrid` Balkenbreite (Laufzeit-Prozent, M6-Cleanup-Ausnahme), Zahler-Farben (`backgroundColor`/`borderColor`, M8-Ausnahme), `Toast.tsx` und `FadeInItem.tsx` (Animated-Werte, `opacity`/`translateY`). Expo-Template-Reste (`themed-view`/`themed-text`/`collapsible`/`hint-row`/`web-badge`/`animated-icon*`, `StyleSheet`) nicht angefasst: kein Produktcode bzw. dynamische Theme-Werte; Entfernung/Umstellung wäre eigene Entscheidung.
+
+**Warum das später leicht änderbar ist:** Attributionsliste ist ein Array (`ATTRIBUTIONS`); Logos können pro Eintrag ergänzt werden.
+
+**Gerätetest nötig:** Zahler-Buttons (Zahlungs-Modal, Tracker-Bearbeiten): selektiert/unselektiert gleiche Größe/Rahmenfarbe wie vorher; Settings: Datenquellen-Zeilen, Links öffnen Browser.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+## M12-Vorbereitung — Entscheidung Legacy-Cron "Erscheinungsdatum nachtragen" entfällt, Lazy-Refresh date-loser Filme
+
+**Problem/Lücke:** Nutzerfrage: Braucht es den Legacy-Cron (NULL-Erscheinungsdaten nachtragen, „neues Datum gefunden“-Push)? Prüfung: ADR 0005 ersetzt den Cron-Bulk-Refresh (`cron-releases.php`) ausdrücklich durch serverseitiges Cache-Aside („ersetzt den alten Cron-basierten Bulk-Refresh“); als Cron bleibt NUR der schlanke Release-Reminder-Job (14/7/1 Tage + Tag selbst), der „nur noch anstehende Erscheinungstermine prüft“ und „kein Bulk-Metadaten-Refresh mehr“ ist (ADR 0005 Entscheidung + Konsequenzen; `docs/planning-report.html` Abschnitt „Cache-Aside statt Cron-Bulk-Refresh“, „Release-Reminder bleibt eigener Job“). Ein Push „neues Datum gefunden“ steht weder in ADR 0005 noch in der Roadmap. Code-Ist: `useGroupWatchlist` aktualisierte nur die Streaming-Verfügbarkeit (`providers_batch`) date-loser Filme; `movies.release_date` wurde nirgends nachgeladen (`upsert_movie` schreibt es nur beim Erstanlegen, `metadata`/`details` aktualisieren nur den Cache). Ein Film, dessen TMDB-Datum erst später erscheint, blieb damit für immer date-los („Kommt noch“ ohne Datum, keine Reminder).
+
+**Entscheidung:**
+- **Kein Cron** für Datums-Nachtrag; `run_release_reminders()` bleibt unverändert. **Kein „neues Datum gefunden“-Push** (von ADR/Roadmap nicht vorgesehen, nicht gebaut).
+- **Lazy-Refresh (ADR-0005-Cache-Aside):** Neue Edge-Function-Action `refresh_release_dates` (`{ tmdbIds }`, max. 200, Batch, begrenzte Parallelität 8, Fehler pro Id übersprungen; `release-date-refresh.ts`). Pro Id: Prüfzeitpunkt in `movie_metadata_cache.data.releaseDateCheckedAt`; älter als TTL oder fehlend -> TMDB (deutsches Datum vor globalem, wie `upsert_movie`) -> bei Fund `movies.release_date` setzen, aber nur wo noch NULL (überschreibt nie ein vorhandenes oder manuell gesetztes Datum). Danach Prüfzeit schreiben, auch wenn TMDB noch kein Datum hat (max. 1 TMDB-Abruf pro Film und TTL).
+- **TTL 24 h** (Annahme: ADR 0005 nennt für nicht erschienene Filme keinen Wert; gleicher Wert wie Streaming; Konstante `RELEASE_DATE_CHECK_TTL_MS`).
+- **Client:** `refreshReleaseDates` (`tmdbProxy.ts`, 200er-Chunks); `useGroupWatchlist` ruft es parallel zum Streaming-Laden EINMAL für Filme ohne wirksames Datum (Gruppen-Override zählt als Datum) auf; wurde ein Datum gefunden, liest die queryFn die Einträge erneut (statt Invalidierung, vermeidet Schleifen). Fehler/Throw werden ignoriert (best effort).
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) ADR-Konsequenzen-Satz nennt „Release-Datum-Checks“ im Reminder-Job; gelesen als: Job liest nur die gespeicherten Termine, kein TMDB-Refresh. Falls ein TMDB-Abgleich im Cron gewünscht ist, wäre das eine Gegenentscheidung. (b) Nur Filme ohne Datum werden geprüft; verschobene Termine bereits datierter Filme werden nicht aktualisiert (der Legacy-Cron füllte ebenfalls nur NULL).
+
+**Warum das später leicht änderbar ist:** Eigene Action + Datei; TTL ist eine Konstante; Client-Aufruf ein einzelner Helper im Hook.
+
+**Gerätetest nötig:** Edge Function `tmdb-proxy` muss neu deployt werden (neue Action; ohne Deploy schlägt der Aufruf still fehl, Liste lädt wie bisher). Danach: date-loser Film, dessen TMDB-Datum existiert, bekommt beim Öffnen der Watchlist sein Datum.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

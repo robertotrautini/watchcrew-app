@@ -151,6 +151,28 @@ describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () =>
     expect(failed.error).toEqual({ message: "boom" });
   });
 
+  it("refreshReleaseDates invokes tmdb-proxy with kind: 'refresh_release_dates', chunked, and merges the id-keyed result", async () => {
+    mockInvoke
+      .mockResolvedValueOnce({ data: { data: { "1": "2026-12-24" } }, error: null })
+      .mockResolvedValueOnce({ data: { data: { "250": null } }, error: null });
+    const ids = Array.from({ length: 250 }, (_, i) => i + 1);
+
+    const { refreshReleaseDates } = require("../../src/lib/tmdbProxy");
+    const result = await refreshReleaseDates(ids);
+
+    expect(mockInvoke).toHaveBeenCalledTimes(2);
+    expect(mockInvoke.mock.calls[0][1].body.kind).toBe("refresh_release_dates");
+    expect(result).toEqual({ data: { "1": "2026-12-24", "250": null }, error: null });
+  });
+
+  it("refreshReleaseDates makes no call for an empty list and surfaces errors", async () => {
+    const { refreshReleaseDates } = require("../../src/lib/tmdbProxy");
+    expect(await refreshReleaseDates([])).toEqual({ data: {}, error: null });
+    expect(mockInvoke).not.toHaveBeenCalled();
+    mockInvoke.mockResolvedValue({ data: null, error: { message: "boom" } });
+    expect((await refreshReleaseDates([1])).error).toEqual({ message: "boom" });
+  });
+
   it("getProvidersList invokes tmdb-proxy with kind: 'providers_list' and no other params", async () => {
     const providers = [{ provider_id: 8, provider_name: "Netflix" }];
     mockInvoke.mockResolvedValue({ data: { data: providers }, error: null });

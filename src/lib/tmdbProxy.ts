@@ -161,6 +161,31 @@ export async function getMoviesProvidersBatch(
 }
 
 /**
+ * ADR 0005 (replaces the legacy "fill NULL release dates" cron): asks the
+ * Edge Function to re-check the TMDB release date of date-less films (server
+ * side 24h TTL, writes `movies.release_date`). Result: tmdb_id -> found date,
+ * or null when TMDB still has none; failed ids are absent. Chunked like
+ * `getMoviesProvidersBatch`.
+ */
+export async function refreshReleaseDates(
+  tmdbIds: number[]
+): Promise<TmdbProxyResult<Record<string, string | null>>> {
+  const merged: Record<string, string | null> = {};
+  for (let i = 0; i < tmdbIds.length; i += PROVIDERS_BATCH_CHUNK_SIZE) {
+    const chunk = tmdbIds.slice(i, i + PROVIDERS_BATCH_CHUNK_SIZE);
+    const { data, error } = await invokeTmdbProxy<Record<string, string | null>>({
+      kind: "refresh_release_dates",
+      tmdbIds: chunk,
+    });
+    if (error) {
+      return { data: null, error };
+    }
+    Object.assign(merged, data ?? {});
+  }
+  return { data: merged, error: null };
+}
+
+/**
  * M10 Settings hub ("Meine Streaming-Dienste" picker,
  * src/app/(app)/(modals)/settings/streaming-services.tsx): the full DE-region
  * TMDB provider catalog, per the `providers_list` action
