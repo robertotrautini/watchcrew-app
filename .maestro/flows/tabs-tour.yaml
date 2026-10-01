@@ -17,12 +17,24 @@ appId: com.watchcrew.app
 - tapOn:
     id: "tracker-group-settings-button"
 - extendedWaitUntil:
-    visible: "Abmelden"
+    visible: "Einstellungen"
     timeout: 10000
-- assertVisible: "Einstellungen"
 - assertVisible:
     id: "settings-screen"
+- scrollUntilVisible:
+    element:
+      id: "settings-attributions"
+- assertVisible:
+    id: "settings-attributions"
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+- assertVisible: "Abmelden"
 - takeScreenshot: 04-settings-hub
+- scrollUntilVisible:
+    element:
+      id: "settings-section-streaming-services"
+    direction: UP
 
 - tapOn:
     id: "settings-section-streaming-services"
