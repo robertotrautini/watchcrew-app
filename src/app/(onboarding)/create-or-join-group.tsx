@@ -149,7 +149,7 @@ export default function CreateOrJoinGroupScreen() {
     // Safe-Area"): standalone `headerShown: false` onboarding screen (no
     // tab bar below it either), so both top and bottom insets are this
     // screen's own responsibility.
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 bg-bg-primary px-6 py-8" testID="create-or-join-group-screen">
+    <SafeAreaView edges={["top", "bottom"]} className="flex-1 px-6 py-8" testID="create-or-join-group-screen">
       <Text className="mb-8 text-center font-display text-3xl text-text-primary">
         Willkommen bei WatchCrew
       </Text>

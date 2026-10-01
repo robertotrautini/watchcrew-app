@@ -47,7 +47,7 @@ export default function ForgotPasswordScreen() {
   return (
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center gap-4 bg-bg-primary px-6"
+      className="flex-1 justify-center gap-4 px-6"
       testID="forgot-password-screen">
       <Text className="mb-2 font-display text-3xl text-text-primary">Passwort vergessen?</Text>
 

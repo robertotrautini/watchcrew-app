@@ -135,6 +135,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Geräte-Test Welle 2: Map-Cache-Absturz, Settings-Aussperrung, Gruppenfarbe, Offline-Kaltstart](#m12-vorbereitung-live-bug-fix--nachbesserung-gerate-test-welle-2-map-cache-absturz-settings-aussperrung-gruppenfarbe-offline-kaltstart)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Datenquellen-Attribution (Settings), Inline-Style-Audit](#m12-vorbereitung-live-bug-fix--nachbesserung-datenquellen-attribution-settings-inline-style-audit)
 - [M12-Vorbereitung — Entscheidung Legacy-Cron "Erscheinungsdatum nachtragen" entfällt, Lazy-Refresh date-loser Filme](#m12-vorbereitung--entscheidung-legacy-cron-erscheinungsdatum-nachtragen-entfällt-lazy-refresh-date-loser-filme)
+- [Design-Angleichung Welle 1 — Legacy-Look: Hintergrundfoto, Glas ohne Blur, AppHeader, Tab-Leiste, Icons](#design-angleichung-welle-1--legacy-look-hintergrundfoto-glas-ohne-blur-appheader-tab-leiste-icons)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2117,6 +2118,28 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Eigene Action + Datei; TTL ist eine Konstante; Client-Aufruf ein einzelner Helper im Hook.
 
 **Gerätetest nötig:** Edge Function `tmdb-proxy` muss neu deployt werden (neue Action; ohne Deploy schlägt der Aufruf still fehl, Liste lädt wie bisher). Danach: date-loser Film, dessen TMDB-Datum existiert, bekommt beim Öffnen der Watchlist sein Datum.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+## Design-Angleichung Welle 1 — Legacy-Look: Hintergrundfoto, Glas ohne Blur, AppHeader, Tab-Leiste, Icons
+
+**Problem/Lücke:** Nutzerwunsch: Die App soll wie die Legacy-App aussehen (Referenzen: `docs/reference-screenshots/`, aus `docs/planning-report.html` Abschnitt 11). Der frühere Eintrag „M2 — Sheet: reduzierter Blur auf kleinen Screens ist ein Platzhalter“ (Glas/Blur „später“) und „M2 — Card-Hintergrund-Token-Wahl“ werden damit **überholt**: Glas-Optik wird jetzt umgesetzt, aber nur mit JS/Asset-Mitteln, weil der installierte Dev-Client keinen neuen nativen Code ohne Cloud-Rebuild aufnehmen kann.
+
+**Entscheidung:**
+- **Hintergrund:** Das Legacy-Foto (Unsplash `photo-1478720568477-152d9b164e26`, wie im Legacy-CSS) wurde einmal als Graustufen-Hochformat-Ausschnitt 720x1280 JPEG (~25 KB) vorberechnet und bereits auf ca. 27 % abgedunkelt (entspricht Legacy `opacity .25` + Luminosity). `assets/images/cinema-bg.jpg`, gerendert genau einmal in `src/app/_layout.tsx` (`AppBackground`, `expo-image`, `cover`) hinter allen Navigatoren. Alle Screen-Wurzeln haben kein `bg-bg-primary` mehr (transparent); der React-Navigation-Hintergrund ist transparent (`APP_NAV_THEME`, dark-only, kein Light-Theme).
+- **Film-Grain bewusst weggelassen:** Legacy-Grain ist ein SVG-Filter mit 3 % Deckkraft (praktisch unsichtbar); ein Bild-Asset dafür lohnt nicht.
+- **Glas ohne Blur:** `Glass`-Komponente (`default`/`strong`) und `Card`: Fülltoken `bg-card` .62 (Legacy .5/.55 mit Blur, hier dichter, weil ohne Blur das Foto sonst durchscheint), 1px-Rand `glass-border` (weiß 8 %), `rounded-xl`. Neue Tokens: `bg-glass-strong`, `bg-sheet` (.97, Sheet bleibt nahezu deckend wegen Lesbarkeit), `bg-tab-bar` (.94), `glass-border`. Toast: `Glass strong` + Akzent-Rand (vorher nur dünne Kontur). Kein `expo-blur` (nicht installiert, nativ).
+- **AppHeader** (`src/components/ui/AppHeader.tsx`): Filmrollen-Icon (Ionicons `film-outline`, keine Spulen-Grafik), Wortmarke „WATCHCREW“ in Playfair Bold, `accent-light`, Linien links/rechts, Screen-Name als Untertitel, rundes Einstellungen-Icon rechts, `actions`-Slot darunter. Genutzt von Tracker/Watchlist/Tagebuch; testIDs unverändert. Kein Gruppenname im Header (gab es vorher dort nicht; Prop `groupName` ist vorbereitet).
+- **Tab-Leiste:** dunkle Leiste + Haarlinie, goldene Linie über dem aktiven Tab (`TabBarButton`).
+- **Emoji -> Icons:** ⚙️ -> `settings-outline`, 💰 -> `cash-outline` in runden Buttons; Leer-Text des Trackers angepasst („Tippe auf den Geld-Button“).
+- **Modals:** nativer Header dunkel (#0a0a0a, ohne Schatten, goldene Playfair-Titel); doppelte Überschrift im Body entfernt (Settings, Unterseiten, Ähnliche Filme, Filmografien). Collection behält ihre Body-Überschrift (zeigt den Reihen-Namen, Header „Filmreihe“).
+- **Wichtig (Fund):** `@/global.css` wurde bisher nur indirekt über `constants/theme.ts` geladen; ohne diesen Import (durch Umbau der Tab-Layout-Imports) fehlten alle NativeWind-Stile. Jetzt expliziter Import im Root-Layout.
+
+**Abweichungen von der Legacy:** kein Blur, kein Grain, Filmrolle statt Spulen-Logo, keine Gruppen-Hintergrundposition (`--bg-pos`).
+
+**Warum das später leicht änderbar ist:** Alle Werte sind Tokens (`tailwind.config.js`) bzw. eine Datei (`Glass.tsx`, `AppBackground.tsx`); Blur kann nach einem Dev-Client-Rebuild in `Glass` ergänzt werden.
+
+**Gerätetest nötig:** Scroll-Performance auf dem Gerät, Lesbarkeit von Text über dem Foto, Sheet/Toast.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

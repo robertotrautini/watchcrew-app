@@ -63,7 +63,7 @@ export default function SimilarMoviesScreen() {
 
   if (!hasValidParams) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="similar-movies-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="similar-movies-screen">
         <Text testID="similar-movies-screen-error" className="text-center text-danger">
           Ungültige Film-Referenz.
         </Text>
@@ -73,7 +73,7 @@ export default function SimilarMoviesScreen() {
 
   if (similarMoviesQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="similar-movies-screen">
+      <View className="flex-1 items-center justify-center" testID="similar-movies-screen">
         <ActivityIndicator testID="similar-movies-screen-loading" />
       </View>
     );
@@ -81,7 +81,7 @@ export default function SimilarMoviesScreen() {
 
   if (similarMoviesQuery.isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="similar-movies-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="similar-movies-screen">
         <Text testID="similar-movies-screen-error-data" className="text-center text-danger">
           Ähnliche Filme konnten nicht geladen werden.
         </Text>
@@ -90,8 +90,7 @@ export default function SimilarMoviesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="similar-movies-screen">
-      <Text className="mb-3 font-display text-xl text-text-primary">Ähnliche Filme</Text>
+    <View className="flex-1 px-4 pt-4" testID="similar-movies-screen">
       <MovieGrid
         items={filteredItems}
         onPressItem={(item) => {

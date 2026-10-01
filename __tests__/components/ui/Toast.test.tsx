@@ -45,6 +45,18 @@ describe("ToastHost", () => {
     expect(getByTestId("toast-message").props.children).toBe("Neuer Film zur Watchlist hinzugefügt");
   });
 
+  it("renders on a filled glass surface with a border (readable over the photo background)", async () => {
+    const { getByTestId } = await render(<ToastHost />);
+
+    await act(async () => {
+      showToast("Hallo");
+    });
+
+    const className = getByTestId("toast-surface").props.className as string;
+    expect(className).toContain("bg-bg-glass-strong");
+    expect(className).toContain("border");
+  });
+
   it("plays a fade+slide-in entrance animation when a toast is shown (M11 animation polish)", async () => {
     const timingSpy = jest.spyOn(Animated, "timing");
     await render(<ToastHost />);

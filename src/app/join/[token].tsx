@@ -76,7 +76,7 @@ export default function JoinTokenScreen() {
   return (
     <SafeAreaView
       edges={["top", "bottom"]}
-      className="flex-1 items-center justify-center gap-4 bg-bg-primary px-6"
+      className="flex-1 items-center justify-center gap-4 px-6"
       testID="join-token-screen">
       {error ? (
         <>

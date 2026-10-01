@@ -64,7 +64,7 @@ export default function StudioFilmographyScreen() {
 
   if (!hasValidParams) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="studio-filmography-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="studio-filmography-screen">
         <Text testID="studio-filmography-screen-error" className="text-center text-danger">
           Ungültige Studio-Referenz.
         </Text>
@@ -74,7 +74,7 @@ export default function StudioFilmographyScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="studio-filmography-screen">
+      <View className="flex-1 items-center justify-center" testID="studio-filmography-screen">
         <ActivityIndicator testID="studio-filmography-screen-loading" />
       </View>
     );
@@ -82,7 +82,7 @@ export default function StudioFilmographyScreen() {
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="studio-filmography-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="studio-filmography-screen">
         <Text testID="studio-filmography-screen-error" className="text-center text-danger">
           Die Studio-Filmografie konnte nicht geladen werden.
         </Text>
@@ -91,8 +91,7 @@ export default function StudioFilmographyScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="studio-filmography-screen">
-      <Text className="mb-3 font-display text-xl text-text-primary">Filmografie: Studio</Text>
+    <View className="flex-1 px-4 pt-4" testID="studio-filmography-screen">
       <MovieGrid
         items={items}
         onPressItem={(item) =>

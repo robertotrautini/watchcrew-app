@@ -81,8 +81,7 @@ export default function SettingsNotificationsScreen() {
   const permission = usePushPermissionStatus();
 
   return (
-    <ScrollView className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-notifications-screen">
-      <Text className="mb-2 font-display text-xl text-text-primary">Benachrichtigungen</Text>
+    <ScrollView className="flex-1 px-4 pt-4" testID="settings-notifications-screen">
 
       {permission === "denied" ? (
         <View

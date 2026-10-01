@@ -88,7 +88,7 @@ export default function RegisterScreen() {
   if (registered) {
     return (
       <View
-        className="flex-1 items-center justify-center gap-4 bg-bg-primary px-6"
+        className="flex-1 items-center justify-center gap-4 px-6"
         testID="register-screen">
         <Text
           className="text-center font-display text-2xl text-text-primary"
@@ -117,7 +117,7 @@ export default function RegisterScreen() {
     // the keyboard on a short-height device.
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center gap-4 bg-bg-primary px-6"
+      className="flex-1 justify-center gap-4 px-6"
       testID="register-screen">
       <Text className="mb-2 font-display text-3xl text-text-primary">Registrieren</Text>
 

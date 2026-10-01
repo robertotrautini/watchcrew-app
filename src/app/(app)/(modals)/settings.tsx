@@ -174,9 +174,8 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="settings-screen">
+    <View className="flex-1" testID="settings-screen">
       <ScrollView contentContainerClassName="gap-2 px-4 pb-8 pt-4">
-        <Text className="mb-2 font-display text-xl text-text-primary">Einstellungen</Text>
 
         <View testID="settings-sections" className="gap-2">
           {SECTIONS.map((section) => (

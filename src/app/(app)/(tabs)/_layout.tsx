@@ -1,10 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useSegments } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
-import { useColorScheme } from 'react-native';
 
 import { useGroupTheme } from '@/components/GroupThemeProvider';
-import { Colors } from '@/constants/theme';
+import { TabBarButton } from '@/components/ui/TabBarButton';
 import { WATCHLIST_ROUTE } from '@/lib/homeRoute';
 import { usePreferencesStore } from '@/stores/usePreferencesStore';
 
@@ -40,8 +39,7 @@ export function getInitialTabName(trackerEnabled: boolean) {
 
 /**
  * The main app shell's tab bar. Colors: active tab uses the group-theme
- * accent color, inactive tabs use the neutral `textSecondary` token
- * (constants/theme.ts) — per the task's design-token instruction. This
+ * accent color, inactive tabs use the legacy grey #888 (--text-secondary) — per the task's design-token instruction. This
  * layout sits inside ActiveGroupThemeProvider (src/app/(app)/_layout.tsx),
  * so the accent follows the ACTIVE group's color_theme (Gold fallback while
  * unknown). `expo-router`'s Tabs (React Navigation bottom-tabs under the hood)
@@ -50,8 +48,6 @@ export function getInitialTabName(trackerEnabled: boolean) {
  * same as the (now superseded) native tab bar it replaces.
  */
 export default function TabsLayout() {
-  const scheme = useColorScheme();
-  const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { colors: groupColors } = useGroupTheme();
   const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
   const segments = useSegments() as string[];
@@ -68,7 +64,15 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: groupColors.accent,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarInactiveTintColor: '#888888',
+        // Legacy look: dark glass bar (no blur available) with hairline top
+        // border; the gold top line over the active tab is TabBarButton.
+        tabBarStyle: {
+          backgroundColor: 'rgba(12,12,12,0.94)',
+          borderTopColor: 'rgba(255,255,255,0.08)',
+          borderTopWidth: 1,
+        },
+        tabBarButton: TabBarButton as never,
       }}>
       {getTabScreens(trackerEnabled).map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{

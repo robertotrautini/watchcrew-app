@@ -96,9 +96,9 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
               // its own content.
             }}
             testID="sheet-surface"
-            // Opaque on purpose: bg-glass (.7 alpha) let the tab bar and the
-            // screen behind the Modal bleed through the sheet.
-            className="rounded-t-xl bg-bg-primary shadow-card"
+            // Near-opaque (.97) on purpose: bg-glass (.7 alpha) let the tab bar and
+            // the screen behind the Modal bleed through the sheet; no blur available.
+            className="rounded-t-xl border-t border-glass-border bg-bg-sheet shadow-card"
           >
             <SafeAreaView edges={["bottom"]} testID="sheet-safe-area">
               {title ? (

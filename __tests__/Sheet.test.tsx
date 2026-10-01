@@ -30,7 +30,7 @@ describe("Sheet", () => {
     expect(queryByText("sheet content")).toBeNull();
   });
 
-  it("uses an opaque surface (not the translucent bg-glass) so content behind the sheet cannot bleed through", async () => {
+  it("uses a near-opaque dark surface (not the translucent bg-glass) so content behind the sheet cannot bleed through", async () => {
     const { getByTestId } = await render(
       <Sheet visible onClose={jest.fn()}>
         <Text>sheet content</Text>
@@ -38,7 +38,7 @@ describe("Sheet", () => {
     );
 
     const className = getByTestId("sheet-surface").props.className as string;
-    expect(className).toContain("bg-bg-primary");
+    expect(className).toContain("bg-sheet");
     expect(className).not.toContain("bg-glass");
   });
 

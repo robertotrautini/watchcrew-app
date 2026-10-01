@@ -64,8 +64,7 @@ export default function SettingsDeleteAccountScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-delete-account-screen">
-      <Text className="mb-2 font-display text-xl text-text-primary">Konto löschen</Text>
+    <View className="flex-1 px-4 pt-4" testID="settings-delete-account-screen">
       <Text className="mb-4 text-text-secondary">
         Dein Konto sowie alle deine Gruppenmitgliedschaften, Bewertungen und Zahlungsdaten werden
         endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.

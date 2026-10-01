@@ -106,7 +106,7 @@ export default function AuthCallbackScreen() {
   if (phase === "processing") {
     return (
       <KeyboardAvoidingView
-        className="flex-1 items-center justify-center bg-bg-primary px-6"
+        className="flex-1 items-center justify-center px-6"
         testID="auth-callback-screen">
         <ActivityIndicator testID="auth-callback-loading" />
       </KeyboardAvoidingView>
@@ -116,7 +116,7 @@ export default function AuthCallbackScreen() {
   if (phase === "error") {
     return (
       <KeyboardAvoidingView
-        className="flex-1 items-center justify-center gap-4 bg-bg-primary px-6"
+        className="flex-1 items-center justify-center gap-4 px-6"
         testID="auth-callback-screen">
         <Text testID="auth-callback-error" className="text-center text-base text-danger">
           {INVALID_LINK_MESSAGE}
@@ -139,7 +139,7 @@ export default function AuthCallbackScreen() {
   return (
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center gap-4 bg-bg-primary px-6"
+      className="flex-1 justify-center gap-4 px-6"
       testID="auth-callback-screen">
       <Text className="mb-2 font-display text-3xl text-text-primary">Neues Passwort setzen</Text>
       <TextInput

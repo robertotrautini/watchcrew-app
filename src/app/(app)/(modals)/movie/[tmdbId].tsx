@@ -251,7 +251,7 @@ export default function MovieDetailScreen() {
 
   if (!isValidTmdbId) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="movie-detail-invalid">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-4" testID="movie-detail-invalid">
         <Stack.Screen options={{ headerShown: false }} />
         <Text className="text-center text-text-primary">Ungültiger Film</Text>
         <Pressable
@@ -275,7 +275,7 @@ export default function MovieDetailScreen() {
     // otherwise sit partially under it. `bottom` is handled separately, on
     // the absolutely-positioned action bar below (its own home-indicator
     // inset, not this outer container's).
-    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="movie-detail-screen">
+    <SafeAreaView edges={["top"]} className="flex-1" testID="movie-detail-screen">
       <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView contentContainerClassName="pb-24">

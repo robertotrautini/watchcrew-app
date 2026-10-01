@@ -1,3 +1,5 @@
+import '@/global.css';
+
 import {
   PlayfairDisplay_400Regular,
   PlayfairDisplay_400Regular_Italic,
@@ -6,12 +8,13 @@ import {
   useFonts,
 } from '@expo-google-fonts/playfair-display';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme } from 'react-native';
+import { View } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { AppBackground } from '@/components/ui/AppBackground';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { ToastHost } from '@/components/ui/Toast';
 import { useQueryCacheLifecycle } from '@/hooks/useQueryCacheLifecycle';
@@ -26,6 +29,24 @@ import {
 
 initSentry();
 
+/**
+ * Dark-only app theme for React Navigation chrome. `background` is
+ * transparent so the app-wide cinema photo (AppBackground) shows through the
+ * screens; `card` is the opaque dark header/tab surface (the default
+ * DarkTheme grey #111 did not match the black body).
+ */
+const APP_NAV_THEME = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: 'transparent',
+    card: '#0a0a0a',
+    text: '#e8e8e8',
+    border: 'rgba(255,255,255,0.08)',
+    primary: '#c8a44e',
+  },
+};
+
 SplashScreen.preventAutoHideAsync();
 
 /**
@@ -37,7 +58,6 @@ SplashScreen.preventAutoHideAsync();
  * duplicate that logic, it just gives the groups somewhere to mount.
  */
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
   useQueryCacheLifecycle();
   // Headings/brand font per docs/adr/0007-client-tech-stack.md — weights
   // 400/700 + italic, matching the `font-display*` Tailwind tokens in
@@ -69,7 +89,9 @@ export default function RootLayout() {
         dehydrateOptions: persistDehydrateOptions,
       }}
     >
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={APP_NAV_THEME}>
+        <View className="flex-1 bg-bg-primary">
+        <AppBackground />
         {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
             StatusBar"): this app's own color palette (tailwind.config.js's
             `bg-primary`/`text-primary` etc.) is a single fixed dark theme --
@@ -98,6 +120,7 @@ export default function RootLayout() {
             additive -- doesn't touch the Sentry/font/QueryClientProvider/
             auth-gate logic above. */}
         <ToastHost />
+        </View>
       </ThemeProvider>
     </PersistQueryClientProvider>
   );

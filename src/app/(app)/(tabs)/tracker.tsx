@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { Button } from "@/components/ui/Button";
-import { SettingsButton } from "@/components/ui/SettingsButton";
+import { AppHeader } from "@/components/ui/AppHeader";
 import { DateField } from "@/components/ui/DateField";
 import { formatDateForInput } from "@/lib/ratingLogic";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -35,7 +36,7 @@ import type { WatchlistEntry } from "@/lib/watchlistTypes";
  * that's been rated but not yet paid for does NOT appear here. See
  * `getPaidEntries` (src/lib/trackerLogic.ts).
  *
- * M9 part 2 addition, UPDATED for M10: a "⚙️" header button, now navigating
+ * M9 part 2 addition, UPDATED for M10: a gear header button, now navigating
  * to the real Settings hub (`/settings`,
  * src/app/(app)/(modals)/settings.tsx) instead of straight to Group-Settings
  * -- Group-Settings is one of that hub's sub-sections now (see the hub's own
@@ -162,7 +163,7 @@ export default function TrackerScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="tracker-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center" testID="tracker-screen">
         <ActivityIndicator testID="tracker-loading" />
         <Text className="mt-2 text-text-secondary">Tracker wird geladen…</Text>
       </SafeAreaView>
@@ -171,7 +172,7 @@ export default function TrackerScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="tracker-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-4" testID="tracker-screen">
         <Text testID="tracker-error" className="text-center text-danger">
           Der Tracker konnte nicht geladen werden.
         </Text>
@@ -188,21 +189,23 @@ export default function TrackerScreen() {
     // devices. The bottom edge is already handled by the Tabs navigator's
     // own tab bar (which safe-area-pads itself), so only `top` is added
     // here, not `bottom`.
-    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="tracker-screen">
-      <View className="flex-row items-center justify-between px-4 pt-4">
-        <Text className="font-display text-xl text-text-primary">Tracker</Text>
-        <View className="flex-row gap-2">
-          <SettingsButton testID="tracker-group-settings-button" />
+    <SafeAreaView edges={["top"]} className="flex-1" testID="tracker-screen">
+      <AppHeader
+        title="Tracker"
+        settingsTestID="tracker-group-settings-button"
+        actions={
           <Button
             size="sm"
             variant="primary"
-            label="💰"
+            className="h-10 min-h-0 w-10 rounded-full px-0"
             testID="tracker-log-payment-button"
             accessibilityLabel="Zahlung erfassen"
             onPress={() => setPaymentModalVisible(true)}
-          />
-        </View>
-      </View>
+          >
+            <Ionicons name="cash-outline" size={20} color="#0a0a0a" />
+          </Button>
+        }
+      />
 
       <View className="flex-row items-center gap-2 px-4 pt-3">
         <TextInput
@@ -219,7 +222,7 @@ export default function TrackerScreen() {
         <View className="flex-1 items-center justify-center px-8" testID="tracker-empty">
           <Text className="text-center text-text-primary">Noch keine Zahlungen erfasst.</Text>
           <Text className="mt-1 text-center text-text-secondary">
-            Tippe auf "💰", um eine Zahlung zu erfassen.
+            Tippe auf den Geld-Button, um eine Zahlung zu erfassen.
           </Text>
         </View>
       ) : (

@@ -60,7 +60,7 @@ export default function CollectionScreen() {
 
   if (!hasValidParams) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="collection-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="collection-screen">
         <Text testID="collection-screen-error" className="text-center text-danger">
           Ungültige Filmreihen-Referenz.
         </Text>
@@ -70,7 +70,7 @@ export default function CollectionScreen() {
 
   if (collectionQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="collection-screen">
+      <View className="flex-1 items-center justify-center" testID="collection-screen">
         <ActivityIndicator testID="collection-screen-loading" />
       </View>
     );
@@ -78,7 +78,7 @@ export default function CollectionScreen() {
 
   if (collectionQuery.isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="collection-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="collection-screen">
         <Text testID="collection-screen-error-data" className="text-center text-danger">
           Die Filmreihe konnte nicht geladen werden.
         </Text>
@@ -87,7 +87,7 @@ export default function CollectionScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="collection-screen">
+    <View className="flex-1 px-4 pt-4" testID="collection-screen">
       <Text className="mb-3 font-display text-xl text-text-primary">
         {collectionQuery.data?.name ?? "Filmreihe"}
       </Text>

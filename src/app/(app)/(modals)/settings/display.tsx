@@ -20,8 +20,7 @@ export default function SettingsDisplayScreen() {
   const setTrackerEnabled = usePreferencesStore((s) => s.setTrackerEnabled);
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-display-screen">
-      <Text className="mb-2 font-display text-xl text-text-primary">Darstellung</Text>
+    <View className="flex-1 px-4 pt-4" testID="settings-display-screen">
 
       <Pressable
         testID="settings-display-titles-toggle"

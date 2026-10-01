@@ -79,7 +79,7 @@ export default function LoginScreen() {
     // src/components/ui/Sheet.tsx, see that file's own comment).
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center bg-bg-primary px-6"
+      className="flex-1 justify-center px-6"
       testID="login-screen">
       <Text className="mb-8 text-center font-display-bold text-3xl text-text-primary">
         WatchCrew

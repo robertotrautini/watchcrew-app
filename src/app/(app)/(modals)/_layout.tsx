@@ -11,7 +11,18 @@ import { Stack } from "expo-router";
  */
 export default function ModalsLayout() {
   return (
-    <Stack screenOptions={{ headerShown: true }}>
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        // Dark header matching the black body (not the nav theme's grey),
+        // gold Playfair title like the legacy headings; the screens do not
+        // repeat the title in their body.
+        headerStyle: { backgroundColor: "#0a0a0a" },
+        headerShadowVisible: false,
+        headerTintColor: "#e8d5a3",
+        headerTitleStyle: { fontFamily: "PlayfairDisplay_700Bold", color: "#e8d5a3" },
+      }}
+    >
       <Stack.Screen name="add-movie" options={{ title: "Film hinzufügen" }} />
       <Stack.Screen name="similar/[tmdbId]" options={{ title: "Ähnliche Filme" }} />
       <Stack.Screen name="settings" options={{ title: "Einstellungen" }} />

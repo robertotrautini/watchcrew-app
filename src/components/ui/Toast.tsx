@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, Text } from "react-native";
 
-import { Card } from "@/components/ui/Card";
+import { Glass } from "@/components/ui/Glass";
 import { subscribeToToasts, type ToastOptions } from "@/lib/toast";
 
 /**
@@ -107,7 +107,7 @@ export function ToastHost() {
       className="absolute bottom-24 left-4 right-4"
       style={{ opacity, transform: [{ translateY }] }}
     >
-      <Card className="px-4 py-3">
+      <Glass variant="strong" testID="toast-surface" className="border-accent px-4 py-3">
         {onPress ? (
           <Pressable
             testID="toast-press"
@@ -125,7 +125,7 @@ export function ToastHost() {
         ) : (
           text
         )}
-      </Card>
+      </Glass>
     </Animated.View>
   );
 }

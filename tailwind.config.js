@@ -23,8 +23,15 @@ module.exports = {
       colors: {
         // Static (non-group-dependent) colors.
         "bg-primary": "#0a0a0a",
-        "bg-card": "rgba(20,20,20,.5)",
+        "bg-card": "rgba(20,20,20,.62)",
         "bg-glass": "rgba(20,20,20,.7)",
+        // Design-Angleichung Welle 1: no blur available (no new native
+        // modules), so the translucent fills are a bit denser than the
+        // legacy .5/.55 values; border = legacy --border-accent.
+        "bg-glass-strong": "rgba(14,14,14,.82)",
+        "bg-sheet": "rgba(12,12,12,.97)",
+        "bg-tab-bar": "rgba(12,12,12,.94)",
+        "glass-border": "rgba(255,255,255,.08)",
         "bg-autocomplete": "rgba(12,12,12,.97)",
         "text-primary": "#e8e8e8",
         "text-secondary": "#888888",

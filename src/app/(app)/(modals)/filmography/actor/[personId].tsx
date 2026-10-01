@@ -47,7 +47,7 @@ export default function ActorFilmographyScreen() {
 
   if (!hasValidParams || filmographyQuery.isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="actor-filmography-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="actor-filmography-screen">
         <Text testID="actor-filmography-screen-error" className="text-center text-danger">
           Die Filmografie konnte nicht geladen werden.
         </Text>
@@ -57,15 +57,14 @@ export default function ActorFilmographyScreen() {
 
   if (filmographyQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="actor-filmography-screen">
+      <View className="flex-1 items-center justify-center" testID="actor-filmography-screen">
         <ActivityIndicator testID="actor-filmography-screen-loading" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="actor-filmography-screen">
-      <Text className="mb-3 font-display text-xl text-text-primary">Filmografie: Schauspieler:in</Text>
+    <View className="flex-1 px-4 pt-4" testID="actor-filmography-screen">
       <MovieGrid
         items={items}
         onPressItem={(item) =>

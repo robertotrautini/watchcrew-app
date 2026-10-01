@@ -24,7 +24,7 @@ describe("Card", () => {
     const { className } = getByTestId("card-root").props;
     expect(className).toContain("bg-card");
     expect(className).toContain("rounded-xl");
-    expect(className).toContain("border-border-subtle");
+    expect(className).toContain("border-glass-border");
     expect(className).toContain("shadow-card");
   });
 

@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { Button } from "@/components/ui/Button";
-import { SettingsButton } from "@/components/ui/SettingsButton";
+import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -232,7 +232,7 @@ export default function WatchlistScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="watchlist-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center" testID="watchlist-screen">
         <ActivityIndicator testID="watchlist-loading" />
         <Text className="mt-2 text-text-secondary">Watchlist wird geladen…</Text>
       </SafeAreaView>
@@ -241,7 +241,7 @@ export default function WatchlistScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-4" testID="watchlist-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-4" testID="watchlist-screen">
         <Text testID="watchlist-error" className="text-center text-danger">
           Die Watchlist konnte nicht geladen werden.
         </Text>
@@ -253,33 +253,35 @@ export default function WatchlistScreen() {
     // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
     // Safe-Area"): same reasoning as tracker.tsx -- `headerShown: false`
     // tab screen, top inset only (bottom is the Tabs navigator's job).
-    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="watchlist-screen">
-      <View className="flex-row items-center justify-between px-4 pt-4">
-        <Text className="font-display text-xl text-text-primary">Watchlist</Text>
-        <View className="flex-row items-center gap-2">
-          <View className="flex-row gap-2" testID="watchlist-view-mode-toggle">
-            {VIEW_MODES.map((mode) => (
-              <Button
-                key={mode.key}
-                size="sm"
-                variant={watchlistViewMode === mode.key ? "primary" : "secondary"}
-                label={mode.label}
-                testID={`watchlist-view-mode-${mode.key}-button`}
-                onPress={() => setWatchlistViewMode(mode.key)}
-              />
-            ))}
-          </View>
-          <SettingsButton testID="watchlist-settings-button" />
-          <Button
-            size="sm"
-            variant="primary"
-            label="+"
-            testID="watchlist-add-movie-button"
-            accessibilityLabel="Film hinzufügen"
-            onPress={() => router.push("/add-movie")}
-          />
-        </View>
-      </View>
+    <SafeAreaView edges={["top"]} className="flex-1" testID="watchlist-screen">
+      <AppHeader
+        title="Watchlist"
+        settingsTestID="watchlist-settings-button"
+        actions={
+          <>
+            <View className="flex-row gap-2" testID="watchlist-view-mode-toggle">
+              {VIEW_MODES.map((mode) => (
+                <Button
+                  key={mode.key}
+                  size="sm"
+                  variant={watchlistViewMode === mode.key ? "primary" : "secondary"}
+                  label={mode.label}
+                  testID={`watchlist-view-mode-${mode.key}-button`}
+                  onPress={() => setWatchlistViewMode(mode.key)}
+                />
+              ))}
+            </View>
+            <Button
+              size="sm"
+              variant="primary"
+              label="+"
+              testID="watchlist-add-movie-button"
+              accessibilityLabel="Film hinzufügen"
+              onPress={() => router.push("/add-movie")}
+            />
+          </>
+        }
+      />
 
       <View className="flex-row items-center gap-2 px-4 pt-3">
         <TextInput

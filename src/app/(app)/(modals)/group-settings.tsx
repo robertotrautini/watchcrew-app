@@ -208,7 +208,7 @@ export default function GroupSettingsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary" testID="group-settings-screen">
+      <View className="flex-1 items-center justify-center" testID="group-settings-screen">
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
         <ActivityIndicator testID="group-settings-loading" />
       </View>
@@ -217,7 +217,7 @@ export default function GroupSettingsScreen() {
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="group-settings-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="group-settings-screen">
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
         <Text testID="group-settings-error" className="text-center text-danger">
           Die Gruppeneinstellungen konnten nicht geladen werden.
@@ -228,7 +228,7 @@ export default function GroupSettingsScreen() {
 
   if (!activeGroupId) {
     return (
-      <View className="flex-1 items-center justify-center bg-bg-primary px-4" testID="group-settings-screen">
+      <View className="flex-1 items-center justify-center px-4" testID="group-settings-screen">
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
         <Text testID="group-settings-no-group" className="text-center text-text-primary">
           Keine aktive Gruppe gefunden.
@@ -239,7 +239,7 @@ export default function GroupSettingsScreen() {
 
   return (
     <ScrollView
-      className="flex-1 bg-bg-primary"
+      className="flex-1"
       contentContainerClassName="gap-6 px-4 py-6"
       testID="group-settings-screen">
       <Stack.Screen options={{ title: "Gruppe verwalten" }} />

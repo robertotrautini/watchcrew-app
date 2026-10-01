@@ -24,9 +24,8 @@ export default function SettingsChangelogScreen() {
   }, [setLastSeenChangelogVersion]);
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="settings-changelog-screen">
+    <View className="flex-1" testID="settings-changelog-screen">
       <ScrollView contentContainerClassName="gap-4 px-4 py-4">
-        <Text className="mb-2 font-display text-xl text-text-primary">Changelog</Text>
 
         {CHANGELOG_ENTRIES.map((entry) => (
           <View

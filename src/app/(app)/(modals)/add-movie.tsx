@@ -315,7 +315,7 @@ export default function AddMovieScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="add-movie-screen">
+    <View className="flex-1 px-4 pt-4" testID="add-movie-screen">
       <View className="flex-row gap-2" testID="add-movie-mode-pills">
         {MODES.map((option) => (
           <Pressable

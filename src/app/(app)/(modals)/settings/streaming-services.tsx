@@ -49,7 +49,7 @@ export default function SettingsStreamingServicesScreen() {
   if (providersQuery.isLoading) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-bg-primary"
+        className="flex-1 items-center justify-center"
         testID="settings-streaming-screen"
       >
         <ActivityIndicator testID="settings-streaming-loading" />
@@ -60,7 +60,7 @@ export default function SettingsStreamingServicesScreen() {
   if (providersQuery.isError) {
     return (
       <View
-        className="flex-1 items-center justify-center bg-bg-primary px-4"
+        className="flex-1 items-center justify-center px-4"
         testID="settings-streaming-screen"
       >
         <Text testID="settings-streaming-error" className="text-center text-danger">
@@ -71,9 +71,8 @@ export default function SettingsStreamingServicesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-bg-primary" testID="settings-streaming-screen">
+    <View className="flex-1" testID="settings-streaming-screen">
       <View className="px-4 pt-4">
-        <Text className="mb-2 font-display text-xl text-text-primary">Meine Streaming-Dienste</Text>
         <TextInput
           testID="settings-streaming-search-input"
           className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"

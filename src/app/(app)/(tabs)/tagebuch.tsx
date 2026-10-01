@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { Button } from "@/components/ui/Button";
-import { SettingsButton } from "@/components/ui/SettingsButton";
+import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -302,7 +302,7 @@ export default function TagebuchScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary" testID="tagebuch-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center" testID="tagebuch-screen">
         <ActivityIndicator testID="tagebuch-loading" />
       </SafeAreaView>
     );
@@ -310,7 +310,7 @@ export default function TagebuchScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center bg-bg-primary px-6" testID="tagebuch-screen">
+      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-6" testID="tagebuch-screen">
         <Text testID="tagebuch-error" className="text-center text-text-primary">
           Fehler beim Laden des Tagebuchs.
         </Text>
@@ -321,12 +321,9 @@ export default function TagebuchScreen() {
   return (
     // M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
     // Safe-Area"): same reasoning as tracker.tsx/watchlist.tsx.
-    <SafeAreaView edges={["top"]} className="flex-1 bg-bg-primary" testID="tagebuch-screen">
-      <View className="gap-3 px-4 pb-2 pt-4">
-        <View className="flex-row items-center justify-between">
-          <Text className="font-display text-xl text-text-primary">Tagebuch</Text>
-          <SettingsButton testID="tagebuch-settings-button" />
-        </View>
+    <SafeAreaView edges={["top"]} className="flex-1" testID="tagebuch-screen">
+      <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
+      <View className="gap-3 px-4 pb-2 pt-3">
         <TextInput
           testID="tagebuch-search-input"
           value={searchQuery}
