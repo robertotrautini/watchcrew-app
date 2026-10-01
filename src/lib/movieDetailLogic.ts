@@ -143,6 +143,7 @@ export function shouldShowAllProvidersToggle(providers: TmdbMovieProviders | nul
 export type ActionButtonId =
   | "bewerten"
   | "bearbeiten"
+  | "erscheinungsdatum"
   | "aehnliche"
   | "loeschen"
   | "filmreihe"
@@ -163,6 +164,10 @@ function getVisibleActionsWithGroupContext(context: GetVisibleActionsContext): A
     actions.push("bewerten");
   }
   actions.push("bearbeiten");
+  // Per-group release date edit: only for watchlist-only entries.
+  if (context.source === "watchlist") {
+    actions.push("erscheinungsdatum");
+  }
   actions.push("aehnliche");
   actions.push("loeschen");
   if (context.hasCollection) {

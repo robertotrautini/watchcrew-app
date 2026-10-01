@@ -129,6 +129,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Einladungs-Deep-Link, Push-Toggles pro Gruppe, Tracker-Feature-Flag](#m12-vorbereitung-live-bug-fix--nachbesserung-einladungs-deep-link-push-toggles-pro-gruppe-tracker-feature-flag)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: aktive Gruppe in Modals, Tagebuch-Mitgliederzeilen, Push-Tap-Routing, Changelog-Startup-Toast, Gruppenfarbe ändern](#m12-vorbereitung-live-bug-fix--nachbesserung-audit-aktive-gruppe-in-modals-tagebuch-mitgliederzeilen-push-tap-routing-changelog-startup-toast-gruppenfarbe-ändern)
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: Streaming-Verfügbarkeit (ADR 0005), „Meine Streaming-Dienste“, Sortierung/Filter pro Gruppe merken](#m12-vorbereitung-live-bug-fix--nachbesserung-audit-streaming-verfügbarkeit-adr-0005-meine-streaming-dienste-sortierungfilter-pro-gruppe-merken)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Passwort vergessen, Auth-Deep-Link (Reset + Signup-Bestätigung)](#m12-vorbereitung-live-bug-fix--nachbesserung-passwort-vergessen-auth-deep-link-reset--signup-bestätigung)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Offline-Stufe 1: Query-Cache-Persistenz (MMKV), Offline-Banner](#m12-vorbereitung-live-bug-fix--nachbesserung-offline-stufe-1-query-cache-persistenz-mmkv-offline-banner)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Erscheinungsdatum pro Gruppe bearbeiten](#m12-vorbereitung-live-bug-fix--nachbesserung-erscheinungsdatum-pro-gruppe-bearbeiten)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -1997,6 +2000,68 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offener Punkt:** Edge Function `tmdb-proxy` muss neu deployt werden (neuer Kind `providers_batch`, `providers` jetzt Cache-gestützt) - ohne Deploy schlägt der Batch-Call fehl (best effort: „Kommt noch“ bleibt dann wie bisher leer). `useMoviesProviders` (Filmreihe/Ähnliche/Add-Movie) ruft weiterhin pro Film `providers` auf (jetzt serverseitig gecacht); ein Umstieg auf den Batch wäre eine Folgeoptimierung.
 
 **Gerätetest nötig:** Watchlist „Kommt noch“/Badge „Streaming verfügbar“ nach erstem Laden (nach Deploy), Sortierung „Meine Streaming-Dienste“ in Watchlist und Tagebuch mit gespeicherten Diensten (Pills, Mindestens-eins-Regel, Ladezeit bei großer Liste), Add-Movie-TV-Toggle, Sortierung/Filter nach App-Neustart und Gruppenwechsel, leere-Zustand-Texte.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Offline-Stufe 1: Query-Cache-Persistenz (MMKV), Offline-Banner
+
+**Problem/Lücke:** Roadmap (Abschnitt C) sieht „Offline Stufe 1“ vor (Read-Cache über TanStack Query + MMKV-Persistenz, keine Mutation-Queue); der Cache lag bisher nur im RAM, ein Kaltstart ohne Netz zeigte nichts.
+
+**Entscheidung (vom Nutzer freigegeben: `persistQueryClient` + MMKV-Adapter):**
+- **Persistenz:** `PersistQueryClientProvider` im Root-Layout mit eigenem MMKV-Persister (`src/lib/queryPersistence.ts`, eigene MMKV-Instanz `watchcrew-query-cache`, getrennt von den Preferences). Schreibzugriffe gedrosselt (1 s, letzter Stand gewinnt). Neue Dependency `@tanstack/react-query-persist-client` (reines JS, kein nativer Rebuild).
+- **Was wird gespeichert:** nur erfolgreiche Queries (`shouldDehydrateQuery`); flüchtige Such-Queries (`movieSearch`, `personSearch`, `companySearch`) nicht. `maxAge` 24 h; `buster` = App-Version + `CACHE_SCHEMA_VERSION` (bei geänderter Datenform hochzählen). `gcTime` des QueryClient von 10 min auf 24 h (= maxAge) erhöht, sonst würden wiederhergestellte Queries sofort wieder verworfen. Der frühere Kommentar „nie persistieren“ in `queryClient.ts` wurde entsprechend ersetzt.
+- **Nutzerbindung:** Auth-State-Listener (`useQueryCacheLifecycle`, `auth.ts` unangetastet): `SIGNED_OUT` (auch durch Konto-Löschung) leert RAM- und MMKV-Cache; zusätzlich wird bei Session eines anderen Nutzers als dem gespeicherten Besitzer geleert.
+- **Konnektivität:** weder `netinfo` noch `expo-network` sind Dependencies, daher kein neues natives Modul: `onlineManager` wird per fetch-Probe (`HEAD <supabaseUrl>/auth/v1/health`, jede HTTP-Antwort = online, Timeout 4 s, alle 15 s und bei App-Vordergrund) gespeist (`src/lib/connectivity.ts`). Nach Reconnect greift `refetchOnReconnect`.
+- **UI:** schlanker roter Banner oben (`OfflineBanner`): „Offline – gespeicherte Daten werden angezeigt“.
+- **Nicht umgesetzt:** Offline-Mutation-Queue (Stufe 2, laut Roadmap bewusst später); Mutationen brauchen weiterhin Verbindung.
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) Banner nutzt `SafeAreaView` (top); Screens mit eigenem Top-Inset haben offline einen doppelten Abstand. (b) Probe-Intervall/Timeout sind Schätzwerte. (c) Bilder (Poster) werden nicht offline gecacht, nur Daten.
+
+**Warum das später leicht änderbar ist:** Konstanten `PERSIST_MAX_AGE_MS`, `PERSIST_THROTTLE_MS`, `CACHE_SCHEMA_VERSION`, Filter `NON_PERSISTED_ROOTS`; Probe austauschbar gegen `@react-native-community/netinfo` (erfordert neuen Dev-Client-Build). Tests: `queryPersistence.test.ts`, `queryCacheLifecycle.test.ts`, `connectivity.test.ts`, `OfflineBanner.test.tsx`.
+
+**Gerätetest nötig:** Flugmodus + App-Kaltstart zeigt gecachte Watchlist/Tagebuch; Banner erscheint/verschwindet; Abmelden leert Cache (danach Flugmodus: nichts mehr sichtbar); Konto-Löschung; Reconnect lädt neu.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Passwort vergessen, Auth-Deep-Link (Reset + Signup-Bestätigung)
+
+**Problem/Lücke:** Es gab keinen „Passwort vergessen“-Ablauf, und die Links aus den Supabase-Mails (Passwort zurücksetzen, Registrierung bestätigen) öffneten die App nicht gezielt (kein Deep-Link-Handler).
+
+**Entscheidung:** (Nutzerentscheid: Supabase-eigene Mechanismen.) Login hat den Link „Passwort vergessen?“ zu `(auth)/forgot-password` (E-Mail-Feld, Validierung, ruft `requestPasswordReset` in `src/lib/auth.ts` -> `supabase.auth.resetPasswordForEmail(email, { redirectTo: "watchcrew://auth/callback" })`; zeigt IMMER die neutrale Meldung „Wenn die Adresse existiert, haben wir eine E-Mail gesendet.“, auch bei API-Fehler, gegen Account-Enumeration). Der Client nutzt den supabase-js-Default `flowType: 'implicit'` (auth-js 2.116.0, `DEFAULT_OPTIONS`; `src/lib/supabase.ts` setzt nichts anderes): der Mail-Link kommt als `watchcrew://auth/callback#access_token=...&refresh_token=...&type=recovery` (bzw. `type=signup`; Fehler: `#error=access_denied&error_code=otp_expired&error_description=...`). `detectSessionInUrl` ist auf RN aus (auth-js liest URLs nur im Browser), daher parst `src/lib/authDeepLink.ts` (`parseAuthLink`, Fragment vor Query, auch `?code=` für PKCE) die URL und die öffentliche Route `src/app/auth/callback.tsx` (außerhalb der Gruppen, kein Auth-Gate) setzt die Session via `setSession` (bzw. `exchangeCodeForSession` bei `code`), genau einmal pro URL. `type=recovery` -> Formular „Neues Passwort setzen“ (2 Felder, min. 6 Zeichen aus `src/lib/passwordRules.ts`, geteilt mit Register, Übereinstimmung) -> `updateUser({ password })` -> `router.replace("/")`; anderer Typ (Signup-Bestätigung) -> direkt `router.replace("/")`; Fehlerparameter/ungültige Tokens/kein URL nach 4 s -> Meldung „Der Link ist ungültig oder abgelaufen…“ mit Buttons zu forgot-password und Login. `signUpWithEmail` setzt zusätzlich `emailRedirectTo: "watchcrew://auth/callback"`.
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) Eine Route für alle Auth-Mails (`auth/callback`) statt `auth/reset-password`. (b) Fehlertext ist generisch (unterscheidet nicht abgelaufen/benutzt). (c) Nach erfolgreichem Passwortwechsel kein Toast, direkt Home. (d) Bleibt der Nutzer mit Recovery-Session ohne Passwort zu setzen, ist er trotzdem eingeloggt (Eigenschaft des Supabase-Recovery-Flows). (e) Wechsel auf PKCE wäre eine Client-Config-Änderung (`flowType: 'pkce'`); der Code-Pfad ist vorbereitet, aber ohne `type` im Link würde ein Recovery-Code direkt nach Home führen (dann `?type=recovery` an `redirectTo` hängen).
+
+**Warum das später leicht änderbar ist:** Eine Konstante (`AUTH_CALLBACK_URL`), reine Parser-Funktion, vier dünne Wrapper in `auth.ts`. Tests: `authDeepLink.test.ts`, `auth.test.ts`, `ForgotPassword.test.tsx`, `AuthCallback.test.tsx`, `Login.test.tsx`.
+
+**Offener Punkt (Dashboard, vom Nutzer):** Auth > URL Configuration: Redirect-URLs `watchcrew://**` (bzw. mindestens `watchcrew://auth/callback`; für Dev-Client ggf. `exp://**`) in die Allow-List, Site URL beachten; ohne Eintrag leitet Supabase auf die Site URL um. E-Mail-Templates „Reset Password“ und „Confirm signup“ nutzen `{{ .ConfirmationURL }}` (Standard passt, deutsche Texte optional). Der eingebaute Mailer ist stark ratenlimitiert (nur wenige Mails/Stunde, nur Teammitglieder-Adressen); für echten Versand ist Custom-SMTP nötig (hängt an der zurückgestellten E-Mail-Provider-Entscheidung).
+
+**Gerätetest nötig:** Reset-Mail anfordern, Link tippen (App kalt und warm) -> Formular -> Passwort ändern -> Home; abgelaufener/zweiter Klick auf denselben Link -> Fehlermeldung; Signup-Bestätigungslink -> Home; `adb shell am start -a android.intent.action.VIEW -d "watchcrew://auth/callback#access_token=...&refresh_token=...&type=recovery"` (ggf. `&` escapen); prüfen, dass Android/iOS das Fragment an `Linking.useLinkingURL()` durchreichen.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Erscheinungsdatum pro Gruppe bearbeiten
+
+**Problem/Lücke:** Die Legacy-App erlaubte „Bearbeiten“ von Titel und Datum (`editMovie`). Neu entschieden: nur das Erscheinungsdatum eines Watchlist-Eintrags ist nachträglich änderbar (Titel bleibt fix, kommt von TMDB), und zwar pro Gruppe.
+
+**Entscheidung:**
+- **Datenmodell:** Das Datum lag nur in `movies.release_date` (geteilt, TMDB, nur per Service-Role schreibbar). Neue additive, nullable Spalte `watchlist_entries.release_date_override date` (Migration `20261001090000_watchlist_entries_release_date_override.sql`); `NULL` = TMDB-Datum. Keine RLS-/Grant-Änderung nötig: `watchlist_entries_update_group_members` + UPDATE-Grant für `authenticated` decken die Spalte ab. Andere Gruppen und die `movies`-Zeile bleiben unberührt.
+- **Wirksames Datum:** `getEffectiveReleaseDate(entry)` = Override, sonst `movie.release_date` (`watchlistLogic.ts`); `withEffectiveReleaseDate` für Komponenten, die nur ein `Movie` nehmen (Poster-Karte). Genutzt von „Kommt noch“ (`isUpcoming`/`filterUpcoming`), Jahresfilter, Jahres-Pills, Listenansicht, Datums-Badge/Dimmung und der „datumslos“-Auswahl für die Streaming-Auffrischung in `useGroupWatchlist`.
+- **Push-Erinnerungen:** `run_release_reminders()` wird in derselben Migration per `create or replace` angepasst (`coalesce(we.release_date_override, m.release_date)`), sonst Rest unverändert. Folge: `release_reminder_log` dedupliziert pro (Eintrag, Typ) für immer; wer das Datum ändert, nachdem z. B. „14_days“ schon gesendet wurde, bekommt diesen Typ nicht erneut (die anderen Stufen feuern normal).
+- **UI:** Neue Aktion „Erscheinungsdatum bearbeiten“ (`erscheinungsdatum`) in der Detail-Aktionsleiste, nur bei Gruppenkontext mit `source = watchlist` (Tagebuch-Einträge nicht). Öffnet ein Sheet mit dem bestehenden `DateField` (Anzeige DD.MM.YYYY, Speicherung ISO); Datum wählen speichert sofort und schließt, „Auf TMDB-Datum zurücksetzen“ (nur sichtbar bei vorhandenem Override) speichert `NULL`. Toasts: „Erscheinungsdatum gespeichert“ bzw. „Erscheinungsdatum zurückgesetzt“. Mutation `useSetReleaseDateOverride` invalidiert `["watchlist", groupId]` (auch die Detailansicht liest daraus). Die Detailansicht zeigt bei Override „Erscheinungsdatum <Datum>“ statt dem deutschen Kino-/Digital-Datum; auch der „Gesehen am = Erscheinungsdatum“-Haken im Bewertungsdialog nutzt dann das Override.
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) Mitgliedschaft wird nur über den Gruppenkontext der Route + RLS durchgesetzt (kein eigener Client-Check). (b) Beim Zurücksetzen gibt es einen eigenen Toast-Text (nicht „gespeichert“). (c) Bei Override hat das Detail-Label immer „Erscheinungsdatum“.
+
+**Warum das später leicht änderbar ist:** Eine Spalte, ein Helper, eine Mutation. Tests: `watchlistLogic.test.ts`, `movieDetailMutations.test.ts`, `useMovieDetailMutations.test.tsx`, `movieDetailLogic.test.ts`, `MovieDetailActionsBar.test.tsx`, `MovieDetail.test.tsx`.
+
+**Offener Punkt:** Migration `20261001090000` muss auf dem Remote angewendet werden (`supabase db push`), bis dahin schlägt das Speichern fehl (Spalte fehlt).
+
+**Gerätetest nötig:** Datum ändern (Sheet, nativer Picker), Badge/„Kommt noch“/Jahresfilter/Sortierung danach, Zurücksetzen, Detailansicht-Anzeige, zweite Gruppe mit demselben Film bleibt unverändert, Realtime-Sync auf zweitem Gerät.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

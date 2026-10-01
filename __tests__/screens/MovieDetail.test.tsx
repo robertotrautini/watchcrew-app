@@ -73,6 +73,7 @@ jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useToggleLike: mockUseToggleLike,
   useDeleteWatchlistEntry: mockUseDeleteWatchlistEntry,
   useAddToWatchlist: mockUseAddToWatchlist,
+  useSetReleaseDateOverride: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
 // M7 consolidation (Item 2): this screen now renders the real `RatingDialog`
@@ -284,6 +285,41 @@ describe("MovieDetailScreen", () => {
       expect(getByTestId("movie-detail-poster-image").props.source).toEqual([
         { uri: "https://image.tmdb.org/t/p/w780/poster123.jpg" },
       ]);
+    });
+
+    it("shows the per-group release_date_override instead of the TMDB/German date", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "27205",
+        groupId: "group-1",
+        source: "watchlist",
+        watchlistEntryId: "entry-1",
+      });
+      mockLiveDetails();
+      mockUseGroupWatchlist.mockReturnValue({
+        data: {
+          entries: [
+            {
+              id: "entry-1",
+              group_id: "group-1",
+              movie_id: "movie-1",
+              added_at: "2026-01-01T00:00:00Z",
+              added_by: "user-1",
+              paid_by_member_id: null,
+              paid_at: null,
+              release_date_override: "2027-03-05",
+              movie: { id: "movie-1", tmdb_id: 27205, name: "Inception", release_date: "2010-07-16", poster: null, overview: null, runtime: null, director: null, director_id: null, vote_average: null },
+              ratings: [],
+            },
+          ],
+          streamingAvailability: new Map(),
+        },
+      });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-release-date").props.children).toBe("Erscheinungsdatum 05.03.2027");
+      expect(getByTestId("movie-detail-action-erscheinungsdatum")).toBeTruthy();
     });
 
     it("formats an ISO-datetime release date as DD.MM.YYYY", async () => {

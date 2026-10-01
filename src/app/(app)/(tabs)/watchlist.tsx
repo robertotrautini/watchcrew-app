@@ -26,9 +26,11 @@ import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
   filterByYear,
+  getEffectiveReleaseDate,
   searchEntries,
   sortWatchlist,
   splitWatchlistAndDiary,
+  withEffectiveReleaseDate,
 } from "@/lib/watchlistLogic";
 import type { WatchlistEntry, WatchlistSortOption, YearFilterValue } from "@/lib/watchlistTypes";
 import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePreferencesStore";
@@ -84,8 +86,9 @@ function getDistinctGenreIds(entries: WatchlistEntry[]): string[] {
 function getDistinctYears(entries: WatchlistEntry[]): number[] {
   const years = new Set<number>();
   for (const entry of entries) {
-    if (entry.movie.release_date != null) {
-      years.add(Number(entry.movie.release_date.slice(0, 4)));
+    const releaseDate = getEffectiveReleaseDate(entry);
+    if (releaseDate != null) {
+      years.add(Number(releaseDate.slice(0, 4)));
     }
   }
   return Array.from(years).sort((a, b) => a - b);
@@ -380,7 +383,7 @@ export default function WatchlistScreen() {
               className="flex-row items-center justify-between border-b border-border-subtle py-3"
             >
               <Text className="flex-1 text-text-primary">{item.movie.name}</Text>
-              <Text className="text-text-secondary">{formatPlainDate(item.movie.release_date)}</Text>
+              <Text className="text-text-secondary">{formatPlainDate(getEffectiveReleaseDate(item))}</Text>
             </Pressable>
           )}
         />
@@ -397,7 +400,7 @@ export default function WatchlistScreen() {
             <FadeInItem index={index} className={watchlistViewMode === "grid" ? "flex-1" : undefined}>
               <WatchlistPosterCard
                 variant={watchlistViewMode === "grid" ? "grid" : "card"}
-                movie={item.movie}
+                movie={withEffectiveReleaseDate(item)}
                 streamingAvailability={streamingAvailability}
                 ratedCount={ratedCountFor(item)}
                 totalMembers={totalMembers}

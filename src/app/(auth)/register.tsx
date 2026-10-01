@@ -5,16 +5,9 @@ import { KeyboardAvoidingView, Platform, Text, TextInput, View } from "react-nat
 
 import { Button } from "@/components/ui/Button";
 import { signUpWithEmail } from "@/lib/auth";
+import { MIN_PASSWORD_LENGTH } from "@/lib/passwordRules";
 import { openLegalUrl } from "@/lib/legalLinks";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
-
-/**
- * Source: supabase/config.toml `auth.minimum_password_length = 6` (the
- * Supabase default, explicitly configured — not guessed). Kept as a local
- * constant rather than imported from anywhere, since there is no runtime
- * config module exposing Supabase Auth's own settings to the client.
- */
-const MIN_PASSWORD_LENGTH = 6;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

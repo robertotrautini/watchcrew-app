@@ -5,9 +5,11 @@ import * as Haptics from "expo-haptics";
 import {
   addToWatchlist,
   deleteWatchlistEntry,
+  setWatchlistEntryReleaseDate,
   toggleLike,
   type AddToWatchlistParams,
   type DeleteWatchlistEntryParams,
+  type SetWatchlistEntryReleaseDateParams,
   type ToggleLikeParams,
 } from "@/lib/movieDetailMutations";
 
@@ -115,6 +117,34 @@ export function useAddToWatchlist() {
       // impact, in exactly one place.
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       showToast("Zur Watchlist hinzugefügt");
+    },
+  });
+}
+
+export interface SetReleaseDateOverrideMutationParams extends SetWatchlistEntryReleaseDateParams {
+  groupId: string;
+}
+
+/** Edits (or resets, with `releaseDate: null`) the per-group release date of a watchlist entry. */
+export function useSetReleaseDateOverride() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (params: SetReleaseDateOverrideMutationParams) => {
+      const { error } = await setWatchlistEntryReleaseDate({
+        watchlistEntryId: params.watchlistEntryId,
+        releaseDate: params.releaseDate,
+      });
+      if (error) {
+        throw error;
+      }
+      return params.releaseDate;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      showToast(
+        variables.releaseDate == null ? "Erscheinungsdatum zurückgesetzt" : "Erscheinungsdatum gespeichert",
+      );
     },
   });
 }

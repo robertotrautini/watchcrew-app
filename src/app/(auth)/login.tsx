@@ -131,6 +131,13 @@ export default function LoginScreen() {
       />
 
       <Link
+        href="/(auth)/forgot-password"
+        testID="login-forgot-password-link"
+        className="mt-4 text-center text-text-secondary">
+        Passwort vergessen?
+      </Link>
+
+      <Link
         href="/(auth)/register"
         testID="login-register-link"
         className="mt-6 text-center text-text-secondary">

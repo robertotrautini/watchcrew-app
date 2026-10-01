@@ -19,6 +19,7 @@ import type { TmdbMovieProviders } from "./tmdbProxy";
 
 import type {
   DiarySortOption,
+  Movie,
   Rating,
   SortContext,
   StreamingAvailabilityCacheRow,
@@ -30,6 +31,27 @@ import type {
 
 /** Pills active by default for option 'my_streaming': flatrate only (min. 1 must stay active). */
 export const DEFAULT_PROVIDER_CATEGORIES: ProviderCategory[] = ["flatrate"];
+
+// ============================================================================
+// Effective release date (per-group override)
+// ============================================================================
+
+/**
+ * The release date that applies to this group's entry: the entry's own
+ * `release_date_override` if set, else the shared `movies.release_date`.
+ * Every date display/sort/"Kommt noch"/year filter must go through this.
+ */
+export function getEffectiveReleaseDate(entry: WatchlistEntry): string | null {
+  return entry.release_date_override ?? entry.movie.release_date;
+}
+
+/** `entry.movie` with `release_date` replaced by the effective date (for components that only take a `Movie`). */
+export function withEffectiveReleaseDate(entry: WatchlistEntry): Movie {
+  const releaseDate = getEffectiveReleaseDate(entry);
+  return releaseDate === entry.movie.release_date
+    ? entry.movie
+    : { ...entry.movie, release_date: releaseDate };
+}
 
 // ============================================================================
 // Split: the one function that turns entries into Watchlist vs Diary
@@ -181,7 +203,7 @@ export function filterByYear(
 ): WatchlistEntry[] {
   const getDate = (entry: WatchlistEntry): string | null => {
     if (dateField === "release_date") {
-      return entry.movie.release_date;
+      return getEffectiveReleaseDate(entry);
     }
     const ownRating = currentUserId ? findOwnRating(entry, currentUserId) : undefined;
     return ownRating?.seen_at ?? null;
@@ -234,7 +256,7 @@ export function isUpcoming(
   streamingAvailability: StreamingAvailabilityLookup,
   now: Date = new Date()
 ): boolean {
-  const releaseDate = entry.movie.release_date;
+  const releaseDate = getEffectiveReleaseDate(entry);
   const isAvailable = streamingAvailability.get(entry.movie.tmdb_id) ?? false;
 
   if (releaseDate != null && isFutureDate(releaseDate, now)) {
@@ -260,8 +282,8 @@ export function filterUpcoming(
 ): WatchlistEntry[] {
   const upcoming = entries.filter((e) => isUpcoming(e, streamingAvailability, now));
   return sortedCopy(upcoming, (a, b) => {
-    const ad = a.movie.release_date;
-    const bd = b.movie.release_date;
+    const ad = getEffectiveReleaseDate(a);
+    const bd = getEffectiveReleaseDate(b);
     if (ad == null && bd == null) return 0;
     if (ad == null) return 1;
     if (bd == null) return -1;

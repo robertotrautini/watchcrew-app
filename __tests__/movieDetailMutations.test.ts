@@ -378,3 +378,33 @@ describe("deletePayment", () => {
     expect(result).toBe(fakeResult);
   });
 });
+
+describe("setWatchlistEntryReleaseDate", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates only release_date_override on the targeted entry", async () => {
+    const fakeResult = { data: null, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { setWatchlistEntryReleaseDate } = require("../src/lib/movieDetailMutations");
+    const result = await setWatchlistEntryReleaseDate({ watchlistEntryId: "we-1", releaseDate: "2026-12-24" });
+
+    expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
+    expect(chain.update).toHaveBeenCalledWith({ release_date_override: "2026-12-24" });
+    expect(chain.eq).toHaveBeenCalledWith("id", "we-1");
+    expect(result).toBe(fakeResult);
+  });
+
+  it("null resets the override (back to the TMDB date)", async () => {
+    const chain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { setWatchlistEntryReleaseDate } = require("../src/lib/movieDetailMutations");
+    await setWatchlistEntryReleaseDate({ watchlistEntryId: "we-1", releaseDate: null });
+
+    expect(chain.update).toHaveBeenCalledWith({ release_date_override: null });
+  });
+});

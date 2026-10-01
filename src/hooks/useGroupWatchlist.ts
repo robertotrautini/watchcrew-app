@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { loadStreamingRows } from "@/lib/streamingAvailability";
 import { getGroupWatchlistEntries } from "@/lib/watchlist";
-import { buildStreamingAvailabilityLookup } from "@/lib/watchlistLogic";
+import { buildStreamingAvailabilityLookup, getEffectiveReleaseDate } from "@/lib/watchlistLogic";
 import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
 
 export interface GroupWatchlistData {
@@ -49,7 +49,7 @@ export function useGroupWatchlist(groupId: string | undefined) {
       const datelessTmdbIds = Array.from(
         new Set(
           safeEntries
-            .filter((entry) => entry.movie?.release_date == null)
+            .filter((entry) => (entry.movie ? getEffectiveReleaseDate(entry) : null) == null)
             .map((entry) => entry.movie?.tmdb_id)
             .filter((id): id is number => typeof id === "number")
         )

@@ -4,12 +4,15 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
+import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import {
   useAddToWatchlist,
   useDeleteWatchlistEntry,
+  useSetReleaseDateOverride,
 } from "@/hooks/useMovieDetailMutations";
 import type { ActionButtonId } from "@/lib/movieDetailLogic";
+import { formatDateForInput } from "@/lib/ratingLogic";
 import { navigateToCollection, navigateToSimilarMovies } from "@/lib/movieDetailNavigation";
 
 // M6 part 2a: the Movie-Detail-Overlay's bottom fixed action-buttons bar.
@@ -43,6 +46,10 @@ export interface MovieDetailActionsBarProps {
   activeGroupId?: string;
   currentUserId?: string;
   collectionId?: number;
+  /** Effective release date (ISO) of this group's entry, shown/preselected in the "erscheinungsdatum" sheet. */
+  releaseDate?: string | null;
+  /** True when the entry carries its own per-group date (enables the reset-to-TMDB-date button). */
+  hasReleaseDateOverride?: boolean;
   /** "bewerten" (watchlist context) / "bearbeiten" (diary context) -- see the module comment above. */
   onOpenRatingDialog?: (watchlistEntryId: string, mode: "watchlist" | "diary") => void;
   /** "direkt_bewerten": called once the add-to-watchlist mutation succeeds, with the newly-created entry's id. */
@@ -57,6 +64,7 @@ export interface MovieDetailActionsBarProps {
 const ACTION_LABELS: Record<ActionButtonId, string> = {
   bewerten: "Bewerten",
   bearbeiten: "Bearbeiten",
+  erscheinungsdatum: "Erscheinungsdatum bearbeiten",
   aehnliche: "Ähnliche Filme",
   loeschen: "Löschen",
   filmreihe: "Filmreihe",
@@ -89,10 +97,14 @@ export function MovieDetailActionsBar({
   activeGroupId,
   currentUserId,
   collectionId,
+  releaseDate = null,
+  hasReleaseDateOverride = false,
   onOpenRatingDialog,
   onDirectRateEntryCreated,
 }: MovieDetailActionsBarProps) {
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
+  const [releaseDateSheetVisible, setReleaseDateSheetVisible] = useState(false);
+  const releaseDateMutation = useSetReleaseDateOverride();
 
   const deleteMutation = useDeleteWatchlistEntry();
   // Shared between "zur_watchlist" and "direkt_bewerten": both buttons call
@@ -123,6 +135,14 @@ export function MovieDetailActionsBar({
         },
       },
     );
+  }
+
+  function saveReleaseDate(nextReleaseDate: string | null) {
+    if (!watchlistEntryId || !groupId) {
+      return;
+    }
+    releaseDateMutation.mutate({ watchlistEntryId, groupId, releaseDate: nextReleaseDate });
+    setReleaseDateSheetVisible(false);
   }
 
   function handleAddToWatchlist() {
@@ -209,6 +229,20 @@ export function MovieDetailActionsBar({
             }}
           />
         );
+      case "erscheinungsdatum":
+        // Same defensive no-op guard as "bewerten" for a missing entry/group.
+        return (
+          <Button
+            key={id}
+            testID={testID}
+            label={label}
+            onPress={() => {
+              if (watchlistEntryId && groupId) {
+                setReleaseDateSheetVisible(true);
+              }
+            }}
+          />
+        );
       case "loeschen":
         return (
           <Button
@@ -247,6 +281,28 @@ export function MovieDetailActionsBar({
   return (
     <>
       <View className="flex-row flex-wrap gap-2 p-4">{actions.map(renderAction)}</View>
+      <Sheet
+        visible={releaseDateSheetVisible}
+        onClose={() => setReleaseDateSheetVisible(false)}
+        title="Erscheinungsdatum bearbeiten">
+        <View className="gap-3">
+          <DateField
+            testID="movie-detail-release-date-field"
+            valueIso={releaseDate}
+            displayText={formatDateForInput(releaseDate)}
+            placeholder="Datum wählen"
+            onChangeIso={saveReleaseDate}
+          />
+          {hasReleaseDateOverride ? (
+            <Button
+              testID="movie-detail-release-date-reset"
+              label="Auf TMDB-Datum zurücksetzen"
+              variant="secondary"
+              onPress={() => saveReleaseDate(null)}
+            />
+          ) : null}
+        </View>
+      </Sheet>
       <Sheet
         visible={deleteSheetVisible}
         onClose={() => setDeleteSheetVisible(false)}

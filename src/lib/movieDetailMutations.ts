@@ -77,6 +77,24 @@ export async function deleteWatchlistEntry(params: DeleteWatchlistEntryParams) {
   return supabase.from("watchlist_entries").delete().eq("id", params.watchlistEntryId);
 }
 
+export interface SetWatchlistEntryReleaseDateParams {
+  watchlistEntryId: string;
+  /** ISO "YYYY-MM-DD", or `null` to reset to the TMDB date. */
+  releaseDate: string | null;
+}
+
+/**
+ * Sets (or, with `null`, clears) the per-group release date override on one
+ * `watchlist_entries` row. Touches only `release_date_override` -- the shared
+ * `movies` row is never modified. RLS: `watchlist_entries_update_group_members`.
+ */
+export async function setWatchlistEntryReleaseDate(params: SetWatchlistEntryReleaseDateParams) {
+  return supabase
+    .from("watchlist_entries")
+    .update({ release_date_override: params.releaseDate })
+    .eq("id", params.watchlistEntryId);
+}
+
 export interface AddToWatchlistParams {
   tmdbId: number;
   groupId: string;

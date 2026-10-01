@@ -206,7 +206,7 @@ describe("getVisibleActions", () => {
         isOnStreaming: false,
         hasCollection: false,
       })
-    ).toEqual(["bewerten", "bearbeiten", "aehnliche", "loeschen"]);
+    ).toEqual(["bewerten", "bearbeiten", "erscheinungsdatum", "aehnliche", "loeschen"]);
   });
 
   it("hasGroupContext=true, watchlist, not released, on streaming, has collection", () => {
@@ -218,7 +218,7 @@ describe("getVisibleActions", () => {
         isOnStreaming: true,
         hasCollection: true,
       })
-    ).toEqual(["bewerten", "bearbeiten", "aehnliche", "loeschen", "filmreihe"]);
+    ).toEqual(["bewerten", "bearbeiten", "erscheinungsdatum", "aehnliche", "loeschen", "filmreihe"]);
   });
 
   it("hasGroupContext=true, watchlist, not released, not streaming, no collection -> no bewerten", () => {
@@ -230,7 +230,7 @@ describe("getVisibleActions", () => {
         isOnStreaming: false,
         hasCollection: false,
       })
-    ).toEqual(["bearbeiten", "aehnliche", "loeschen"]);
+    ).toEqual(["bearbeiten", "erscheinungsdatum", "aehnliche", "loeschen"]);
   });
 
   it("hasGroupContext=true, source=diary, released+streaming -> no bewerten (source not watchlist)", () => {

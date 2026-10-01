@@ -154,10 +154,16 @@ export default function MovieDetailScreen() {
   const posterUrl = buildTmdbImageUrl(storedMovie?.poster ?? liveDetails?.posterPath ?? null, "w780");
   const overview = storedMovie?.overview ?? liveDetails?.overview ?? null;
   const runtimeLabel = formatRuntime(pickRuntime(storedMovie?.runtime ?? null, liveDetails?.runtime ?? null));
-  const releaseInfo = pickPreferredReleaseDate(
-    movieDetailQuery.data?.germanReleaseDate ?? null,
-    storedMovie?.release_date ?? liveDetails?.releaseDate ?? null,
-  );
+  // Per-group override (watchlist_entries.release_date_override) wins over every
+  // TMDB-derived date, including the German cinema/digital date.
+  const releaseDateOverride = watchlistEntry?.release_date_override ?? null;
+  const releaseInfo =
+    releaseDateOverride != null
+      ? { label: "Erscheinungsdatum", date: releaseDateOverride }
+      : pickPreferredReleaseDate(
+          movieDetailQuery.data?.germanReleaseDate ?? null,
+          storedMovie?.release_date ?? liveDetails?.releaseDate ?? null,
+        );
   const genres = pickGenres(liveDetails?.genres ?? null, storedMovie?.movie_genres ?? null);
   const voteAverage = liveDetails?.vote_average ?? storedMovie?.vote_average ?? null;
 
@@ -347,6 +353,8 @@ export default function MovieDetailScreen() {
           activeGroupId={activeGroupId}
           currentUserId={currentUserId}
           collectionId={collectionId}
+          releaseDate={releaseInfo?.date ?? null}
+          hasReleaseDateOverride={releaseDateOverride != null}
           onOpenRatingDialog={handleOpenRatingDialog}
           onDirectRateEntryCreated={handleDirectRateEntryCreated}
         />

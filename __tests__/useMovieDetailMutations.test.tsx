@@ -6,12 +6,14 @@ import React from "react";
 const mockToggleLike = jest.fn();
 const mockDeleteWatchlistEntry = jest.fn();
 const mockAddToWatchlist = jest.fn();
+const mockSetReleaseDate = jest.fn();
 const mockImpactAsync = jest.fn();
 
 jest.mock("@/lib/movieDetailMutations", () => ({
   toggleLike: mockToggleLike,
   deleteWatchlistEntry: mockDeleteWatchlistEntry,
   addToWatchlist: mockAddToWatchlist,
+  setWatchlistEntryReleaseDate: mockSetReleaseDate,
 }));
 
 // M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
@@ -296,5 +298,59 @@ describe("useAddToWatchlist", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(uniqueViolation);
+  });
+});
+
+describe("useSetReleaseDateOverride", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("saves the date, invalidates the group's watchlist and toasts", async () => {
+    mockSetReleaseDate.mockResolvedValue({ data: null, error: null });
+    const { useSetReleaseDateOverride } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useSetReleaseDateOverride(), { wrapper });
+    await act(async () => {
+      result.current.mutate({ watchlistEntryId: "we-1", groupId: "group-1", releaseDate: "2026-12-24" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockSetReleaseDate).toHaveBeenCalledWith({ watchlistEntryId: "we-1", releaseDate: "2026-12-24" });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum gespeichert");
+  });
+
+  it("reset (null) toasts the reset copy", async () => {
+    mockSetReleaseDate.mockResolvedValue({ data: null, error: null });
+    const { useSetReleaseDateOverride } = loadHooks();
+    const { wrapper } = createWrapper();
+
+    const { result } = await renderHook(() => useSetReleaseDateOverride(), { wrapper });
+    await act(async () => {
+      result.current.mutate({ watchlistEntryId: "we-1", groupId: "group-1", releaseDate: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum zurückgesetzt");
+  });
+
+  it("surfaces errors without invalidating or toasting", async () => {
+    const fakeError = { message: "rls denied" };
+    mockSetReleaseDate.mockResolvedValue({ data: null, error: fakeError });
+    const { useSetReleaseDateOverride } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useSetReleaseDateOverride(), { wrapper });
+    await act(async () => {
+      result.current.mutate({ watchlistEntryId: "we-1", groupId: "group-1", releaseDate: "2026-12-24" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(invalidateSpy).not.toHaveBeenCalled();
+    expect(mockShowToast).not.toHaveBeenCalled();
   });
 });

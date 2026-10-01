@@ -66,6 +66,12 @@ export interface WatchlistEntry {
   added_by: string;
   paid_by_member_id: string | null;
   paid_at: string | null;
+  /**
+   * Per-group release date override (Postgres `date`, "YYYY-MM-DD"); null =
+   * use `movie.release_date`. Optional so hand-built fixtures keep compiling.
+   * Always resolve the shown/used date via `getEffectiveReleaseDate`.
+   */
+  release_date_override?: string | null;
   movie: Movie;
   ratings: Rating[];
 }

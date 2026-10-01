@@ -1,3 +1,4 @@
+import { AUTH_CALLBACK_URL } from "./authDeepLink";
 import { supabase } from "./supabase";
 
 // Thin, typed wrappers around the Supabase Auth SDK calls needed for
@@ -17,7 +18,8 @@ export async function signUpWithEmail(email: string, password: string, displayNa
   return supabase.auth.signUp({
     email,
     password,
-    options: { data: { display_name: displayName } },
+    // emailRedirectTo: the confirmation link opens the app (src/app/auth/callback.tsx).
+    options: { data: { display_name: displayName }, emailRedirectTo: AUTH_CALLBACK_URL },
   });
 }
 
@@ -27,4 +29,24 @@ export async function signInWithEmail(email: string, password: string) {
 
 export async function signOut() {
   return supabase.auth.signOut();
+}
+
+/** Sends the password-reset mail; the link opens the app at the auth callback route. */
+export async function requestPasswordReset(email: string) {
+  return supabase.auth.resetPasswordForEmail(email, { redirectTo: AUTH_CALLBACK_URL });
+}
+
+/** Sets a new password for the current (recovery) session. */
+export async function updatePassword(password: string) {
+  return supabase.auth.updateUser({ password });
+}
+
+/** Implicit flow: establishes the session from the tokens in a deep link fragment. */
+export async function establishSessionFromTokens(accessToken: string, refreshToken: string) {
+  return supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+}
+
+/** PKCE flow (not used by the current client config, kept for robustness). */
+export async function exchangeAuthCode(code: string) {
+  return supabase.auth.exchangeCodeForSession(code);
 }

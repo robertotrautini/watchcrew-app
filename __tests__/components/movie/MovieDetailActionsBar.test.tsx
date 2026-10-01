@@ -4,10 +4,20 @@ import { act, fireEvent, render } from "@testing-library/react-native";
 const mockDeleteMutate = jest.fn();
 const mockAddMutate = jest.fn();
 const mockImpactAsync = jest.fn();
+const mockSetReleaseDateMutate = jest.fn();
+
+jest.mock("@react-native-community/datetimepicker", () => {
+  const { View } = require("react-native");
+  return {
+    __esModule: true,
+    default: (props: Record<string, unknown>) => <View {...props} />,
+  };
+});
 
 jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useDeleteWatchlistEntry: () => ({ mutate: mockDeleteMutate, isPending: false }),
   useAddToWatchlist: () => ({ mutate: mockAddMutate, isPending: false }),
+  useSetReleaseDateOverride: () => ({ mutate: mockSetReleaseDateMutate, isPending: false }),
 }));
 
 // M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
@@ -213,5 +223,73 @@ describe("MovieDetailActionsBar", () => {
     await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
 
     expect(onOpenRatingDialog).not.toHaveBeenCalled();
+  });
+
+  describe("'erscheinungsdatum' (per-group release date edit)", () => {
+    function renderBar(extra: Record<string, unknown> = {}) {
+      return render(
+        <MovieDetailActionsBar
+          actions={["erscheinungsdatum"]}
+          router={createMockRouter()}
+          tmdbId={42}
+          groupId="group-1"
+          watchlistEntryId="entry-1"
+          releaseDate="2026-12-24"
+          {...extra}
+        />,
+      );
+    }
+
+    it("opens a sheet showing the date as DD.MM.YYYY", async () => {
+      const { getByTestId, queryByTestId, getByText } = await renderBar();
+      expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
+
+      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+
+      expect(getByTestId("movie-detail-release-date-field")).toBeTruthy();
+      expect(getByText("24.12.2026")).toBeTruthy();
+    });
+
+    it("picking a date saves it as ISO for the entry and closes the sheet", async () => {
+      const { getByTestId, queryByTestId } = await renderBar();
+      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-release-date-field"));
+      await fireEvent(
+        getByTestId("movie-detail-release-date-field-picker"),
+        "change",
+        { type: "set" },
+        new Date(2027, 2, 5),
+      );
+
+      expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
+        watchlistEntryId: "entry-1",
+        groupId: "group-1",
+        releaseDate: "2027-03-05",
+      });
+      expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
+    });
+
+    it("offers a reset to the TMDB date only when an override exists, saving null", async () => {
+      const first = await renderBar();
+      await fireEvent.press(first.getByTestId("movie-detail-action-erscheinungsdatum"));
+      expect(first.queryByTestId("movie-detail-release-date-reset")).toBeNull();
+      await first.unmount();
+
+      const { getByTestId } = await renderBar({ hasReleaseDateOverride: true });
+      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-release-date-reset"));
+
+      expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
+        watchlistEntryId: "entry-1",
+        groupId: "group-1",
+        releaseDate: null,
+      });
+    });
+
+    it("is a no-op without a watchlist entry/group", async () => {
+      const { getByTestId, queryByTestId } = await renderBar({ watchlistEntryId: undefined });
+      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
+    });
   });
 });

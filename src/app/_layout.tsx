@@ -5,16 +5,24 @@ import {
   PlayfairDisplay_700Bold_Italic,
   useFonts,
 } from '@expo-google-fonts/playfair-display';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
 
 import { AnimatedSplashOverlay } from '@/components/animated-icon';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { ToastHost } from '@/components/ui/Toast';
+import { useQueryCacheLifecycle } from '@/hooks/useQueryCacheLifecycle';
 import { initSentry } from '@/lib/sentry';
 import { queryClient } from '@/lib/queryClient';
+import {
+  PERSIST_BUSTER,
+  PERSIST_MAX_AGE_MS,
+  persistDehydrateOptions,
+  queryPersister,
+} from '@/lib/queryPersistence';
 
 initSentry();
 
@@ -30,6 +38,7 @@ SplashScreen.preventAutoHideAsync();
  */
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  useQueryCacheLifecycle();
   // Headings/brand font per docs/adr/0007-client-tech-stack.md — weights
   // 400/700 + italic, matching the `font-display*` Tailwind tokens in
   // tailwind.config.js. The splash screen (prevented above) keeps covering
@@ -51,7 +60,15 @@ export default function RootLayout() {
     // TanStack Query cache (src/lib/queryClient.ts) is available to any
     // screen, including auth-dependent ones inside (auth)/(onboarding)/(app)
     // that need to read/mutate Supabase server-state via query hooks.
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: PERSIST_MAX_AGE_MS,
+        buster: PERSIST_BUSTER,
+        dehydrateOptions: persistDehydrateOptions,
+      }}
+    >
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
             StatusBar"): this app's own color palette (tailwind.config.js's
@@ -67,6 +84,7 @@ export default function RootLayout() {
             fixed, deliberate choice, not a `colorScheme`-driven one. */}
         <StatusBar style="light" />
         <AnimatedSplashOverlay />
+        <OfflineBanner />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" />
           <Stack.Screen name="(auth)" />
@@ -81,6 +99,6 @@ export default function RootLayout() {
             auth-gate logic above. */}
         <ToastHost />
       </ThemeProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }

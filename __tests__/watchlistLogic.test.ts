@@ -8,7 +8,9 @@ import {
   filterMissing,
   filterUnrated,
   filterUpcoming,
+  getEffectiveReleaseDate,
   isUpcoming,
+  withEffectiveReleaseDate,
   searchEntries,
   sortByAddedAtDesc,
   sortByAverageRatingDesc,
@@ -638,5 +640,62 @@ describe("sortDiary dispatcher", () => {
     expect(
       sortDiary([b, a], "my_streaming", "u1", { ...context, providerCategories: ["rent"] }).map((e) => e.id)
     ).toEqual(["b"]);
+  });
+});
+
+describe("release_date_override (per-group effective release date)", () => {
+  const now = new Date("2026-06-01T12:00:00Z");
+
+  it("getEffectiveReleaseDate prefers the override, falls back to the movie date, else null", () => {
+    const movie = makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-01-01" });
+    expect(getEffectiveReleaseDate(makeEntry({ id: "e1", movie }))).toBe("2026-01-01");
+    expect(
+      getEffectiveReleaseDate(makeEntry({ id: "e2", movie, release_date_override: "2026-09-09" })),
+    ).toBe("2026-09-09");
+    expect(
+      getEffectiveReleaseDate(
+        makeEntry({ id: "e3", movie: makeMovie({ tmdb_id: 2, name: "B" }), release_date_override: null }),
+      ),
+    ).toBeNull();
+  });
+
+  it("withEffectiveReleaseDate returns the movie with the effective date, without mutating the entry", () => {
+    const movie = makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-01-01" });
+    const entry = makeEntry({ id: "e1", movie, release_date_override: "2026-09-09" });
+    expect(withEffectiveReleaseDate(entry).release_date).toBe("2026-09-09");
+    expect(entry.movie.release_date).toBe("2026-01-01");
+    expect(withEffectiveReleaseDate(makeEntry({ id: "e2", movie })).release_date).toBe("2026-01-01");
+  });
+
+  it("isUpcoming uses the override (past TMDB date moved into the future)", () => {
+    const movie = makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-01-01" });
+    const entry = makeEntry({ id: "e1", movie, release_date_override: "2026-12-01" });
+    expect(isUpcoming(entry, new Map(), now)).toBe(true);
+  });
+
+  it("isUpcoming: override in the past removes a future TMDB date", () => {
+    const movie = makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-12-01" });
+    const entry = makeEntry({ id: "e1", movie, release_date_override: "2026-01-01" });
+    expect(isUpcoming(entry, new Map(), now)).toBe(false);
+  });
+
+  it("filterUpcoming orders by the effective date", () => {
+    const a = makeEntry({
+      id: "a",
+      movie: makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-07-01" }),
+      release_date_override: "2026-12-01",
+    });
+    const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B", release_date: "2026-09-01" }) });
+    expect(filterUpcoming([a, b], new Map(), now).map((e) => e.id)).toEqual(["b", "a"]);
+  });
+
+  it("filterByYear('release_date') uses the override", () => {
+    const entry = makeEntry({
+      id: "a",
+      movie: makeMovie({ tmdb_id: 1, name: "A", release_date: "2020-01-01" }),
+      release_date_override: "2027-03-03",
+    });
+    expect(filterByYear([entry], 2027, "release_date")).toHaveLength(1);
+    expect(filterByYear([entry], 2020, "release_date")).toHaveLength(0);
   });
 });

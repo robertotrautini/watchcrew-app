@@ -169,4 +169,13 @@ describe("LoginScreen", () => {
       expect.objectContaining({ href: "/(auth)/register" }),
     );
   });
+
+  it("renders a forgot-password link pointing to /(auth)/forgot-password", async () => {
+    const LoginScreen = loadLoginScreen();
+    await render(<LoginScreen />);
+
+    expect(mockLink).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/(auth)/forgot-password" }),
+    );
+  });
 });

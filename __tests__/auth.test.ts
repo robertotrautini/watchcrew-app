@@ -1,6 +1,10 @@
 const mockSignUp = jest.fn();
 const mockSignInWithPassword = jest.fn();
 const mockSignOut = jest.fn();
+const mockResetPasswordForEmail = jest.fn();
+const mockUpdateUser = jest.fn();
+const mockSetSession = jest.fn();
+const mockExchangeCodeForSession = jest.fn();
 
 jest.mock("../src/lib/supabase", () => ({
   supabase: {
@@ -8,6 +12,10 @@ jest.mock("../src/lib/supabase", () => ({
       signUp: mockSignUp,
       signInWithPassword: mockSignInWithPassword,
       signOut: mockSignOut,
+      resetPasswordForEmail: mockResetPasswordForEmail,
+      updateUser: mockUpdateUser,
+      setSession: mockSetSession,
+      exchangeCodeForSession: mockExchangeCodeForSession,
     },
   },
 }));
@@ -31,7 +39,10 @@ describe("auth", () => {
       expect(mockSignUp).toHaveBeenCalledWith({
         email: "a@b.com",
         password: "secret123",
-        options: { data: { display_name: "Robin" } },
+        options: {
+          data: { display_name: "Robin" },
+          emailRedirectTo: "watchcrew://auth/callback",
+        },
       });
       expect(result).toBe(fakeResult);
     });
@@ -101,6 +112,58 @@ describe("auth", () => {
       const { signOut } = require("../src/lib/auth");
       const result = await signOut();
 
+      expect(result).toBe(fakeResult);
+    });
+  });
+
+  describe("requestPasswordReset", () => {
+    it("calls resetPasswordForEmail with the deep-link redirect and returns its result", async () => {
+      const fakeResult = { data: {}, error: null };
+      mockResetPasswordForEmail.mockResolvedValue(fakeResult);
+
+      const { requestPasswordReset } = require("../src/lib/auth");
+      const result = await requestPasswordReset("a@b.com");
+
+      expect(mockResetPasswordForEmail).toHaveBeenCalledWith("a@b.com", {
+        redirectTo: "watchcrew://auth/callback",
+      });
+      expect(result).toBe(fakeResult);
+    });
+  });
+
+  describe("updatePassword", () => {
+    it("calls updateUser with the new password and returns its result", async () => {
+      const fakeResult = { data: { user: {} }, error: null };
+      mockUpdateUser.mockResolvedValue(fakeResult);
+
+      const { updatePassword } = require("../src/lib/auth");
+      const result = await updatePassword("newsecret");
+
+      expect(mockUpdateUser).toHaveBeenCalledWith({ password: "newsecret" });
+      expect(result).toBe(fakeResult);
+    });
+  });
+
+  describe("establishSessionFromTokens / exchangeAuthCode", () => {
+    it("calls setSession with access and refresh token", async () => {
+      const fakeResult = { data: { session: {} }, error: null };
+      mockSetSession.mockResolvedValue(fakeResult);
+
+      const { establishSessionFromTokens } = require("../src/lib/auth");
+      const result = await establishSessionFromTokens("AT", "RT");
+
+      expect(mockSetSession).toHaveBeenCalledWith({ access_token: "AT", refresh_token: "RT" });
+      expect(result).toBe(fakeResult);
+    });
+
+    it("calls exchangeCodeForSession for a PKCE code", async () => {
+      const fakeResult = { data: { session: {} }, error: null };
+      mockExchangeCodeForSession.mockResolvedValue(fakeResult);
+
+      const { exchangeAuthCode } = require("../src/lib/auth");
+      const result = await exchangeAuthCode("abc");
+
+      expect(mockExchangeCodeForSession).toHaveBeenCalledWith("abc");
       expect(result).toBe(fakeResult);
     });
   });
