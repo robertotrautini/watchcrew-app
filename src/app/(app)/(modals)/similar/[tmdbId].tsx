@@ -3,13 +3,14 @@ import { useState } from "react";
 import { ActivityIndicator, Text, View } from "react-native";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMoviesProviders } from "@/hooks/useMoviesProviders";
 import { useSimilarMovies } from "@/hooks/useSimilarMovies";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
 import { filterByProviderCategory, type ProviderCategory } from "@/lib/movieProviderFilter";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 import type { TraktRelatedMovie } from "@/lib/tmdbProxy";
 
 /**
@@ -37,8 +38,7 @@ export default function SimilarMoviesScreen() {
   const hasValidParams = params.tmdbId != null && !Number.isNaN(tmdbId);
 
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const similarMoviesQuery = useSimilarMovies(hasValidParams ? tmdbId : undefined);
@@ -56,7 +56,10 @@ export default function SimilarMoviesScreen() {
     }));
 
   const { providersByTmdbId } = useMoviesProviders(items.map((item) => item.tmdbId));
-  const filteredItems = filterByProviderCategory(items, providersByTmdbId, activeCategory);
+  // Inventory 2.10: the category pills respect the user's own streaming
+  // services ("Meine Streaming-Dienste"); with none selected they only filter by category.
+  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filteredItems = filterByProviderCategory(items, providersByTmdbId, activeCategory, myProviderIds);
 
   if (!hasValidParams) {
     return (

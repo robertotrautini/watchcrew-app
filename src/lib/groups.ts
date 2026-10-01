@@ -160,6 +160,17 @@ export async function renameWatchGroup(groupId: string, newName: string) {
   return supabase.from("watch_groups").update({ name: newName }).eq("id", groupId);
 }
 
+/**
+ * Owner changes the group's colour theme. Same plain client UPDATE as
+ * renameWatchGroup (`watch_groups_update_owner_only` RLS policy + the
+ * `authenticated` UPDATE grant). NOTE: unlike `create_watch_group` (which
+ * validates against the 6 names), there is no DB-side check on this column,
+ * so callers must only pass a `GroupThemeName`.
+ */
+export async function setGroupColorTheme(groupId: string, theme: string) {
+  return supabase.from("watch_groups").update({ color_theme: theme }).eq("id", groupId);
+}
+
 /** "Einladungen aktiv"/"Einladungen deaktiviert" toggle -- same owner-only UPDATE policy as renameWatchGroup. */
 export async function setInviteEnabled(groupId: string, enabled: boolean) {
   return supabase.from("watch_groups").update({ invite_enabled: enabled }).eq("id", groupId);

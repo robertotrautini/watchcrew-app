@@ -66,3 +66,61 @@ describe("src/app/index.tsx (root redirect)", () => {
     );
   });
 });
+
+describe("src/app/index.tsx (pending invite + tracker flag)", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset before any render so no mounted component observes the change.
+    require("@/stores/usePendingInviteStore").usePendingInviteStore.setState({ token: null });
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({ trackerEnabled: true });
+  });
+
+  const TOKEN = "11111111-1111-1111-1111-111111111111";
+
+  it("resumes a pending invite join after login (gate 'app')", async () => {
+    const { usePendingInviteStore } = require("@/stores/usePendingInviteStore");
+    usePendingInviteStore.setState({ token: TOKEN });
+    mockUseAuthGate.mockReturnValue("app");
+    const Index = loadIndexScreen();
+
+    await render(<Index />);
+
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: `/join/${TOKEN}` }));
+  });
+
+  it("resumes a pending invite join for a user without a group (gate 'onboarding')", async () => {
+    const { usePendingInviteStore } = require("@/stores/usePendingInviteStore");
+    usePendingInviteStore.setState({ token: TOKEN });
+    mockUseAuthGate.mockReturnValue("onboarding");
+    const Index = loadIndexScreen();
+
+    await render(<Index />);
+
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: `/join/${TOKEN}` }));
+  });
+
+  it("keeps a pending invite while logged out (gate 'auth' -> login)", async () => {
+    const { usePendingInviteStore } = require("@/stores/usePendingInviteStore");
+    usePendingInviteStore.setState({ token: TOKEN });
+    mockUseAuthGate.mockReturnValue("auth");
+    const Index = loadIndexScreen();
+
+    await render(<Index />);
+
+    expect(mockRedirect).toHaveBeenCalledWith(expect.objectContaining({ href: "/(auth)/login" }));
+    expect(usePendingInviteStore.getState().token).toBe(TOKEN);
+  });
+
+  it("redirects to the watchlist tab when the tracker is disabled", async () => {
+    const { usePreferencesStore } = require("@/stores/usePreferencesStore");
+    usePreferencesStore.setState({ trackerEnabled: false });
+    mockUseAuthGate.mockReturnValue("app");
+    const Index = loadIndexScreen();
+
+    await render(<Index />);
+
+    expect(mockRedirect).toHaveBeenCalledWith(
+      expect.objectContaining({ href: "/(app)/(tabs)/watchlist" }),
+    );
+  });
+});

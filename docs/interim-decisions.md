@@ -126,6 +126,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung „Ähnliche Filme“: Poster/Score serverseitig per TMDB-Anreicherung](#m12-vorbereitung-live-bug-fix-—-nachbesserung-ähnliche-filme-poster-score-serverseitig-per-tmdb-anreicherung)
 
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Anzeigenamen-Cache & Toast beim Bearbeiten einer Zahlung](#m12-vorbereitung-live-bug-fix--nachbesserung-anzeigenamen-cache--toast-beim-bearbeiten-einer-zahlung)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Einladungs-Deep-Link, Push-Toggles pro Gruppe, Tracker-Feature-Flag](#m12-vorbereitung-live-bug-fix--nachbesserung-einladungs-deep-link-push-toggles-pro-gruppe-tracker-feature-flag)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: aktive Gruppe in Modals, Tagebuch-Mitgliederzeilen, Push-Tap-Routing, Changelog-Startup-Toast, Gruppenfarbe ändern](#m12-vorbereitung-live-bug-fix--nachbesserung-audit-aktive-gruppe-in-modals-tagebuch-mitgliederzeilen-push-tap-routing-changelog-startup-toast-gruppenfarbe-ändern)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: Streaming-Verfügbarkeit (ADR 0005), „Meine Streaming-Dienste“, Sortierung/Filter pro Gruppe merken](#m12-vorbereitung-live-bug-fix--nachbesserung-audit-streaming-verfügbarkeit-adr-0005-meine-streaming-dienste-sortierungfilter-pro-gruppe-merken)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -1934,6 +1937,66 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Warum das später leicht änderbar ist:** Je eine Zeile in `useUpdateDisplayName.ts` bzw. `tracker.tsx`.
 
 **Verifikation auf dem echten Gerät:** siehe Bericht der Nachbesserung (Pixel 6 Pro).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Einladungs-Deep-Link, Push-Toggles pro Gruppe, Tracker-Feature-Flag
+
+**Problem/Lücke:** (1) Der Einladungslink `watchcrew://join/<token>` hatte keine Route (unmatched route); Beitritt ging nur per manuellem Einfügen. (2) Push-Opt-in war nur ein einzelner Schalter für die aktive Gruppe, und bei verweigerter OS-Berechtigung zeigte der Screen nichts an. (3) Das Tracker-Feature-Flag (Inventar 4.12) fehlte.
+
+**Entscheidung:**
+- **Deep Link:** neue Route `src/app/join/[token].tsx`. Eingeloggt: `joinWatchGroupByToken` (idempotent, „bereits Mitglied“ ist kein Fehler), `activeGroupId` auf die beigetretene Gruppe, `userGroups`-Query invalidieren, dann `router.replace("/")` (Gate wählt den Start-Tab). Ungültiger/deaktivierter Token (`isInvalidInviteTokenError`) bzw. keine UUID: Text „Ungültiger oder deaktivierter Einladungscode.“ plus Button „Weiter“. Ausgeloggt: Token wird gespeichert und zu `/` weitergeleitet (-> Login).
+- **Pending-Token-Speicher:** eigener kleiner, MMKV-persistierter Zustand-Store `src/stores/usePendingInviteStore.ts` (nicht im Preferences-Store, um Konflikte mit parallelen Änderungen zu vermeiden; persistiert, damit der Beitritt auch einen App-Neustart während der Registrierung/E-Mail-Bestätigung übersteht). `src/app/index.tsx` leitet bei Gate `app` oder `onboarding` mit gesetztem Token auf `/join/<token>` um; die Join-Route leert den Token. Universal Links bleiben aufgeschoben.
+- **Push pro Gruppe:** `settings/notifications.tsx` zeigt eine Liste mit einem Schalter je Gruppe (`useUserGroups` + `useGroupNames`, Label via `groupDisplayLabel`; `useGroupPushSubscription` je Zeile). Neuer Hook `usePushPermissionStatus` (`getPermissionsAsync`, Re-Check bei App-Vordergrund). Bei `denied`: deutscher Hinweis mit plattformspezifischen Schritten (iOS: Einstellungen > WatchCrew > Mitteilungen; Android: Einstellungen > Apps > WatchCrew > Benachrichtigungen) und Button „Systemeinstellungen öffnen“ (`Linking.openSettings()`). Android-Push braucht weiterhin Firebase/FCM (nicht konfiguriert, offene Nutzeraufgabe) - nicht Teil dieser Änderung.
+- **Tracker-Flag:** `trackerEnabled` (Default `true`) im Preferences-Store (MMKV, pro Gerät), Schalter „Tracker aktiv“ auf `settings/display.tsx`. Aus: Tracker-Tab per `href: null` ausgeblendet (Route bleibt registriert), `initialRouteName` und Root-Redirect (`src/lib/homeRoute.ts`) auf Watchlist; ist der ausgeblendete Tracker-Tab beim Zurückkehren aus den Einstellungen noch fokussiert, leitet das Tabs-Layout auf Watchlist um. `RatingDialog` blendet „Wer hat bezahlt?“ samt Zahlungsdatum aus und sendet bei aus **nie** einen `payment`-Block - `paid_by_member_id`/`paid_at` bleiben unangetastet (auch nicht neu gestempelt bei bereits gesetztem Zahler).
+
+**Warum das später leicht änderbar ist:** Je eine Route/Datei bzw. ein Flag; Tests: `__tests__/app/join/join-token.test.tsx`, `routeIndex.test.tsx`, `SettingsNotifications.test.tsx`, `usePushPermissionStatus.test.tsx`, `tabsLayout.test.ts`, `SettingsDisplay.test.tsx`, `RatingDialog.test.tsx`.
+
+**Gerätetest nötig:** Deep Link `watchcrew://join/<token>` per `adb shell am start` (ausgeloggt/eingeloggt/ungültig), Tab-Ausblenden samt Redirect beim Zurückkehren aus den Einstellungen, Berechtigungs-Hinweis und `openSettings` auf echtem Gerät.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: aktive Gruppe in Modals, Tagebuch-Mitgliederzeilen, Push-Tap-Routing, Changelog-Startup-Toast, Gruppenfarbe ändern
+
+**Problem/Lücke:** (1) Add-Movie, „Ähnliche Filme“, Filmreihe und die Regisseur-/Schauspieler-/Studio-Filmografie nahmen `userGroupsQuery.data?.[0]` statt der persistierten aktiven Gruppe - bei 2+ Gruppen zielten „Zur Watchlist“ und die Bibliotheks-Icons auf die falsche Gruppe. (2) Das Tagebuch zeigte „–“-Zeilen nur für Mitglieder, die irgendwo eine Bewertung haben (Roster per `deriveGroupMemberIds`). (3) Ein Push-Tap öffnete `/movie/[tmdbId]` ohne `source` (kein Gruppenkontext) und wechselte nie die aktive Gruppe. (4) Der Startup-Toast „Neue Features“ (Inventar 2.8) wurde nie ausgelöst. (5) Die Gruppenfarbe war nach dem Erstellen nicht änderbar.
+
+**Entscheidung:**
+- **Aktive Gruppe:** alle sechs Screens nutzen `useActiveGroup`. Tests laufen jetzt über einen globalen Jest-Mock `__mocks__/react-native-mmkv.js` (der Preferences-Store wird dadurch in Screen-Tests ladbar); neuer Regressionstest `__tests__/screens/ActiveGroupModals.test.tsx`.
+- **Tagebuch:** `deriveGroupMemberIds(entries, memberUserIds)` bildet die Vereinigung aus echten Mitgliedern (`useGroupMembers`) und Bewertungs-Autoren (ehemalige Mitglieder behalten ihre sichtbaren Bewertungen); jedes Mitglied bekommt eine Zeile, „–“ ohne Bewertung.
+- **Push-Tap:** `usePushNotificationRouting` setzt vor dem Navigieren `activeGroupId` aus dem Payload, wenn der Nutzer Mitglied ist (Session + `ensureQueryData(userGroupsQueryOptions)`, bei Fehler bleibt die Gruppe unverändert), und übergibt `source: "watchlist"` (zusammen mit `groupId` + `watchlistEntryId`). Eigene Wahl: alle Push-Events (new_entry, first_rating, release_reminder) betreffen Mitglieder ohne eigene Bewertung, also Watchlist-Einträge; das Payload enthält kein `source`. Der Cold-Start-Response wird jetzt vor der (nun asynchronen) Navigation geleert.
+- **Changelog-Toast:** neuer Hook `useChangelogStartupToast` (gemountet in `(app)/_layout.tsx`): 1,5 s nach App-Start, wenn `lastSeenChangelogVersion !== CURRENT_CHANGELOG_VERSION`, Text „Neue Features – Tippe, um das Changelog zu öffnen“, 6 s sichtbar, Tap öffnet `/settings/changelog`. `showToast(message, options)` (`durationMs`, `onPress`) und `ToastHost` (neues `toast-press`-Pressable nur bei `onPress`) wurden dafür erweitert; als gesehen markiert wird weiterhin nur beim Öffnen des Changelogs. Badge und der bestehende „Neue Funktionen verfügbar“-Toast beim Öffnen der Einstellungen bleiben unverändert (kann doppelt erscheinen, wenn die Einstellungen innerhalb der Sichtbarkeit geöffnet werden).
+- **Gruppenfarbe:** Owner-Sektion „Farbthema“ in `group-settings.tsx` mit den 6 Themes (Swatch-Reihe wie beim Erstellen; Konstanten `GROUP_THEME_OPTIONS/LABELS` jetzt zentral in `groupTheme.ts`), Tap speichert sofort (kein Speichern-Button), Erfolg per Toast „Farbthema geändert“. Neu: `setGroupColorTheme` (`src/lib/groups.ts`) + `useSetGroupTheme`. Es ist **keine DB-Änderung nötig**: `watch_groups_update_owner_only` (Migration 20260919120000, `using`/`with check` = `is_group_owner`) und der UPDATE-Grant für `authenticated` (20260930090000) decken die Spalte ab. Hinweis: es gibt serverseitig keine Validierung von `color_theme` beim UPDATE (nur `create_watch_group` prüft die 6 Namen) - ein CHECK-Constraint oder Trigger wäre optional und wurde nicht angelegt.
+
+**Warum das später leicht änderbar ist:** Je ein Hook/eine Funktion; Tests: `ActiveGroupModals.test.tsx`, `diaryDisplay.test.ts`, `Tagebuch.test.tsx`, `usePushNotificationRouting.test.tsx`, `useChangelogStartupToast.test.tsx`, `toast.test.ts`, `Toast.test.tsx`, `appLayoutPushWiring.test.tsx`, `groups.test.ts`, `useGroupSettings.test.tsx`, `GroupSettings.test.tsx`.
+
+**Gerätetest nötig:** Push-Tap bei 2+ Gruppen (aus anderer Gruppe, kalt und warm; Detail zeigt Gruppenkontext/Aktionen), Changelog-Toast beim App-Start samt Tap, Farbwechsel im Gruppen-Verwaltung-Screen (Swatch-Optik/Checkmark), Add-Movie bei 2 Gruppen mit zweiter aktiv.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Audit: Streaming-Verfügbarkeit (ADR 0005), „Meine Streaming-Dienste“, Sortierung/Filter pro Gruppe merken
+
+**Problem/Lücke:** (1) Die Edge Function `tmdb-proxy` hatte zwar einen `streaming`-Kind mit 24h-TTL (ADR 0005), der Client rief ihn aber nie auf (nur das live abgerufene `providers`) - `streaming_availability_cache` blieb leer, `streamingAvailability` war immer leer: „Kommt noch“ zeigte jeden datumslosen Film, das Badge „Streaming verfügbar“ stimmte nur im Detail. Außerdem zählte `buildStreamingAvailabilityLookup` jede Cache-Zeile als „verfügbar“, auch ohne Flatrate. (2) Die gespeicherten „Meine Streaming-Dienste“ (MMKV) wurden nirgends benutzt (Sortierung war ein Stub „(bald verfügbar)“, Add-Movie-Toggle ein Passthrough, Kategorie-Pills ohne Bezug zu den eigenen Diensten). (3) Sortierung/Filter gingen beim Verlassen der Gruppe/App verloren; leerer Zustand unterschied nicht zwischen „Suche ohne Treffer“ und „Liste leer“.
+
+**Entscheidung:**
+- **Server (ADR 0005):** `providers` und `streaming` laufen jetzt Cache-Aside über `streaming_availability_cache` (Region DE, Datenform `{ flatrate, rent, buy }`, 24h TTL); der M1-Stub `fetchStreamingFromTmdb` wird nicht mehr benutzt (er hätte die Tabelle mit `{ providers: [] }` vergiftet). Neuer Kind `providers_batch` (`tmdbIds`, max. 200): liest alle Zeilen mit einer Query, holt nur fehlende/abgelaufene Ids von TMDB (Nebenläufigkeit 8, Fehler pro Id werden übersprungen) und schreibt sie in einem Upsert zurück (`providers-cache.ts`). `fetchMovieProviders` bekam einen optionalen `region`-Parameter (Default DE).
+- **Client-Roundtrips:** Cache-Zeilen werden direkt gelesen (RLS-SELECT, 1 Query); nur wenn Ids fehlen/älter als 24h sind, folgt EIN `providers_batch`-Call (`loadStreamingRows`, `getMoviesProvidersBatch` teilt >200 Ids in Chunks). `useGroupWatchlist` frischt nur datumslose Filme auf (Spec 2.2: Verfügbarkeit nur für Filme ohne `releaseDate`), liest aber alle Ids. Ein Fehler beim Auffrischen ist best effort (kein Query-Fehler).
+- **Lookup:** `buildStreamingAvailabilityLookup` verlangt mindestens einen Flatrate-Anbieter (Leihen/Kaufen allein zählt nicht als „streambar“, konsistent mit dem Detail-Screen).
+- **„Meine Streaming-Dienste“:** `my_streaming` filtert Watchlist und Tagebuch auf Filme, die (DE) bei einem der gespeicherten Dienste in den aktiven Kategorien-Pills (Flatrate/Leihen/Kaufen) angeboten werden (`matchesOwnProviders`, `filterByMyStreaming`). Die Provider-Daten werden nur bei aktiver Sortierung über `useMyStreamingProviders` geladen (ein `providers_batch`-Call, auch für nicht-datumslose Filme). Das Label „(bald verfügbar)“ ist entfernt. Add-Movie-Toggle: eigene Dienste in irgendeiner Kategorie. Filmreihe/Ähnliche Filme: die bestehende Kategorie-Pill wird zusätzlich auf die eigenen Dienste eingeengt.
+- **Persistenz:** Neues Preferences-Feld `listFilters` (MMKV), Schlüssel `watchlist:<groupId>` / `diary:<groupId>`: Sortierung, Genre-Auswahl, Jahr, Kategorie-Pills. Der Suchtext wird bewusst NICHT gespeichert (Inventar Abschnitt 5 nennt für persistierte Präferenzen Sortierung/Filter, nicht den Suchtext). Leere Zustände: „Keine Treffer für „…““ (Suche, 2+ Zeichen) bzw. „Keine Einträge für diese Auswahl.“ (Filter) getrennt von „Deine Watchlist ist leer.“ / „Noch keine bewerteten Filme.“.
+
+**Mehrdeutigkeiten / einfachste Lesart:** (a) Standard der Kategorie-Pills ist nur „Flatrate“ (mind. 1 aktiv). (b) Ohne ausgewählte eigene Dienste filtert `my_streaming` nur nach Kategorie (Filme, die irgendwo in den aktiven Kategorien angeboten werden); dasselbe gilt für Filmreihe/Ähnliche Filme. (c) Reihenfolge bei `my_streaming` bleibt die Eingabereihenfolge (keine eigene Sortierung). (d) Das Filter-Panel-Auf/Zu der Legacy-App (Tune-Icon) gibt es hier nicht, daher nichts zu merken.
+
+**Warum das später leicht änderbar ist:** Reine Funktionen (`matchesOwnProviders`, `toggleProviderCategory`, `findIdsNeedingProviders`/`resolveProvidersBatch` serverseitig), eine Konstante für Default-Kategorien (`DEFAULT_PROVIDER_CATEGORIES`) und TTL (`STREAMING_TTL_MS`). Tests: `providers-cache.test.ts`, `tmdb-client.test.ts` (Deno), `watchlistLogic.test.ts`, `movieProviderFilter.test.ts`, `listFilters.test.ts`, `streamingAvailability.test.ts`, `useGroupWatchlist.test.tsx`, `useMyStreamingProviders.test.tsx`, `usePreferencesStore.test.ts`, `Watchlist.test.tsx`, `Tagebuch.test.tsx`, `AddMovie.test.tsx`, `Collection.test.tsx`, `SimilarMovies.test.tsx`.
+
+**Offener Punkt:** Edge Function `tmdb-proxy` muss neu deployt werden (neuer Kind `providers_batch`, `providers` jetzt Cache-gestützt) - ohne Deploy schlägt der Batch-Call fehl (best effort: „Kommt noch“ bleibt dann wie bisher leer). `useMoviesProviders` (Filmreihe/Ähnliche/Add-Movie) ruft weiterhin pro Film `providers` auf (jetzt serverseitig gecacht); ein Umstieg auf den Batch wäre eine Folgeoptimierung.
+
+**Gerätetest nötig:** Watchlist „Kommt noch“/Badge „Streaming verfügbar“ nach erstem Laden (nach Deploy), Sortierung „Meine Streaming-Dienste“ in Watchlist und Tagebuch mit gespeicherten Diensten (Pills, Mindestens-eins-Regel, Ladezeit bei großer Liste), Add-Movie-TV-Toggle, Sortierung/Filter nach App-Neustart und Gruppenwechsel, leere-Zustand-Texte.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

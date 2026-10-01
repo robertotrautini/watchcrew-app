@@ -113,6 +113,18 @@ describe("deriveGroupMemberIds", () => {
     expect(deriveGroupMemberIds(entries)).toEqual(["u1", "u2", "u3"]);
   });
 
+  it("also includes real group members who have never rated anything (so they get a '–' row)", () => {
+    const entries = [
+      makeEntry({
+        id: "e1",
+        movie: makeMovie({ tmdb_id: 1, name: "A" }),
+        ratings: [makeRating({ member_id: "u2", rating: 3 })],
+      }),
+    ];
+
+    expect(deriveGroupMemberIds(entries, ["u1", "u2", "u3"])).toEqual(["u1", "u2", "u3"]);
+  });
+
   it("returns an empty array when no entries have any ratings", () => {
     const entries = [makeEntry({ id: "e1", movie: makeMovie({ tmdb_id: 1, name: "A" }) })];
 

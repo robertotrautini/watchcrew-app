@@ -1,5 +1,4 @@
 import {
-  filterByMyStreamingStub,
   findDuplicateRatedEntry,
   formatAverageRating,
   mapMovieLikeToGridItem,
@@ -184,15 +183,5 @@ describe("formatAverageRating", () => {
     expect(formatAverageRating(4.5)).toBe("4.5");
     expect(formatAverageRating(4)).toBe("4.0");
     expect(formatAverageRating(3.666)).toBe("3.7");
-  });
-});
-
-describe("filterByMyStreamingStub", () => {
-  it("STUB (M10 dependency, see docs/interim-decisions.md): returns items unchanged/unsorted, same passthrough pattern as sortByMyStreamingStub", () => {
-    const items = [{ tmdbId: 1 }, { tmdbId: 2 }];
-    expect(filterByMyStreamingStub(items)).toEqual(items);
-    // A genuinely new array (not risking accidental external mutation via
-    // aliasing), matching sortByMyStreamingStub's own `[...entries]` choice.
-    expect(filterByMyStreamingStub(items)).not.toBe(items);
   });
 });

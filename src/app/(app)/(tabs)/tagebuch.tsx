@@ -13,6 +13,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import {
   computeAverageRating,
@@ -22,7 +23,14 @@ import {
   genreDisplayLabel,
   memberDisplayLabel,
 } from "@/lib/diaryDisplay";
+import {
+  DEFAULT_LIST_FILTERS,
+  getNoResultsMessage,
+  listFiltersKey,
+  toggleProviderCategory,
+} from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
+import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "@/lib/movieProviderFilter";
 import { resolveGroupTheme } from "@/lib/groupTheme";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { searchEntries, sortDiary, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
@@ -85,11 +93,17 @@ const SORT_OPTIONS: { value: DiarySortOption; label: string }[] = [
   { value: "missing", label: "Fehlende Bewertungen" },
   { value: "rating", label: "Beste Bewertung" },
   { value: "tmdb_score", label: "TMDB Score" },
-  { value: "my_streaming", label: "Meine Streaming-Dienste (bald verfügbar)" },
+  { value: "my_streaming", label: "Meine Streaming-Dienste" },
   { value: "genre", label: "Nach Genre" },
   { value: "year", label: "Nach Jahr" },
   { value: "liked", label: "Mag ich ♥" },
 ];
+
+const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
+  flatrate: "Flatrate",
+  rent: "Leihen",
+  buy: "Kaufen",
+};
 
 const VIEW_MODES: { value: DiaryViewMode; label: string }[] = [
   { value: "cards", label: "Karten" },
@@ -159,9 +173,25 @@ export default function TagebuchScreen() {
   // per docs/interim-decisions.md's "M10 — Settings hub" entry.
   const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
 
-  const [sortOption, setSortOption] = useState<DiarySortOption>("my_diary");
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
-  const [selectedYear, setSelectedYear] = useState<YearFilterValue | undefined>(undefined);
+  // Sort/genre/year/provider-category choices persist per group (MMKV, see
+  // usePreferencesStore `listFilters`); the search text is session-local.
+  const storedFilters = usePreferencesStore((s) =>
+    activeGroupId ? s.listFilters[listFiltersKey("diary", activeGroupId)] : undefined,
+  );
+  const setListFilters = usePreferencesStore((s) => s.setListFilters);
+  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
+  const sortOption = (filters.sortOption ?? "my_diary") as DiarySortOption;
+  const selectedGenreIds = filters.genreIds;
+  const selectedYear: YearFilterValue | undefined = filters.year ?? undefined;
+  const providerCategories = filters.providerCategories;
+
+  function updateFilters(patch: Partial<typeof DEFAULT_LIST_FILTERS>) {
+    if (activeGroupId) {
+      setListFilters("diary", activeGroupId, patch);
+    }
+  }
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isSortSheetVisible, setSortSheetVisible] = useState(false);
 
@@ -169,10 +199,12 @@ export default function TagebuchScreen() {
 
   const rawEntries = useMemo(() => watchlistQuery.data?.entries ?? [], [watchlistQuery.data]);
 
-  // Best-effort roster of "everyone in this group" — see the flagged-gap
-  // comment above for why this is a UNION-of-ratings approximation rather
-  // than a real membership query.
-  const groupMemberIds = useMemo(() => deriveGroupMemberIds(rawEntries), [rawEntries]);
+  // Roster of "everyone in this group": real members (useGroupMembers) unioned
+  // with rating authors (see deriveGroupMemberIds).
+  const groupMemberIds = useMemo(
+    () => deriveGroupMemberIds(rawEntries, (groupMembersQuery.data ?? []).map((m) => m.user_id)),
+    [rawEntries, groupMembersQuery.data],
+  );
 
   // Real display names, joined via `useGroupMembers` (see the M5 fast-follow
   // module comment above) — `memberDisplayLabel` falls back to the
@@ -192,14 +224,35 @@ export default function TagebuchScreen() {
     return splitWatchlistAndDiary(rawEntries, userId).diary;
   }, [rawEntries, userId]);
 
+  // Providers are only loaded (cache-backed, one batch call) while the
+  // "Meine Streaming-Dienste" sort is active.
+  const providersQuery = useMyStreamingProviders(
+    diaryEntries.map((entry) => entry.movie.tmdb_id),
+    sortOption === "my_streaming",
+  );
+  const providersByTmdbId = providersQuery.data;
+
   const sortedEntries = useMemo(() => {
     if (!userId) return [];
     return sortDiary(diaryEntries, sortOption, userId, {
       groupMemberIds,
       genreIds: selectedGenreIds,
       year: selectedYear,
+      providersByTmdbId,
+      myProviderIds,
+      providerCategories,
     });
-  }, [diaryEntries, sortOption, userId, groupMemberIds, selectedGenreIds, selectedYear]);
+  }, [
+    diaryEntries,
+    sortOption,
+    userId,
+    groupMemberIds,
+    selectedGenreIds,
+    selectedYear,
+    providersByTmdbId,
+    myProviderIds,
+    providerCategories,
+  ]);
 
   const visibleEntries = useMemo(
     () => searchEntries(sortedEntries, searchQuery),
@@ -222,13 +275,15 @@ export default function TagebuchScreen() {
   const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
 
   function toggleGenre(genreId: string) {
-    setSelectedGenreIds((current) =>
-      current.includes(genreId) ? current.filter((id) => id !== genreId) : [...current, genreId],
-    );
+    updateFilters({
+      genreIds: selectedGenreIds.includes(genreId)
+        ? selectedGenreIds.filter((id) => id !== genreId)
+        : [...selectedGenreIds, genreId],
+    });
   }
 
   function selectSortOption(option: DiarySortOption) {
-    setSortOption(option);
+    updateFilters({ sortOption: option });
     setSortSheetVisible(false);
   }
 
@@ -339,7 +394,7 @@ export default function TagebuchScreen() {
                 testID={`tagebuch-year-pill-${year}`}
                 accessibilityRole="button"
                 accessibilityState={{ selected: selectedYear === year }}
-                onPress={() => setSelectedYear(year)}
+                onPress={() => updateFilters({ year })}
                 className="rounded-full border border-border-subtle px-3 py-1"
               >
                 <Text className="text-text-primary">{year}</Text>
@@ -350,12 +405,33 @@ export default function TagebuchScreen() {
                 testID="tagebuch-year-pill-no_date"
                 accessibilityRole="button"
                 accessibilityState={{ selected: selectedYear === "no_date" }}
-                onPress={() => setSelectedYear("no_date")}
+                onPress={() => updateFilters({ year: "no_date" })}
                 className="rounded-full border border-border-subtle px-3 py-1"
               >
                 <Text className="text-text-primary">Kein Datum</Text>
               </Pressable>
             ) : null}
+          </View>
+        ) : null}
+
+        {sortOption === "my_streaming" ? (
+          <View testID="tagebuch-provider-categories" className="flex-row flex-wrap gap-2">
+            {ALL_PROVIDER_CATEGORIES.map((category) => (
+              <Pressable
+                key={category}
+                testID={`tagebuch-provider-category-${category}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: providerCategories.includes(category) }}
+                onPress={() =>
+                  updateFilters({ providerCategories: toggleProviderCategory(providerCategories, category) })
+                }
+                className={`rounded-full border border-border-subtle px-3 py-1 ${
+                  providerCategories.includes(category) ? "bg-accent" : "bg-card"
+                }`}
+              >
+                <Text className="text-text-primary">{PROVIDER_CATEGORY_LABELS[category]}</Text>
+              </Pressable>
+            ))}
           </View>
         ) : null}
       </View>
@@ -366,7 +442,7 @@ export default function TagebuchScreen() {
         </View>
       ) : hasNoResults ? (
         <View className="flex-1 items-center justify-center px-6" testID="tagebuch-no-results">
-          <Text className="text-center text-text-secondary">Keine Einträge für diese Auswahl.</Text>
+          <Text className="text-center text-text-secondary">{getNoResultsMessage(searchQuery)}</Text>
         </View>
       ) : (
         <ScrollView testID="tagebuch-entry-list" contentContainerClassName="gap-4 px-4 pb-8">

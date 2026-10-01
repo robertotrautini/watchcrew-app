@@ -313,4 +313,46 @@ describe("usePreferencesStore", () => {
 
     expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBe("0.9.0");
   });
+
+  it("returns a default list-filter state for a tab+group without stored choices", () => {
+    const { DEFAULT_LIST_FILTERS } = require("@/stores/usePreferencesStore");
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().listFilters["watchlist:g1"]).toBeUndefined();
+    expect(DEFAULT_LIST_FILTERS).toEqual({
+      sortOption: null,
+      genreIds: [],
+      year: null,
+      providerCategories: ["flatrate"],
+    });
+  });
+
+  it("setListFilters merges a patch per tab+group without touching other groups/tabs", () => {
+    const usePreferencesStore = loadStore();
+
+    usePreferencesStore.getState().setListFilters("watchlist", "g1", { sortOption: "genre", genreIds: ["a"] });
+    usePreferencesStore.getState().setListFilters("watchlist", "g1", { year: 2020 });
+    usePreferencesStore.getState().setListFilters("diary", "g1", { sortOption: "liked" });
+
+    const { listFilters } = usePreferencesStore.getState();
+    expect(listFilters["watchlist:g1"]).toEqual({
+      sortOption: "genre",
+      genreIds: ["a"],
+      year: 2020,
+      providerCategories: ["flatrate"],
+    });
+    expect(listFilters["diary:g1"].sortOption).toBe("liked");
+    expect(listFilters["watchlist:g2"]).toBeUndefined();
+  });
+
+  it("persists and hydrates the per-group list filters via MMKV", () => {
+    const usePreferencesStore = loadStore();
+    usePreferencesStore.getState().setListFilters("diary", "g1", { sortOption: "rating" });
+
+    const persisted = JSON.parse(mockStorageMap.get("watchcrew-preferences") as string);
+    expect(persisted.state.listFilters["diary:g1"].sortOption).toBe("rating");
+
+    jest.resetModules();
+    expect(loadStore().getState().listFilters["diary:g1"].sortOption).toBe("rating");
+  });
 });

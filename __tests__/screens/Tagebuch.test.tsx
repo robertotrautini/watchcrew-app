@@ -43,6 +43,11 @@ jest.mock("@/hooks/useGroupWatchlist", () => ({
   useGroupWatchlist: mockUseGroupWatchlist,
 }));
 
+const mockUseMyStreamingProviders = jest.fn();
+jest.mock("@/hooks/useMyStreamingProviders", () => ({
+  useMyStreamingProviders: (...args: unknown[]) => mockUseMyStreamingProviders(...args),
+}));
+
 const mockUseGroupMembers = jest.fn();
 jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
@@ -155,7 +160,12 @@ describe("TagebuchScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ diaryViewMode: "cards" });
+    usePreferencesStore.setState({
+      diaryViewMode: "cards",
+      listFilters: {},
+      selectedStreamingProviderIds: [],
+    });
+    mockUseMyStreamingProviders.mockReturnValue({ data: undefined, isLoading: false });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
   });
 
@@ -266,6 +276,26 @@ describe("TagebuchScreen", () => {
 
       const values = getAllByTestId("member-rating-value").map((node) => node.props.children);
       expect(values).toEqual(["4.0", "–", "5.0"]);
+    });
+
+    it("renders a '–' row for a real group member who has no rating row at all", async () => {
+      mockHappyPath(
+        [entry],
+        [
+          { user_id: "u1", profiles: { display_name: "Robin" } },
+          { user_id: "u2", profiles: { display_name: "Sam" } },
+          { user_id: "u3", profiles: { display_name: "Alex" } },
+          { user_id: "u4", profiles: { display_name: "Kim" } },
+        ],
+      );
+      const TagebuchScreen = loadTagebuchScreen();
+
+      const { getAllByTestId } = await render(<TagebuchScreen />);
+
+      const names = getAllByTestId("member-rating-name").map((node) => node.props.children);
+      const values = getAllByTestId("member-rating-value").map((node) => node.props.children);
+      expect(names).toEqual(["Robin", "Sam", "Alex", "Kim"]);
+      expect(values).toEqual(["4.0", "–", "5.0", "–"]);
     });
 
     it("shows the real profile display_name (joined via useGroupMembers) for a member row, falling back to the uuid-prefix placeholder when a profile is missing", async () => {
@@ -647,6 +677,103 @@ describe("TagebuchScreen", () => {
 
       expect(getByTestId(`tagebuch-entry-${alpha.id}`)).toBeTruthy();
       expect(getByTestId(`tagebuch-entry-${beta.id}`)).toBeTruthy();
+    });
+  });
+
+  describe("persisted per-group sort/filter, 'Meine Streaming-Dienste', empty texts", () => {
+    const alpha = makeEntry({
+      id: "p1",
+      movie: makeMovie({ tmdb_id: 11, name: "Alpha Movie", vote_average: 3 }),
+      ratings: [makeRating({ member_id: "u1", rating: 4 })],
+    });
+    const beta = makeEntry({
+      id: "p2",
+      movie: makeMovie({ tmdb_id: 12, name: "Beta Movie", vote_average: 9 }),
+      ratings: [makeRating({ member_id: "u1", rating: 3 })],
+    });
+
+    it("persists the chosen sort option per group and restores it on mount", async () => {
+      mockHappyPath([alpha, beta]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const first = await render(<TagebuchScreen />);
+
+      await fireEvent.press(first.getByTestId("tagebuch-sort-button"));
+      await fireEvent.press(first.getByTestId("tagebuch-sort-option-tmdb_score"));
+
+      expect(loadPreferencesStore().getState().listFilters["diary:g1"].sortOption).toBe("tmdb_score");
+      await first.unmount();
+
+      const second = await render(<TagebuchScreen />);
+      expect(second.getByTestId("tagebuch-sort-button-label").props.children).toBe("TMDB Score");
+    });
+
+    it("persists genre selection and year per group, but not the search text", async () => {
+      mockHappyPath([alpha, beta]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.changeText(getByTestId("tagebuch-search-input"), "Alpha");
+      await fireEvent.press(getByTestId("tagebuch-sort-button"));
+      await fireEvent.press(getByTestId("tagebuch-sort-option-year"));
+      await fireEvent.press(getByTestId("tagebuch-year-pill-no_date"));
+
+      const filters = loadPreferencesStore().getState().listFilters;
+      expect(filters["diary:g1"].year).toBe("no_date");
+      expect(JSON.stringify(filters)).not.toContain("Alpha");
+    });
+
+    it("labels the sort option 'Meine Streaming-Dienste' without '(bald verfügbar)'", async () => {
+      mockHappyPath([alpha, beta]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByText } = await render(<TagebuchScreen />);
+
+      await fireEvent.press(getByTestId("tagebuch-sort-button"));
+
+      expect(queryByText(/bald verfügbar/)).toBeNull();
+      expect(queryByText("Meine Streaming-Dienste")).toBeTruthy();
+    });
+
+    it("'Meine Streaming-Dienste': filters to own services per category pill (min. 1 active)", async () => {
+      mockHappyPath([alpha, beta]);
+      loadPreferencesStore().setState({ selectedStreamingProviderIds: [8] });
+      mockUseMyStreamingProviders.mockImplementation((_ids: number[], enabled: boolean) => ({
+        data: enabled
+          ? new Map([
+              [11, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
+              [12, { flatrate: [], rent: [{ provider_id: 8, provider_name: "N" }], buy: [] }],
+            ])
+          : undefined,
+        isLoading: false,
+      }));
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      expect(queryByTestId("tagebuch-provider-categories")).toBeNull();
+      await fireEvent.press(getByTestId("tagebuch-sort-button"));
+      await fireEvent.press(getByTestId("tagebuch-sort-option-my_streaming"));
+
+      expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([11, 12], true);
+      expect(getByTestId("tagebuch-entry-p1")).toBeTruthy();
+      expect(queryByTestId("tagebuch-entry-p2")).toBeNull();
+
+      await fireEvent.press(getByTestId("tagebuch-provider-category-rent"));
+      expect(getByTestId("tagebuch-entry-p2")).toBeTruthy();
+
+      await fireEvent.press(getByTestId("tagebuch-provider-category-flatrate"));
+      await fireEvent.press(getByTestId("tagebuch-provider-category-rent"));
+      expect(loadPreferencesStore().getState().listFilters["diary:g1"].providerCategories).toEqual(["rent"]);
+    });
+
+    it("shows a search-specific text when a search matches nothing (distinct from the empty-diary text)", async () => {
+      mockHappyPath([alpha, beta]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, getByText, queryByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.changeText(getByTestId("tagebuch-search-input"), "zzzzzz");
+
+      expect(getByTestId("tagebuch-no-results")).toBeTruthy();
+      expect(getByText("Keine Treffer für „zzzzzz“.")).toBeTruthy();
+      expect(queryByTestId("tagebuch-empty")).toBeNull();
     });
   });
 });

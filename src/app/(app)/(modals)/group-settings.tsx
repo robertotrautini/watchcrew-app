@@ -13,10 +13,16 @@ import {
   useRegenerateInviteToken,
   useRemoveMember,
   useRenameGroup,
+  useSetGroupTheme,
   useSetInviteEnabled,
 } from "@/hooks/useGroupSettings";
 import { groupDisplayLabel, memberDisplayLabel } from "@/lib/diaryDisplay";
-import { resolveGroupTheme } from "@/lib/groupTheme";
+import {
+  GROUP_THEME_LABELS,
+  GROUP_THEME_OPTIONS,
+  resolveGroupTheme,
+  type GroupThemeName,
+} from "@/lib/groupTheme";
 
 /**
  * Group-Settings screen (M9 part 2) -- member list, rename, invite-link
@@ -85,6 +91,7 @@ export default function GroupSettingsScreen() {
   }, [groupNamesQuery.data]);
 
   const renameMutation = useRenameGroup();
+  const setThemeMutation = useSetGroupTheme();
   const setInviteEnabledMutation = useSetInviteEnabled();
   const regenerateMutation = useRegenerateInviteToken();
   const removeMemberMutation = useRemoveMember();
@@ -126,6 +133,16 @@ export default function GroupSettingsScreen() {
 
   const isLoading = groupsQuery.isLoading || groupDetailsQuery.isLoading || groupMembersQuery.isLoading;
   const isError = groupsQuery.isError || groupDetailsQuery.isError || groupMembersQuery.isError;
+
+  const currentTheme = groupDetailsQuery.data?.color_theme;
+  const selectedThemeName: GroupThemeName = resolveGroupTheme(currentTheme).name;
+
+  function handleThemeSelect(theme: GroupThemeName) {
+    if (!activeGroupId || theme === selectedThemeName) {
+      return;
+    }
+    setThemeMutation.mutate({ groupId: activeGroupId, theme });
+  }
 
   function handleRenameSave() {
     const trimmed = nameInput.trim();
@@ -275,6 +292,47 @@ export default function GroupSettingsScreen() {
             loading={renameMutation.isPending}
             onPress={handleRenameSave}
           />
+        </View>
+      ) : null}
+
+      {isOwner ? (
+        <View className="gap-2" testID="group-settings-theme-section">
+          <Text className="text-text-secondary">Farbthema</Text>
+          <View className="flex-row flex-wrap gap-3">
+            {GROUP_THEME_OPTIONS.map((themeName) => {
+              const { colors } = resolveGroupTheme(themeName);
+              const isSelected = selectedThemeName === themeName;
+
+              return (
+                <Pressable
+                  key={themeName}
+                  testID={`group-settings-theme-swatch-${themeName}`}
+                  accessibilityRole="button"
+                  accessibilityLabel={GROUP_THEME_LABELS[themeName]}
+                  accessibilityState={{ selected: isSelected, disabled: setThemeMutation.isPending }}
+                  disabled={setThemeMutation.isPending}
+                  onPress={() => handleThemeSelect(themeName)}
+                  className="h-touch-min w-touch-min items-center justify-center">
+                  <Ionicons name="ellipse" size={32} color={colors.accent} />
+                  {isSelected ? (
+                    <Ionicons
+                      testID={`group-settings-theme-selected-${themeName}`}
+                      name="checkmark-circle"
+                      size={16}
+                      color={themeColors.accent}
+                      className="absolute -right-1 -top-1"
+                    />
+                  ) : null}
+                </Pressable>
+              );
+            })}
+          </View>
+          {setThemeMutation.isError ? (
+            <Text testID="group-settings-theme-error" className="text-sm text-danger">
+              Farbthema konnte nicht geändert werden:{" "}
+              {(setThemeMutation.error as { message?: string })?.message}
+            </Text>
+          ) : null}
         </View>
       ) : null}
 

@@ -24,6 +24,23 @@ jest.mock("expo-notifications", () => ({
   addNotificationResponseReceivedListener: mockAddNotificationResponseReceivedListener,
 }));
 
+const mockEnsureQueryData = jest.fn();
+jest.mock("@tanstack/react-query", () => ({
+  ...jest.requireActual("@tanstack/react-query"),
+  useQueryClient: () => ({ ensureQueryData: mockEnsureQueryData }),
+}));
+
+const mockGetSession = jest.fn();
+jest.mock("@/lib/supabase", () => ({
+  supabase: { auth: { getSession: () => mockGetSession() } },
+}));
+
+jest.mock("@/lib/groups", () => ({ getUserGroups: jest.fn() }));
+
+function loadStore() {
+  return require("@/stores/usePreferencesStore").usePreferencesStore;
+}
+
 function loadHook() {
   return require("@/hooks/usePushNotificationRouting").usePushNotificationRouting;
 }
@@ -37,6 +54,9 @@ describe("usePushNotificationRouting", () => {
     jest.clearAllMocks();
     mockGetLastNotificationResponseAsync.mockResolvedValue(null);
     mockAddNotificationResponseReceivedListener.mockReturnValue({ remove: mockRemove });
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: "u1" } } } });
+    mockEnsureQueryData.mockResolvedValue([{ group_id: "g1" }, { group_id: "g2" }]);
+    loadStore().setState({ activeGroupId: "g1" });
   });
 
   describe("cold start (getLastNotificationResponseAsync)", () => {
@@ -51,7 +71,7 @@ describe("usePushNotificationRouting", () => {
       await waitFor(() => expect(mockPush).toHaveBeenCalled());
       expect(mockPush).toHaveBeenCalledWith({
         pathname: "/movie/[tmdbId]",
-        params: { tmdbId: "603", groupId: "g1", watchlistEntryId: "e1" },
+        params: { tmdbId: "603", groupId: "g1", watchlistEntryId: "e1", source: "watchlist" },
       });
     });
 
@@ -94,6 +114,7 @@ describe("usePushNotificationRouting", () => {
       const listener = mockAddNotificationResponseReceivedListener.mock.calls[0][0];
       listener(fakeResponse({ tmdbId: 604, groupId: "g2" }));
 
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
       expect(mockPush).toHaveBeenCalledWith({
         pathname: "/movie/[tmdbId]",
         params: { tmdbId: "604", groupId: "g2" },
@@ -117,9 +138,63 @@ describe("usePushNotificationRouting", () => {
     const listener = mockAddNotificationResponseReceivedListener.mock.calls[0][0];
     listener(fakeResponse({ tmdbId: 605 }));
 
+    await waitFor(() => expect(mockPush).toHaveBeenCalled());
     expect(mockPush).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "605" },
+    });
+  });
+
+  describe("active group switching", () => {
+    const payload = { tmdbId: 700, groupId: "g2", watchlistEntryId: "e9" };
+
+    it("sets the persisted active group from the payload before navigating when the user is a member", async () => {
+      const usePushNotificationRouting = loadHook();
+      await renderHook(() => usePushNotificationRouting());
+      const listener = mockAddNotificationResponseReceivedListener.mock.calls[0][0];
+
+      listener(fakeResponse(payload));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(loadStore().getState().activeGroupId).toBe("g2");
+      expect(mockPush).toHaveBeenCalledWith({
+        pathname: "/movie/[tmdbId]",
+        params: { tmdbId: "700", groupId: "g2", watchlistEntryId: "e9", source: "watchlist" },
+      });
+    });
+
+    it("leaves the active group unchanged when the user is not a member of the payload group", async () => {
+      mockEnsureQueryData.mockResolvedValue([{ group_id: "g1" }]);
+      const usePushNotificationRouting = loadHook();
+      await renderHook(() => usePushNotificationRouting());
+      const listener = mockAddNotificationResponseReceivedListener.mock.calls[0][0];
+
+      listener(fakeResponse(payload));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(loadStore().getState().activeGroupId).toBe("g1");
+    });
+
+    it("still navigates when the group lookup fails", async () => {
+      mockEnsureQueryData.mockRejectedValue(new Error("offline"));
+      const usePushNotificationRouting = loadHook();
+      await renderHook(() => usePushNotificationRouting());
+      const listener = mockAddNotificationResponseReceivedListener.mock.calls[0][0];
+
+      listener(fakeResponse(payload));
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(loadStore().getState().activeGroupId).toBe("g1");
+    });
+
+    it("switches the active group on the cold-start path too", async () => {
+      mockGetLastNotificationResponseAsync.mockResolvedValue(fakeResponse(payload));
+      const usePushNotificationRouting = loadHook();
+
+      await renderHook(() => usePushNotificationRouting());
+
+      await waitFor(() => expect(mockPush).toHaveBeenCalled());
+      expect(loadStore().getState().activeGroupId).toBe("g2");
     });
   });
 });

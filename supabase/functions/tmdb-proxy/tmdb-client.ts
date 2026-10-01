@@ -513,14 +513,15 @@ interface RawTmdbWatchProvidersResponse {
 export async function fetchMovieProviders(
   tmdbId: number,
   fetchJson: FetchJson = defaultFetchJson,
+  region: string = "DE",
 ): Promise<TmdbMovieProviders> {
   const url = buildUrl(`/movie/${tmdbId}/watch/providers`, {});
   const data = (await fetchJson(url)) as RawTmdbWatchProvidersResponse;
-  const de = data.results?.DE;
+  const regional = data.results?.[region];
   return {
-    flatrate: de?.flatrate ?? [],
-    rent: de?.rent ?? [],
-    buy: de?.buy ?? [],
+    flatrate: regional?.flatrate ?? [],
+    rent: regional?.rent ?? [],
+    buy: regional?.buy ?? [],
   };
 }
 

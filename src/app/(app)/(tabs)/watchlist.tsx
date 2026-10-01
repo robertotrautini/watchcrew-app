@@ -12,8 +12,16 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
+import {
+  DEFAULT_LIST_FILTERS,
+  getNoResultsMessage,
+  listFiltersKey,
+  toggleProviderCategory,
+} from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
+import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "@/lib/movieProviderFilter";
 import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
@@ -32,16 +40,22 @@ import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePrefere
  * sort/filter rules implemented below.
  */
 
-const SORT_OPTIONS: Array<{ key: WatchlistSortOption; label: string; hint?: string }> = [
+const SORT_OPTIONS: Array<{ key: WatchlistSortOption; label: string }> = [
   { key: "added", label: "Hinzugefügt" },
   { key: "upcoming", label: "Kommt noch" },
   { key: "unrated", label: "Keine Bewertung" },
   { key: "has_ratings", label: "Mit Bewertung(en)" },
   { key: "tmdb_score", label: "TMDB Score" },
-  { key: "my_streaming", label: "Meine Streaming-Dienste", hint: "(bald verfügbar)" },
+  { key: "my_streaming", label: "Meine Streaming-Dienste" },
   { key: "genre", label: "Nach Genre" },
   { key: "year", label: "Nach Jahr" },
 ];
+
+const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
+  flatrate: "Flatrate",
+  rent: "Leihen",
+  buy: "Kaufen",
+};
 
 const VIEW_MODES: Array<{ key: WatchlistViewMode; label: string }> = [
   { key: "cards", label: "Karten" },
@@ -109,10 +123,26 @@ export default function WatchlistScreen() {
   // `showTitle` prop doc comment for why this only affects grid variant.
   const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
 
-  const [sortOption, setSortOption] = useState<WatchlistSortOption>("added");
+  // Sort/genre/year/provider-category choices persist per group (MMKV, see
+  // usePreferencesStore `listFilters`); the search text is session-local.
+  const storedFilters = usePreferencesStore((s) =>
+    activeGroupId ? s.listFilters[listFiltersKey("watchlist", activeGroupId)] : undefined,
+  );
+  const setListFilters = usePreferencesStore((s) => s.setListFilters);
+  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
+  const sortOption = (filters.sortOption ?? "added") as WatchlistSortOption;
+  const selectedGenreIds = filters.genreIds;
+  const selectedYear: YearFilterValue | undefined = filters.year ?? undefined;
+  const providerCategories = filters.providerCategories;
+
+  function updateFilters(patch: Partial<typeof DEFAULT_LIST_FILTERS>) {
+    if (activeGroupId) {
+      setListFilters("watchlist", activeGroupId, patch);
+    }
+  }
+
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
-  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
-  const [selectedYear, setSelectedYear] = useState<YearFilterValue | undefined>(undefined);
   const [searchQuery, setSearchQuery] = useState("");
 
   const isLoading = userGroupsQuery.isLoading || groupMembersQuery.isLoading || watchlistQuery.isLoading;
@@ -138,13 +168,33 @@ export default function WatchlistScreen() {
   );
   const yearPillValues = useMemo(() => getDistinctYears(baseWatchlistEntries), [baseWatchlistEntries]);
 
+  // Providers are only loaded (cache-backed, one batch call) while the
+  // "Meine Streaming-Dienste" sort is active.
+  const providersQuery = useMyStreamingProviders(
+    baseWatchlistEntries.map((entry) => entry.movie.tmdb_id),
+    sortOption === "my_streaming",
+  );
+  const providersByTmdbId = providersQuery.data;
+
   const sortedEntries = useMemo(() => {
     return sortWatchlist(baseWatchlistEntries, sortOption, {
       streamingAvailability,
       genreIds: selectedGenreIds,
       year: selectedYear,
+      providersByTmdbId,
+      myProviderIds,
+      providerCategories,
     });
-  }, [baseWatchlistEntries, sortOption, streamingAvailability, selectedGenreIds, selectedYear]);
+  }, [
+    baseWatchlistEntries,
+    sortOption,
+    streamingAvailability,
+    selectedGenreIds,
+    selectedYear,
+    providersByTmdbId,
+    myProviderIds,
+    providerCategories,
+  ]);
 
   const searchedEntries = useMemo(
     () => searchEntries(sortedEntries, searchQuery),
@@ -152,7 +202,7 @@ export default function WatchlistScreen() {
   );
 
   function handleSelectSortOption(option: WatchlistSortOption) {
-    setSortOption(option);
+    updateFilters({ sortOption: option });
     setSortSheetVisible(false);
   }
 
@@ -169,9 +219,11 @@ export default function WatchlistScreen() {
   }
 
   function toggleGenre(genreId: string) {
-    setSelectedGenreIds((current) =>
-      current.includes(genreId) ? current.filter((id) => id !== genreId) : [...current, genreId],
-    );
+    updateFilters({
+      genreIds: selectedGenreIds.includes(genreId)
+        ? selectedGenreIds.filter((id) => id !== genreId)
+        : [...selectedGenreIds, genreId],
+    });
   }
 
   if (isLoading) {
@@ -267,7 +319,7 @@ export default function WatchlistScreen() {
             <Pressable
               key={year}
               testID={`watchlist-year-pill-${year}`}
-              onPress={() => setSelectedYear(year)}
+              onPress={() => updateFilters({ year })}
               className={`rounded-full border border-border-subtle px-3 py-1 ${
                 selectedYear === year ? "bg-accent" : "bg-card"
               }`}
@@ -278,7 +330,36 @@ export default function WatchlistScreen() {
         </View>
       ) : null}
 
-      {searchedEntries.length === 0 ? (
+      {sortOption === "my_streaming" ? (
+        <View className="flex-row flex-wrap gap-2 px-4 pt-3" testID="watchlist-provider-categories">
+          {ALL_PROVIDER_CATEGORIES.map((category) => (
+            <Pressable
+              key={category}
+              testID={`watchlist-provider-category-${category}`}
+              accessibilityState={{ selected: providerCategories.includes(category) }}
+              onPress={() =>
+                updateFilters({ providerCategories: toggleProviderCategory(providerCategories, category) })
+              }
+              className={`rounded-full border border-border-subtle px-3 py-1 ${
+                providerCategories.includes(category) ? "bg-accent" : "bg-card"
+              }`}
+            >
+              <Text className="text-xs text-text-primary">{PROVIDER_CATEGORY_LABELS[category]}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
+
+      {sortOption === "my_streaming" && providersQuery.isLoading ? (
+        <View className="flex-1 items-center justify-center px-8" testID="watchlist-providers-loading">
+          <ActivityIndicator />
+          <Text className="mt-2 text-text-secondary">Streaming-Daten werden geladen…</Text>
+        </View>
+      ) : searchedEntries.length === 0 && baseWatchlistEntries.length > 0 ? (
+        <View className="flex-1 items-center justify-center px-8" testID="watchlist-no-results">
+          <Text className="text-center text-text-secondary">{getNoResultsMessage(searchQuery)}</Text>
+        </View>
+      ) : searchedEntries.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8" testID="watchlist-empty">
           <Text className="text-center text-text-primary">Deine Watchlist ist leer.</Text>
           <Text className="mt-1 text-center text-text-secondary">
@@ -340,7 +421,6 @@ export default function WatchlistScreen() {
             >
               <Text className={sortOption === option.key ? "font-semibold text-accent" : "text-text-primary"}>
                 {option.label}
-                {option.hint ? ` ${option.hint}` : ""}
               </Text>
             </Pressable>
           ))}

@@ -13,7 +13,7 @@ import {
   sortByAddedAtDesc,
   sortByAverageRatingDesc,
   sortByTmdbScoreDesc,
-  sortByMyStreamingStub,
+  filterByMyStreaming,
   sortDiary,
   sortMyDiary,
   sortWatchlist,
@@ -240,17 +240,25 @@ describe("sortByTmdbScoreDesc", () => {
   });
 });
 
-describe("sortByMyStreamingStub (M10 stub)", () => {
-  it("returns entries unsorted/in received order (no user streaming-service preference exists yet)", () => {
-    const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
-    const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
-    const c = makeEntry({ id: "c", movie: makeMovie({ tmdb_id: 3, name: "C" }) });
+describe("filterByMyStreaming", () => {
+  const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
+  const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
+  const c = makeEntry({ id: "c", movie: makeMovie({ tmdb_id: 3, name: "C" }) });
+  const providers = new Map([
+    [1, { flatrate: [{ provider_id: 8, provider_name: "Netflix" }], rent: [], buy: [] }],
+    [2, { flatrate: [], rent: [{ provider_id: 8, provider_name: "Netflix" }], buy: [] }],
+    [3, { flatrate: [{ provider_id: 9, provider_name: "Prime" }], rent: [], buy: [] }],
+  ]);
 
-    const result = sortByMyStreamingStub([c, a, b]);
+  it("keeps entries available at an own provider within the active categories, in received order", () => {
+    expect(filterByMyStreaming([c, b, a], providers, [8], ["flatrate"]).map((e) => e.id)).toEqual(["a"]);
+    expect(filterByMyStreaming([c, b, a], providers, [8], ["flatrate", "rent"]).map((e) => e.id)).toEqual(["b", "a"]);
+  });
 
-    expect(result.map((e) => e.id)).toEqual(["c", "a", "b"]);
-    // Must be a fresh array (never mutate/alias the input).
-    expect(result).not.toBe([c, a, b]);
+  it("drops entries without loaded providers data and returns a fresh array", () => {
+    const d = makeEntry({ id: "d", movie: makeMovie({ tmdb_id: 4, name: "D" }) });
+    const result = filterByMyStreaming([d, a], providers, [8], ["flatrate"]);
+    expect(result.map((e) => e.id)).toEqual(["a"]);
   });
 });
 
@@ -483,12 +491,28 @@ describe("searchEntries (Fuse.js fuzzy title search)", () => {
 });
 
 describe("buildStreamingAvailabilityLookup", () => {
-  it("marks a tmdb_id as available when any cache row exists for it", () => {
+  it("marks a tmdb_id as available only when its cached data has at least one flatrate provider", () => {
     const lookup = buildStreamingAvailabilityLookup([
-      { tmdb_id: 42, region: "DE", data: {}, last_fetched_at: "2026-01-01T00:00:00Z" },
+      {
+        tmdb_id: 42,
+        region: "DE",
+        data: { flatrate: [{ provider_id: 8 }], rent: [], buy: [] },
+        last_fetched_at: "2026-01-01T00:00:00Z",
+      },
+      {
+        tmdb_id: 43,
+        region: "DE",
+        data: { flatrate: [], rent: [{ provider_id: 8 }], buy: [] },
+        last_fetched_at: "2026-01-01T00:00:00Z",
+      },
+      { tmdb_id: 44, region: "DE", data: {}, last_fetched_at: "2026-01-01T00:00:00Z" },
+      { tmdb_id: 45, region: "DE", data: null, last_fetched_at: "2026-01-01T00:00:00Z" },
     ]);
 
     expect(lookup.get(42)).toBe(true);
+    expect(lookup.get(43)).toBeFalsy();
+    expect(lookup.get(44)).toBeFalsy();
+    expect(lookup.get(45)).toBeFalsy();
     expect(lookup.get(99)).toBeUndefined();
   });
 });
@@ -589,10 +613,30 @@ describe("sortDiary dispatcher", () => {
     expect(sortDiary([liked, notLiked], "liked", "u1").map((e) => e.id)).toEqual(["liked"]);
   });
 
-  it("dispatches 'my_streaming' to the M10 stub (unsorted passthrough)", () => {
+  it("sortWatchlist dispatches 'my_streaming' to filterByMyStreaming too", () => {
     const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
     const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
+    const providersByTmdbId = new Map([
+      [1, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
+    ]);
 
-    expect(sortDiary([b, a], "my_streaming", "u1").map((e) => e.id)).toEqual(["b", "a"]);
+    expect(
+      sortWatchlist([b, a], "my_streaming", { providersByTmdbId, myProviderIds: [8] }).map((e) => e.id)
+    ).toEqual(["a"]);
+  });
+
+  it("dispatches 'my_streaming' to filterByMyStreaming (default category: flatrate)", () => {
+    const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
+    const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
+    const providersByTmdbId = new Map([
+      [1, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
+      [2, { flatrate: [], rent: [{ provider_id: 8, provider_name: "N" }], buy: [] }],
+    ]);
+    const context = { providersByTmdbId, myProviderIds: [8] };
+
+    expect(sortDiary([b, a], "my_streaming", "u1", context).map((e) => e.id)).toEqual(["a"]);
+    expect(
+      sortDiary([b, a], "my_streaming", "u1", { ...context, providerCategories: ["rent"] }).map((e) => e.id)
+    ).toEqual(["b"]);
   });
 });

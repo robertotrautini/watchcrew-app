@@ -1,6 +1,11 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
+
+import { userGroupsQueryOptions } from "@/hooks/useUserGroups";
+import { supabase } from "@/lib/supabase";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 // M10 (part): handles navigation when the user taps a push notification --
 // requirement 3's deep-link contract (groupId + tmdbId/watchlistEntryId) is
@@ -26,11 +31,34 @@ import { useEffect } from "react";
 // way it would from the root layout.
 export function usePushNotificationRouting(): void {
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     let isMounted = true;
 
-    function navigateFromData(data: unknown) {
+    // If the push belongs to a group the user is a member of, make it the
+    // persisted active group before navigating (so back-navigation, tabs and
+    // modals all land in the group the push was about). Never throws: on any
+    // lookup failure the active group is simply left unchanged.
+    async function switchActiveGroupIfMember(groupId: string) {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const userId = data.session?.user.id;
+        if (!userId) {
+          return;
+        }
+        const groups = (await queryClient.ensureQueryData(userGroupsQueryOptions(userId))) as
+          | Array<{ group_id: string }>
+          | undefined;
+        if (groups?.some((g) => g.group_id === groupId)) {
+          usePreferencesStore.getState().setActiveGroupId(groupId);
+        }
+      } catch {
+        // leave the active group as-is
+      }
+    }
+
+    async function navigateFromData(data: unknown) {
       if (typeof data !== "object" || data === null) {
         return;
       }
@@ -47,12 +75,21 @@ export function usePushNotificationRouting(): void {
         return;
       }
 
+      if (groupId) {
+        await switchActiveGroupIfMember(groupId);
+      }
+
+      // `source` marks the route as group context for the detail screen. Every
+      // push event (new_entry, first_rating, release_reminder) targets members
+      // who have not rated the entry yet, so it is a Watchlist entry for them.
+      const hasGroupContext = Boolean(groupId && watchlistEntryId);
       router.push({
         pathname: "/movie/[tmdbId]",
         params: {
           tmdbId: String(tmdbId),
           ...(groupId ? { groupId } : {}),
           ...(watchlistEntryId ? { watchlistEntryId } : {}),
+          ...(hasGroupContext ? { source: "watchlist" as const } : {}),
         },
       });
     }
@@ -61,17 +98,19 @@ export function usePushNotificationRouting(): void {
       if (!isMounted || !response) {
         return;
       }
-      navigateFromData(response.notification.request.content.data);
+      // Clear first: navigation is async now (group lookup), and a remount
+      // meanwhile must not re-fire the same cold-start navigation.
       Notifications.clearLastNotificationResponse();
+      void navigateFromData(response.notification.request.content.data);
     });
 
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-      navigateFromData(response.notification.request.content.data);
+      void navigateFromData(response.notification.request.content.data);
     });
 
     return () => {
       isMounted = false;
       subscription.remove();
     };
-  }, [router]);
+  }, [router, queryClient]);
 }

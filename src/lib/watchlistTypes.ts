@@ -16,6 +16,9 @@
 // "a Watchlist item" or "a Diary item" — that split is computed per current
 // user by `splitWatchlistAndDiary` in `src/lib/watchlistLogic.ts`.
 
+import type { ProviderCategory } from "./movieProviderFilter";
+import type { TmdbMovieProviders } from "./tmdbProxy";
+
 export interface MovieGenreLink {
   genre_id: string;
   // Present when fetched via the nested `movie_genres(genre_id, genres(name))`
@@ -75,15 +78,12 @@ export interface StreamingAvailabilityCacheRow {
 }
 
 /**
- * tmdb_id -> "is this movie available on streaming, per the cache".
+ * tmdb_id -> "is this movie available on streaming (flatrate), per the cache".
  *
  * Built by `buildStreamingAvailabilityLookup` from the raw
- * `streaming_availability_cache` rows. A movie counts as "available" the
- * moment ANY cache row exists for its tmdb_id (region is not yet a
- * user-facing concept — no "user's region"/"user's streaming services"
- * preference exists until M10 — so this is deliberately region-agnostic for
- * now: presence of a cached lookup result at all is treated as "we found
- * this movie streaming somewhere").
+ * `streaming_availability_cache` rows (ADR 0005, DE region): a movie counts as
+ * "available" only when its cached provider data has at least one flatrate
+ * provider (rent/buy only does not count as "streamable").
  */
 export type StreamingAvailabilityLookup = Map<number, boolean>;
 
@@ -128,6 +128,12 @@ export interface SortContext {
    * not just whether every rating row present happens to be non-null.
    */
   groupMemberIds?: string[];
+  /** tmdb_id -> DE watch providers, for option 'my_streaming'. */
+  providersByTmdbId?: ReadonlyMap<number, TmdbMovieProviders>;
+  /** The user's saved "Meine Streaming-Dienste" provider ids, option 'my_streaming'. */
+  myProviderIds?: number[];
+  /** Active Flatrate/Leihen/Kaufen pills for 'my_streaming' (default: flatrate only). */
+  providerCategories?: ProviderCategory[];
   /** Injectable "now" for deterministic tests of date-relative logic. */
   now?: Date;
 }

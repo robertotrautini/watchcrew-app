@@ -222,6 +222,25 @@ describe("CollectionScreen", () => {
     expect(queryByTestId("collection-screen-grid-item-2")).toBeNull();
   });
 
+  it("narrows the streaming filter pill to the user's own services when some are selected", async () => {
+    setUpHappyPath();
+    const store = require("@/stores/usePreferencesStore").usePreferencesStore;
+    store.setState({ selectedStreamingProviderIds: [2] });
+    const providersByTmdbId = new Map([
+      [1, { flatrate: [{ provider_id: 1, provider_name: "Netflix" }], rent: [], buy: [] }],
+      [2, { flatrate: [{ provider_id: 2, provider_name: "Prime" }], rent: [], buy: [] }],
+    ]);
+    mockUseMoviesProviders.mockReturnValue({ providersByTmdbId, isLoading: false });
+
+    const CollectionScreen = loadCollectionScreen();
+    const { getByTestId, queryByTestId } = await render(<CollectionScreen />);
+    await fireEvent.press(getByTestId("collection-screen-grid-filter-flatrate"));
+
+    expect(getByTestId("collection-screen-grid-item-2")).toBeTruthy();
+    expect(queryByTestId("collection-screen-grid-item-1")).toBeNull();
+    store.setState({ selectedStreamingProviderIds: [] });
+  });
+
   it("shows a 'watched' badge for an item the current user has already rated", async () => {
     setUpHappyPath();
     mockUseGroupWatchlist.mockReturnValue({

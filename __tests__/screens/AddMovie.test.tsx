@@ -38,6 +38,11 @@ jest.mock("@/hooks/useMovieSearch", () => ({
   useMovieSearch: (...args: unknown[]) => mockUseMovieSearch(...args),
 }));
 
+const mockUseMoviesProviders = jest.fn();
+jest.mock("@/hooks/useMoviesProviders", () => ({
+  useMoviesProviders: (...args: unknown[]) => mockUseMoviesProviders(...args),
+}));
+
 const mockUsePersonSearch = jest.fn();
 jest.mock("@/hooks/usePersonSearch", () => ({
   usePersonSearch: (...args: unknown[]) => mockUsePersonSearch(...args),
@@ -125,6 +130,7 @@ function setUpBaseMocks() {
   mockUseUserGroups.mockReturnValue({ data: [{ group_id: "group-1", user_id: "u1" }] });
   mockUseGroupWatchlist.mockReturnValue({ data: { entries: [], streamingAvailability: new Map() } });
   mockUseMovieSearch.mockReturnValue(emptyQueryResult({ data: [] }));
+  mockUseMoviesProviders.mockReturnValue({ providersByTmdbId: new Map(), isLoading: false });
   mockUsePersonSearch.mockReturnValue(emptyQueryResult({ data: [] }));
   mockUseCompanySearch.mockReturnValue(emptyQueryResult({ data: [] }));
   mockUseDirectorFilmography.mockReturnValue(emptyQueryResult({ data: [] }));
@@ -177,6 +183,43 @@ describe("AddMovieScreen", () => {
 
     expect(mockUseMovieSearch).toHaveBeenLastCalledWith("matrix");
     expect(getByTestId("add-movie-film-grid-item-603")).toBeTruthy();
+  });
+
+  it("Film mode: the streaming toggle filters results to the user's own services (any category) and only fetches providers while active", async () => {
+    mockUseMovieSearch.mockReturnValue(
+      emptyQueryResult({
+        data: [
+          { id: 603, title: "The Matrix", release_date: "1999-03-31", poster_path: null, vote_average: 8.2 },
+          { id: 604, title: "Reloaded", release_date: "2003-05-15", poster_path: null, vote_average: 7 },
+        ],
+      }),
+    );
+    mockUseMoviesProviders.mockImplementation((ids: number[]) => ({
+      providersByTmdbId:
+        ids.length === 0
+          ? new Map()
+          : new Map([
+              [603, { flatrate: [], rent: [{ provider_id: 8, provider_name: "Netflix" }], buy: [] }],
+              [604, { flatrate: [{ provider_id: 9, provider_name: "Prime" }], rent: [], buy: [] }],
+            ]),
+      isLoading: false,
+    }));
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({
+      selectedStreamingProviderIds: [8],
+    });
+    const AddMovieScreen = loadAddMovieScreen();
+    const { getByTestId, queryByTestId } = await render(<AddMovieScreen />);
+
+    expect(mockUseMoviesProviders).toHaveBeenLastCalledWith([]);
+    expect(getByTestId("add-movie-film-grid-item-604")).toBeTruthy();
+
+    await fireEvent.press(getByTestId("add-movie-streaming-filter-toggle"));
+
+    expect(mockUseMoviesProviders).toHaveBeenLastCalledWith([603, 604]);
+    expect(getByTestId("add-movie-film-grid-item-603")).toBeTruthy();
+    expect(queryByTestId("add-movie-film-grid-item-604")).toBeNull();
+
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({ selectedStreamingProviderIds: [] });
   });
 
   it("tapping a result tile navigates to the movie detail overlay with just tmdbId when not in the library", async () => {

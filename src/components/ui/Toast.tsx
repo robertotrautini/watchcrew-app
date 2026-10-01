@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Text } from "react-native";
+import { Animated, Pressable, Text } from "react-native";
 
 import { Card } from "@/components/ui/Card";
-import { subscribeToToasts } from "@/lib/toast";
+import { subscribeToToasts, type ToastOptions } from "@/lib/toast";
 
 /**
  * How long a toast stays visible before auto-dismissing. 4 seconds --
@@ -47,16 +47,19 @@ const TOAST_ENTRANCE_TRANSLATE_Y = 12;
  */
 export function ToastHost() {
   const [message, setMessage] = useState<string | null>(null);
+  const [onPress, setOnPress] = useState<(() => void) | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y)).current;
 
   useEffect(() => {
-    const unsubscribe = subscribeToToasts((nextMessage) => {
+    const unsubscribe = subscribeToToasts((nextMessage: string, options?: ToastOptions) => {
       if (dismissTimer.current) {
         clearTimeout(dismissTimer.current);
       }
       setMessage(nextMessage);
+      // Functional-updater form: a bare function value would be invoked by setState.
+      setOnPress(options?.onPress ? () => options.onPress as () => void : null);
       // Restart the entrance animation from its initial values every time a
       // toast is (re-)shown, including the "replaces an in-flight toast"
       // case -- each new message gets its own fresh fade+slide-in.
@@ -74,7 +77,10 @@ export function ToastHost() {
           useNativeDriver: true,
         }),
       ]).start();
-      dismissTimer.current = setTimeout(() => setMessage(null), TOAST_DURATION_MS);
+      dismissTimer.current = setTimeout(
+        () => setMessage(null),
+        options?.durationMs ?? TOAST_DURATION_MS,
+      );
     });
 
     return () => {
@@ -89,6 +95,12 @@ export function ToastHost() {
     return null;
   }
 
+  const text = (
+    <Text testID="toast-message" className="text-center text-text-primary">
+      {message}
+    </Text>
+  );
+
   return (
     <Animated.View
       testID="toast-host"
@@ -96,9 +108,23 @@ export function ToastHost() {
       style={{ opacity, transform: [{ translateY }] }}
     >
       <Card className="px-4 py-3">
-        <Text testID="toast-message" className="text-center text-text-primary">
-          {message}
-        </Text>
+        {onPress ? (
+          <Pressable
+            testID="toast-press"
+            accessibilityRole="button"
+            onPress={() => {
+              if (dismissTimer.current) {
+                clearTimeout(dismissTimer.current);
+              }
+              setMessage(null);
+              onPress();
+            }}
+          >
+            {text}
+          </Pressable>
+        ) : (
+          text
+        )}
       </Card>
     </Animated.View>
   );

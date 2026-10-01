@@ -40,6 +40,7 @@ jest.mock("@/hooks/useGroupMembers", () => ({
 }));
 
 const mockRenameMutate = jest.fn();
+const mockSetThemeMutate = jest.fn();
 const mockSetInviteEnabledMutate = jest.fn();
 const mockRegenerateMutate = jest.fn();
 const mockRemoveMemberMutate = jest.fn();
@@ -57,6 +58,7 @@ jest.mock("@/hooks/useGroupSettings", () => ({
     isError: mockRenameIsError,
     error: mockRenameIsError ? { message: "rls denied" } : null,
   }),
+  useSetGroupTheme: () => ({ mutate: mockSetThemeMutate, isPending: false, isError: false, error: null }),
   useSetInviteEnabled: () => ({ mutate: mockSetInviteEnabledMutate, isPending: false }),
   useRegenerateInviteToken: () => ({ mutate: mockRegenerateMutate, isPending: mockRegenerateIsPending }),
   useRemoveMember: () => ({ mutate: mockRemoveMemberMutate, isPending: mockRemoveMemberIsPending }),
@@ -280,6 +282,49 @@ describe("GroupSettingsScreen", () => {
       const { getByTestId } = await render(<GroupSettingsScreen />);
 
       expect(getByTestId("group-settings-rename-error")).toBeTruthy();
+    });
+  });
+
+  describe("owner-only color theme", () => {
+    it("shows the 6 theme swatches for the owner with the current theme marked selected", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId, queryByTestId } = await render(<GroupSettingsScreen />);
+
+      expect(getByTestId("group-settings-theme-section")).toBeTruthy();
+      for (const name of ["gold", "red", "blue", "green", "purple", "orange"]) {
+        expect(getByTestId(`group-settings-theme-swatch-${name}`)).toBeTruthy();
+      }
+      expect(getByTestId("group-settings-theme-selected-gold")).toBeTruthy();
+      expect(queryByTestId("group-settings-theme-selected-blue")).toBeNull();
+    });
+
+    it("tapping another swatch saves that theme for the active group", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId } = await render(<GroupSettingsScreen />);
+
+      await fireEvent.press(getByTestId("group-settings-theme-swatch-purple"));
+
+      expect(mockSetThemeMutate).toHaveBeenCalledWith({ groupId: "g1", theme: "purple" });
+    });
+
+    it("does not save when tapping the already selected theme", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId } = await render(<GroupSettingsScreen />);
+
+      await fireEvent.press(getByTestId("group-settings-theme-swatch-gold"));
+
+      expect(mockSetThemeMutate).not.toHaveBeenCalled();
+    });
+
+    it("does NOT show the theme section for a non-owner member", async () => {
+      setUpHappyPath({ currentUserId: "member-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { queryByTestId } = await render(<GroupSettingsScreen />);
+
+      expect(queryByTestId("group-settings-theme-section")).toBeNull();
     });
   });
 

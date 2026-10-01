@@ -4,12 +4,13 @@ import { ActivityIndicator, Text, View } from "react-native";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { useCollection } from "@/hooks/useCollection";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMoviesProviders } from "@/hooks/useMoviesProviders";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
 import { filterByProviderCategory, type ProviderCategory } from "@/lib/movieProviderFilter";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 import type { TmdbMovieLike } from "@/lib/tmdbProxy";
 
 /**
@@ -33,8 +34,7 @@ export default function CollectionScreen() {
   const hasValidParams = !Number.isNaN(collectionId) && !Number.isNaN(tmdbId);
 
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const collectionQuery = useCollection(
@@ -53,7 +53,10 @@ export default function CollectionScreen() {
   }));
 
   const { providersByTmdbId } = useMoviesProviders(items.map((item) => item.tmdbId));
-  const filteredItems = filterByProviderCategory(items, providersByTmdbId, activeCategory);
+  // Inventory 2.10: the category pills respect the user's own streaming
+  // services ("Meine Streaming-Dienste"); with none selected they only filter by category.
+  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filteredItems = filterByProviderCategory(items, providersByTmdbId, activeCategory, myProviderIds);
 
   if (!hasValidParams) {
     return (

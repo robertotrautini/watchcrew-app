@@ -1,4 +1,8 @@
-import { filterByProviderCategory } from "../../src/lib/movieProviderFilter";
+import {
+  filterByProviderCategory,
+  matchesOwnProviders,
+  filterByMyStreaming,
+} from "../../src/lib/movieProviderFilter";
 import type { TmdbMovieProviders } from "../../src/lib/tmdbProxy";
 
 // M6 part 2b: filters a list of tmdbId-bearing items down to only those
@@ -65,5 +69,54 @@ describe("filterByProviderCategory", () => {
     expect(filterByProviderCategory(items, map, "flatrate")).toEqual([
       { tmdbId: 1, title: "Movie One" },
     ]);
+  });
+});
+
+describe("matchesOwnProviders", () => {
+  const netflix = { provider_id: 8, provider_name: "Netflix" };
+  const disney = { provider_id: 337, provider_name: "Disney+" };
+
+  it("is false without providers data", () => {
+    expect(matchesOwnProviders(undefined, ["flatrate"], [8])).toBe(false);
+  });
+
+  it("requires an OWN provider (by id) inside one of the active categories", () => {
+    const p = makeProviders({ flatrate: [disney], rent: [netflix] });
+    expect(matchesOwnProviders(p, ["flatrate"], [8])).toBe(false);
+    expect(matchesOwnProviders(p, ["rent"], [8])).toBe(true);
+    expect(matchesOwnProviders(p, ["flatrate", "rent"], [8])).toBe(true);
+    expect(matchesOwnProviders(p, ["buy"], [8])).toBe(false);
+  });
+
+  it("with no own services selected, any provider in an active category counts", () => {
+    const p = makeProviders({ flatrate: [disney] });
+    expect(matchesOwnProviders(p, ["flatrate"], [])).toBe(true);
+    expect(matchesOwnProviders(p, ["rent"], [])).toBe(false);
+  });
+});
+
+describe("filterByProviderCategory with own services", () => {
+  it("narrows the category match to the user's own provider ids when given", () => {
+    const items = [{ tmdbId: 1 }, { tmdbId: 2 }];
+    const map = new Map([
+      [1, makeProviders({ flatrate: [{ provider_id: 8, provider_name: "Netflix" }] })],
+      [2, makeProviders({ flatrate: [{ provider_id: 9, provider_name: "Prime" }] })],
+    ]);
+
+    expect(filterByProviderCategory(items, map, "flatrate", [8])).toEqual([{ tmdbId: 1 }]);
+    expect(filterByProviderCategory(items, map, "flatrate", [])).toEqual(items);
+    expect(filterByProviderCategory(items, map, null, [8])).toEqual(items);
+  });
+});
+
+describe("filterByMyStreaming (Add-Movie streaming toggle)", () => {
+  it("keeps items available at an own provider in ANY category", () => {
+    const items = [{ tmdbId: 1 }, { tmdbId: 2 }, { tmdbId: 3 }];
+    const map = new Map([
+      [1, makeProviders({ buy: [{ provider_id: 8, provider_name: "Netflix" }] })],
+      [2, makeProviders({ flatrate: [{ provider_id: 9, provider_name: "Prime" }] })],
+    ]);
+
+    expect(filterByMyStreaming(items, map, [8])).toEqual([{ tmdbId: 1 }]);
   });
 });

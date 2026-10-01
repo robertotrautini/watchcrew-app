@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { type ListFilters, type ListFiltersTab, DEFAULT_LIST_FILTERS, listFiltersKey } from "@/lib/listFilters";
 import { mmkvStorage } from "@/lib/mmkvStorage";
+
+// Re-exported for existing importers; defined in src/lib/listFilters.ts.
+export { DEFAULT_LIST_FILTERS };
+export type { ListFilters, ListFiltersTab };
 
 /**
  * The tab the user was last on in the main (app)/(tabs) navigator.
@@ -76,6 +81,16 @@ interface PreferencesState {
    */
   lastSeenChangelogVersion: string | null;
   setLastSeenChangelogVersion: (version: string) => void;
+  /**
+   * Per-device feature flag "Tracker aktiv" (Darstellung screen, inventory
+   * 4.12). Default ON. When OFF the Tracker tab and the payment section in
+   * the rating dialog are hidden; Watchlist becomes the landing tab.
+   */
+  trackerEnabled: boolean;
+  setTrackerEnabled: (value: boolean) => void;
+  /** Persisted sort/filter choices, keyed `${tab}:${groupId}`. Read via `?? DEFAULT_LIST_FILTERS`. */
+  listFilters: Record<string, ListFilters>;
+  setListFilters: (tab: ListFiltersTab, groupId: string, patch: Partial<ListFilters>) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -95,6 +110,19 @@ export const usePreferencesStore = create<PreferencesState>()(
       setShowTitlesInGrid: (value) => set({ showTitlesInGrid: value }),
       lastSeenChangelogVersion: null,
       setLastSeenChangelogVersion: (version) => set({ lastSeenChangelogVersion: version }),
+      trackerEnabled: true,
+      setTrackerEnabled: (value) => set({ trackerEnabled: value }),
+      listFilters: {},
+      setListFilters: (tab, groupId, patch) =>
+        set((state) => {
+          const key = listFiltersKey(tab, groupId);
+          return {
+            listFilters: {
+              ...state.listFilters,
+              [key]: { ...DEFAULT_LIST_FILTERS, ...state.listFilters[key], ...patch },
+            },
+          };
+        }),
     }),
     {
       name: "watchcrew-preferences",

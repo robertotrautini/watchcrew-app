@@ -51,6 +51,19 @@ const KNOWN_THEME_NAMES: readonly GroupThemeName[] = [
   "orange",
 ];
 
+/** The 6 selectable themes, in picker order. */
+export const GROUP_THEME_OPTIONS: readonly GroupThemeName[] = KNOWN_THEME_NAMES;
+
+/** German display labels (accessibility labels of the theme pickers). */
+export const GROUP_THEME_LABELS: Record<GroupThemeName, string> = {
+  gold: "Gold",
+  red: "Rot",
+  blue: "Blau",
+  green: "Grün",
+  purple: "Lila",
+  orange: "Orange",
+};
+
 export function isGroupThemeName(value: unknown): value is GroupThemeName {
   return typeof value === "string" && (KNOWN_THEME_NAMES as readonly string[]).includes(value);
 }

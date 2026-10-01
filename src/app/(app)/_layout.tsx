@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router';
 
+import { useChangelogStartupToast } from '@/hooks/useChangelogStartupToast';
 import { useCurrentUserId } from '@/hooks/useCurrentUserId';
 import { usePushNotificationRouting } from '@/hooks/usePushNotificationRouting';
 import { usePushRegistration } from '@/hooks/usePushRegistration';
@@ -23,6 +24,7 @@ export default function AppLayout() {
   const userId = useCurrentUserId();
   usePushRegistration(userId);
   usePushNotificationRouting();
+  useChangelogStartupToast();
 
   return (
     <Stack screenOptions={{ headerShown: false }}>

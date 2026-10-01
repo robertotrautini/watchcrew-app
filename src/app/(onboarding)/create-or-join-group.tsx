@@ -6,9 +6,17 @@ import { router } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { DEFAULT_GROUP_THEME, resolveGroupTheme, type GroupThemeName } from "@/lib/groupTheme";
+import {
+  DEFAULT_GROUP_THEME,
+  GROUP_THEME_LABELS,
+  GROUP_THEME_OPTIONS,
+  resolveGroupTheme,
+  type GroupThemeName,
+} from "@/lib/groupTheme";
 import { createWatchGroup, isInvalidInviteTokenError, joinWatchGroupByToken } from "@/lib/groups";
+import { homeRouteFor } from "@/lib/homeRoute";
 import { extractInviteToken } from "@/lib/inviteToken";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
  * The real "create or join a Watch-Group" onboarding screen content
@@ -49,16 +57,8 @@ import { extractInviteToken } from "@/lib/inviteToken";
 
 type ScreenMode = "select" | "create" | "join";
 
-const THEME_OPTIONS: readonly GroupThemeName[] = ["gold", "red", "blue", "green", "purple", "orange"];
-
-const THEME_LABELS: Record<GroupThemeName, string> = {
-  gold: "Gold",
-  red: "Rot",
-  blue: "Blau",
-  green: "Grün",
-  purple: "Lila",
-  orange: "Orange",
-};
+const THEME_OPTIONS = GROUP_THEME_OPTIONS;
+const THEME_LABELS = GROUP_THEME_LABELS;
 
 const PLACEHOLDER_TEXT_COLOR = "#888888";
 
@@ -66,7 +66,6 @@ const PLACEHOLDER_TEXT_COLOR = "#888888";
 // `'app'` gate state — kept as a constant here so both call sites read from
 // one obviously-matching literal instead of two independently-typed route
 // strings.
-const APP_HOME_ROUTE = "/(app)/(tabs)/tracker";
 
 const INVALID_INVITE_TOKEN_MESSAGE = "Ungültiger oder deaktivierter Einladungscode.";
 
@@ -115,7 +114,7 @@ export default function CreateOrJoinGroupScreen() {
       return;
     }
 
-    router.replace(APP_HOME_ROUTE);
+    router.replace(homeRouteFor(usePreferencesStore.getState().trackerEnabled));
   }
 
   async function handleJoinSubmit() {
@@ -142,7 +141,7 @@ export default function CreateOrJoinGroupScreen() {
       return;
     }
 
-    router.replace(APP_HOME_ROUTE);
+    router.replace(homeRouteFor(usePreferencesStore.getState().trackerEnabled));
   }
 
   return (

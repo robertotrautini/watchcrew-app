@@ -113,6 +113,44 @@ describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () =>
     expect(result).toEqual({ data: providers, error: null });
   });
 
+  it("getMoviesProvidersBatch invokes tmdb-proxy once with kind: 'providers_batch' and returns the id-keyed map", async () => {
+    const map = { "1": { flatrate: [], rent: [], buy: [] } };
+    mockInvoke.mockResolvedValue({ data: { data: map }, error: null });
+
+    const { getMoviesProvidersBatch } = require("../../src/lib/tmdbProxy");
+    const result = await getMoviesProvidersBatch([1, 2]);
+
+    expect(mockInvoke).toHaveBeenCalledTimes(1);
+    expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
+      body: { kind: "providers_batch", tmdbIds: [1, 2] },
+    });
+    expect(result).toEqual({ data: map, error: null });
+  });
+
+  it("getMoviesProvidersBatch splits more than 200 ids into chunks and merges the results", async () => {
+    mockInvoke
+      .mockResolvedValueOnce({ data: { data: { "1": "a" } }, error: null })
+      .mockResolvedValueOnce({ data: { data: { "250": "b" } }, error: null });
+    const ids = Array.from({ length: 250 }, (_, i) => i + 1);
+
+    const { getMoviesProvidersBatch } = require("../../src/lib/tmdbProxy");
+    const result = await getMoviesProvidersBatch(ids);
+
+    expect(mockInvoke).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({ data: { "1": "a", "250": "b" }, error: null });
+  });
+
+  it("getMoviesProvidersBatch makes no call for an empty id list and surfaces the first chunk error", async () => {
+    const { getMoviesProvidersBatch } = require("../../src/lib/tmdbProxy");
+    expect(await getMoviesProvidersBatch([])).toEqual({ data: {}, error: null });
+    expect(mockInvoke).not.toHaveBeenCalled();
+
+    mockInvoke.mockResolvedValue({ data: null, error: { message: "boom" } });
+    const failed = await getMoviesProvidersBatch([1]);
+    expect(failed.data).toBeNull();
+    expect(failed.error).toEqual({ message: "boom" });
+  });
+
   it("getProvidersList invokes tmdb-proxy with kind: 'providers_list' and no other params", async () => {
     const providers = [{ provider_id: 8, provider_name: "Netflix" }];
     mockInvoke.mockResolvedValue({ data: { data: providers }, error: null });

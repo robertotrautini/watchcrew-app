@@ -15,14 +15,25 @@
  * near the app root (src/app/_layout.tsx).
  */
 
-export type ToastListener = (message: string) => void;
+export interface ToastOptions {
+  /** Overrides the host's default display duration (ms). */
+  durationMs?: number;
+  /** Makes the toast tappable; the host dismisses the toast after calling it. */
+  onPress?: () => void;
+}
+
+export type ToastListener = (message: string, options?: ToastOptions) => void;
 
 let listeners: ToastListener[] = [];
 
 /** Publishes a toast message to every currently subscribed listener (normally just the one `ToastHost`). A no-op if nothing is subscribed yet. */
-export function showToast(message: string): void {
+export function showToast(message: string, options?: ToastOptions): void {
   for (const listener of listeners) {
-    listener(message);
+    if (options) {
+      listener(message, options);
+    } else {
+      listener(message);
+    }
   }
 }
 

@@ -18,7 +18,7 @@
 //     subscribes to the toast pub/sub) from ever running.
 
 import { Animated } from "react-native";
-import { act, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 
 import { ToastHost } from "@/components/ui/Toast";
 import { __resetToastListenersForTests, showToast } from "@/lib/toast";
@@ -132,5 +132,47 @@ describe("ToastHost", () => {
       showToast("Neuer Film zur Watchlist hinzugefügt");
     });
     expect(queryByTestId("toast-host")).toBeNull();
+  });
+
+  it("honors a custom durationMs (stays beyond 4s, dismisses at the custom duration)", async () => {
+    const { queryByTestId } = await render(<ToastHost />);
+    jest.useFakeTimers();
+
+    await act(async () => {
+      showToast("Neue Features", { durationMs: 6000 });
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+    });
+    expect(queryByTestId("toast-host")).toBeTruthy();
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    expect(queryByTestId("toast-host")).toBeNull();
+  });
+
+  it("calls onPress and dismisses when a toast with onPress is tapped", async () => {
+    const onPress = jest.fn();
+    const { queryByTestId, getByTestId } = await render(<ToastHost />);
+
+    await act(async () => {
+      showToast("Neue Features", { onPress });
+    });
+    await fireEvent.press(getByTestId("toast-press"));
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+    expect(queryByTestId("toast-host")).toBeNull();
+  });
+
+  it("does not render a tap target for a plain toast", async () => {
+    const { queryByTestId } = await render(<ToastHost />);
+
+    await act(async () => {
+      showToast("Nur Text");
+    });
+
+    expect(queryByTestId("toast-press")).toBeNull();
   });
 });

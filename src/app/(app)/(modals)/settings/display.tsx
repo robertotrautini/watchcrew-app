@@ -16,6 +16,8 @@ import { usePreferencesStore } from "@/stores/usePreferencesStore";
 export default function SettingsDisplayScreen() {
   const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
   const setShowTitlesInGrid = usePreferencesStore((s) => s.setShowTitlesInGrid);
+  const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
+  const setTrackerEnabled = usePreferencesStore((s) => s.setTrackerEnabled);
 
   return (
     <View className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-display-screen">
@@ -32,6 +34,22 @@ export default function SettingsDisplayScreen() {
         <View
           className={`h-7 w-12 justify-center rounded-full px-0.5 ${
             showTitlesInGrid ? "items-end bg-accent" : "items-start bg-border-subtle"
+          }`}
+        >
+          <View className="h-6 w-6 rounded-full bg-bg-primary" />
+        </View>
+      </Pressable>
+      <Pressable
+        testID="settings-display-tracker-toggle"
+        accessibilityRole="switch"
+        accessibilityState={{ checked: trackerEnabled }}
+        onPress={() => setTrackerEnabled(!trackerEnabled)}
+        className="mt-3 flex-row items-center justify-between rounded-lg border border-border-subtle bg-card px-4 py-3"
+      >
+        <Text className="flex-1 pr-3 text-text-primary">Tracker aktiv</Text>
+        <View
+          className={`h-7 w-12 justify-center rounded-full px-0.5 ${
+            trackerEnabled ? "items-end bg-accent" : "items-start bg-border-subtle"
           }`}
         >
           <View className="h-6 w-6 rounded-full bg-bg-primary" />

@@ -13,14 +13,17 @@
 // Request body: { kind: <see ProxyKind below>, ...kind-specific params }
 //
 // Caching split (interim decision, see docs/interim-decisions.md):
-//   - kind: "metadata" | "streaming" — UNCHANGED from M1 (whole-row cache-aside
-//     in their respective tables).
+//   - kind: "metadata" — UNCHANGED from M1 (whole-row cache-aside).
+//   - kind: "streaming" | "providers" | "providers_batch" — cache-aside in
+//     streaming_availability_cache (24h TTL, ADR 0005), data = regional
+//     { flatrate, rent, buy }. "providers" is the DE single-id form,
+//     "providers_batch" resolves many ids in one round trip (providers-cache.ts).
 //   - kind: "details" | "videos" | "credits" | "release_dates" | "collection"
 //     — NEW cache-aside fields, namespaced under their own key inside the
 //     SAME movie_metadata_cache row (keyed by tmdb_id), reusing the existing
 //     "static, no TTL, refetch only if still null" rule from ADR 0005.
 //   - kind: "search" | "search_person" | "search_company" | "trakt_related" |
-//     "providers" | "providers_list" | "person_movies" | "director_movies" |
+//     "providers_list" | "person_movies" | "director_movies" |
 //     "studio_movies" — fetch-through every time, NOT persisted in any cache
 //     table (query/lookup-shaped, no fixed per-movie cache key; consistent
 //     with the legacy app's purely in-memory/session-only caches for this
@@ -56,7 +59,6 @@ import {
   fetchMovieVideos,
   fetchPersonMovies,
   fetchProvidersList,
-  fetchStreamingFromTmdb,
   fetchStudioMovies,
   searchCompany,
   searchMovies,
@@ -65,6 +67,7 @@ import {
 import { fetchTraktRelated } from "./trakt-client.ts";
 import { enrichRelatedWithPosters } from "./related-posters.ts";
 import { createSupabaseMovieUpsertDb, upsertMovie } from "./movie-upsert.ts";
+import { MAX_PROVIDERS_BATCH_SIZE, resolveProvidersBatch } from "./providers-cache.ts";
 
 type ProxyKind =
   | "metadata"
@@ -76,6 +79,7 @@ type ProxyKind =
   | "release_dates"
   | "collection"
   | "providers"
+  | "providers_batch"
   | "providers_list"
   | "trakt_related"
   | "search_person"
@@ -88,6 +92,8 @@ type ProxyKind =
 interface ProxyRequestBody {
   kind: ProxyKind;
   tmdbId?: number;
+  /** `kind: "providers_batch"` only: ids to resolve in one round trip. */
+  tmdbIds?: number[];
   region?: string;
   query?: string;
   personId?: number;
@@ -113,6 +119,7 @@ const VALID_KINDS: ProxyKind[] = [
   "release_dates",
   "collection",
   "providers",
+  "providers_batch",
   "providers_list",
   "trakt_related",
   "search_person",
@@ -190,7 +197,10 @@ async function handleStreaming(
     return cachedRow!.data;
   }
 
-  const freshData = await fetchStreamingFromTmdb(tmdbId, region);
+  // The cached shape is the regional watch-provider payload
+  // ({ flatrate, rent, buy }) -- the same shape `kind: "providers"` returns,
+  // so the client can also read these rows directly (RLS: authenticated SELECT).
+  const freshData = await fetchMovieProviders(tmdbId, undefined, region);
 
   const { error: writeError } = await supabase
     .from("streaming_availability_cache")
@@ -374,7 +384,44 @@ Deno.serve(async (req: Request) => {
         if (typeof body.tmdbId !== "number") {
           return badRequest("Expected { tmdbId: number, kind: 'providers' }");
         }
-        return jsonResponse({ data: await fetchMovieProviders(body.tmdbId) }, 200);
+        // ADR 0005: cache-backed (24h TTL, shared by the whole group), DE only.
+        return jsonResponse({ data: await handleStreaming(supabase, body.tmdbId, "DE") }, 200);
+      }
+      case "providers_batch": {
+        if (
+          !Array.isArray(body.tmdbIds) ||
+          body.tmdbIds.length > MAX_PROVIDERS_BATCH_SIZE ||
+          !body.tmdbIds.every((id) => typeof id === "number")
+        ) {
+          return badRequest(
+            `Expected { tmdbIds: number[] (max ${MAX_PROVIDERS_BATCH_SIZE}), kind: 'providers_batch' }`,
+          );
+        }
+        const data = await resolveProvidersBatch(body.tmdbIds, {
+          readRows: async (ids) => {
+            const { data: rows, error } = await supabase
+              .from("streaming_availability_cache")
+              .select("tmdb_id, region, data, last_fetched_at")
+              .eq("region", "DE")
+              .in("tmdb_id", ids);
+            if (error) throw error;
+            return (rows ?? []) as StreamingCacheRow[];
+          },
+          fetchProviders: (id) => fetchMovieProviders(id),
+          writeRows: async (rows) => {
+            const fetchedAt = new Date().toISOString();
+            const { error } = await supabase.from("streaming_availability_cache").upsert(
+              rows.map((r) => ({
+                tmdb_id: r.tmdb_id,
+                region: "DE",
+                data: r.data,
+                last_fetched_at: fetchedAt,
+              })),
+            );
+            if (error) throw error;
+          },
+        });
+        return jsonResponse({ data }, 200);
       }
       case "providers_list": {
         return jsonResponse({ data: await fetchProvidersList() }, 200);

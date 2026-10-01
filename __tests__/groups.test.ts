@@ -335,6 +335,26 @@ describe("getWatchGroupsByIds", () => {
   });
 });
 
+describe("setGroupColorTheme", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("updates watch_groups.color_theme for the given group id (owner-only RLS policy)", async () => {
+    const fakeResult = { data: null, error: null };
+    const chain = makeChain(fakeResult);
+    mockFrom.mockReturnValue(chain);
+
+    const { setGroupColorTheme } = require("../src/lib/groups");
+    const result = await setGroupColorTheme("g1", "blue");
+
+    expect(mockFrom).toHaveBeenCalledWith("watch_groups");
+    expect(chain.update).toHaveBeenCalledWith({ color_theme: "blue" });
+    expect(chain.eq).toHaveBeenCalledWith("id", "g1");
+    expect(result).toBe(fakeResult);
+  });
+});
+
 describe("renameWatchGroup", () => {
   beforeEach(() => {
     jest.clearAllMocks();

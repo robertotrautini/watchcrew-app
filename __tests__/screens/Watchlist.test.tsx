@@ -19,7 +19,7 @@ const mockUseCurrentUserId = jest.fn();
 const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
-const mockUsePreferencesStore = jest.fn();
+const mockUseMyStreamingProviders = jest.fn();
 const mockSetWatchlistViewMode = jest.fn();
 // M10 (Realtime foreground sync, ADR 0006): this screen's own realtime/focus
 // wiring has its own dedicated tests (useGroupRealtimeSync.test.tsx,
@@ -47,9 +47,30 @@ jest.mock("@/hooks/useGroupRealtimeSync", () => ({
 jest.mock("@/hooks/useRegisterFocusedGroupScreen", () => ({
   useRegisterFocusedGroupScreen: mockUseRegisterFocusedGroupScreen,
 }));
-jest.mock("@/stores/usePreferencesStore", () => ({
-  usePreferencesStore: mockUsePreferencesStore,
+jest.mock("@/hooks/useMyStreamingProviders", () => ({
+  useMyStreamingProviders: (...args: unknown[]) => mockUseMyStreamingProviders(...args),
 }));
+// A real (non-persisted) zustand store, so the per-group persistence wiring
+// (listFilters / setListFilters) is exercised for real.
+jest.mock("@/stores/usePreferencesStore", () => {
+  const { create } = jest.requireActual("zustand");
+  const { DEFAULT_LIST_FILTERS, listFiltersKey } = jest.requireActual("@/lib/listFilters");
+  const usePreferencesStore = create((set: any) => ({
+    watchlistViewMode: "cards",
+    setWatchlistViewMode: () => {},
+    showTitlesInGrid: true,
+    selectedStreamingProviderIds: [],
+    listFilters: {},
+    setListFilters: (tab: string, groupId: string, patch: object) =>
+      set((state: any) => {
+        const key = listFiltersKey(tab, groupId);
+        return {
+          listFilters: { ...state.listFilters, [key]: { ...DEFAULT_LIST_FILTERS, ...state.listFilters[key], ...patch } },
+        };
+      }),
+  }));
+  return { usePreferencesStore };
+});
 
 // Real logic underneath (don't reimplement/alter watchlistLogic semantics),
 // but spy on sortWatchlist/searchEntries so wiring can be asserted directly.
@@ -173,13 +194,13 @@ function setUpPreferencesStore(
   watchlistViewMode: "cards" | "grid" | "list" = "cards",
   showTitlesInGrid = true,
 ) {
-  mockUsePreferencesStore.mockImplementation((selector: (state: unknown) => unknown) =>
-    selector({
-      watchlistViewMode,
-      setWatchlistViewMode: mockSetWatchlistViewMode,
-      showTitlesInGrid,
-    }),
-  );
+  require("@/stores/usePreferencesStore").usePreferencesStore.setState({
+    watchlistViewMode,
+    setWatchlistViewMode: mockSetWatchlistViewMode,
+    showTitlesInGrid,
+    selectedStreamingProviderIds: [],
+    listFilters: {},
+  });
 }
 
 describe("WatchlistScreen", () => {
@@ -187,6 +208,7 @@ describe("WatchlistScreen", () => {
     jest.clearAllMocks();
     mockSortWatchlist.mockImplementation(actualWatchlistLogic.sortWatchlist);
     mockSearchEntries.mockImplementation(actualWatchlistLogic.searchEntries);
+    mockUseMyStreamingProviders.mockReturnValue({ data: undefined, isLoading: false });
     setUpPreferencesStore("cards");
   });
 
@@ -389,5 +411,120 @@ describe("WatchlistScreen", () => {
     expect(getByTestId("watchlist-entry-e1")).toBeTruthy();
     expect(queryByTestId("watchlist-entry-e2")).toBeNull();
     expect(queryByTestId("watchlist-entry-e3")).toBeNull();
+  });
+
+  it("persists the chosen sort option per group in the preferences store", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+    await fireEvent.press(getByTestId("watchlist-sort-option-tmdb_score"));
+
+    const { usePreferencesStore } = require("@/stores/usePreferencesStore");
+    expect(usePreferencesStore.getState().listFilters["watchlist:g1"].sortOption).toBe("tmdb_score");
+  });
+
+  it("restores a persisted sort option on mount", async () => {
+    setUpHappyPath();
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({
+      listFilters: { "watchlist:g1": { sortOption: "tmdb_score", genreIds: [], year: null, providerCategories: ["flatrate"] } },
+    });
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getAllByTestId } = await render(<WatchlistScreen />);
+
+    const cards = getAllByTestId(/^watchlist-entry-e\d$/);
+    expect(cards.map((c) => c.props.testID)).toEqual([
+      "watchlist-entry-e2",
+      "watchlist-entry-e1",
+      "watchlist-entry-e3",
+    ]);
+  });
+
+  it("persists genre and year selections per group", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+    const store = require("@/stores/usePreferencesStore").usePreferencesStore;
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+    await fireEvent.press(getByTestId("watchlist-sort-option-genre"));
+    await fireEvent.press(getByTestId("watchlist-genre-pill-genre-1"));
+    expect(store.getState().listFilters["watchlist:g1"].genreIds).toEqual(["genre-1"]);
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+    await fireEvent.press(getByTestId("watchlist-sort-option-year"));
+    await fireEvent.press(getByTestId("watchlist-year-pill-2020"));
+    expect(store.getState().listFilters["watchlist:g1"].year).toBe(2020);
+  });
+
+  it("does not persist the search text", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    await fireEvent.changeText(getByTestId("watchlist-search-input"), "Alpha");
+
+    const filters = require("@/stores/usePreferencesStore").usePreferencesStore.getState().listFilters;
+    expect(JSON.stringify(filters)).not.toContain("Alpha");
+  });
+
+  it("offers 'Meine Streaming-Dienste' without the old '(bald verfügbar)' label", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, queryByText } = await render(<WatchlistScreen />);
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+
+    expect(queryByText(/bald verfügbar/)).toBeNull();
+    expect(getByTestId("watchlist-sort-option-my_streaming")).toBeTruthy();
+  });
+
+  it("'Meine Streaming-Dienste': loads providers, filters to own services and shows the category pills (min. 1 active)", async () => {
+    setUpHappyPath();
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({ selectedStreamingProviderIds: [8] });
+    mockUseMyStreamingProviders.mockImplementation((_ids: number[], enabled: boolean) => ({
+      data: enabled
+        ? new Map([
+            [1, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
+            [2, { flatrate: [], rent: [{ provider_id: 8, provider_name: "N" }], buy: [] }],
+          ])
+        : undefined,
+      isLoading: false,
+    }));
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
+
+    expect(queryByTestId("watchlist-provider-categories")).toBeNull();
+    expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([1, 2, 3], false);
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+    await fireEvent.press(getByTestId("watchlist-sort-option-my_streaming"));
+
+    expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([1, 2, 3], true);
+    expect(getByTestId("watchlist-entry-e1")).toBeTruthy();
+    expect(queryByTestId("watchlist-entry-e2")).toBeNull();
+
+    // activate "Leihen" -> e2 (rent at own service) appears
+    await fireEvent.press(getByTestId("watchlist-provider-category-rent"));
+    expect(getByTestId("watchlist-entry-e2")).toBeTruthy();
+
+    // deactivating both would leave none active: the last one stays on
+    await fireEvent.press(getByTestId("watchlist-provider-category-flatrate"));
+    await fireEvent.press(getByTestId("watchlist-provider-category-rent"));
+    const store = require("@/stores/usePreferencesStore").usePreferencesStore;
+    expect(store.getState().listFilters["watchlist:g1"].providerCategories).toEqual(["rent"]);
+  });
+
+  it("shows a search-specific text when a search matches nothing, and the empty-list text only for an empty watchlist", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, queryByTestId, getByText } = await render(<WatchlistScreen />);
+
+    await fireEvent.changeText(getByTestId("watchlist-search-input"), "zzzzzz");
+
+    expect(getByTestId("watchlist-no-results")).toBeTruthy();
+    expect(getByText("Keine Treffer für „zzzzzz“.")).toBeTruthy();
+    expect(queryByTestId("watchlist-empty")).toBeNull();
   });
 });

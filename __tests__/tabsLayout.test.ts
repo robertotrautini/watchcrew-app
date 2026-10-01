@@ -34,3 +34,22 @@ describe("(app)/(tabs) tab icons", () => {
     }
   });
 });
+
+// Per-device "Tracker aktiv" flag (inventory 4.12): hidden tab stays a
+// registered route (href: null) so deep links / the file route don't break.
+import { getTabScreens, getInitialTabName } from "../src/app/(app)/(tabs)/_layout";
+
+describe("(app)/(tabs) tracker feature flag", () => {
+  it("shows all three tabs when the tracker is enabled", () => {
+    const tabs = getTabScreens(true);
+    expect(tabs.map((t) => t.name)).toEqual(["tracker", "watchlist", "tagebuch"]);
+    expect(tabs.every((t) => !t.hidden)).toBe(true);
+    expect(getInitialTabName(true)).toBe("tracker");
+  });
+
+  it("hides only the tracker tab when disabled and makes Watchlist the initial tab", () => {
+    const tabs = getTabScreens(false);
+    expect(tabs.filter((t) => t.hidden).map((t) => t.name)).toEqual(["tracker"]);
+    expect(getInitialTabName(false)).toBe("watchlist");
+  });
+});

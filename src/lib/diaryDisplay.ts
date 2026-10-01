@@ -44,12 +44,16 @@ export function formatSeenAtDate(dateStr: string | null): string {
  * `member_id` appearing in ANY entry's `ratings` array (across the full,
  * pre-split entry set the caller should pass in — not just the Diary
  * subset, so a member who has only rated Watchlist-side movies still shows
- * up). This is an approximation, not a real membership query (see the
- * flagged gap above): a member who has never rated anything at all in the
- * group won't appear here and so won't get a "–" row rendered for them.
+ * up). When the real membership (`useGroupMembers` user ids) is passed as
+ * `memberUserIds`, it is unioned in so a member who has never rated anything
+ * still gets a "–" row (inventory 2.3); rating authors who are no longer
+ * members stay in the union so their ratings remain visible.
  */
-export function deriveGroupMemberIds(entries: WatchlistEntry[]): string[] {
-  const ids = new Set<string>();
+export function deriveGroupMemberIds(
+  entries: WatchlistEntry[],
+  memberUserIds: readonly string[] = [],
+): string[] {
+  const ids = new Set<string>(memberUserIds);
   for (const entry of entries) {
     for (const rating of entry.ratings) {
       ids.add(rating.member_id);

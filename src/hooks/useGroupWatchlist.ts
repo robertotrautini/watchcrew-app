@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { getGroupWatchlistEntries, getStreamingAvailabilityForTmdbIds } from "@/lib/watchlist";
+import { loadStreamingRows } from "@/lib/streamingAvailability";
+import { getGroupWatchlistEntries } from "@/lib/watchlist";
 import { buildStreamingAvailabilityLookup } from "@/lib/watchlistLogic";
 import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
 
@@ -12,8 +13,8 @@ export interface GroupWatchlistData {
 }
 
 /**
- * Wraps `getGroupWatchlistEntries` + `getStreamingAvailabilityForTmdbIds`
- * (src/lib/watchlist.ts) in a single TanStack Query.
+ * Wraps `getGroupWatchlistEntries` (src/lib/watchlist.ts) + the cache-backed
+ * `loadStreamingRows` (src/lib/streamingAvailability.ts) in a single TanStack Query.
  *
  * Both underlying calls never throw — they always resolve Supabase's raw
  * `{ data, error }` tuple, even on failure. This hook translates that into
@@ -42,8 +43,22 @@ export function useGroupWatchlist(groupId: string | undefined) {
         )
       );
 
-      const { data: availabilityRows, error: availabilityError } =
-        await getStreamingAvailabilityForTmdbIds(tmdbIds);
+      // ADR 0005: only date-less movies need a (cached, 24h) availability
+      // lookup for "Kommt noch"/"Streaming verfügbar"; all ids are READ so
+      // already-cached rows are used anyway. At most 2 round trips.
+      const datelessTmdbIds = Array.from(
+        new Set(
+          safeEntries
+            .filter((entry) => entry.movie?.release_date == null)
+            .map((entry) => entry.movie?.tmdb_id)
+            .filter((id): id is number => typeof id === "number")
+        )
+      );
+
+      const { data: availabilityRows, error: availabilityError } = await loadStreamingRows(
+        tmdbIds,
+        datelessTmdbIds
+      );
       if (availabilityError) {
         throw availabilityError;
       }

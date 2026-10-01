@@ -14,6 +14,9 @@
 
 import Fuse from "fuse.js";
 
+import { matchesOwnProviders, type ProviderCategory } from "./movieProviderFilter";
+import type { TmdbMovieProviders } from "./tmdbProxy";
+
 import type {
   DiarySortOption,
   Rating,
@@ -24,6 +27,9 @@ import type {
   WatchlistSortOption,
   YearFilterValue,
 } from "./watchlistTypes";
+
+/** Pills active by default for option 'my_streaming': flatrate only (min. 1 must stay active). */
+export const DEFAULT_PROVIDER_CATEGORIES: ProviderCategory[] = ["flatrate"];
 
 // ============================================================================
 // Split: the one function that turns entries into Watchlist vs Diary
@@ -109,16 +115,29 @@ export function sortByTmdbScoreDesc(entries: WatchlistEntry[]): WatchlistEntry[]
 /**
  * Option 'my_streaming' (watchlist #6 / diary #6): "Meine Streaming-Dienste".
  *
- * STUB: the underlying "user's selected streaming services" preference
- * doesn't exist yet (Milestone M10). This slot exists so the sort-option
- * list/UI can offer it now without any code changing later, but it
- * currently just returns entries unsorted/in received order.
- *
- * TODO(M10): filter/sort by user's selected streaming services once that
- * preference exists.
+ * Keeps only entries offered (DE) by one of the user's saved services within
+ * the active Flatrate/Leihen/Kaufen categories (see `matchesOwnProviders`).
+ * Entries keep the received order; entries whose providers are not (yet)
+ * loaded drop out.
  */
-export function sortByMyStreamingStub(entries: WatchlistEntry[]): WatchlistEntry[] {
-  return [...entries];
+export function filterByMyStreaming(
+  entries: WatchlistEntry[],
+  providersByTmdbId: ReadonlyMap<number, TmdbMovieProviders>,
+  ownProviderIds: number[],
+  categories: ProviderCategory[]
+): WatchlistEntry[] {
+  return entries.filter((entry) =>
+    matchesOwnProviders(providersByTmdbId.get(entry.movie.tmdb_id), categories, ownProviderIds)
+  );
+}
+
+function myStreamingFromContext(entries: WatchlistEntry[], context: SortContext): WatchlistEntry[] {
+  return filterByMyStreaming(
+    entries,
+    context.providersByTmdbId ?? new Map(),
+    context.myProviderIds ?? [],
+    context.providerCategories ?? DEFAULT_PROVIDER_CATEGORIES
+  );
 }
 
 function getGenreIds(entry: WatchlistEntry): string[] {
@@ -291,7 +310,7 @@ export function sortWatchlist(
     case "tmdb_score":
       return sortByTmdbScoreDesc(entries);
     case "my_streaming":
-      return sortByMyStreamingStub(entries);
+      return myStreamingFromContext(entries, context);
     case "genre":
       return filterByGenre(entries, context.genreIds ?? []);
     case "year":
@@ -396,7 +415,7 @@ export function sortDiary(
     case "tmdb_score":
       return sortByTmdbScoreDesc(entries);
     case "my_streaming":
-      return sortByMyStreamingStub(entries);
+      return myStreamingFromContext(entries, context);
     case "genre":
       return filterByGenre(entries, context.genreIds ?? []);
     case "year":
@@ -435,12 +454,20 @@ export function searchEntries(entries: WatchlistEntry[], query: string): Watchli
 // Streaming-availability lookup builder (used by useGroupWatchlist)
 // ============================================================================
 
+function hasFlatrate(data: unknown): boolean {
+  const flatrate = (data as { flatrate?: unknown } | null | undefined)?.flatrate;
+  return Array.isArray(flatrate) && flatrate.length > 0;
+}
+
+/** tmdb_id -> true for rows whose cached DE providers include at least one flatrate offer. */
 export function buildStreamingAvailabilityLookup(
   rows: StreamingAvailabilityCacheRow[]
 ): StreamingAvailabilityLookup {
   const lookup: StreamingAvailabilityLookup = new Map();
   for (const row of rows) {
-    lookup.set(row.tmdb_id, true);
+    if (hasFlatrate(row.data)) {
+      lookup.set(row.tmdb_id, true);
+    }
   }
   return lookup;
 }

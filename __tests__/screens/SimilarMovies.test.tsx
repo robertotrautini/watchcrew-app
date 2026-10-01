@@ -306,6 +306,25 @@ describe("SimilarMoviesScreen", () => {
     expect(queryByTestId("similar-movies-screen-grid-item-102")).toBeNull();
   });
 
+  it("narrows the streaming filter pill to the user's own services when some are selected", async () => {
+    setUpHappyPath();
+    const store = require("@/stores/usePreferencesStore").usePreferencesStore;
+    store.setState({ selectedStreamingProviderIds: [2] });
+    const providersByTmdbId = new Map([
+      [101, { flatrate: [{ provider_id: 1, provider_name: "Netflix" }], rent: [], buy: [] }],
+      [102, { flatrate: [{ provider_id: 2, provider_name: "Prime" }], rent: [], buy: [] }],
+    ]);
+    mockUseMoviesProviders.mockReturnValue({ providersByTmdbId, isLoading: false });
+
+    const SimilarMoviesScreen = loadSimilarMoviesScreen();
+    const { getByTestId, queryByTestId } = await render(<SimilarMoviesScreen />);
+    await fireEvent.press(getByTestId("similar-movies-screen-grid-filter-flatrate"));
+
+    expect(getByTestId("similar-movies-screen-grid-item-102")).toBeTruthy();
+    expect(queryByTestId("similar-movies-screen-grid-item-101")).toBeNull();
+    store.setState({ selectedStreamingProviderIds: [] });
+  });
+
   it("shows a 'watchlist' badge for an item on the active group's watchlist", async () => {
     setUpHappyPath();
     mockUseGroupWatchlist.mockReturnValue({

@@ -7,18 +7,58 @@ import type { TmdbMovieProviders } from "./tmdbProxy";
 
 export type ProviderCategory = "flatrate" | "rent" | "buy";
 
+export const ALL_PROVIDER_CATEGORIES: ProviderCategory[] = ["flatrate", "rent", "buy"];
+
+/**
+ * True when the movie is offered (DE) in at least one of the active
+ * `categories`. If the user picked own streaming services (`ownProviderIds`
+ * non-empty) the offer must additionally come from one of THOSE services;
+ * with none picked the service restriction is simply skipped (category-only).
+ * No providers data (not loaded / lookup failed) never matches.
+ */
+export function matchesOwnProviders(
+  providers: TmdbMovieProviders | undefined,
+  categories: ProviderCategory[],
+  ownProviderIds: number[]
+): boolean {
+  if (!providers) {
+    return false;
+  }
+  return categories.some((category) => {
+    const list = providers[category];
+    if (!Array.isArray(list) || list.length === 0) {
+      return false;
+    }
+    return ownProviderIds.length === 0 || list.some((p) => ownProviderIds.includes(p.provider_id));
+  });
+}
+
 export function filterByProviderCategory<T extends { tmdbId: number }>(
   items: T[],
   providersByTmdbId: ReadonlyMap<number, TmdbMovieProviders>,
-  category: ProviderCategory | null
+  category: ProviderCategory | null,
+  ownProviderIds: number[] = []
 ): T[] {
   if (category === null) {
     return items;
   }
 
-  return items.filter((item) => {
-    const providers = providersByTmdbId.get(item.tmdbId);
-    const list = providers?.[category];
-    return Array.isArray(list) && list.length > 0;
-  });
+  return items.filter((item) =>
+    matchesOwnProviders(providersByTmdbId.get(item.tmdbId), [category], ownProviderIds)
+  );
+}
+
+/**
+ * Add-Movie-Modal streaming toggle (inventory 2.5: "filtert nach eigenen
+ * Streaming-Diensten"): keeps items offered by an own service in ANY category
+ * (flatrate, rent or buy). The spec names no category pills for this toggle.
+ */
+export function filterByMyStreaming<T extends { tmdbId: number }>(
+  items: T[],
+  providersByTmdbId: ReadonlyMap<number, TmdbMovieProviders>,
+  ownProviderIds: number[]
+): T[] {
+  return items.filter((item) =>
+    matchesOwnProviders(providersByTmdbId.get(item.tmdbId), ALL_PROVIDER_CATEGORIES, ownProviderIds)
+  );
 }

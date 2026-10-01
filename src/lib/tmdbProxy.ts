@@ -132,6 +132,34 @@ export function getMovieProviders(tmdbId: number): Promise<TmdbProxyResult<TmdbM
   return invokeTmdbProxy<TmdbMovieProviders>({ kind: "providers", tmdbId });
 }
 
+/** Server-side cap per `providers_batch` request (supabase/functions/tmdb-proxy/providers-cache.ts). */
+const PROVIDERS_BATCH_CHUNK_SIZE = 200;
+
+/**
+ * ADR 0005: many movies' DE watch providers in ONE round trip. The Edge
+ * Function serves fresh `streaming_availability_cache` rows and only hits
+ * TMDB for missing/stale ones (24h TTL). Result: tmdb_id (string key) ->
+ * providers; ids whose TMDB lookup failed are simply absent. Lists longer
+ * than the server cap are split into sequential chunks and merged.
+ */
+export async function getMoviesProvidersBatch(
+  tmdbIds: number[]
+): Promise<TmdbProxyResult<Record<string, TmdbMovieProviders>>> {
+  const merged: Record<string, TmdbMovieProviders> = {};
+  for (let i = 0; i < tmdbIds.length; i += PROVIDERS_BATCH_CHUNK_SIZE) {
+    const chunk = tmdbIds.slice(i, i + PROVIDERS_BATCH_CHUNK_SIZE);
+    const { data, error } = await invokeTmdbProxy<Record<string, TmdbMovieProviders>>({
+      kind: "providers_batch",
+      tmdbIds: chunk,
+    });
+    if (error) {
+      return { data: null, error };
+    }
+    Object.assign(merged, data ?? {});
+  }
+  return { data: merged, error: null };
+}
+
 /**
  * M10 Settings hub ("Meine Streaming-Dienste" picker,
  * src/app/(app)/(modals)/settings/streaming-services.tsx): the full DE-region

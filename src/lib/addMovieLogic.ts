@@ -83,19 +83,3 @@ export function findDuplicateRatedEntry(
 export function formatAverageRating(averageRating: number): string {
   return averageRating.toFixed(1);
 }
-
-/**
- * STUB (M10 dependency): the Film-mode-only streaming-filter toggle in the
- * Add-Movie-Modal, per the task spec ("visible-but-stubbed control, same
- * pattern as the M5 'my_streaming' stub" — see
- * src/lib/watchlistLogic.ts's `sortByMyStreamingStub`). The underlying
- * "user's selected streaming services" preference doesn't exist yet, so
- * this is a passthrough — no filtering actually happens — until M10 lands
- * that preference.
- *
- * TODO(M10): filter to the user's selected streaming services once that
- * preference exists.
- */
-export function filterByMyStreamingStub<T>(items: T[]): T[] {
-  return [...items];
-}

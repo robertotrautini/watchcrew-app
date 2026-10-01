@@ -1,10 +1,12 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { GroupThemeName } from "@/lib/groupTheme";
 import { showToast } from "@/lib/toast";
 
 import {
   regenerateInviteToken,
   removeMember,
   renameWatchGroup,
+  setGroupColorTheme,
   setInviteEnabled,
 } from "@/lib/groups";
 
@@ -40,6 +42,30 @@ export function useRenameGroup() {
       // "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
       queryClient.invalidateQueries({ queryKey: ["groupNames"] });
       showToast("Gruppe umbenannt");
+    },
+  });
+}
+
+export interface SetGroupThemeParams {
+  groupId: string;
+  theme: GroupThemeName;
+}
+
+export function useSetGroupTheme() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ groupId, theme }: SetGroupThemeParams) => {
+      const { data, error } = await setGroupColorTheme(groupId, theme);
+      if (error) {
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: ["groupNames"] });
+      showToast("Farbthema geändert");
     },
   });
 }

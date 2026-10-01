@@ -1,71 +1,55 @@
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { useMemo } from "react";
+import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, Text, View } from "react-native";
 
-import { useActiveGroup } from "@/hooks/useActiveGroup";
+import { Button } from "@/components/ui/Button";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { useGroupNames } from "@/hooks/useGroupDetails";
 import { useGroupPushSubscription } from "@/hooks/useGroupPushSubscription";
+import { usePushPermissionStatus } from "@/hooks/usePushPermissionStatus";
+import { useUserGroups } from "@/hooks/useUserGroups";
+import { groupDisplayLabel } from "@/lib/diaryDisplay";
 
 /**
- * M10 — the real Settings-hub "Benachrichtigungen" screen, replacing the
- * minimal placeholder the M10 Settings-hub task deliberately left in place
- * (see docs/interim-decisions.md, "M10 — 'Benachrichtigungen'-Zeile
- * verlinkt einen Platzhalter-Screen (Abstimmungspunkt mit der parallelen
- * Push-Task)" — this IS that reconciliation). Wires the already-built,
- * already-tested `useGroupPushSubscription` hook
- * (src/hooks/useGroupPushSubscription.ts) to a single per-group push
- * opt-in toggle for the current active group.
+ * Settings "Benachrichtigungen" (inventory 4.2, ADR 0006): one opt-in toggle
+ * PER Watch-Group the user belongs to (not just the active one), plus a hint
+ * with a system-settings shortcut when the OS notification permission is
+ * denied (the registration hook, usePushRegistration, only asks once).
  *
- * Same custom Pressable-based toggle pattern as
- * src/app/(app)/(modals)/settings/display.tsx (no shared `Toggle`
- * component exists yet in src/components/ui/, per that screen's own
- * interim-decision entry — this screen follows the same precedent rather
- * than introducing a second one-off toggle style).
- *
- * `activeGroupId`/`currentUserId` can both be `undefined` briefly (before
- * `useCurrentUserId`/`useActiveGroup` resolve) -- `useGroupPushSubscription`
- * already handles that gracefully (query `enabled: false`,
- * `subscribe`/`unsubscribe` become no-ops), so this screen doesn't need its
- * own extra "no group yet" branch.
+ * Toggle look follows settings/display.tsx (custom Pressable switch).
  */
-export default function SettingsNotificationsScreen() {
-  const currentUserId = useCurrentUserId();
-  const { activeGroupId } = useActiveGroup(currentUserId);
+const PERMISSION_STEPS = Platform.select({
+  ios: "Öffne Einstellungen > WatchCrew > Mitteilungen und erlaube Mitteilungen.",
+  default: "Öffne Einstellungen > Apps > WatchCrew > Benachrichtigungen und erlaube Benachrichtigungen.",
+});
+
+function GroupPushToggleRow({
+  groupId,
+  userId,
+  label,
+}: {
+  groupId: string;
+  userId: string | undefined;
+  label: string;
+}) {
   const { isSubscribed, isLoading, isMutating, subscribe, unsubscribe } = useGroupPushSubscription(
-    activeGroupId,
-    currentUserId,
+    groupId,
+    userId,
   );
 
-  function handleToggle() {
-    if (isSubscribed) {
-      unsubscribe();
-    } else {
-      subscribe();
-    }
-  }
-
   return (
-    <View className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-notifications-screen">
-      <Text className="mb-2 font-display text-xl text-text-primary">Benachrichtigungen</Text>
-
-      <Text testID="settings-notifications-copy" className="mb-4 text-sm text-text-secondary">
-        Du wirst benachrichtigt, wenn jemand aus dieser Gruppe einen neuen Film zur Watchlist
-        hinzufügt, einen Film als Erstes bewertet, oder wenn der Kinostart eines vorgemerkten Films
-        näher rückt.
-      </Text>
-
+    <View className="mb-2">
       {isLoading ? (
-        <ActivityIndicator testID="settings-notifications-loading" />
+        <ActivityIndicator testID={`settings-notifications-loading-${groupId}`} />
       ) : (
         <Pressable
-          testID="settings-notifications-toggle"
+          testID={`settings-notifications-toggle-${groupId}`}
           accessibilityRole="switch"
-          accessibilityState={{ checked: isSubscribed, disabled: isMutating || isLoading }}
-          disabled={isMutating || isLoading}
-          onPress={handleToggle}
+          accessibilityState={{ checked: isSubscribed, disabled: isMutating }}
+          disabled={isMutating}
+          onPress={isSubscribed ? unsubscribe : subscribe}
           className="flex-row items-center justify-between rounded-lg border border-border-subtle bg-card px-4 py-3"
         >
-          <Text className="flex-1 pr-3 text-text-primary">
-            Push-Benachrichtigungen für diese Gruppe
-          </Text>
+          <Text className="flex-1 pr-3 text-text-primary">{label}</Text>
           <View
             className={`h-7 w-12 justify-center rounded-full px-0.5 ${
               isSubscribed ? "items-end bg-accent" : "items-start bg-border-subtle"
@@ -76,5 +60,62 @@ export default function SettingsNotificationsScreen() {
         </Pressable>
       )}
     </View>
+  );
+}
+
+export default function SettingsNotificationsScreen() {
+  const currentUserId = useCurrentUserId();
+  const groupsQuery = useUserGroups(currentUserId);
+  const groupIds = useMemo(
+    () => ((groupsQuery.data ?? []) as Array<{ group_id: string }>).map((m) => m.group_id),
+    [groupsQuery.data],
+  );
+  const namesQuery = useGroupNames(groupIds);
+  const nameById = useMemo(() => {
+    const names = new Map<string, string>();
+    for (const group of (namesQuery.data ?? []) as Array<{ id: string; name: string }>) {
+      names.set(group.id, group.name);
+    }
+    return names;
+  }, [namesQuery.data]);
+  const permission = usePushPermissionStatus();
+
+  return (
+    <ScrollView className="flex-1 bg-bg-primary px-4 pt-4" testID="settings-notifications-screen">
+      <Text className="mb-2 font-display text-xl text-text-primary">Benachrichtigungen</Text>
+
+      {permission === "denied" ? (
+        <View
+          testID="settings-notifications-permission-hint"
+          className="mb-4 gap-3 rounded-lg border border-border-subtle bg-card p-4"
+        >
+          <Text className="text-text-primary">
+            Benachrichtigungen sind in den Systemeinstellungen deaktiviert. {PERMISSION_STEPS}
+          </Text>
+          <Button
+            testID="settings-notifications-open-settings"
+            label="Systemeinstellungen öffnen"
+            onPress={() => {
+              void Linking.openSettings();
+            }}
+          />
+        </View>
+      ) : null}
+
+      <Text testID="settings-notifications-copy" className="mb-4 text-sm text-text-secondary">
+        Pro Gruppe: Du wirst benachrichtigt, wenn jemand aus dieser Gruppe einen neuen Film zur
+        Watchlist hinzufügt, einen Film als Erstes bewertet, oder wenn der Kinostart eines
+        vorgemerkten Films näher rückt.
+      </Text>
+
+      {groupIds.map((groupId) => (
+        <GroupPushToggleRow
+          key={groupId}
+          groupId={groupId}
+          userId={currentUserId}
+          label={groupDisplayLabel(groupId, nameById.get(groupId))}
+        />
+      ))}
+    </ScrollView>
   );
 }

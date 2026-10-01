@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Redirect, useSegments } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
 import { resolveGroupTheme } from '@/lib/groupTheme';
+import { WATCHLIST_ROUTE } from '@/lib/homeRoute';
+import { usePreferencesStore } from '@/stores/usePreferencesStore';
 
 /**
  * The exact, ordered set of main-shell tabs (M3 roadmap: "Tabs: Tracker/
@@ -19,6 +22,21 @@ export const TAB_SCREENS = [
   { name: 'watchlist', title: 'Watchlist', icon: 'bookmark' },
   { name: 'tagebuch', title: 'Tagebuch', icon: 'book' },
 ] as const;
+
+/**
+ * Per-device "Tracker aktiv" flag (usePreferencesStore.trackerEnabled): the
+ * tracker tab stays a registered route but is hidden (`href: null`) when off.
+ */
+export function getTabScreens(trackerEnabled: boolean) {
+  return TAB_SCREENS.map((tab) => ({
+    ...tab,
+    hidden: tab.name === 'tracker' && !trackerEnabled,
+  }));
+}
+
+export function getInitialTabName(trackerEnabled: boolean) {
+  return trackerEnabled ? 'tracker' : 'watchlist';
+}
 
 /**
  * The main app shell's tab bar. Colors: active tab uses the group-theme
@@ -37,17 +55,27 @@ export default function TabsLayout() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'dark' ? 'dark' : 'light'];
   const { colors: groupColors } = resolveGroupTheme(undefined);
+  const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
+  const segments = useSegments() as string[];
+
+  // The flag can be switched off while the (now hidden) tracker tab is the
+  // focused one (settings modal opened from it) -> leave it once it is visible again.
+  if (!trackerEnabled && segments.includes('tracker')) {
+    return <Redirect href={WATCHLIST_ROUTE} />;
+  }
 
   return (
     <Tabs
+      initialRouteName={getInitialTabName(trackerEnabled)}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: groupColors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
       }}>
-      {TAB_SCREENS.map((tab) => (
+      {getTabScreens(trackerEnabled).map((tab) => (
         <Tabs.Screen key={tab.name} name={tab.name} options={{
             title: tab.title,
+            ...(tab.hidden ? { href: null } : {}),
             tabBarIcon: ({ focused, color, size }) => (
               <Ionicons
                 name={focused ? tab.icon : (`${tab.icon}-outline` as `${typeof tab.icon}-outline`)}

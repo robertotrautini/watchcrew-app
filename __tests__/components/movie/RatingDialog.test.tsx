@@ -350,3 +350,37 @@ describe("RatingDialog", () => {
     });
   });
 });
+
+describe("RatingDialog with the tracker feature flag off", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({ trackerEnabled: false });
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      require("@/stores/usePreferencesStore").usePreferencesStore.setState({ trackerEnabled: true });
+    });
+  });
+
+  it("hides the payer chips and payment date", async () => {
+    const { queryByTestId, queryByText } = await render(<RatingDialog {...baseProps()} />);
+
+    expect(queryByText("Wer hat bezahlt?")).toBeNull();
+    expect(queryByTestId("rating-dialog-payer-chip-user-2")).toBeNull();
+    expect(queryByTestId("rating-dialog-payment-date-input")).toBeNull();
+  });
+
+  it("never sends a payment write, even if the entry already has a payer (paid_at must not be corrupted)", async () => {
+    const { getByTestId } = await render(
+      <RatingDialog {...baseProps({ paidByMemberId: "user-2", paidAt: null })} />,
+    );
+
+    await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+    expect(mockSaveMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ payment: undefined }),
+      expect.anything(),
+    );
+  });
+});

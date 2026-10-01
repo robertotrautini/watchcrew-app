@@ -6,6 +6,12 @@ import React from "react";
 const mockGetGroupWatchlistEntries = jest.fn();
 const mockGetStreamingAvailabilityForTmdbIds = jest.fn();
 
+const mockGetMoviesProvidersBatch = jest.fn();
+
+jest.mock("@/lib/tmdbProxy", () => ({
+  getMoviesProvidersBatch: (...args: unknown[]) => mockGetMoviesProvidersBatch(...args),
+}));
+
 jest.mock("@/lib/watchlist", () => ({
   getGroupWatchlistEntries: mockGetGroupWatchlistEntries,
   getStreamingAvailabilityForTmdbIds: mockGetStreamingAvailabilityForTmdbIds,
@@ -35,6 +41,7 @@ function createWrapper() {
 describe("useGroupWatchlist", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetMoviesProvidersBatch.mockResolvedValue({ data: {}, error: null });
   });
 
   it("fetches entries, then fetches streaming availability for the entries' tmdb_ids", async () => {
@@ -62,7 +69,14 @@ describe("useGroupWatchlist", () => {
       error: null,
     });
     mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({
-      data: [{ tmdb_id: 42, region: "DE", data: {}, last_fetched_at: "2026-01-01T00:00:00Z" }],
+      data: [
+        {
+          tmdb_id: 42,
+          region: "DE",
+          data: { flatrate: [{ provider_id: 8 }], rent: [], buy: [] },
+          last_fetched_at: new Date().toISOString(),
+        },
+      ],
       error: null,
     });
     const useGroupWatchlist = loadUseGroupWatchlist();
@@ -74,6 +88,63 @@ describe("useGroupWatchlist", () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data.entries).toEqual([{ id: "e1", movie: { tmdb_id: 42 }, ratings: [] }]);
     expect(result.current.data.streamingAvailability.get(42)).toBe(true);
+  });
+
+  it("refreshes the availability cache via ONE batch call for the date-less movies only, and uses the result", async () => {
+    mockGetGroupWatchlistEntries.mockResolvedValue({
+      data: [
+        { id: "e1", movie: { tmdb_id: 1, release_date: null }, ratings: [] },
+        { id: "e2", movie: { tmdb_id: 2, release_date: "2020-01-01" }, ratings: [] },
+        { id: "e3", movie: { tmdb_id: 3, release_date: null }, ratings: [] },
+      ],
+      error: null,
+    });
+    mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({ data: [], error: null });
+    mockGetMoviesProvidersBatch.mockResolvedValue({
+      data: {
+        "1": { flatrate: [{ provider_id: 8 }], rent: [], buy: [] },
+        "3": { flatrate: [], rent: [{ provider_id: 8 }], buy: [] },
+      },
+      error: null,
+    });
+    const useGroupWatchlist = loadUseGroupWatchlist();
+
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockGetMoviesProvidersBatch).toHaveBeenCalledTimes(1);
+    expect(mockGetMoviesProvidersBatch).toHaveBeenCalledWith([1, 3]);
+    expect(result.current.data.streamingAvailability.get(1)).toBe(true);
+    // rent-only does not count as "streamable"
+    expect(result.current.data.streamingAvailability.get(3)).toBeFalsy();
+  });
+
+  it("does not call the batch action when all date-less movies have fresh cache rows", async () => {
+    mockGetGroupWatchlistEntries.mockResolvedValue({
+      data: [{ id: "e1", movie: { tmdb_id: 1, release_date: null }, ratings: [] }],
+      error: null,
+    });
+    mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({
+      data: [
+        {
+          tmdb_id: 1,
+          region: "DE",
+          data: { flatrate: [], rent: [], buy: [] },
+          last_fetched_at: new Date().toISOString(),
+        },
+      ],
+      error: null,
+    });
+    const useGroupWatchlist = loadUseGroupWatchlist();
+
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockGetMoviesProvidersBatch).not.toHaveBeenCalled();
   });
 
   it("surfaces an entries-query error through React Query's native error channel without calling the availability query", async () => {

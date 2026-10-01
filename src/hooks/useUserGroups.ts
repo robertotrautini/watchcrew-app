@@ -12,8 +12,8 @@ import { getUserGroups } from '@/lib/groups';
  * `isLoading`/`data`/`error`/`isError` states instead of re-checking a
  * tuple themselves.
  */
-export function useUserGroups(userId: string | undefined) {
-  return useQuery({
+export function userGroupsQueryOptions(userId: string | undefined) {
+  return {
     queryKey: ['userGroups', userId],
     queryFn: async () => {
       const { data, error } = await getUserGroups(userId as string);
@@ -23,5 +23,9 @@ export function useUserGroups(userId: string | undefined) {
       return data;
     },
     enabled: !!userId,
-  });
+  };
+}
+
+export function useUserGroups(userId: string | undefined) {
+  return useQuery(userGroupsQueryOptions(userId));
 }

@@ -9,16 +9,16 @@ import { formatDateForInput } from "@/lib/ratingLogic";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActorFilmography } from "@/hooks/useActorFilmography";
 import { useCompanySearch } from "@/hooks/useCompanySearch";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useDirectorFilmography } from "@/hooks/useDirectorFilmography";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useAddToWatchlist } from "@/hooks/useMovieDetailMutations";
 import { useMovieSearch } from "@/hooks/useMovieSearch";
+import { useMoviesProviders } from "@/hooks/useMoviesProviders";
 import { usePersonSearch } from "@/hooks/usePersonSearch";
 import { useStudioFilmography } from "@/hooks/useStudioFilmography";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import {
-  filterByMyStreamingStub,
   findDuplicateRatedEntry,
   formatAverageRating,
   mapMovieLikeToGridItem,
@@ -27,6 +27,8 @@ import {
   type DuplicateRatingInfo,
 } from "@/lib/addMovieLogic";
 import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
+import { filterByMyStreaming } from "@/lib/movieProviderFilter";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 import type { TmdbCompany, TmdbMovieLike, TmdbPerson } from "@/lib/tmdbProxy";
 
 /**
@@ -82,10 +84,7 @@ export default function AddMovieScreen() {
   const router = useRouter();
 
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-  // Same interim "first group = active group" simplification as
-  // watchlist.tsx/movie/[tmdbId].tsx (no group-switcher UI yet).
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const [mode, setMode] = useState<AddMovieMode>("film");
@@ -108,10 +107,16 @@ export default function AddMovieScreen() {
   // --- Film mode ----------------------------------------------------------
   const movieSearchQuery = useMovieSearch(mode === "film" ? query : "");
   const filmItemsRaw: MovieGridItem[] = (movieSearchQuery.data ?? []).map(mapSearchResultToGridItem);
-  // STUB filter (M10 dependency) -- see src/lib/addMovieLogic.ts's
-  // filterByMyStreamingStub doc comment. Toggling it is a visible control
-  // with no actual filtering effect yet.
-  const filmItems = streamingFilterActive ? filterByMyStreamingStub(filmItemsRaw) : filmItemsRaw;
+  // Inventory 2.5: the TV toggle filters the results to the user's own
+  // streaming services (any category). Providers are only fetched while the
+  // toggle is on.
+  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const { providersByTmdbId: filmProviders } = useMoviesProviders(
+    streamingFilterActive ? filmItemsRaw.map((item) => item.tmdbId) : [],
+  );
+  const filmItems = streamingFilterActive
+    ? filterByMyStreaming(filmItemsRaw, filmProviders, myProviderIds)
+    : filmItemsRaw;
 
   // --- Regisseur / Besetzung modes -----------------------------------------
   const personSearchQuery = usePersonSearch(

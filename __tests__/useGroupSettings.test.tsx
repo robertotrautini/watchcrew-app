@@ -8,6 +8,7 @@ import React from "react";
 
 const mockRenameWatchGroup = jest.fn();
 const mockSetInviteEnabled = jest.fn();
+const mockSetGroupColorTheme = jest.fn();
 const mockRegenerateInviteToken = jest.fn();
 const mockRemoveMember = jest.fn();
 
@@ -16,6 +17,7 @@ jest.mock("@/lib/toast", () => ({ showToast: (m: string) => mockShowToast(m) }))
 
 jest.mock("@/lib/groups", () => ({
   renameWatchGroup: mockRenameWatchGroup,
+  setGroupColorTheme: mockSetGroupColorTheme,
   setInviteEnabled: mockSetInviteEnabled,
   regenerateInviteToken: mockRegenerateInviteToken,
   removeMember: mockRemoveMember,
@@ -37,6 +39,48 @@ function createWrapper() {
   };
   return { wrapper, queryClient };
 }
+
+describe("useSetGroupTheme", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("saves the theme, invalidates group caches and shows a success toast", async () => {
+    mockSetGroupColorTheme.mockResolvedValue({ data: null, error: null });
+    const { useSetGroupTheme } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useSetGroupTheme(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ groupId: "g1", theme: "purple" });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockSetGroupColorTheme).toHaveBeenCalledWith("g1", "purple");
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupNames"] });
+    expect(mockShowToast).toHaveBeenCalledWith("Farbthema geändert");
+  });
+
+  it("surfaces an error without toast or invalidation", async () => {
+    mockSetGroupColorTheme.mockResolvedValue({ data: null, error: { message: "rls denied" } });
+    const { useSetGroupTheme } = loadHooks();
+    const { wrapper, queryClient } = createWrapper();
+    const invalidateSpy = jest.spyOn(queryClient, "invalidateQueries");
+
+    const { result } = await renderHook(() => useSetGroupTheme(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ groupId: "g1", theme: "purple" });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockShowToast).not.toHaveBeenCalled();
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});
 
 describe("useRenameGroup", () => {
   beforeEach(() => {

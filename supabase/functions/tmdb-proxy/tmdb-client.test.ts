@@ -14,6 +14,7 @@ import {
   fetchGermanReleaseDates,
   fetchMovieCredits,
   fetchMovieDetails,
+  fetchMovieProviders,
   fetchMovieVideos,
   fetchPersonMovies,
   filterDirectorCredits,
@@ -497,4 +498,20 @@ Deno.test("fetchDirectorMovies: returns only Director-job crew entries from pers
     [{ id: 2, title: "Movie B", job: "Director", name: "Someone" }],
     "expected fetchDirectorMovies to filter the crew array to Director-job entries",
   );
+});
+
+Deno.test("fetchMovieProviders: picks the requested region (default DE) and tolerates a missing region", async () => {
+  const fixture = {
+    results: {
+      DE: { flatrate: [{ provider_id: 8, provider_name: "Netflix" }] },
+      AT: { rent: [{ provider_id: 2, provider_name: "Apple" }] },
+    },
+  };
+  const fetchJson = () => Promise.resolve(fixture);
+  const de = await fetchMovieProviders(1, fetchJson);
+  if (de.flatrate.length !== 1 || de.rent.length !== 0) throw new Error("default DE");
+  const at = await fetchMovieProviders(1, fetchJson, "AT");
+  if (at.rent.length !== 1 || at.flatrate.length !== 0) throw new Error("explicit AT");
+  const fr = await fetchMovieProviders(1, fetchJson, "FR");
+  if (fr.flatrate.length + fr.rent.length + fr.buy.length !== 0) throw new Error("missing region");
 });

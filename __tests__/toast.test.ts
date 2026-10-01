@@ -58,4 +58,14 @@ describe("toast pub/sub", () => {
     expect(listenerA).not.toHaveBeenCalled();
     expect(listenerB).toHaveBeenCalledWith("Eine Zahlung wurde erfasst");
   });
+
+  it("passes optional display options (duration, onPress) through to listeners", () => {
+    const listener = jest.fn();
+    subscribeToToasts(listener);
+    const onPress = jest.fn();
+
+    showToast("Neue Features", { durationMs: 6000, onPress });
+
+    expect(listener).toHaveBeenCalledWith("Neue Features", { durationMs: 6000, onPress });
+  });
 });

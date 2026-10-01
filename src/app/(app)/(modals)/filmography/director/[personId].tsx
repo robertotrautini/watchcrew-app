@@ -2,10 +2,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Text, View } from "react-native";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
+import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useDirectorFilmography } from "@/hooks/useDirectorFilmography";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useUserGroups } from "@/hooks/useUserGroups";
 import { computeFilmographyProgress } from "@/lib/filmographyProgress";
 import { getLibraryBadgeForTmdbId, getWatchedTmdbIdSet } from "@/lib/movieLibraryStatus";
 import type { TmdbMovieLike } from "@/lib/tmdbProxy";
@@ -30,8 +30,7 @@ export default function DirectorFilmographyScreen() {
   const hasValidParams = params.personId != null && !Number.isNaN(personId);
 
   const currentUserId = useCurrentUserId();
-  const userGroupsQuery = useUserGroups(currentUserId);
-  const activeGroupId = userGroupsQuery.data?.[0]?.group_id as string | undefined;
+  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const filmographyQuery = useDirectorFilmography(hasValidParams ? personId : undefined);

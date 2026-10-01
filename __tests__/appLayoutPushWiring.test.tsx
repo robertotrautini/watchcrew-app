@@ -22,6 +22,11 @@ jest.mock("@/hooks/usePushNotificationRouting", () => ({
   usePushNotificationRouting: mockUsePushNotificationRouting,
 }));
 
+const mockUseChangelogStartupToast = jest.fn();
+jest.mock("@/hooks/useChangelogStartupToast", () => ({
+  useChangelogStartupToast: mockUseChangelogStartupToast,
+}));
+
 jest.mock("expo-router", () => {
   const actualReact = require("react");
   return {
@@ -56,5 +61,13 @@ describe("(app)/_layout.tsx push-hook wiring", () => {
     await render(<AppLayout />);
 
     expect(mockUsePushNotificationRouting).toHaveBeenCalled();
+  });
+
+  it("calls useChangelogStartupToast", async () => {
+    const AppLayout = loadAppLayout();
+
+    await render(<AppLayout />);
+
+    expect(mockUseChangelogStartupToast).toHaveBeenCalled();
   });
 });

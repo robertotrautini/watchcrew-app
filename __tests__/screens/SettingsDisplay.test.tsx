@@ -62,4 +62,17 @@ describe("SettingsDisplayScreen", () => {
 
     expect(usePreferencesStore.getState().showTitlesInGrid).toBe(true);
   });
+
+  it("renders the Tracker aktiv toggle (default on) and toggles trackerEnabled off on tap", async () => {
+    const Screen = loadScreen();
+    const usePreferencesStore = loadPreferencesStore();
+    usePreferencesStore.setState({ trackerEnabled: true });
+    const { getByTestId } = await render(<Screen />);
+
+    expect(getByTestId("settings-display-tracker-toggle").props.accessibilityState.checked).toBe(true);
+
+    await fireEvent.press(getByTestId("settings-display-tracker-toggle"));
+
+    expect(usePreferencesStore.getState().trackerEnabled).toBe(false);
+  });
 });

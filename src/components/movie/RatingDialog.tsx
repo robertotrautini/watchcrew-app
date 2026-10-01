@@ -19,6 +19,7 @@ import {
 import type { Rating } from "@/lib/watchlistTypes";
 import { showToast } from "@/lib/toast";
 import { toLocalIsoDate } from "@/lib/localDate";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
  * M7 part 2b: the shared Rating-Dialog, used for all three contexts named
@@ -130,6 +131,9 @@ export function RatingDialog({
 }: RatingDialogProps) {
   const ownRating = ratings.find((r) => r.member_id === currentUserId) ?? null;
   const otherRatings = ratings.filter((r) => r.member_id !== currentUserId);
+  // Per-device Tracker flag: off hides the whole payment section AND skips the payment write,
+  // so an existing paid_by/paid_at is never touched (or newly stamped) from a hidden UI.
+  const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
 
   const [rating, setRating] = useState<number | null>(ownRating?.rating ?? null);
   const [liked, setLiked] = useState<boolean>(ownRating?.liked ?? false);
@@ -179,7 +183,7 @@ export function RatingDialog({
     const seenAt = resolveSeenAtDate(seenAtMode, manualDateIso, movieReleaseDate);
 
     const explicitPaidAt = parseGermanDateInput(paymentDateInput);
-    const payment = selectedPayerId
+    const payment = trackerEnabled && selectedPayerId
       ? { paidByMemberId: selectedPayerId, explicitPaidAt, existingPaidAt: paidAt }
       : undefined;
 
@@ -307,6 +311,7 @@ export function RatingDialog({
           </View>
         ) : null}
 
+        {trackerEnabled ? (
         <View className="gap-2">
           <Text className="text-text-secondary">Wer hat bezahlt?</Text>
           <View className="flex-row flex-wrap gap-2">
@@ -339,6 +344,7 @@ export function RatingDialog({
             />
           ) : null}
         </View>
+        ) : null}
 
         <Button
           testID="rating-dialog-save-button"
