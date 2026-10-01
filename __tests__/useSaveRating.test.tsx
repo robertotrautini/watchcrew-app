@@ -4,6 +4,7 @@
 // assert the hook throws-as-error on `{ error }` and invalidates the
 // group's watchlist cache on success).
 
+import { toLocalIsoDate } from "@/lib/localDate";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -196,7 +197,7 @@ describe("useSaveRating", () => {
     expect(mockSavePayment).toHaveBeenCalledWith({
       watchlistEntryId: "we-1",
       paidByMemberId: "user-2",
-      paidAt: NOW.toISOString(),
+      paidAt: toLocalIsoDate(NOW),
     });
   });
 

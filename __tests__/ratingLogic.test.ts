@@ -13,6 +13,7 @@ import {
   resolvePaymentDate,
   resolveSeenAtDate,
 } from "../src/lib/ratingLogic";
+import { toLocalIsoDate } from "../src/lib/localDate";
 
 describe("resolvePaymentDate", () => {
   const NOW = new Date("2026-09-20T12:00:00.000Z");
@@ -39,7 +40,7 @@ describe("resolvePaymentDate", () => {
 
   it("branch 4: falls back to 'now' as the final fallback when nothing else is available", () => {
     const result = resolvePaymentDate(null, null, null, NOW);
-    expect(result).toBe(NOW.toISOString());
+    expect(result).toBe(toLocalIsoDate(NOW));
   });
 
   it("treats an empty-string explicitDate as 'not passed', not as a real value (falls through to branch 2)", () => {
@@ -54,7 +55,7 @@ describe("resolvePaymentDate", () => {
 
   it("treats a null seenAtDate ('Weiß nicht' was checked) as 'not available', falling through to branch 4", () => {
     const result = resolvePaymentDate(null, null, null, NOW);
-    expect(result).toBe(NOW.toISOString());
+    expect(result).toBe(toLocalIsoDate(NOW));
   });
 
   it("never mutates its now argument", () => {

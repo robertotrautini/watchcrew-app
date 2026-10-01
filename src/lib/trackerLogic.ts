@@ -17,6 +17,7 @@
 //    changelog 2026-05-09: "Tracker: Alle Tagebuch-Filme auswählbar").
 
 import type { GroupMemberRow } from "./groups";
+import { toLocalIsoDate } from "./localDate";
 import type { WatchlistEntry } from "./watchlistTypes";
 
 // ============================================================================
@@ -153,7 +154,7 @@ export function daysSincePayment(lastPaidAt: string | null | undefined, now: Dat
     return null;
   }
 
-  const diffDays = Math.round((toUtcDateOnly(now.toISOString()) - toUtcDateOnly(lastPaidAt)) / 86_400_000);
+  const diffDays = Math.round((toUtcDateOnly(toLocalIsoDate(now)) - toUtcDateOnly(lastPaidAt)) / 86_400_000);
 
   if (diffDays <= 0) {
     return "heute";

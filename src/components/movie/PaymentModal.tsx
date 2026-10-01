@@ -16,6 +16,7 @@ import {
 import { useSetPayment } from "@/hooks/useTrackerPayments";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
 import { toLocalIsoDate } from "@/lib/localDate";
+import { formatDateForInput } from "@/lib/ratingLogic";
 
 /**
  * M8 (Bezahl-Tracker): the "Zahlung erfassen" modal ("💰" button on the
@@ -198,7 +199,7 @@ export function PaymentModal({
           <DateField
             testID="payment-modal-date-field"
             valueIso={dateInput || null}
-            displayText={dateInput}
+            displayText={formatDateForInput(dateInput)}
             placeholder="Datum wählen"
             onChangeIso={setDateInput}
           />

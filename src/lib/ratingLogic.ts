@@ -5,6 +5,8 @@
 // `resolvePaymentDate`'s priority chain -- can be exhaustively unit tested
 // without any mocking (see __tests__/ratingLogic.test.ts).
 
+import { toLocalIsoDate } from "./localDate";
+
 /**
  * `paid_at` priority chain (EXACT rule, non-negotiable -- see
  * docs/interim-decisions.md "M7 Teil 2b" for the two source-doc statements
@@ -15,7 +17,7 @@
  *   2. an already-set `paid_at` on the watchlist_entries row (NEVER
  *      silently overwritten)
  *   3. the "Gesehen am" date entered in this same dialog save
- *   4. "now" (`now.toISOString()`) as the final fallback
+ *   4. "now" as LOCAL date (`toLocalIsoDate(now)`) as the final fallback
  *
  * All three date-ish inputs may be `null`, `undefined`, or an empty string
  * (a not-yet-filled text field) -- all three are treated identically as
@@ -37,7 +39,7 @@ export function resolvePaymentDate(
   if (seenAtDate) {
     return seenAtDate;
   }
-  return now.toISOString();
+  return toLocalIsoDate(now);
 }
 
 /**

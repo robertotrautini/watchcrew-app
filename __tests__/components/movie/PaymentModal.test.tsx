@@ -146,7 +146,7 @@ describe("PaymentModal", () => {
 
   it("defaults the date field to today", async () => {
     const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
-    expect(within(getByTestId("payment-modal-date-field")).getByText("2026-09-20")).toBeTruthy();
+    expect(within(getByTestId("payment-modal-date-field")).getByText("20.09.2026")).toBeTruthy();
   });
 
   it("selecting a movie and a payer, then saving, calls the mutation with the right ids and the default date", async () => {

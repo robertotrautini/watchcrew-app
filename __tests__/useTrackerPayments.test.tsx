@@ -2,6 +2,7 @@
 // src/hooks/useTrackerPayments.ts, mirroring the mocking convention in
 // __tests__/useSaveRating.test.tsx.
 
+import { toLocalIsoDate } from "@/lib/localDate";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -113,7 +114,7 @@ describe("useSetPayment", () => {
     expect(mockSavePayment).toHaveBeenCalledWith({
       watchlistEntryId: "we-1",
       paidByMemberId: "user-2",
-      paidAt: NOW.toISOString(),
+      paidAt: toLocalIsoDate(NOW),
     });
   });
 

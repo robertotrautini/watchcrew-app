@@ -58,7 +58,7 @@ describe("default 'today' uses the local date", () => {
     expect(within(getByTestId("rating-dialog-seen-at-input")).getByText("01.10.2026")).toBeTruthy();
   });
 
-  it("PaymentModal date defaults to 2026-10-01", async () => {
+  it("PaymentModal date defaults to 01.10.2026", async () => {
     const { getByTestId } = await render(
       <PaymentModal
         visible
@@ -71,6 +71,6 @@ describe("default 'today' uses the local date", () => {
         now={JUST_AFTER_LOCAL_MIDNIGHT}
       />,
     );
-    expect(within(getByTestId("payment-modal-date-field")).getByText("2026-10-01")).toBeTruthy();
+    expect(within(getByTestId("payment-modal-date-field")).getByText("01.10.2026")).toBeTruthy();
   });
 });

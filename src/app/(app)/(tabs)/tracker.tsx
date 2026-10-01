@@ -7,6 +7,7 @@ import * as Haptics from "expo-haptics";
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
+import { formatDateForInput } from "@/lib/ratingLogic";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
@@ -340,7 +341,7 @@ export default function TrackerScreen() {
                           <DateField
                             testID={`tracker-row-${entry.id}-edit-date-field`}
                             valueIso={editDateInput || null}
-                            displayText={editDateInput}
+                            displayText={formatDateForInput(editDateInput)}
                             placeholder="Datum wählen"
                             onChangeIso={setEditDateInput}
                           />

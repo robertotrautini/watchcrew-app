@@ -120,6 +120,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Navigation & Header: Watchlist/Tagebuch nicht antippbar, Filmreihe-Referenz ungültig, rohe Header-Titel, Regie/Schauspieler-Taps wirkungslos](#m12-vorbereitung-live-bug-fix-—-navigation--header-watchlisttagebuch-nicht-antippbar-filmreihe-referenz-ungültig-rohe-header-titel-regieschauspieler-taps-wirkungslos)
 - [M12-Vorbereitung (Live-Bug-Fix) — Sheets/Dialoge & Datum: durchscheinende Sheets, UTC-Datum, umbrechende Tracker-Datumsspalte, veraltete Action-Bar, Gruppen-Chip nach Umbenennen](#m12-vorbereitung-live-bug-fix-—-sheetsdialoge--datum-durchscheinende-sheets-utc-datum-umbrechende-tracker-datumsspalte-veraltete-action-bar-gruppen-chip-nach-umbenennen)
 - [M12-Vorbereitung (Live-Bug-Fix) — Gruppen-Chip nach Umbenennen (`groupNames`) & Regie/Schauspieler-Taps (Mess-Text-Overlay)](#m12-vorbereitung-live-bug-fix-—-gruppen-chip-nach-umbenennen-groupnames--regieschauspieler-taps-mess-text-overlay)
+- [M12-Vorbereitung (Live-Bug-Fix) — Datumsformat TT.MM.JJJJ vereinheitlicht, UTC-Reste & YouTube-Trailer Fehler 153](#m12-vorbereitung-live-bug-fix-—-datumsformat-ttmmjjjj-vereinheitlicht-utc-reste--youtube-trailer-fehler-153)
 
 ---
 
@@ -1843,6 +1844,24 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offene Punkte:** Andere `absolute`-Elemente ohne Insets im Projekt nicht systematisch geprüft.
 
 **Verifikation auf dem echten Gerät:** Pixel 6 Pro, Kaltstart: Umbenennen auf "Testrename" und zurück aktualisiert den Chip sofort (PASS); Regisseur- und Schauspieler-Tap öffnen "Filmografie: Regisseur" bzw. "Filmografie: Schauspieler:in" (PASS). Screenshots in `.scratch-screenshots/verify-fixes-2026-10-01/`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Datumsformat TT.MM.JJJJ vereinheitlicht, UTC-Reste & YouTube-Trailer Fehler 153
+
+**Problem/Lücke:** (1) Zahlungs-Modal zeigte `YYYY-MM-DD`, Bewertungsdialog `DD.MM.YYYY`; `resolvePaymentDate`-Fallback und `daysSincePayment` rechneten noch UTC-basiert. (2) Trailer im Film-Detail zeigte "Fehler 153 – Fehler bei der Konfiguration des Videoplayers" (Screenshot `38-trailer.png`).
+
+**Ursache:** (1) `PaymentModal`, Tracker-Bearbeiten und Add-Movie-Datumssheet übergaben den ISO-Wert direkt als `displayText` an `DateField`; `ratingLogic.resolvePaymentDate` nutzte `now.toISOString()`, `trackerLogic.daysSincePayment` das UTC-Datum von `now`. (2) `MovieDetailPosterTrailer.tsx` lud `https://www.youtube.com/embed/<key>?playsinline=1` als `source={{ uri }}` direkt als Top-Level-Seite im WebView, ohne einbettende Seite und ohne Referer; YouTube lehnt solche Embeds mit Fehler 153 ab (Belege: Komponente/URL gelesen; nach Fix lädt derselbe Player-Aufbau auf dem Gerät ohne Fehler).
+
+**Entscheidung:** (1) Alle getippten/angezeigten Datumsfelder zeigen `TT.MM.JJJJ` (über `formatDateForInput`), gespeichert wird weiter ISO. `resolvePaymentDate` fällt auf `toLocalIsoDate(now)` zurück (Format nun `YYYY-MM-DD` statt Timestamp; `paid_at` ist eine `date`-Spalte), `daysSincePayment` vergleicht gegen das lokale Datum; `rated_at` bleibt ein echter Timestamp. (2) Neuer Helper `src/lib/trailerEmbed.ts` (`buildTrailerWebViewProps`): `youtube-nocookie.com/embed/<key>?playsinline=1&rel=0&origin=…` plus `Referer`-Header, `originWhitelist` `https://*`, `allowsInlineMediaPlayback`, `allowsFullscreenVideo`, `mediaPlaybackRequiresUserAction=false`. Passt zur Legacy-Spezifikation (feature-inventory.md: YouTube-iframe, nocookie-Domain); kein Spec-Konflikt. Tests: `__tests__/localDateLogic.test.ts` (TZ Europe/Berlin, 22:10Z), `__tests__/lib/trailerEmbed.test.ts`; bestehende Tests auf das neue Format angepasst (PaymentModal, localDateDefaults, ratingLogic, useSaveRating, useTrackerPayments).
+
+**Warum das später leicht änderbar ist:** Ein Helper für die Trailer-Props (Origin an einer Stelle); Anzeigeformat über einen Aufruf von `formatDateForInput` pro Feld.
+
+**Offene Punkte:** Referer/Origin ist `https://www.youtube-nocookie.com`, keine eigene App-Domain; YouTube könnte das Verhalten ändern. Der Fullscreen-Modal-Pfad nutzt dieselben Props, wurde am Gerät nicht separat geprüft.
+
+**Verifikation auf dem echten Gerät:** Pixel 6 Pro, Kaltstart: Zahlungs-Modal-Datumsfeld zeigt `01.10.2026` (PASS, `t1-payment-modal.png`); Interstellar-Trailer lädt ohne Fehler 153, YouTube-Player mit Titel und Play-Button sichtbar (PASS, `t2-trailer.png`; Wiedergabe selbst nicht gestartet). Screenshots in `.scratch-screenshots/verify-fixes-2026-10-01/`.
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 

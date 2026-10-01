@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
+import { formatDateForInput } from "@/lib/ratingLogic";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActorFilmography } from "@/hooks/useActorFilmography";
 import { useCompanySearch } from "@/hooks/useCompanySearch";
@@ -509,7 +510,7 @@ export default function AddMovieScreen() {
           testID="add-movie-manual-date-input"
           className="mb-3"
           valueIso={manualDateInput || null}
-          displayText={manualDateInput}
+          displayText={formatDateForInput(manualDateInput)}
           placeholder="Datum wählen"
           onChangeIso={setManualDateInput}
         />

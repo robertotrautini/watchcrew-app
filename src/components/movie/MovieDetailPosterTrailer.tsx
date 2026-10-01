@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Modal, Pressable, View } from "react-native";
 import { WebView } from "react-native-webview";
 
+import { buildTrailerWebViewProps } from "@/lib/trailerEmbed";
+
 /**
  * Movie Detail Overlay (M6 part 2a): hero poster + inline/fullscreen
  * YouTube trailer player. Purely presentational — `isLoadingDetail` and
@@ -58,7 +60,7 @@ export function MovieDetailPosterTrailer({
   }, [isFullscreen]);
 
   const showPlayButton = !isLoadingDetail && trailer != null && !isPlayingTrailer;
-  const trailerUri = trailer != null ? `https://www.youtube.com/embed/${trailer.key}?playsinline=1` : "";
+  const webViewProps = trailer != null ? buildTrailerWebViewProps(trailer.key) : null;
 
   return (
     <View testID="movie-detail-poster-trailer" className="relative aspect-video w-full">
@@ -66,7 +68,7 @@ export function MovieDetailPosterTrailer({
         <>
           <WebView
             testID="movie-detail-trailer-webview"
-            source={{ uri: trailerUri }}
+            {...webViewProps}
             className="h-full w-full"
           />
           <Pressable
@@ -117,7 +119,7 @@ export function MovieDetailPosterTrailer({
           onRequestClose={() => setIsFullscreen(false)}
         >
           <View className="flex-1 bg-black">
-            <WebView testID="movie-detail-trailer-webview" source={{ uri: trailerUri }} className="flex-1" />
+            <WebView testID="movie-detail-trailer-webview" {...webViewProps} className="flex-1" />
             <Pressable
               testID="movie-detail-trailer-fullscreen-close-button"
               accessibilityRole="button"
