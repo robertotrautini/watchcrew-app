@@ -1,0 +1,23 @@
+appId: com.watchcrew.app
+---
+# watchlist-open-detail.yaml — read-only: open first watchlist entry, assert
+# detail overlay renders. PRECONDITION: group with >=1 watchlist film.
+- runFlow: ../subflows/launch.yaml
+- tapOn: "Watchlist"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-(entry|list-row)-.*"
+    timeout: 15000
+- tapOn:
+    id: "watchlist-(entry|list-row)-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-screen"
+    timeout: 15000
+- assertVisible:
+    id: "movie-detail-title"
+- takeScreenshot: 01-watchlist-detail
+- back
+- assertVisible:
+    id: "watchlist-screen"

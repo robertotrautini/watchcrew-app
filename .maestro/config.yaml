@@ -1,6 +1,3 @@
 appId: com.watchcrew.app
-# Real flows live in .maestro/flows/ (see docs/adr/0008-testing-strategy.md).
-# login.yaml and onboarding-explore.yaml are the currently-passing flows
-# against the disposable Maestro test account; tabs-tour.yaml and
-# movie-detail.yaml require that account to have an active Watch-Group
-# first (see their own header comments) and are not yet green.
+# Default suite order (directory runs are alphabetical, so use the README's
+# explicit order). Subflows live in .maestro/subflows/ and are not run alone.

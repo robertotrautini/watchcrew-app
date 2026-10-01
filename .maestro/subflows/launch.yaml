@@ -1,0 +1,42 @@
+appId: com.watchcrew.app
+---
+# Shared launch helper (NOT in flows/, so a directory run does not execute it
+# standalone). Never clearState (wipes the dev-client's Metro pointer).
+# Handles: dev-client server picker after force-stop, dev-menu intro overlay,
+# and moves the floating dev-client "Tools" bubble out of the way.
+- launchApp:
+    clearState: false
+- runFlow:
+    when:
+      visible: "Development servers.*"
+    commands:
+      # First server entry in the picker.
+      - tapOn:
+          text: "http://.*"
+          index: 0
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+- extendedWaitUntil:
+    visible: "Tracker|Watchlist|Tagebuch|E-Mail|Willkommen bei WatchCrew"
+    timeout: 60000
+# Dev menu sheet sometimes opens on connect; close it.
+- runFlow:
+    when:
+      visible: "Reload"
+    commands:
+      - back
+# Floating dev-client bubble (gear icon, no text) overlaps the Watchlist "+"
+# button. It rests near the right edge at ~76% height; drag it to the left
+# edge at mid-height. Done on the Tracker tab only (empty area there); harmless
+# if the bubble is elsewhere.
+- runFlow:
+    when:
+      visible: "Tracker"
+    commands:
+      - swipe:
+          start: "92%, 76%"
+          end: "6%, 55%"
+          duration: 500

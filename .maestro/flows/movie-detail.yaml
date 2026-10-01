@@ -28,14 +28,15 @@ appId: com.watchcrew.app
 # revisit-Watchlist steps are an untested guess at the right shape and may
 # need adjustment once this can actually run.
 
-- launchApp:
-    clearState: false
-- extendedWaitUntil:
-    visible: "Tracker"
-    timeout: 10000
+- runFlow: ../subflows/launch.yaml
 
 - tapOn: "Watchlist"
-- assertVisible: "Watchlist"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-add-movie-button"
+    timeout: 10000
+# Let any toast settle/disappear before tapping.
+- waitForAnimationToEnd
 - tapOn:
     id: "watchlist-add-movie-button"
 - extendedWaitUntil:
@@ -90,5 +91,8 @@ appId: com.watchcrew.app
 # selector.
 - back
 - back
-- assertVisible: "Watchlist"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 10000
 - takeScreenshot: 05-watchlist-with-real-entry
