@@ -63,6 +63,7 @@ import {
   searchPerson,
 } from "./tmdb-client.ts";
 import { fetchTraktRelated } from "./trakt-client.ts";
+import { enrichRelatedWithPosters } from "./related-posters.ts";
 import { createSupabaseMovieUpsertDb, upsertMovie } from "./movie-upsert.ts";
 
 type ProxyKind =
@@ -382,7 +383,9 @@ Deno.serve(async (req: Request) => {
         if (typeof body.tmdbId !== "number") {
           return badRequest("Expected { tmdbId: number, kind: 'trakt_related' }");
         }
-        return jsonResponse({ data: await fetchTraktRelated(body.tmdbId) }, 200);
+        return jsonResponse({
+          data: await enrichRelatedWithPosters(await fetchTraktRelated(body.tmdbId)),
+        }, 200);
       }
       case "search_person": {
         if (typeof body.query !== "string" || body.query.trim().length === 0) {

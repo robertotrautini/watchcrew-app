@@ -181,7 +181,7 @@ describe("SimilarMoviesScreen", () => {
     expect(queryByTestId(/similar-movies-screen-grid-item-.*Ohne/)).toBeNull();
   });
 
-  it("maps a Trakt item's year to a Jan-1st placeholder releaseDate and omits poster/score", async () => {
+  it("maps a Trakt item's year to a Jan-1st placeholder releaseDate and omits poster/score when the item has none", async () => {
     setUpHappyPath();
 
     const SimilarMoviesScreen = loadSimilarMoviesScreen();
@@ -190,6 +190,25 @@ describe("SimilarMoviesScreen", () => {
     // No posterPath -> placeholder tile rendered; no voteAverage -> no score pill.
     expect(getByTestId("similar-movies-screen-grid-item-101-poster-placeholder")).toBeTruthy();
     expect(queryByTestId("similar-movies-screen-grid-score-101")).toBeNull();
+  });
+
+  it("passes server-enriched posterPath/voteAverage through to the grid", async () => {
+    setUpHappyPath();
+    mockUseSimilarMovies.mockReturnValue({
+      data: [{ ...RELATED_ONE, posterPath: "/abc.jpg", voteAverage: 7.8 }, RELATED_TWO],
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+
+    const SimilarMoviesScreen = loadSimilarMoviesScreen();
+    const { getByTestId, queryByTestId } = await render(<SimilarMoviesScreen />);
+
+    expect(getByTestId("similar-movies-screen-grid-item-101-poster")).toBeTruthy();
+    expect(queryByTestId("similar-movies-screen-grid-item-101-poster-placeholder")).toBeNull();
+    expect(getByTestId("similar-movies-screen-grid-score-101")).toBeTruthy();
+    // Item without enrichment still falls back to the placeholder.
+    expect(getByTestId("similar-movies-screen-grid-item-102-poster-placeholder")).toBeTruthy();
   });
 
   it("calls router.push with tmdbId only when the tapped movie is NOT already in the library", async () => {

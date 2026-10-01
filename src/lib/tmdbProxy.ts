@@ -58,6 +58,9 @@ export interface TraktRelatedMovie {
   title: string;
   year?: number;
   ids: TraktMovieIds;
+  /** Added server-side by the tmdb-proxy (TMDB lookup); null/absent when unavailable. */
+  posterPath?: string | null;
+  voteAverage?: number | null;
 }
 
 export interface TmdbProviderRef {

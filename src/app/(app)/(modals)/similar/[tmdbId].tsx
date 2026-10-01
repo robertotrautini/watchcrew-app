@@ -21,13 +21,11 @@ import type { TraktRelatedMovie } from "@/lib/tmdbProxy";
  * logic of its own. Mirrors the sibling `collection`/`filmography` sub-view
  * screens' structure (see src/app/(app)/(modals)/collection/[collectionId].tsx).
  *
- * Interim-decision note (log centrally in docs/interim-decisions.md, not
- * done here): Trakt's related-movies payload only gives `title`/`year`/
- * `ids` — no poster/score — so items are mapped with `posterPath: null` /
- * `voteAverage: null` rather than firing N extra per-item TMDB calls just to
- * backfill those for up to 40 items; `MovieGrid` already renders a
- * placeholder icon and omits the score pill for null/undefined values, so
- * this is cheap to change later if a poster-enrichment call is added.
+ * Interim-decision note (logged centrally in docs/interim-decisions.md):
+ * Trakt's related-movies payload only gives `title`/`year`/`ids`, so the
+ * tmdb-proxy `trakt_related` action enriches each item server-side with
+ * `posterPath`/`voteAverage` from TMDB (null when unavailable); `MovieGrid`
+ * renders a placeholder icon and omits the score pill for null values.
  * Items missing `ids.tmdb` are filtered out entirely — they can't be linked
  * to a badge, streaming lookup, or navigation target.
  */
@@ -52,9 +50,9 @@ export default function SimilarMoviesScreen() {
     .map((movie: TraktRelatedMovie) => ({
       tmdbId: movie.ids.tmdb as number,
       title: movie.title,
-      posterPath: null,
+      posterPath: movie.posterPath ?? null,
       releaseDate: movie.year ? `${movie.year}-01-01` : null,
-      voteAverage: null,
+      voteAverage: movie.voteAverage ?? null,
     }));
 
   const { providersByTmdbId } = useMoviesProviders(items.map((item) => item.tmdbId));
