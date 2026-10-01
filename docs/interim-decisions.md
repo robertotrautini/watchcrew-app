@@ -121,6 +121,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Sheets/Dialoge & Datum: durchscheinende Sheets, UTC-Datum, umbrechende Tracker-Datumsspalte, veraltete Action-Bar, Gruppen-Chip nach Umbenennen](#m12-vorbereitung-live-bug-fix-—-sheetsdialoge--datum-durchscheinende-sheets-utc-datum-umbrechende-tracker-datumsspalte-veraltete-action-bar-gruppen-chip-nach-umbenennen)
 - [M12-Vorbereitung (Live-Bug-Fix) — Gruppen-Chip nach Umbenennen (`groupNames`) & Regie/Schauspieler-Taps (Mess-Text-Overlay)](#m12-vorbereitung-live-bug-fix-—-gruppen-chip-nach-umbenennen-groupnames--regieschauspieler-taps-mess-text-overlay)
 - [M12-Vorbereitung (Live-Bug-Fix) — Datumsformat TT.MM.JJJJ vereinheitlicht, UTC-Reste & YouTube-Trailer Fehler 153](#m12-vorbereitung-live-bug-fix-—-datumsformat-ttmmjjjj-vereinheitlicht-utc-reste--youtube-trailer-fehler-153)
+- [M12-Vorbereitung (Live-Bug-Fix) — Erfolgs-Toasts (Gruppe umbenannt, Watchlist, Bewertung, Zahlung)](#m12-vorbereitung-live-bug-fix-—-erfolgs-toasts-gruppe-umbenannt-watchlist-bewertung-zahlung)
+- [M12-Vorbereitung (Live-Bug-Fix) — Anzeigename bei Registrierung, Änderung in den Einstellungen, einheitlicher Namens-Fallback](#m12-vorbereitung-live-bug-fix-—-anzeigename-bei-registrierung-änderung-in-den-einstellungen-einheitlicher-namens-fallback)
+- [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung „Ähnliche Filme“: Poster/Score serverseitig per TMDB-Anreicherung](#m12-vorbereitung-live-bug-fix-—-nachbesserung-ähnliche-filme-poster-score-serverseitig-per-tmdb-anreicherung)
 
 ---
 
@@ -1862,6 +1865,58 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 **Offene Punkte:** Referer/Origin ist `https://www.youtube-nocookie.com`, keine eigene App-Domain; YouTube könnte das Verhalten ändern. Der Fullscreen-Modal-Pfad nutzt dieselben Props, wurde am Gerät nicht separat geprüft.
 
 **Verifikation auf dem echten Gerät:** Pixel 6 Pro, Kaltstart: Zahlungs-Modal-Datumsfeld zeigt `01.10.2026` (PASS, `t1-payment-modal.png`); Interstellar-Trailer lädt ohne Fehler 153, YouTube-Player mit Titel und Play-Button sichtbar (PASS, `t2-trailer.png`; Wiedergabe selbst nicht gestartet). Screenshots in `.scratch-screenshots/verify-fixes-2026-10-01/`.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Erfolgs-Toasts (Gruppe umbenannt, Watchlist, Bewertung, Zahlung)
+
+**Problem/Lücke:** Gruppe umbenennen, "Zur Watchlist" und Zahlung speichern gaben keinerlei Rückmeldung; das Speichern einer Bewertung zeigte einen nativen Alert ("Gespeichert – Deine Bewertung wurde gespeichert.").
+
+**Ursache:** Die Toast-Infrastruktur (`showToast`/`ToastHost`, M10) wurde nur für Realtime-Sync und den Changelog-Hinweis genutzt; der Alert im `RatingDialog` stammte aus M7 Teil 2b, als es noch keinen Toast gab.
+
+**Entscheidung:** Kurze Toasts über das bestehende System: "Gruppe umbenannt" (`useRenameGroup.onSuccess`), "Zur Watchlist hinzugefügt" (`useAddToWatchlist.onSuccess`, daher auch beim Quick-Add im Add-Movie-Modal und bei "Direkt bewerten"), "Bewertung gespeichert" (`RatingDialog`, ersetzt den nativen Success-Alert; Fehler-Alerts bleiben), "Zahlung gespeichert" (`PaymentModal`). Sichtbarkeit: `Sheet` basiert auf RN `Modal` (eigenes natives Fenster, liegt über dem im Root-Layout eingebundenen `ToastHost`). Der Toast wird im selben Tick wie `onClose()` ausgelöst; er läuft 4 s, ist also sichtbar, sobald die Slide-Down-Animation des Sheets endet (nur die ca. 200-300 ms Entrance-Animation laufen darunter ab). Kein Eingriff in `Sheet`/`ToastHost`. Group-Settings ist ein normaler Stack-Screen (kein `Modal`), dort ist der Toast direkt sichtbar. Spec-Abgleich: ADR 0006 regelt nur den Realtime-Fall (Toast bei Vordergrund auf anderem Screen); feature-inventory.md nennt kein Alert-Verhalten für Bewertung speichern; die Alert-Entscheidung stand nur in docs/interim-decisions.md "M7 Teil 2b" und wird hiermit abgelöst. Kein Konflikt. Tests: `RatingDialog`, `PaymentModal`, `useGroupSettings`, `useMovieDetailMutations`.
+
+**Warum das später leicht änderbar ist:** Je eine `showToast(...)`-Zeile mit Textkonstante pro Stelle.
+
+**Offene Punkte:** Bei "Direkt bewerten" öffnet sich direkt der Bewertungsdialog; der "Zur Watchlist hinzugefügt"-Toast erscheint dort ggf. unter dem Modal und ist erst nach dessen Schließen (kurz) sichtbar. Ein Toast ersetzt einen laufenden (Single-Slot-Host).
+
+**Verifikation auf dem echten Gerät:** Noch nicht erfolgt (Sichtbarkeit nach Sheet-Schließen nur per Analyse, nicht auf Gerät geprüft).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Anzeigename bei Registrierung, Änderung in den Einstellungen, einheitlicher Namens-Fallback
+
+**Problem/Lücke:** Der Testaccount erschien überall als "Mitglied 1798f686" (Tracker-Zahler-Chips, Tagebuch-Bewertungen, Mitgliederliste); das Anzeigenamen-Feld in den Einstellungen war leer und nicht editierbar.
+
+**Ursache:** Der Trigger `handle_new_user` las keine Sign-up-Metadaten (nur E-Mail-Präfix), die Registrierung fragte keinen Namen ab, und `authenticated` hat nur SELECT auf `profiles` (kein UPDATE/INSERT) — es gab keinen Schreibpfad. Ältere Accounts haben teils gar keine `profiles`-Zeile (daher der uuid-Fallback).
+
+**Entscheidung:** (1) Registrierung: Pflichtfeld "Anzeigename", wird als `options.data.display_name` an `supabase.auth.signUp` übergeben. (2) Neue Migration `20260930100000_profiles_display_name_signup_metadata_and_rpc.sql`: Trigger bevorzugt `display_name`-Metadaten, dann E-Mail-Präfix, dann "Mitglied"; neue SECURITY-DEFINER-RPC `set_display_name(text)` (Upsert auf die eigene Zeile, 1-50 Zeichen, Fehlercodes WC005/WC006) statt Spalten-GRANT + UPDATE-Policy, weil ein UPDATE fehlende Zeilen nicht anlegen würde. (3) Einstellungen: editierbares Anzeigenamen-Feld + "Speichern" (Hook `useUpdateDisplayName`, invalidiert `ownProfile`/`groupDetails`/`watchlist`, Toast "Anzeigename gespeichert"). (4) Fallback zentral in `memberDisplayLabel` (`src/lib/diaryDisplay.ts`, war schon der einzige Ort, der "Mitglied <id8>" erzeugt): Name getrimmt, leer/null/nur Leerzeichen -> "Mitglied <id8>". Fremde E-Mails sind für den Client nicht lesbar, daher kein clientseitiger E-Mail-Fallback. (5) Backfill-Entwurf `20260930100100_profiles_backfill_missing_display_names.sql` (legt fehlende `profiles`-Zeilen aus `auth.users` an und füllt leere Namen mit dem E-Mail-Präfix; idempotent). Tests: `auth.test.ts`, `Register.test.tsx`, `Settings.test.tsx`, `lib/profile.test.ts`, `useUpdateDisplayName.test.tsx`, `diaryDisplay.test.ts`; SQL lokal in einer zurückgerollten Transaktion geprüft.
+
+**Warum das später leicht änderbar ist:** Ein Helper für den Fallback, eine RPC mit zentraler Validierung, Backfill als separate Datei.
+
+**Offene Punkte:** Beide Migrationen sind NICHT auf das Remote-Projekt angewendet (Push nötig); ohne Push schlägt "Speichern" fehl und neue Registrierungen speichern den Namen nicht. Bestehende Accounts (z.B. robintrautmann@gmx.de) zeigen weiter "Mitglied <id>", bis der Backfill läuft oder der Name einmal in den Einstellungen gesetzt wird. Maximale Namenslänge 50 ist eine Annahme. Keine Eindeutigkeitsprüfung für Namen.
+
+**Verifikation auf dem echten Gerät:** Noch nicht erfolgt (Registrierung mit Namen, Namen in den Einstellungen ändern, Anzeige in Tracker/Tagebuch/Mitgliederliste nach Remote-Push der Migration).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung „Ähnliche Filme“: Poster/Score serverseitig per TMDB-Anreicherung
+
+**Problem/Lücke:** Die Ansicht "Ähnliche Filme" zeigte nur Platzhalter ohne Poster/Score, weil Trakt nur `title`/`year`/`ids` liefert (bisherige Annahme in `similar/[tmdbId].tsx`, um bis zu 40 Einzelabrufe zu vermeiden).
+
+**Entscheidung (Nutzer: Poster müssen von TMDB kommen):** Serverseitige Anreicherung innerhalb der bestehenden `trakt_related`-Aktion der Edge Function `tmdb-proxy` (`related-posters.ts`, `enrichRelatedWithPosters`): pro Treffer ein `fetchMovieDetails`-Lookup, Ergebnis `posterPath` + `voteAverage` je Eintrag. Ein Client-Roundtrip statt bis zu 40; Nebenläufigkeit begrenzt auf 8, Reihenfolge bleibt erhalten; Fallback pro Eintrag: bei Fehler oder fehlender `ids.tmdb` bleiben beide Felder `null` (Platzhalter wie zuvor). Kein Caching in `movie_metadata_cache` (die Treffer sind keine Bibliotheksfilme; Caching wäre eine separate Entscheidung). Client: `TraktRelatedMovie` bekommt optionale `posterPath`/`voteAverage`; der Screen reicht sie an `MovieGrid` durch. Tests: 4 Deno-Tests (`related-posters.test.ts`), `SimilarMovies.test.tsx`.
+
+**Warum das später leicht änderbar ist:** Ein Modul mit injizierbarem Lookup und einer Konstante für die Nebenläufigkeit; Aufruf an einer Stelle in `index.ts`.
+
+**Offene Punkte:** Edge Function `tmdb-proxy` muss neu deployt werden (bisher NICHT deployt); ohne Deploy bleiben die Platzhalter. Latenz steigt (bis zu 40 TMDB-Calls, ca. 5 Wellen à 8).
+
+**Verifikation auf dem echten Gerät:** Noch nicht erfolgt (Darstellung von 40 Postern, Ladezeit der Ansicht).
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
