@@ -65,8 +65,9 @@ export function deriveGroupMemberIds(entries: WatchlistEntry[]): string[] {
  * profile row — see the module comment above).
  */
 export function memberDisplayLabel(memberId: string, displayName?: string | null): string {
-  if (displayName != null && displayName.length > 0) {
-    return displayName;
+  const trimmed = displayName?.trim();
+  if (trimmed) {
+    return trimmed;
   }
   return `Mitglied ${memberId.slice(0, 8)}`;
 }

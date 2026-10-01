@@ -136,6 +136,16 @@ describe("memberDisplayLabel", () => {
     expect(memberDisplayLabel("11111111-2222-3333-4444-555555555555", null)).toBe(placeholder);
     expect(memberDisplayLabel("11111111-2222-3333-4444-555555555555", "")).toBe(placeholder);
   });
+
+  it("treats a whitespace-only display name as empty and trims real names", () => {
+    const placeholder = memberDisplayLabel("11111111-2222-3333-4444-555555555555");
+    expect(memberDisplayLabel("11111111-2222-3333-4444-555555555555", "   ")).toBe(placeholder);
+    expect(memberDisplayLabel("11111111-2222-3333-4444-555555555555", "  robin ")).toBe("robin");
+  });
+
+  it("placeholder is 'Mitglied ' plus the first 8 id characters", () => {
+    expect(memberDisplayLabel("11111111-2222-3333-4444-555555555555")).toBe("Mitglied 11111111");
+  });
 });
 
 describe("genreDisplayLabel", () => {

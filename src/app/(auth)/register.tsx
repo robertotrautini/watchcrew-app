@@ -21,7 +21,10 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INPUT_CLASSNAME =
   "rounded-lg border border-border-subtle bg-card px-3 py-3 text-base text-text-primary";
 
-function validate(email: string, password: string, confirmPassword: string): string | null {
+function validate(displayName: string, email: string, password: string, confirmPassword: string): string | null {
+  if (displayName.trim().length === 0) {
+    return "Bitte gib einen Anzeigenamen ein.";
+  }
   if (!EMAIL_PATTERN.test(email.trim())) {
     return "Bitte gib eine gültige E-Mail-Adresse ein.";
   }
@@ -55,6 +58,7 @@ export default function RegisterScreen() {
   const privacyPolicyUrl = legalExtra?.privacyPolicyUrl;
   const termsOfServiceUrl = legalExtra?.termsOfServiceUrl;
 
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -70,7 +74,7 @@ export default function RegisterScreen() {
   async function handleSubmit() {
     setSubmitError(null);
 
-    const error = validate(email, password, confirmPassword);
+    const error = validate(displayName, email, password, confirmPassword);
     if (error) {
       setValidationError(error);
       return;
@@ -78,7 +82,7 @@ export default function RegisterScreen() {
     setValidationError(null);
 
     setLoading(true);
-    const { error: signUpError } = await signUpWithEmail(email.trim(), password);
+    const { error: signUpError } = await signUpWithEmail(email.trim(), password, displayName.trim());
     setLoading(false);
 
     if (signUpError) {
@@ -123,6 +127,19 @@ export default function RegisterScreen() {
       className="flex-1 justify-center gap-4 bg-bg-primary px-6"
       testID="register-screen">
       <Text className="mb-2 font-display text-3xl text-text-primary">Registrieren</Text>
+
+      <View className="gap-1">
+        <Text className="text-sm text-text-secondary">Anzeigename</Text>
+        <TextInput
+          testID="register-display-name-input"
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoCapitalize="words"
+          placeholder="Wie sollen dich andere sehen?"
+          placeholderTextColor="#888888"
+          className={INPUT_CLASSNAME}
+        />
+      </View>
 
       <View className="gap-1">
         <Text className="text-sm text-text-secondary">E-Mail</Text>

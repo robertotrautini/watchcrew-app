@@ -1,12 +1,13 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
-import { useEffect, useRef } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
 import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
+import { useUpdateDisplayName } from "@/hooks/useUpdateDisplayName";
 import { signOut } from "@/lib/auth";
 import { CURRENT_CHANGELOG_VERSION } from "@/lib/changelog";
 import { openLegalUrl } from "@/lib/legalLinks";
@@ -83,6 +84,28 @@ export default function SettingsScreen() {
   const currentUserId = useCurrentUserId();
   const email = useCurrentUserEmail();
   const ownProfileQuery = useOwnProfile(currentUserId);
+  const updateDisplayName = useUpdateDisplayName();
+
+  // `null` = untouched, show the stored name; string = user's edit in progress.
+  const [displayNameDraft, setDisplayNameDraft] = useState<string | null>(null);
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
+  const displayNameValue = displayNameDraft ?? ownProfileQuery.data?.display_name ?? "";
+
+  async function handleSaveDisplayName() {
+    const trimmed = displayNameValue.trim();
+    if (trimmed.length === 0) {
+      setDisplayNameError("Bitte gib einen Anzeigenamen ein.");
+      return;
+    }
+    setDisplayNameError(null);
+    try {
+      await updateDisplayName.mutateAsync(trimmed);
+      setDisplayNameDraft(null);
+      showToast("Anzeigename gespeichert");
+    } catch {
+      setDisplayNameError("Anzeigename konnte nicht gespeichert werden.");
+    }
+  }
 
   const selectedStreamingProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
   const lastSeenChangelogVersion = usePreferencesStore((s) => s.lastSeenChangelogVersion);
@@ -171,9 +194,28 @@ export default function SettingsScreen() {
         </View>
 
         <View testID="settings-account-info" className="mt-4 gap-1 px-1">
-          <Text testID="settings-user-display-name" className="text-text-primary">
-            {ownProfileQuery.data?.display_name ?? ""}
-          </Text>
+          <Text className="text-sm text-text-secondary">Anzeigename</Text>
+          <TextInput
+            testID="settings-user-display-name"
+            value={displayNameValue}
+            onChangeText={setDisplayNameDraft}
+            autoCapitalize="words"
+            placeholder="Anzeigename"
+            placeholderTextColor="#888888"
+            className="rounded-lg border border-border-subtle bg-card px-3 py-3 text-base text-text-primary"
+          />
+          {displayNameError ? (
+            <Text className="text-sm text-danger" testID="settings-display-name-error">
+              {displayNameError}
+            </Text>
+          ) : null}
+          <Button
+            testID="settings-display-name-save"
+            variant="secondary"
+            label="Speichern"
+            loading={updateDisplayName.isPending}
+            onPress={handleSaveDisplayName}
+          />
           <Text testID="settings-user-email" className="text-text-secondary">
             {email ?? ""}
           </Text>

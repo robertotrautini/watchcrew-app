@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -42,6 +42,11 @@ jest.mock("@/hooks/useCurrentUserEmail", () => ({
 const mockUseOwnProfile = jest.fn();
 jest.mock("@/hooks/useOwnProfile", () => ({
   useOwnProfile: mockUseOwnProfile,
+}));
+
+const mockMutateAsync = jest.fn();
+jest.mock("@/hooks/useUpdateDisplayName", () => ({
+  useUpdateDisplayName: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
 }));
 
 const mockSignOut = jest.fn();
@@ -136,7 +141,52 @@ describe("SettingsScreen", () => {
     const { getByTestId } = await render(<SettingsScreen />);
 
     expect(getByTestId("settings-user-email").props.children).toBe("robin@example.com");
-    expect(getByTestId("settings-user-display-name").props.children).toBe("robin");
+    expect(getByTestId("settings-user-display-name").props.value).toBe("robin");
+  });
+
+  it("saves an edited display name via the mutation and shows a toast", async () => {
+    mockMutateAsync.mockResolvedValue(null);
+    const SettingsScreen = loadSettingsScreen();
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getByTestId("settings-user-display-name"), "  Robin T ");
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-display-name-save"));
+    });
+
+    expect(mockMutateAsync).toHaveBeenCalledWith("Robin T");
+    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename gespeichert");
+  });
+
+  it("does not save an empty display name", async () => {
+    const SettingsScreen = loadSettingsScreen();
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getByTestId("settings-user-display-name"), "   ");
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-display-name-save"));
+    });
+
+    expect(mockMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when saving fails", async () => {
+    mockMutateAsync.mockRejectedValue(new Error("boom"));
+    const SettingsScreen = loadSettingsScreen();
+    const { getByTestId } = await render(<SettingsScreen />);
+
+    await act(async () => {
+      fireEvent.changeText(getByTestId("settings-user-display-name"), "Neu");
+    });
+    await act(async () => {
+      fireEvent.press(getByTestId("settings-display-name-save"));
+    });
+
+    expect(getByTestId("settings-display-name-error")).toBeTruthy();
   });
 
   it("shows the app version from expo-constants", async () => {

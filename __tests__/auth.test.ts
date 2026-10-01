@@ -26,11 +26,12 @@ describe("auth", () => {
       mockSignUp.mockResolvedValue(fakeResult);
 
       const { signUpWithEmail } = require("../src/lib/auth");
-      const result = await signUpWithEmail("a@b.com", "secret123");
+      const result = await signUpWithEmail("a@b.com", "secret123", "Robin");
 
       expect(mockSignUp).toHaveBeenCalledWith({
         email: "a@b.com",
         password: "secret123",
+        options: { data: { display_name: "Robin" } },
       });
       expect(result).toBe(fakeResult);
     });
@@ -43,7 +44,7 @@ describe("auth", () => {
       mockSignUp.mockResolvedValue(fakeResult);
 
       const { signUpWithEmail } = require("../src/lib/auth");
-      const result = await signUpWithEmail("a@b.com", "secret123");
+      const result = await signUpWithEmail("a@b.com", "secret123", "Robin");
 
       expect(result).toBe(fakeResult);
     });

@@ -9,8 +9,16 @@ import { supabase } from "./supabase";
 // three functions avoids mixing throw-based and return-based error handling
 // in the same small module.
 
-export async function signUpWithEmail(email: string, password: string) {
-  return supabase.auth.signUp({ email, password });
+/**
+ * `displayName` is passed as sign-up metadata (`raw_user_meta_data.display_name`),
+ * which the `handle_new_user` trigger reads to seed `profiles.display_name`.
+ */
+export async function signUpWithEmail(email: string, password: string, displayName: string) {
+  return supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { display_name: displayName } },
+  });
 }
 
 export async function signInWithEmail(email: string, password: string) {

@@ -59,6 +59,7 @@ async function press(element: any) {
 }
 
 async function fillValidForm(getByTestId: (testId: string) => any) {
+  await changeText(getByTestId("register-display-name-input"), "Robin");
   await changeText(getByTestId("register-email-input"), "test@example.com");
   await changeText(getByTestId("register-password-input"), "secret123");
   await changeText(getByTestId("register-confirm-password-input"), "secret123");
@@ -82,6 +83,24 @@ describe("RegisterScreen", () => {
   // M11 keyboard-avoiding review: see the identical note in
   // __tests__/screens/Login.test.tsx -- the `behavior` decision is
   // unit-tested directly in __tests__/lib/platformKeyboardAvoiding.test.ts.
+
+  it("renders the required Anzeigename input", async () => {
+    const RegisterScreen = loadRegisterScreen();
+    const { getByTestId } = await render(<RegisterScreen />);
+    expect(getByTestId("register-display-name-input")).toBeTruthy();
+  });
+
+  it("shows a validation error for an empty/whitespace Anzeigename and does not call signUpWithEmail", async () => {
+    const RegisterScreen = loadRegisterScreen();
+    const { getByTestId } = await render(<RegisterScreen />);
+
+    await fillValidForm(getByTestId);
+    await changeText(getByTestId("register-display-name-input"), "   ");
+    await press(getByTestId("register-submit-button"));
+
+    expect(getByTestId("register-validation-error")).toBeTruthy();
+    expect(mockSignUpWithEmail).not.toHaveBeenCalled();
+  });
 
   it("shows a validation error for an invalid email and does not call signUpWithEmail", async () => {
     const RegisterScreen = loadRegisterScreen();
@@ -134,7 +153,7 @@ describe("RegisterScreen", () => {
     await press(getByTestId("register-submit-button"));
 
     await waitFor(() =>
-      expect(mockSignUpWithEmail).toHaveBeenCalledWith("test@example.com", "secret123"),
+      expect(mockSignUpWithEmail).toHaveBeenCalledWith("test@example.com", "secret123", "Robin"),
     );
   });
 
