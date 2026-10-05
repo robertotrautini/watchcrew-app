@@ -20,11 +20,14 @@ jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useSetReleaseDateOverride: () => ({ mutate: mockSetReleaseDateMutate, isPending: false }),
 }));
 
-// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+// M11 (haptic polish): see the identical mock in __tests__/components/ui/StarRating.test.tsx.
 jest.mock("expo-haptics", () => ({
   impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
+
+const mockShowToast = jest.fn();
+jest.mock("@/lib/toast", () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }));
 
 jest.mock("@/lib/movieDetailNavigation", () => ({
   navigateToDirectorFilmography: jest.fn(),
@@ -44,10 +47,46 @@ function createMockRouter() {
   } as unknown as Parameters<typeof MovieDetailActionsBar>[0]["router"];
 }
 
+describe("MovieDetailActionsBar layout", () => {
+  const FIVE = ["bewerten", "bearbeiten", "aehnliche", "filmreihe", "loeschen"] as const;
+
+  it("renders 5 actions as a non-wrapping 3+2 grid", async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <MovieDetailActionsBar actions={[...FIVE]} router={createMockRouter()} tmdbId={1} />,
+    );
+
+    expect(getByTestId("movie-detail-actions-row").props.className).not.toContain("flex-wrap");
+    const first = getByTestId("movie-detail-actions-row-1");
+    const second = getByTestId("movie-detail-actions-row-2");
+    expect(first.children).toHaveLength(3);
+    expect(second.children).toHaveLength(2);
+    expect(second.props.className).toContain("justify-center");
+    expect(queryByTestId("movie-detail-actions-row-3")).toBeNull();
+  });
+
+  it("renders up to 4 actions in a single non-wrapping row", async () => {
+    const { getByTestId, queryByTestId } = await render(
+      <MovieDetailActionsBar actions={["bewerten", "aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={1} />,
+    );
+
+    expect(getByTestId("movie-detail-actions-row").props.className).not.toContain("flex-wrap");
+    expect(queryByTestId("movie-detail-actions-row-2")).toBeNull();
+  });
+});
+
 describe("MovieDetailActionsBar", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.spyOn(Alert, "alert").mockImplementation(() => {});
+  });
+
+  it("delete tile uses the shared danger look, other tiles stay neutral", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
+    );
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("bg-danger/15");
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("border-danger/30");
+    expect(getByTestId("movie-detail-action-aehnliche").props.className).not.toContain("danger");
   });
 
   it("renders only the actions passed in the actions prop, in order", async () => {
@@ -116,7 +155,7 @@ describe("MovieDetailActionsBar", () => {
     expect(router.back).toHaveBeenCalled();
   });
 
-  it("'zur_watchlist' calls addToWatchlist mutate with correct args and shows alerts on error", async () => {
+  it("'zur_watchlist' calls addToWatchlist mutate with correct args and shows a red error toast on error", async () => {
     const router = createMockRouter();
     const { getByTestId } = await render(
       <MovieDetailActionsBar
@@ -138,9 +177,9 @@ describe("MovieDetailActionsBar", () => {
     const onError = mockAddMutate.mock.calls[0][1].onError;
 
     onError(new Error("boom"));
-    expect(Alert.alert).toHaveBeenCalledWith(
-      "Fehler",
+    expect(mockShowToast).toHaveBeenCalledWith(
       "Der Film konnte nicht zur Watchlist hinzugefügt werden. Bitte versuche es erneut.",
+      { variant: "error" },
     );
   });
 
@@ -225,11 +264,12 @@ describe("MovieDetailActionsBar", () => {
     expect(onOpenRatingDialog).not.toHaveBeenCalled();
   });
 
-  describe("'erscheinungsdatum' (per-group release date edit)", () => {
+  describe("'bearbeiten' on a watchlist entry (release date edit sheet)", () => {
     function renderBar(extra: Record<string, unknown> = {}) {
       return render(
         <MovieDetailActionsBar
-          actions={["erscheinungsdatum"]}
+          actions={["bearbeiten"]}
+          source="watchlist"
           router={createMockRouter()}
           tmdbId={42}
           groupId="group-1"
@@ -240,19 +280,22 @@ describe("MovieDetailActionsBar", () => {
       );
     }
 
-    it("opens a sheet showing the date as DD.MM.YYYY", async () => {
-      const { getByTestId, queryByTestId, getByText } = await renderBar();
+    it("opens the 'Eintrag bearbeiten' sheet (not the rating dialog) showing the date as DD.MM.YYYY", async () => {
+      const onOpenRatingDialog = jest.fn();
+      const { getByTestId, queryByTestId, getByText } = await renderBar({ onOpenRatingDialog });
       expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
 
-      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
 
       expect(getByTestId("movie-detail-release-date-field")).toBeTruthy();
+      expect(getByText("Eintrag bearbeiten")).toBeTruthy();
       expect(getByText("24.12.2026")).toBeTruthy();
+      expect(onOpenRatingDialog).not.toHaveBeenCalled();
     });
 
     it("picking a date saves it as ISO for the entry and closes the sheet", async () => {
       const { getByTestId, queryByTestId } = await renderBar();
-      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
       await fireEvent.press(getByTestId("movie-detail-release-date-field"));
       await fireEvent(
         getByTestId("movie-detail-release-date-field-picker"),
@@ -271,12 +314,12 @@ describe("MovieDetailActionsBar", () => {
 
     it("offers a reset to the TMDB date only when an override exists, saving null", async () => {
       const first = await renderBar();
-      await fireEvent.press(first.getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(first.getByTestId("movie-detail-action-bearbeiten"));
       expect(first.queryByTestId("movie-detail-release-date-reset")).toBeNull();
       await first.unmount();
 
       const { getByTestId } = await renderBar({ hasReleaseDateOverride: true });
-      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
       await fireEvent.press(getByTestId("movie-detail-release-date-reset"));
 
       expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
@@ -288,7 +331,7 @@ describe("MovieDetailActionsBar", () => {
 
     it("is a no-op without a watchlist entry/group", async () => {
       const { getByTestId, queryByTestId } = await renderBar({ watchlistEntryId: undefined });
-      await fireEvent.press(getByTestId("movie-detail-action-erscheinungsdatum"));
+      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
       expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
     });
   });

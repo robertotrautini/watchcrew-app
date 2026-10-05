@@ -1,12 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 import { MovieDetailRatingsSection } from "@/components/movie/MovieDetailRatingsSection";
 import type { Rating } from "@/lib/watchlistTypes";
 
@@ -77,5 +70,14 @@ describe("MovieDetailRatingsSection", () => {
 
     await fireEvent.press(getByTestId("movie-detail-ratings-toggle"));
     expect(queryByTestId("movie-detail-ratings-content")).toBeNull();
+  });
+
+  it("the section toggle row is at least 48dp high with a button role", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailRatingsSection ratings={[makeRating({})]} displayNameById={new Map()} starColor={GOLD_STAR_COLOR} />,
+    );
+    const toggle = getByTestId("movie-detail-ratings-toggle");
+    expect(toggle.props.className).toContain("min-h-touch-comfortable");
+    expect(toggle.props.accessibilityRole).toBe("button");
   });
 });

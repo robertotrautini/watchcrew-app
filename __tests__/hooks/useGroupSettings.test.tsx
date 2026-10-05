@@ -1,5 +1,6 @@
+import { queryKeys } from "@/lib/queryKeys";
 // M9 part 2: mutation tests for src/hooks/useGroupSettings.ts, mirroring the
-// mocking convention in __tests__/useTrackerPayments.test.tsx.
+// mocking convention in __tests__/hooks/useTrackerPayments.test.tsx.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
@@ -13,7 +14,7 @@ const mockRegenerateInviteToken = jest.fn();
 const mockRemoveMember = jest.fn();
 
 const mockShowToast = jest.fn();
-jest.mock("@/lib/toast", () => ({ showToast: (m: string) => mockShowToast(m) }));
+jest.mock("@/lib/toast", () => ({ showToast: (...a: unknown[]) => mockShowToast(...a) }));
 
 jest.mock("@/lib/groups", () => ({
   renameWatchGroup: mockRenameWatchGroup,
@@ -59,12 +60,12 @@ describe("useSetGroupTheme", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockSetGroupColorTheme).toHaveBeenCalledWith("g1", "purple");
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupNames"] });
-    expect(mockShowToast).toHaveBeenCalledWith("Farbthema geändert");
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupDetails.byGroup("g1") });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupNames.all });
+    expect(mockShowToast).toHaveBeenCalledWith("Farbthema geändert", { variant: "success" });
   });
 
-  it("surfaces an error without toast or invalidation", async () => {
+  it("surfaces an error as a red toast without invalidation", async () => {
     mockSetGroupColorTheme.mockResolvedValue({ data: null, error: { message: "rls denied" } });
     const { useSetGroupTheme } = loadHooks();
     const { wrapper, queryClient } = createWrapper();
@@ -77,7 +78,8 @@ describe("useSetGroupTheme", () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(mockShowToast).not.toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledTimes(1);
+    expect(mockShowToast).toHaveBeenCalledWith("Farbthema konnte nicht geändert werden", { variant: "error" });
     expect(invalidateSpy).not.toHaveBeenCalled();
   });
 });
@@ -101,12 +103,12 @@ describe("useRenameGroup", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockRenameWatchGroup).toHaveBeenCalledWith("g1", "Neuer Name");
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupDetails.byGroup("g1") });
     // The "Deine Gruppen" switcher reads ["userGroups", userId] (group name embedded there).
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["userGroups"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.userGroups.all });
     // The "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupNames"] });
-    expect(mockShowToast).toHaveBeenCalledWith("Gruppe umbenannt");
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupNames.all });
+    expect(mockShowToast).toHaveBeenCalledWith("Gruppe umbenannt", { variant: "success" });
   });
 
   it("surfaces a rename error through React Query's error channel without invalidating the cache", async () => {
@@ -125,6 +127,7 @@ describe("useRenameGroup", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(fakeError);
     expect(invalidateSpy).not.toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith("Gruppe konnte nicht umbenannt werden", { variant: "error" });
   });
 });
 
@@ -147,7 +150,7 @@ describe("useSetInviteEnabled", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockSetInviteEnabled).toHaveBeenCalledWith("g1", false);
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupDetails.byGroup("g1") });
   });
 });
 
@@ -170,7 +173,7 @@ describe("useRegenerateInviteToken", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockRegenerateInviteToken).toHaveBeenCalledWith("g1");
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupDetails", "g1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupDetails.byGroup("g1") });
   });
 
   it("surfaces a non-owner (WC004) error through React Query's error channel", async () => {
@@ -209,8 +212,8 @@ describe("useRemoveMember", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockRemoveMember).toHaveBeenCalledWith("g1", "u2");
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupMembers", "g1"] });
-    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: ["userGroups", "u2"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupMembers.byGroup("g1") });
+    expect(invalidateSpy).not.toHaveBeenCalledWith({ queryKey: queryKeys.userGroups.byUser("u2") });
   });
 
   it("surfaces a kick error (e.g. non-owner blocked by RLS) through React Query's error channel", async () => {
@@ -249,8 +252,8 @@ describe("useLeaveGroup", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockRemoveMember).toHaveBeenCalledWith("g1", "u1");
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["groupMembers", "g1"] });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["userGroups", "u1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.groupMembers.byGroup("g1") });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.userGroups.byUser("u1") });
   });
 
   it("surfaces a leave error through React Query's error channel", async () => {

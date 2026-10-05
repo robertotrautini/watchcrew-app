@@ -1,3 +1,4 @@
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockEstablishSessionFromTokens = jest.fn();
@@ -14,10 +15,7 @@ jest.mock("expo-linking", () => ({
   useLinkingURL: () => mockUrl,
 }));
 
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ replace: mockReplace, push: jest.fn() }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 function loadScreen() {
   return require("@/app/auth/callback").default;
@@ -70,7 +68,7 @@ describe("AuthCallbackScreen", () => {
     await fireEvent.changeText(getByTestId("auth-callback-confirm-input"), "newsecret");
     await fireEvent.press(getByTestId("auth-callback-submit-button"));
     await waitFor(() => expect(mockUpdatePassword).toHaveBeenCalledWith("newsecret"));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
 
   it("shows the API error and stays on the form when updating fails", async () => {
@@ -83,7 +81,7 @@ describe("AuthCallbackScreen", () => {
     await fireEvent.changeText(getByTestId("auth-callback-confirm-input"), "newsecret");
     await fireEvent.press(getByTestId("auth-callback-submit-button"));
     await waitFor(() => expect(getByTestId("auth-callback-api-error")).toBeTruthy());
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 
   it("routes home after establishing a session from a signup confirmation link", async () => {
@@ -91,7 +89,7 @@ describe("AuthCallbackScreen", () => {
     const Screen = loadScreen();
     await render(<Screen />);
     await waitFor(() => expect(mockEstablishSessionFromTokens).toHaveBeenCalledWith("AT", "RT"));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
 
   it("exchanges a PKCE code and routes home", async () => {
@@ -100,7 +98,7 @@ describe("AuthCallbackScreen", () => {
     const Screen = loadScreen();
     await render(<Screen />);
     await waitFor(() => expect(mockExchangeAuthCode).toHaveBeenCalledWith("abc"));
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
 
   it("shows an expired-link message with a way back to forgot-password when the URL carries an error", async () => {
@@ -111,7 +109,7 @@ describe("AuthCallbackScreen", () => {
     await waitFor(() => expect(getByTestId("auth-callback-error")).toBeTruthy());
     expect(mockEstablishSessionFromTokens).not.toHaveBeenCalled();
     await fireEvent.press(getByTestId("auth-callback-forgot-password-button"));
-    expect(mockReplace).toHaveBeenCalledWith("/(auth)/forgot-password");
+    expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/forgot-password");
   });
 
   it("shows the error state when setSession fails", async () => {

@@ -1,14 +1,7 @@
 import { render } from "@testing-library/react-native";
 
-// Same Ionicons mocking rationale as __tests__/StarRating.test.tsx: the real
+// Same MaterialIcons mocking rationale as __tests__/components/ui/StarRating.test.tsx: the real
 // implementation doesn't forward name/color to the host node RNTL queries.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 // expo-image's real native <Image> needs no special mocking under jest-expo
 // (see src/components/web-badge.tsx already using it directly in tests-free
 // code) — no mock needed here.
@@ -62,7 +55,7 @@ describe("DiaryPosterTile", () => {
     );
 
     const heartIcon = getByTestId("poster-card-like-icon");
-    expect(heartIcon.props.name).toBe("heart");
+    expect(heartIcon.props.name).toBe("favorite");
     expect(heartIcon.props.color).toBe(LIKE_HEART_COLOR);
   });
 
@@ -105,5 +98,30 @@ describe("DiaryPosterTile", () => {
     );
 
     expect(getByTestId("poster-card-placeholder")).toBeTruthy();
+  });
+
+  it("is an edge-to-edge poster tile: no padding, full-width poster without own radius, flush TMDB corner badge", async () => {
+    const { getByTestId } = await render(
+      <DiaryPosterTile
+        posterUrl="https://x/p.jpg"
+        title="T"
+        starColor={GOLD_STAR_COLOR}
+        averageRating={4}
+        liked={false}
+        tmdbScore={8.5}
+      >
+        <></>
+      </DiaryPosterTile>,
+    );
+    const tile = getByTestId("diary-poster-tile").props.className as string;
+    expect(tile).toContain("overflow-hidden");
+    expect(tile).not.toMatch(/(^|\s)p[xytblr]?-\d/);
+    expect(getByTestId("poster-card-poster-wrapper").props.className).not.toMatch(/rounded/);
+    expect(getByTestId("poster-card-image").props.contentFit).toBe("cover");
+    const badge = getByTestId("poster-card-tmdb-badge").props.className as string;
+    expect(badge).toContain("bottom-0");
+    expect(badge).toContain("right-0");
+    expect(badge).toContain("rounded-tl-xl");
+    expect(getByTestId("poster-card-info").props.className).toContain("px-2");
   });
 });

@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetStudioMovies = jest.fn();
@@ -11,15 +10,6 @@ jest.mock("@/lib/tmdbProxy", () => ({
 
 function loadUseStudioFilmography() {
   return require("@/hooks/useStudioFilmography").useStudioFilmography;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useStudioFilmography (paginated via useInfiniteQuery)", () => {
@@ -35,7 +25,7 @@ describe("useStudioFilmography (paginated via useInfiniteQuery)", () => {
     const useStudioFilmography = loadUseStudioFilmography();
 
     const { result } = await renderHook(() => useStudioFilmography(55), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -56,7 +46,7 @@ describe("useStudioFilmography (paginated via useInfiniteQuery)", () => {
     const useStudioFilmography = loadUseStudioFilmography();
 
     const { result } = await renderHook(() => useStudioFilmography(55), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.hasNextPage).toBe(true));
@@ -71,7 +61,7 @@ describe("useStudioFilmography (paginated via useInfiniteQuery)", () => {
   it("does not fetch when companyId is undefined", async () => {
     const useStudioFilmography = loadUseStudioFilmography();
 
-    await renderHook(() => useStudioFilmography(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useStudioFilmography(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetStudioMovies).not.toHaveBeenCalled();
   });
@@ -82,7 +72,7 @@ describe("useStudioFilmography (paginated via useInfiniteQuery)", () => {
     const useStudioFilmography = loadUseStudioFilmography();
 
     const { result } = await renderHook(() => useStudioFilmography(55), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

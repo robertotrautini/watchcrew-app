@@ -1,14 +1,14 @@
 // M10 (part): data-layer tests for src/lib/pushTokens.ts.
 //
-// Same convention as __tests__/movieDetailMutations.test.ts: mock
-// "../src/lib/supabase" with a jest.fn()-based thenable chain builder, and
+// Same convention as __tests__/lib/movieDetailMutations.test.ts: mock
+// "../../src/lib/supabase" with a jest.fn()-based thenable chain builder, and
 // assert the underlying functions return Supabase's raw `{ data, error }`
 // shape unchanged (never throw) while calling the query builder with the
 // expected arguments.
 
 const mockFrom = jest.fn();
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
   },
@@ -25,10 +25,10 @@ function makeChain(finalResult: unknown) {
 }
 
 // Lazily required (not statically imported) — same Babel CJS-hoisting reason
-// as __tests__/movieDetailMutations.test.ts: a top-level `import` would run
+// as __tests__/lib/movieDetailMutations.test.ts: a top-level `import` would run
 // before the `jest.mock` factory above is wired up.
 function loadPushTokens() {
-  return require("../src/lib/pushTokens");
+  return require("../../src/lib/pushTokens");
 }
 
 describe("upsertPushToken", () => {

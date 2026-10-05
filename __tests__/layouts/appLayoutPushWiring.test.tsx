@@ -1,16 +1,14 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 // M10 (part): confirms `(app)/_layout.tsx` actually mounts the two push
 // hooks (registration + notification-tap routing) -- both hooks have their
 // own dedicated behavior tests (usePushRegistration.test.tsx,
 // usePushNotificationRouting.test.tsx); this is just the "are they actually
 // wired into the screen" integration check, same spirit as
-// __tests__/routeIndex.test.tsx's mock-and-assert-called style.
+// __tests__/app/routeIndex.test.tsx's mock-and-assert-called style.
 
 import { render } from "@testing-library/react-native";
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUsePushRegistration = jest.fn();
 jest.mock("@/hooks/usePushRegistration", () => ({
@@ -22,11 +20,6 @@ jest.mock("@/hooks/usePushNotificationRouting", () => ({
   usePushNotificationRouting: mockUsePushNotificationRouting,
 }));
 
-const mockUseChangelogStartupToast = jest.fn();
-jest.mock("@/hooks/useChangelogStartupToast", () => ({
-  useChangelogStartupToast: mockUseChangelogStartupToast,
-}));
-
 // Theme wiring has its own test (ActiveGroupThemeProvider.test.tsx); here a
 // passthrough keeps this test free of a QueryClient.
 jest.mock("@/components/ActiveGroupThemeProvider", () => ({
@@ -36,6 +29,8 @@ jest.mock("@/components/ActiveGroupThemeProvider", () => ({
 jest.mock("expo-router", () => {
   const actualReact = require("react");
   return {
+    DarkTheme: { colors: {} },
+    ThemeProvider: ({ children }: { children?: unknown }) => children,
     Stack: Object.assign(
       ({ children }: { children?: unknown }) => actualReact.createElement(actualReact.Fragment, null, children),
       { Screen: () => null },
@@ -50,7 +45,7 @@ function loadAppLayout() {
 describe("(app)/_layout.tsx push-hook wiring", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseCurrentUserId.mockReturnValue("user-1");
+    mockCurrentUserId.mockReturnValue("user-1");
   });
 
   it("calls usePushRegistration with the current user id", async () => {
@@ -67,13 +62,5 @@ describe("(app)/_layout.tsx push-hook wiring", () => {
     await render(<AppLayout />);
 
     expect(mockUsePushNotificationRouting).toHaveBeenCalled();
-  });
-
-  it("calls useChangelogStartupToast", async () => {
-    const AppLayout = loadAppLayout();
-
-    await render(<AppLayout />);
-
-    expect(mockUseChangelogStartupToast).toHaveBeenCalled();
   });
 });

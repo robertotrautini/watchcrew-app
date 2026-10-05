@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetDirectorMovies = jest.fn();
@@ -11,15 +10,6 @@ jest.mock("@/lib/tmdbProxy", () => ({
 
 function loadUseDirectorFilmography() {
   return require("@/hooks/useDirectorFilmography").useDirectorFilmography;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useDirectorFilmography", () => {
@@ -33,7 +23,7 @@ describe("useDirectorFilmography", () => {
     const useDirectorFilmography = loadUseDirectorFilmography();
 
     const { result } = await renderHook(() => useDirectorFilmography(7), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toEqual(movies));
@@ -46,7 +36,7 @@ describe("useDirectorFilmography", () => {
     const useDirectorFilmography = loadUseDirectorFilmography();
 
     const { result } = await renderHook(() => useDirectorFilmography(7), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -56,7 +46,7 @@ describe("useDirectorFilmography", () => {
   it("does not fetch when personId is undefined", async () => {
     const useDirectorFilmography = loadUseDirectorFilmography();
 
-    await renderHook(() => useDirectorFilmography(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useDirectorFilmography(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetDirectorMovies).not.toHaveBeenCalled();
   });

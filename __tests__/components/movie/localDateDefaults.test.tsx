@@ -4,10 +4,6 @@ process.env.TZ = "Europe/Berlin";
 import { Alert } from "react-native";
 import { render, within } from "@testing-library/react-native";
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return { Ionicons: (props: Record<string, unknown>) => <View {...props} /> };
-});
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <View {...props} /> };

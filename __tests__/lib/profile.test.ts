@@ -1,5 +1,5 @@
 // Mirrors the chainable-mock pattern already used by
-// __tests__/groups.test.ts's `getWatchGroupDetails` suite.
+// __tests__/lib/groups.test.ts's `getWatchGroupDetails` suite.
 
 const mockFrom = jest.fn();
 const mockRpc = jest.fn();

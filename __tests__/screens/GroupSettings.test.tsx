@@ -1,26 +1,13 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 import { Share } from "react-native";
 
 // --- Router mock (push/replace) + no-op Stack.Screen, same convention as
 // __tests__/screens/MovieDetail.test.tsx.
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace }),
-  Stack: { Screen: () => null },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseActiveGroup = jest.fn();
 jest.mock("@/hooks/useActiveGroup", () => ({
@@ -107,7 +94,7 @@ function setUpHappyPath(options: {
     inviteEnabled = true,
   } = options;
 
-  mockUseCurrentUserId.mockReturnValue(currentUserId);
+  mockCurrentUserId.mockReturnValue(currentUserId);
   mockUseActiveGroup.mockReturnValue({
     activeGroupId: "g1",
     setActiveGroup: mockSetActiveGroup,
@@ -143,7 +130,7 @@ describe("GroupSettingsScreen", () => {
   });
 
   it("renders a loading state while any underlying query is loading", async () => {
-    mockUseCurrentUserId.mockReturnValue("owner-1");
+    mockCurrentUserId.mockReturnValue("owner-1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: mockSetActiveGroup,
@@ -160,7 +147,7 @@ describe("GroupSettingsScreen", () => {
   });
 
   it("renders an error state when a query fails", async () => {
-    mockUseCurrentUserId.mockReturnValue("owner-1");
+    mockCurrentUserId.mockReturnValue("owner-1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: mockSetActiveGroup,
@@ -182,7 +169,7 @@ describe("GroupSettingsScreen", () => {
   });
 
   it("renders a defensive 'no group' state when there is no active group at all", async () => {
-    mockUseCurrentUserId.mockReturnValue("owner-1");
+    mockCurrentUserId.mockReturnValue("owner-1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: undefined,
       setActiveGroup: mockSetActiveGroup,
@@ -254,6 +241,34 @@ describe("GroupSettingsScreen", () => {
       expect(queryByTestId("group-settings-rename-section")).toBeNull();
     });
 
+    it("save button is a round icon-only button on the same row as the input", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId, queryByText } = await render(<GroupSettingsScreen />);
+
+      const save = getByTestId("group-settings-rename-save-button");
+      expect(save.props.className).toContain("rounded-full");
+      expect(save.props.className).toContain("w-12");
+      expect(save.props.accessibilityLabel).toBe("Gruppenname speichern");
+      expect(queryByText("Speichern")).toBeNull();
+      const row = getByTestId("group-settings-rename-row");
+      expect(row.props.className).toContain("flex-row");
+      expect(row.props.children.map((c: { props: { testID: string } }) => c.props.testID)).toEqual([
+        "group-settings-name-input",
+        "group-settings-rename-save-button",
+      ]);
+    });
+
+    it("disables the save button while the name is unchanged and enables it after an edit", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId } = await render(<GroupSettingsScreen />);
+
+      expect(getByTestId("group-settings-rename-save-button").props.accessibilityState.disabled).toBe(true);
+      await fireEvent.changeText(getByTestId("group-settings-name-input"), "Filmfreunde2");
+      expect(getByTestId("group-settings-rename-save-button").props.accessibilityState.disabled).toBe(false);
+    });
+
     it("Speichern calls useRenameGroup with the edited name", async () => {
       setUpHappyPath({ currentUserId: "owner-1" });
       const GroupSettingsScreen = loadGroupSettingsScreen();
@@ -297,6 +312,15 @@ describe("GroupSettingsScreen", () => {
       }
       expect(getByTestId("group-settings-theme-selected-gold")).toBeTruthy();
       expect(queryByTestId("group-settings-theme-selected-blue")).toBeNull();
+    });
+
+    it("theme swatches are 48x48 touch targets with a label", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId } = await render(<GroupSettingsScreen />);
+      const swatch = getByTestId("group-settings-theme-swatch-gold");
+      expect(swatch.props.className).toContain("h-touch-comfortable w-touch-comfortable");
+      expect(swatch.props.accessibilityLabel).toBeTruthy();
     });
 
     it("tapping another swatch saves that theme for the active group", async () => {
@@ -528,7 +552,7 @@ describe("GroupSettingsScreen", () => {
       await fireEvent.press(getByTestId("group-settings-leave-confirm-button"));
 
       expect(mockSetActiveGroup).toHaveBeenCalledWith("g2");
-      expect(mockReplace).not.toHaveBeenCalled();
+      expect(mockRouter.replace).not.toHaveBeenCalled();
     });
 
     it("on successful leave with NO other groups left, navigates to the onboarding create-or-join-group screen", async () => {
@@ -543,7 +567,7 @@ describe("GroupSettingsScreen", () => {
       await fireEvent.press(getByTestId("group-settings-leave-button"));
       await fireEvent.press(getByTestId("group-settings-leave-confirm-button"));
 
-      expect(mockReplace).toHaveBeenCalledWith("/(onboarding)/create-or-join-group");
+      expect(mockRouter.replace).toHaveBeenCalledWith("/(onboarding)/create-or-join-group");
       expect(mockSetActiveGroup).not.toHaveBeenCalled();
     });
   });

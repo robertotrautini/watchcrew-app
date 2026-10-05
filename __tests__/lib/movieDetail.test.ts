@@ -1,6 +1,6 @@
 const mockInvoke = jest.fn();
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     functions: {
       invoke: mockInvoke,
@@ -16,7 +16,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
   it("getMovieDetails invokes tmdb-proxy with kind: 'details' and unwraps the { data } envelope", async () => {
     mockInvoke.mockResolvedValue({ data: { data: { id: 42, runtime: 120 } }, error: null });
 
-    const { getMovieDetails } = require("../src/lib/movieDetail");
+    const { getMovieDetails } = require("../../src/lib/movieDetail");
     const result = await getMovieDetails(42);
 
     expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
@@ -28,7 +28,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
   it("getMovieTrailer invokes tmdb-proxy with kind: 'videos'", async () => {
     mockInvoke.mockResolvedValue({ data: { data: null }, error: null });
 
-    const { getMovieTrailer } = require("../src/lib/movieDetail");
+    const { getMovieTrailer } = require("../../src/lib/movieDetail");
     const result = await getMovieTrailer(42);
 
     expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
@@ -41,7 +41,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
     const credits = { cast: [], crew: [], director: null };
     mockInvoke.mockResolvedValue({ data: { data: credits }, error: null });
 
-    const { getMovieCredits } = require("../src/lib/movieDetail");
+    const { getMovieCredits } = require("../../src/lib/movieDetail");
     const result = await getMovieCredits(7);
 
     expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
@@ -54,7 +54,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
     const releaseDate = { category: "Kino", release_date: "2026-01-01", type: 3 };
     mockInvoke.mockResolvedValue({ data: { data: releaseDate }, error: null });
 
-    const { getGermanReleaseDate } = require("../src/lib/movieDetail");
+    const { getGermanReleaseDate } = require("../../src/lib/movieDetail");
     const result = await getGermanReleaseDate(7);
 
     expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
@@ -67,7 +67,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
     const providers = { flatrate: [], rent: [], buy: [] };
     mockInvoke.mockResolvedValue({ data: { data: providers }, error: null });
 
-    const { getMovieProviders } = require("../src/lib/movieDetail");
+    const { getMovieProviders } = require("../../src/lib/movieDetail");
     const result = await getMovieProviders(7);
 
     expect(mockInvoke).toHaveBeenCalledWith("tmdb-proxy", {
@@ -80,7 +80,7 @@ describe("movieDetail lib (tmdb-proxy client wrappers)", () => {
     const fakeError = { message: "edge function failed" };
     mockInvoke.mockResolvedValue({ data: null, error: fakeError });
 
-    const { getMovieDetails } = require("../src/lib/movieDetail");
+    const { getMovieDetails } = require("../../src/lib/movieDetail");
     const result = await getMovieDetails(42);
 
     expect(result).toEqual({ data: null, error: fakeError });

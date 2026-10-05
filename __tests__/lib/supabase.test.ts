@@ -39,7 +39,7 @@ describe("supabase client", () => {
   });
 
   it("creates the client with the URL and publishable key from app config", () => {
-    require("../src/lib/supabase");
+    require("../../src/lib/supabase");
 
     expect(mockCreateClient).toHaveBeenCalledTimes(1);
     const [url, key] = mockCreateClient.mock.calls[0];
@@ -48,7 +48,7 @@ describe("supabase client", () => {
   });
 
   it("configures auth with autoRefreshToken, persistSession, detectSessionInUrl:false and a custom storage adapter", () => {
-    require("../src/lib/supabase");
+    require("../../src/lib/supabase");
 
     const [, , options] = mockCreateClient.mock.calls[0];
     expect(options.auth.autoRefreshToken).toBe(true);
@@ -67,7 +67,7 @@ describe("supabase client", () => {
     const fakeClient = { auth: {} };
     mockCreateClient.mockReturnValue(fakeClient);
 
-    const { supabase } = require("../src/lib/supabase");
+    const { supabase } = require("../../src/lib/supabase");
 
     expect(supabase).toBe(fakeClient);
   });
@@ -99,7 +99,7 @@ describe("largeSecureStore auth storage adapter", () => {
   });
 
   it("splits large values across multiple SecureStore keys, each within the ~2048 byte per-value limit, and reconstructs them on read", async () => {
-    const { largeSecureStore } = require("../src/lib/supabase");
+    const { largeSecureStore } = require("../../src/lib/supabase");
     const largeValue = "a".repeat(5000);
 
     await largeSecureStore.setItem("supabase-session", largeValue);
@@ -114,7 +114,7 @@ describe("largeSecureStore auth storage adapter", () => {
   });
 
   it("round-trips small values (below the chunk size) too", async () => {
-    const { largeSecureStore } = require("../src/lib/supabase");
+    const { largeSecureStore } = require("../../src/lib/supabase");
 
     await largeSecureStore.setItem("small-key", "short-value");
 
@@ -122,7 +122,7 @@ describe("largeSecureStore auth storage adapter", () => {
   });
 
   it("removes all chunks for a key", async () => {
-    const { largeSecureStore } = require("../src/lib/supabase");
+    const { largeSecureStore } = require("../../src/lib/supabase");
 
     await largeSecureStore.setItem("supabase-session", "a".repeat(5000));
     await largeSecureStore.removeItem("supabase-session");
@@ -132,7 +132,7 @@ describe("largeSecureStore auth storage adapter", () => {
   });
 
   it("returns null for a key that was never stored", async () => {
-    const { largeSecureStore } = require("../src/lib/supabase");
+    const { largeSecureStore } = require("../../src/lib/supabase");
 
     expect(await largeSecureStore.getItem("missing-key")).toBeNull();
   });

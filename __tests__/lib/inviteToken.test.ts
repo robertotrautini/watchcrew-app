@@ -1,4 +1,4 @@
-import { extractInviteToken } from "../src/lib/inviteToken";
+import { extractInviteToken } from "../../src/lib/inviteToken";
 
 describe("extractInviteToken", () => {
   it("returns a bare invite-token UUID unchanged (lowercased)", () => {

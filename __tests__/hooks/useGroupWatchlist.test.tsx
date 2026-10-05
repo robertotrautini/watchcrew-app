@@ -1,3 +1,5 @@
+import { queryKeys } from "@/lib/queryKeys";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -21,23 +23,9 @@ jest.mock("@/lib/watchlist", () => ({
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the mock assignments above, matching the convention in
-// __tests__/useUserGroups.test.tsx.
+// __tests__/hooks/useUserGroups.test.tsx.
 function loadUseGroupWatchlist() {
   return require("@/hooks/useGroupWatchlist").useGroupWatchlist;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-    },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useGroupWatchlist", () => {
@@ -70,7 +58,7 @@ describe("useGroupWatchlist", () => {
       const useGroupWatchlist = loadUseGroupWatchlist();
 
       const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-        wrapper: createWrapper(),
+        wrapper: createQueryWrapper(),
       });
 
       await waitFor(() => expect(result.current.data).toBeDefined());
@@ -88,7 +76,7 @@ describe("useGroupWatchlist", () => {
       mockRefreshReleaseDates.mockResolvedValue({ data: { "1": null }, error: null });
       const useGroupWatchlist = loadUseGroupWatchlist();
       const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-        wrapper: createWrapper(),
+        wrapper: createQueryWrapper(),
       });
       await waitFor(() => expect(result.current.data).toBeDefined());
       expect(mockGetGroupWatchlistEntries).toHaveBeenCalledTimes(1);
@@ -102,7 +90,7 @@ describe("useGroupWatchlist", () => {
       mockRefreshReleaseDates.mockRejectedValue(new Error("down"));
       const useGroupWatchlist = loadUseGroupWatchlist();
       const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-        wrapper: createWrapper(),
+        wrapper: createQueryWrapper(),
       });
       await waitFor(() => expect(result.current.data).toBeDefined());
       expect(result.current.data.entries).toHaveLength(1);
@@ -115,7 +103,7 @@ describe("useGroupWatchlist", () => {
       });
       const useGroupWatchlist = loadUseGroupWatchlist();
       const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-        wrapper: createWrapper(),
+        wrapper: createQueryWrapper(),
       });
       await waitFor(() => expect(result.current.data).toBeDefined());
       expect(mockRefreshReleaseDates).not.toHaveBeenCalled();
@@ -133,7 +121,7 @@ describe("useGroupWatchlist", () => {
     mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({ data: [], error: null });
     const useGroupWatchlist = loadUseGroupWatchlist();
 
-    await renderHook(() => useGroupWatchlist("group-1"), { wrapper: createWrapper() });
+    await renderHook(() => useGroupWatchlist("group-1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(mockGetGroupWatchlistEntries).toHaveBeenCalledWith("group-1"));
     await waitFor(() =>
@@ -160,7 +148,7 @@ describe("useGroupWatchlist", () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
     const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -188,7 +176,7 @@ describe("useGroupWatchlist", () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
     const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -218,7 +206,7 @@ describe("useGroupWatchlist", () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
     const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
@@ -231,7 +219,7 @@ describe("useGroupWatchlist", () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
     const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -249,7 +237,7 @@ describe("useGroupWatchlist", () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
     const { result } = await renderHook(() => useGroupWatchlist("group-1"), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -259,7 +247,7 @@ describe("useGroupWatchlist", () => {
   it("does not fetch when groupId is undefined (query disabled)", async () => {
     const useGroupWatchlist = loadUseGroupWatchlist();
 
-    await renderHook(() => useGroupWatchlist(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useGroupWatchlist(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetGroupWatchlistEntries).not.toHaveBeenCalled();
   });
@@ -287,7 +275,7 @@ describe("useGroupWatchlist", () => {
 
   it("does not crash on an old JSON-restored cache entry whose Map became `{}`", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
-    queryClient.setQueryData(["watchlist", "group-1"], { entries: [], streamingAvailability: {} });
+    queryClient.setQueryData(queryKeys.watchlist.byGroup("group-1"), { entries: [], streamingAvailability: {} });
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );

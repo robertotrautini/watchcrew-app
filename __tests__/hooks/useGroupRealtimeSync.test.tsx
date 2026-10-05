@@ -1,3 +1,4 @@
+import { queryKeys } from "@/lib/queryKeys";
 // M10 (Realtime foreground sync, ADR 0006): src/hooks/useGroupRealtimeSync.ts.
 //
 // IMPORTANT scope note (per task instructions): a real Supabase Realtime
@@ -141,7 +142,7 @@ describe("useGroupRealtimeSync", () => {
 
       await fireChange("watchlist_entries", { eventType: "INSERT", new: { id: "we-1", group_id: "group-1" }, old: null });
 
-      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
     });
 
     it("ADR-0006 branch 1: foreground + currently on the affected screen -> silent, no toast", async () => {
@@ -255,7 +256,6 @@ describe("useGroupRealtimeSync", () => {
           return existing.channel;
         }
         const entry: { channel: { on: jest.Mock; subscribe: jest.Mock }; subscribed: boolean } = {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           channel: null as any,
           subscribed: false,
         };
@@ -340,7 +340,7 @@ describe("useGroupRealtimeSync", () => {
 
       await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
 
-      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
       expect(mockShowToast).toHaveBeenCalledWith("Jemand hat einen Film bewertet");
     });
 
@@ -357,7 +357,7 @@ describe("useGroupRealtimeSync", () => {
         old: { id: "r-1", watchlist_entry_id: "we-1", rating: 4 },
       });
 
-      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 

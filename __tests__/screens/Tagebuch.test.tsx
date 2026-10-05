@@ -1,37 +1,20 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import type { Movie, Rating, WatchlistEntry } from "@/lib/watchlistTypes";
 
-// Same Ionicons mocking rationale as __tests__/StarRating.test.tsx.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
-// Real usePreferencesStore (a genuine Zustand store, not a mock), but its
-// MMKV backing needs the same fake as __tests__/usePreferencesStore.test.ts
-// (a plain Map-backed fake, since the real native module isn't available
-// under Jest). State is reset via `usePreferencesStore.setState(...)` in
-// beforeEach below rather than jest.resetModules(), since (unlike that
-// store's own test file) nothing here depends on hydration-at-module-load
-// timing — a plain module-singleton reset between tests is enough.
-jest.mock("react-native-mmkv", () => ({
-  createMMKV: jest.fn().mockImplementation(() => {
-    const map = new Map<string, string>();
-    return {
-      getString: (key: string) => map.get(key),
-      set: (key: string, value: string) => map.set(key, value),
-      remove: (key: string) => map.delete(key),
-    };
+// Same MaterialIcons mocking rationale as __tests__/components/ui/StarRating.test.tsx.
+jest.mock("@/hooks/useGroupQuickSwitch", () => ({
+  useGroupQuickSwitch: () => ({
+    activeGroupName: null,
+    activeGroupId: undefined,
+    groupCount: 1,
+    switchToNext: jest.fn(),
   }),
 }));
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseActiveGroup = jest.fn();
 jest.mock("@/hooks/useActiveGroup", () => ({
@@ -56,18 +39,11 @@ jest.mock("@/hooks/useGroupMembers", () => ({
 // M10 (Realtime foreground sync, ADR 0006): this screen now calls
 // `useFocusEffect` (via src/hooks/useRegisterFocusedGroupScreen.ts) --
 // mocked as "run the effect once on mount, cleanup once on unmount", same
-// convention as __tests__/useRegisterFocusedGroupScreen.test.tsx -- and its
+// convention as __tests__/hooks/useRegisterFocusedGroupScreen.test.tsx -- and its
 // own realtime/focus wiring is mocked as a no-op here, same as
 // __tests__/screens/Watchlist.test.tsx, so this file keeps testing only its
 // own concerns without needing a real Supabase client.
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (callback: () => void | (() => void)) => {
-    const React = require("react");
-    React.useEffect(() => callback(), []);
-  },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 const mockUseGroupRealtimeSync = jest.fn();
 jest.mock("@/hooks/useGroupRealtimeSync", () => ({
@@ -132,7 +108,7 @@ function makeEntry(overrides: Partial<WatchlistEntry> & Pick<WatchlistEntry, "id
 }
 
 function mockHappyPath(entries: WatchlistEntry[], groupMembers?: Record<string, unknown>[]) {
-  mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
+  mockCurrentUserId.mockReturnValue(CURRENT_USER);
   mockUseActiveGroup.mockReturnValue({
     activeGroupId: "g1",
     setActiveGroup: jest.fn(),
@@ -164,6 +140,7 @@ describe("TagebuchScreen", () => {
       diaryViewMode: "cards",
       listFilters: {},
       selectedStreamingProviderIds: [],
+      filterPanelOpen: { watchlist: false, diary: true },
     });
     mockUseMyStreamingProviders.mockReturnValue({ data: undefined, isLoading: false });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
@@ -171,7 +148,7 @@ describe("TagebuchScreen", () => {
 
   describe("loading / error / empty states", () => {
     it("shows a loading indicator while the current user id is not yet known", async () => {
-      mockUseCurrentUserId.mockReturnValue(undefined);
+      mockCurrentUserId.mockReturnValue(undefined);
       mockUseActiveGroup.mockReturnValue({
         activeGroupId: undefined,
         setActiveGroup: jest.fn(),
@@ -186,7 +163,7 @@ describe("TagebuchScreen", () => {
     });
 
     it("shows a loading indicator while the group watchlist query is loading", async () => {
-      mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
+      mockCurrentUserId.mockReturnValue(CURRENT_USER);
       mockUseActiveGroup.mockReturnValue({
         activeGroupId: "g1",
         setActiveGroup: jest.fn(),
@@ -205,7 +182,7 @@ describe("TagebuchScreen", () => {
     });
 
     it("shows an error state when the group watchlist query fails", async () => {
-      mockUseCurrentUserId.mockReturnValue(CURRENT_USER);
+      mockCurrentUserId.mockReturnValue(CURRENT_USER);
       mockUseActiveGroup.mockReturnValue({
         activeGroupId: "g1",
         setActiveGroup: jest.fn(),
@@ -413,7 +390,7 @@ describe("TagebuchScreen", () => {
 
     await fireEvent.press(getByTestId("tagebuch-settings-button"));
 
-    expect(mockPush).toHaveBeenCalledWith("/settings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings");
   });
 
   describe("tapping an entry opens the movie detail overlay", () => {
@@ -436,8 +413,30 @@ describe("TagebuchScreen", () => {
       const target = mode === "list" ? "tagebuch-entry-e1" : "tagebuch-entry-press-e1";
       await fireEvent.press(getByTestId(target));
 
-      expect(mockPush).toHaveBeenCalledWith(EXPECTED);
+      expect(mockRouter.push).toHaveBeenCalledWith(EXPECTED);
     });
+  });
+
+  it("list mode: separator only between rows, none after the last", async () => {
+    loadPreferencesStore().setState({ diaryViewMode: "list" });
+    const a = makeEntry({
+      id: "la",
+      movie: makeMovie({ tmdb_id: 11, name: "A" }),
+      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-01-10" })],
+    });
+    const b = makeEntry({
+      id: "lb",
+      movie: makeMovie({ tmdb_id: 12, name: "B" }),
+      ratings: [makeRating({ member_id: "u1", rating: 3, seen_at: "2026-01-05" })],
+    });
+    mockHappyPath([a, b]);
+    const TagebuchScreen = loadTagebuchScreen();
+    const { getAllByTestId } = await render(<TagebuchScreen />);
+
+    const rows = getAllByTestId(/^tagebuch-entry-l[ab]$/);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].props.className ?? "").toContain("border-b");
+    expect(rows[1].props.className ?? "").not.toContain("border-b");
   });
 
   describe("view-mode toggle active state", () => {
@@ -447,9 +446,34 @@ describe("TagebuchScreen", () => {
       const TagebuchScreen = loadTagebuchScreen();
       const { getByTestId } = await render(<TagebuchScreen />);
 
-      expect(getByTestId("tagebuch-view-mode-grid").props.className).toContain("bg-accent");
-      expect(getByTestId("tagebuch-view-mode-cards").props.className).not.toContain("bg-accent");
-      expect(getByTestId("tagebuch-view-mode-list").props.className).not.toContain("bg-accent");
+      expect(getByTestId("tagebuch-view-mode-grid-segment").props.className).toContain("bg-accent");
+      expect(getByTestId("tagebuch-view-mode-cards-segment").props.className).not.toContain("bg-accent");
+      expect(getByTestId("tagebuch-view-mode-list-segment").props.className).not.toContain("bg-accent");
+    });
+  });
+
+  describe("collapsible filter panel", () => {
+    it("is closed by default, toggle opens it and persists; dot shows for non-default sort", async () => {
+      mockHappyPath([]);
+      loadPreferencesStore().setState({ filterPanelOpen: { watchlist: false, diary: false } });
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-search-input")).toBeTruthy();
+      expect(queryByTestId("tagebuch-filter-panel")).toBeNull();
+      expect(queryByTestId("tagebuch-sort-button")).toBeNull();
+      expect(queryByTestId("tagebuch-filter-active-dot")).toBeNull();
+
+      await fireEvent.press(getByTestId("tagebuch-filter-toggle"));
+      expect(getByTestId("tagebuch-filter-panel")).toBeTruthy();
+      expect(getByTestId("tagebuch-view-mode-toggle")).toBeTruthy();
+      expect(loadPreferencesStore().getState().filterPanelOpen.diary).toBe(true);
+
+      await fireEvent.press(getByTestId("tagebuch-sort-button"));
+      await fireEvent.press(getByTestId("tagebuch-sort-option-tmdb_score"));
+      await fireEvent.press(getByTestId("tagebuch-filter-toggle"));
+      expect(queryByTestId("tagebuch-filter-panel")).toBeNull();
+      expect(getByTestId("tagebuch-filter-active-dot")).toBeTruthy();
     });
   });
 
@@ -560,7 +584,7 @@ describe("TagebuchScreen", () => {
       expect(queryByTestId(`tagebuch-entry-${fullyRated.id}`)).toBeNull();
     });
 
-    it("'Mag ich ♥' shows only entries the current user has liked", async () => {
+    it("'Mag ich' shows only entries the current user has liked", async () => {
       mockHappyPath([likedEntry, notLikedEntry]);
       const TagebuchScreen = loadTagebuchScreen();
 
@@ -714,7 +738,7 @@ describe("TagebuchScreen", () => {
       await first.unmount();
 
       const second = await render(<TagebuchScreen />);
-      expect(second.getByTestId("tagebuch-sort-button-label").props.children).toBe("TMDB Score");
+      expect(second.getByTestId("tagebuch-sort-button").props.accessibilityLabel).toBe("Sortieren, aktuell: TMDB Score");
     });
 
     it("persists genre selection and year per group, but not the search text", async () => {

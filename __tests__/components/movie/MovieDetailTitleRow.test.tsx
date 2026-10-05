@@ -1,12 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 import { MovieDetailTitleRow } from "@/components/movie/MovieDetailTitleRow";
 
 describe("MovieDetailTitleRow", () => {
@@ -88,7 +81,7 @@ describe("MovieDetailTitleRow", () => {
       />,
     );
 
-    expect(getByTestId("movie-detail-like-heart-icon").props.name).toBe("heart");
+    expect(getByTestId("movie-detail-like-heart-icon").props.name).toBe("favorite");
   });
 
   it("renders an outline heart when showHeart is true and liked is false", async () => {
@@ -102,7 +95,7 @@ describe("MovieDetailTitleRow", () => {
       />,
     );
 
-    expect(getByTestId("movie-detail-like-heart-icon").props.name).toBe("heart-outline");
+    expect(getByTestId("movie-detail-like-heart-icon").props.name).toBe("favorite-border");
   });
 
   it("calls onToggleLike exactly once per press and no other function", async () => {
@@ -138,5 +131,15 @@ describe("MovieDetailTitleRow", () => {
     await fireEvent.press(getByTestId("movie-detail-like-heart"));
 
     expect(onToggleLike).not.toHaveBeenCalled();
+  });
+
+  it("the like heart is a 48x48 touch target with label and checked state", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailTitleRow title="A" voteAverage={null} showHeart liked onToggleLike={jest.fn()} />,
+    );
+    const heart = getByTestId("movie-detail-like-heart");
+    expect(heart.props.className).toContain("h-touch-comfortable w-touch-comfortable");
+    expect(heart.props.accessibilityLabel).toBe("Mag ich");
+    expect(heart.props.accessibilityState).toEqual(expect.objectContaining({ checked: true }));
   });
 });

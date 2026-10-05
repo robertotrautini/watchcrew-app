@@ -1,15 +1,14 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // --- Hook/router mocks, matching __tests__/screens/StudioFilmography.test.tsx's convention ---
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 // M7 consolidation (Item 3): the manual-release-date field now renders a
 // real native date-picker (src/components/ui/DateField.tsx) instead of a
 // plain TextInput -- mocked here the same way other native components are
-// mocked in this repo (e.g. RatingDialog.test.tsx's Ionicons mock).
+// mocked in this repo (e.g. RatingDialog.test.tsx's MaterialIcons mock).
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return {
@@ -18,10 +17,7 @@ jest.mock("@react-native-community/datetimepicker", () => {
   };
 });
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
@@ -126,7 +122,7 @@ function makeEntry(overrides: Record<string, unknown> = {}) {
 }
 
 function setUpBaseMocks() {
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseUserGroups.mockReturnValue({ data: [{ group_id: "group-1", user_id: "u1" }] });
   mockUseGroupWatchlist.mockReturnValue({ data: { entries: [], streamingAvailability: new Map() } });
   mockUseMovieSearch.mockReturnValue(emptyQueryResult({ data: [] }));
@@ -231,7 +227,7 @@ describe("AddMovieScreen", () => {
 
     await fireEvent.press(getByTestId("add-movie-film-grid-item-603"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "603" },
     });
@@ -252,7 +248,7 @@ describe("AddMovieScreen", () => {
 
     await fireEvent.press(getByTestId("add-movie-film-grid-item-603"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "603", groupId: "group-1", source: "watchlist", watchlistEntryId: "entry-1" },
     });

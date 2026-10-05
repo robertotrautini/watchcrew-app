@@ -1,17 +1,12 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render } from "@testing-library/react-native";
 
 // --- Hook/router mocks -------------------------------------------------
 const mockUseLocalSearchParams = jest.fn();
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => mockUseLocalSearchParams(),
-  useRouter: () => ({ push: mockPush }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock({ useLocalSearchParams: () => mockUseLocalSearchParams() }));
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
@@ -61,7 +56,7 @@ describe("StudioFilmographyScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUseLocalSearchParams.mockReturnValue({ companyId: "42" });
-    mockUseCurrentUserId.mockReturnValue("user-1");
+    mockCurrentUserId.mockReturnValue("user-1");
     mockUseUserGroups.mockReturnValue({ data: [{ group_id: "group-1" }], isLoading: false, isError: false });
     mockUseGroupWatchlist.mockReturnValue({ data: { entries: [] }, isLoading: false, isError: false });
     mockUseStudioFilmography.mockReturnValue(makeInfiniteQueryResult());
@@ -187,7 +182,7 @@ describe("StudioFilmographyScreen", () => {
       fireEvent.press(getByTestId("studio-filmography-screen-grid-item-7"));
     });
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "7" },
     });

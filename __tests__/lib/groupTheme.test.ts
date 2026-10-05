@@ -2,7 +2,7 @@ import {
   DEFAULT_GROUP_THEME,
   resolveGroupTheme,
   type GroupThemeName,
-} from "../src/lib/groupTheme";
+} from "../../src/lib/groupTheme";
 
 // Gold ("Alle drei") values are given verbatim in docs/planning-report.html —
 // asserted as exact literals, not re-derived.
@@ -92,9 +92,8 @@ describe("resolveGroupTheme", () => {
       expect(resolved.colors.accentLight).toBe(expected.accentLight);
       expect(resolved.colors.gradientStart).toBe(expected.gradientStart);
       expect(resolved.colors.gradientEnd).toBe(expected.gradientEnd);
-      // No distinct star color is specified for non-Gold themes, so it
-      // documented-falls-back to the theme's accent color.
-      expect(resolved.colors.starColor).toBe(expected.accent);
+      // Stars are always yellow, independent of the theme accent.
+      expect(resolved.colors.starColor).toBe("#FFD700");
     },
   );
 

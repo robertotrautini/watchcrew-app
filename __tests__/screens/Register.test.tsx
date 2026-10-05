@@ -1,7 +1,8 @@
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // Mocked per the established lazy-require convention (see
-// __tests__/routeIndex.test.tsx / __tests__/useAuthGate.test.tsx): jest.mock
+// __tests__/app/routeIndex.test.tsx / __tests__/hooks/useAuthGate.test.tsx): jest.mock
 // factories run at require-time of the mocked module, not at file-eval time,
 // so referencing these consts from inside the factory is safe even though
 // jest hoists the jest.mock() calls above these declarations.
@@ -10,10 +11,7 @@ jest.mock("@/lib/auth", () => ({
   signUpWithEmail: mockSignUpWithEmail,
 }));
 
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 jest.mock("expo-constants", () => ({
   __esModule: true,
@@ -213,7 +211,7 @@ describe("RegisterScreen", () => {
 
     await press(getByTestId("register-login-link"));
 
-    expect(mockPush).toHaveBeenCalledWith("/(auth)/login");
+    expect(mockRouter.push).toHaveBeenCalledWith("/(auth)/login");
   });
 
   // M11 part 2, Job 3 (ADR 0011) — legal-notice links.

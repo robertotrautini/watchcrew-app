@@ -1,3 +1,4 @@
+import { queryKeys } from "@/lib/queryKeys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -16,9 +17,9 @@ jest.mock("@/lib/movieDetailMutations", () => ({
   setWatchlistEntryReleaseDate: mockSetReleaseDate,
 }));
 
-// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+// M11 (haptic polish): see the identical mock in __tests__/components/ui/StarRating.test.tsx.
 const mockShowToast = jest.fn();
-jest.mock("@/lib/toast", () => ({ showToast: (m: string) => mockShowToast(m) }));
+jest.mock("@/lib/toast", () => ({ showToast: (...a: unknown[]) => mockShowToast(...a) }));
 
 jest.mock("expo-haptics", () => ({
   impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
@@ -27,7 +28,7 @@ jest.mock("expo-haptics", () => ({
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the mock assignments above, matching the convention in
-// __tests__/useGroupWatchlist.test.tsx.
+// __tests__/hooks/useGroupWatchlist.test.tsx.
 function loadHooks() {
   return require("@/hooks/useMovieDetailMutations");
 }
@@ -140,7 +141,7 @@ describe("useToggleLike", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("does not invalidate the cache when the like-toggle errors", async () => {
@@ -185,7 +186,7 @@ describe("useDeleteWatchlistEntry", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockDeleteWatchlistEntry).toHaveBeenCalledWith({ watchlistEntryId: "we-42" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("surfaces a delete error through React Query's native error channel without invalidating the cache", async () => {
@@ -225,7 +226,7 @@ describe("useAddToWatchlist", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockImpactAsync).toHaveBeenCalledWith("light");
-    expect(mockShowToast).toHaveBeenCalledWith("Zur Watchlist hinzugefügt");
+    expect(mockShowToast).toHaveBeenCalledWith("Zur Watchlist hinzugefügt", { variant: "success" });
   });
 
   it("does not trigger a haptic impact when the add fails", async () => {
@@ -263,7 +264,7 @@ describe("useAddToWatchlist", () => {
       addedBy: "user-1",
     });
     expect(result.current.data).toEqual({ id: "we-new-1" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("surfaces a generic upsertMovie/edge-function error from addToWatchlist through React Query's error channel without invalidating the cache", async () => {
@@ -319,8 +320,8 @@ describe("useSetReleaseDateOverride", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockSetReleaseDate).toHaveBeenCalledWith({ watchlistEntryId: "we-1", releaseDate: "2026-12-24" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
-    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum gespeichert");
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum gespeichert", { variant: "success" });
   });
 
   it("reset (null) toasts the reset copy", async () => {
@@ -334,10 +335,10 @@ describe("useSetReleaseDateOverride", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum zurückgesetzt");
+    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum zurückgesetzt", { variant: "success" });
   });
 
-  it("surfaces errors without invalidating or toasting", async () => {
+  it("surfaces errors as a red toast without invalidating", async () => {
     const fakeError = { message: "rls denied" };
     mockSetReleaseDate.mockResolvedValue({ data: null, error: fakeError });
     const { useSetReleaseDateOverride } = loadHooks();
@@ -351,6 +352,8 @@ describe("useSetReleaseDateOverride", () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(invalidateSpy).not.toHaveBeenCalled();
-    expect(mockShowToast).not.toHaveBeenCalled();
+    expect(mockShowToast).toHaveBeenCalledWith("Erscheinungsdatum konnte nicht gespeichert werden", {
+      variant: "error",
+    });
   });
 });

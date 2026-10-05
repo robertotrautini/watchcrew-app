@@ -12,7 +12,7 @@ jest.mock("../../src/lib/supabase", () => ({
 // Edge Function actions used by the movie sub-view screens (collection,
 // director/actor/studio filmography, similar-movies, providers). Mirrors
 // the "never throw, always resolve { data, error }" convention already
-// used by src/lib/movieDetail.ts / __tests__/movieDetail.test.ts.
+// used by src/lib/movieDetail.ts / __tests__/lib/movieDetail.test.ts.
 
 describe("tmdbProxy lib (tmdb-proxy client wrappers, M6 part 2b actions)", () => {
   beforeEach(() => {

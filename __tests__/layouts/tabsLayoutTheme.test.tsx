@@ -10,9 +10,15 @@ jest.mock("expo-router/js-tabs", () => {
   Tabs.Screen = () => null;
   return { Tabs };
 });
+// Gesture handler needs its native module; the swipe wrapper is covered by
+// __tests__/lib/tabSwipe.test.ts (pure logic) and device verification.
+jest.mock("@/components/TabSwipeView", () => ({
+  TabSwipeView: ({ children }: { children: unknown }) => children,
+}));
 jest.mock("expo-router", () => ({
   Redirect: () => null,
   useSegments: () => [],
+  useRouter: () => ({ navigate: jest.fn() }),
 }));
 
 import { GroupThemeProvider } from "@/components/GroupThemeProvider";

@@ -9,12 +9,15 @@ const mockLink = jest.fn((_props: { href: string; children?: unknown }) => null)
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
-  Link: (props: { href: string; children?: unknown }) => mockLink(props),
+  Link: (props: { href: string; children?: unknown }) => {
+    mockLink(props);
+    return props.children ?? null;
+  },
   useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
 // Required lazily (not statically imported) for the same reason as
-// __tests__/useAuthGate.test.tsx / __tests__/routeIndex.test.tsx: a
+// __tests__/hooks/useAuthGate.test.tsx / __tests__/app/routeIndex.test.tsx: a
 // top-level `import` gets hoisted above the `jest.mock` factories above by
 // Babel's CommonJS interop, so the mocks wouldn't be in place yet.
 function loadLoginScreen() {
@@ -177,5 +180,20 @@ describe("LoginScreen", () => {
     expect(mockLink).toHaveBeenCalledWith(
       expect.objectContaining({ href: "/(auth)/forgot-password" }),
     );
+  });
+
+  // Regression: className on expo-router's <Link> does not reach the Text, so
+  // the link text rendered default black on the dark card. Links wrap a
+  // Text with an explicit readable colour via `asChild`.
+  it("renders both links with an explicit readable text colour and asChild", async () => {
+    const LoginScreen = loadLoginScreen();
+    const { getByTestId } = await render(<LoginScreen />);
+
+    for (const id of ["login-forgot-password-link", "login-register-link"]) {
+      const label = getByTestId(`${id}-text`);
+      expect(label.props.className).toMatch(/text-accent-light/);
+      expect(getByTestId(id).props.className).toContain("min-h-touch-comfortable");
+    }
+    expect(mockLink).toHaveBeenCalledWith(expect.objectContaining({ asChild: true }));
   });
 });

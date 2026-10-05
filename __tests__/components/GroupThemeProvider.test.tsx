@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { render } from "@testing-library/react-native";
 
-import { GroupThemeProvider, useGroupTheme } from "../src/components/GroupThemeProvider";
+import { GroupThemeProvider, useGroupTheme } from "../../src/components/GroupThemeProvider";
 
 describe("GroupThemeProvider", () => {
   it("applies the matching .theme-<name> class for a known theme name", async () => {

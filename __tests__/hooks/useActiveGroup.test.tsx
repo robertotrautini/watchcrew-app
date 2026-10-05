@@ -1,27 +1,16 @@
 import { act, renderHook } from "@testing-library/react-native";
 
-// Same plain Map-backed MMKV fake as __tests__/usePreferencesStore.test.ts /
+// Same plain Map-backed MMKV fake as __tests__/stores/usePreferencesStore.test.ts /
 // __tests__/screens/Tagebuch.test.tsx -- the real native module isn't
 // available under Jest, and this hook pulls in the real (not mocked)
 // usePreferencesStore.
-jest.mock("react-native-mmkv", () => ({
-  createMMKV: jest.fn().mockImplementation(() => {
-    const map = new Map<string, string>();
-    return {
-      getString: (key: string) => map.get(key),
-      set: (key: string, value: string) => map.set(key, value),
-      remove: (key: string) => map.delete(key),
-    };
-  }),
-}));
-
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
   useUserGroups: mockUseUserGroups,
 }));
 
 // Lazily required, same Babel CJS-hoisting reason as every other hook test
-// in this repo (see __tests__/useUserGroups.test.tsx).
+// in this repo (see __tests__/hooks/useUserGroups.test.tsx).
 function loadUseActiveGroup() {
   return require("@/hooks/useActiveGroup").useActiveGroup;
 }

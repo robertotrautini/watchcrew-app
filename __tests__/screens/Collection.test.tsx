@@ -1,18 +1,12 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { fireEvent, render } from "@testing-library/react-native";
 
-// Same Ionicons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
+// Same MaterialIcons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
 // (the real implementation doesn't forward name/color to the host node RNTL
 // queries) — MovieGrid is rendered for real here (not mocked), since it's a
 // small, already-tested presentational component and exercising it for real
 // lets this test verify the actual prop wiring (items/testID/badge/filter)
 // end-to-end rather than just asserting on mock call args.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 const mockUseLocalSearchParams = jest.fn();
 const mockPush = jest.fn();
 const mockUseRouter = jest.fn(() => ({ push: mockPush }));
@@ -31,10 +25,7 @@ jest.mock("@/hooks/useMoviesProviders", () => ({
   useMoviesProviders: (...args: unknown[]) => mockUseMoviesProviders(...args),
 }));
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: () => mockUseCurrentUserId(),
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
@@ -103,7 +94,7 @@ const PART_TWO = {
 
 function setUpHappyPath() {
   mockUseLocalSearchParams.mockReturnValue({ collectionId: "999", tmdbId: "678" });
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseUserGroups.mockReturnValue({
     data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
     isLoading: false,
@@ -133,7 +124,7 @@ describe("CollectionScreen", () => {
 
   it("shows the error state when collectionId is missing/invalid", async () => {
     mockUseLocalSearchParams.mockReturnValue({ collectionId: "not-a-number", tmdbId: "678" });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseCollection.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
@@ -147,7 +138,7 @@ describe("CollectionScreen", () => {
 
   it("shows the error state when tmdbId is missing", async () => {
     mockUseLocalSearchParams.mockReturnValue({ collectionId: "999" });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseCollection.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });

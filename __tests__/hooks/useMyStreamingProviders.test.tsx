@@ -1,3 +1,4 @@
+import { queryKeys } from "@/lib/queryKeys";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -55,7 +56,7 @@ describe("useMyStreamingProviders", () => {
 
   it("does not crash when an old/JSON-restored cache entry is `{}` (persisted Map)", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: Infinity } } });
-    queryClient.setQueryData(["streamingProviders", [1]], JSON.parse(JSON.stringify(new Map([[1, {}]]))));
+    queryClient.setQueryData(queryKeys.streamingProviders([1]), JSON.parse(JSON.stringify(new Map([[1, {}]]))));
     const wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );

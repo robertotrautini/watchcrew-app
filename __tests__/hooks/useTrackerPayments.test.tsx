@@ -1,6 +1,7 @@
+import { queryKeys } from "@/lib/queryKeys";
 // M8 (Bezahl-Tracker): TanStack Query mutation tests for
 // src/hooks/useTrackerPayments.ts, mirroring the mocking convention in
-// __tests__/useSaveRating.test.tsx.
+// __tests__/hooks/useSaveRating.test.tsx.
 
 import { toLocalIsoDate } from "@/lib/localDate";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -163,7 +164,7 @@ describe("useSetPayment", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 });
 
@@ -186,7 +187,7 @@ describe("useDeletePayment", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockDeletePayment).toHaveBeenCalledWith({ watchlistEntryId: "we-1" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("surfaces a delete error through React Query's error channel without invalidating the cache", async () => {

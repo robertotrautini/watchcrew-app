@@ -1,19 +1,23 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // M9 part 2: the new "⚙️" header button navigates via expo-router, same
 // router mocking convention as __tests__/screens/Watchlist.test.tsx's
 // "+" Add-Movie button.
 // M10: also needs `useFocusEffect` now (src/hooks/useRegisterFocusedGroupScreen.ts).
-const mockPush = jest.fn();
 const mockShowToast = jest.fn();
-jest.mock("@/lib/toast", () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }));
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (callback: () => void | (() => void)) => {
-    const React = require("react");
-    React.useEffect(() => callback(), []);
-  },
+jest.mock("@/hooks/useGroupQuickSwitch", () => ({
+  useGroupQuickSwitch: () => ({
+    activeGroupName: null,
+    activeGroupId: undefined,
+    groupCount: 1,
+    switchToNext: jest.fn(),
+  }),
 }));
+
+jest.mock("@/lib/toast", () => ({ showToast: (...args: unknown[]) => mockShowToast(...args) }));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
@@ -23,14 +27,13 @@ jest.mock("@react-native-community/datetimepicker", () => {
   };
 });
 
-// M11 (haptic polish): see the identical mock in __tests__/StarRating.test.tsx.
+// M11 (haptic polish): see the identical mock in __tests__/components/ui/StarRating.test.tsx.
 const mockImpactAsync = jest.fn();
 jest.mock("expo-haptics", () => ({
   impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
   ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
 }));
 
-const mockUseCurrentUserId = jest.fn();
 const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
@@ -39,9 +42,7 @@ const mockDeletePaymentMutate = jest.fn();
 let mockSetPaymentIsPending = false;
 let mockDeletePaymentIsPending = false;
 
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 jest.mock("@/hooks/useActiveGroup", () => ({
   useActiveGroup: mockUseActiveGroup,
 }));
@@ -129,7 +130,7 @@ const MEMBERS = [
 ];
 
 function setUpHappyPath(entries = [PAID_ALPHA, PAID_BETA, UNPAID_GAMMA]) {
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseActiveGroup.mockReturnValue({
     activeGroupId: "g1",
     setActiveGroup: jest.fn(),
@@ -157,7 +158,7 @@ describe("TrackerScreen", () => {
   });
 
   it("renders a loading state while any underlying query is loading", async () => {
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: jest.fn(),
@@ -172,7 +173,7 @@ describe("TrackerScreen", () => {
   });
 
   it("renders an error state when a query fails", async () => {
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: jest.fn(),
@@ -212,6 +213,16 @@ describe("TrackerScreen", () => {
     expect(rows.map((r) => r.props.testID)).toEqual(["tracker-row-e2", "tracker-row-e1"]);
   });
 
+  it("draws a separator only BETWEEN rows, none after the last row", async () => {
+    setUpHappyPath();
+    const TrackerScreen = loadTrackerScreen();
+    const { getByTestId } = await render(<TrackerScreen />);
+
+    // Order: e2 (first), e1 (last).
+    expect(getByTestId("tracker-row-e2").props.className).toContain("border-b");
+    expect(getByTestId("tracker-row-e1").props.className ?? "").not.toContain("border-b");
+  });
+
   it("renders the date cell single-line with a column wide enough for DD.MM.YYYY (no '30.09.202 / 6' wrap)", async () => {
     setUpHappyPath();
     const TrackerScreen = loadTrackerScreen();
@@ -233,41 +244,50 @@ describe("TrackerScreen", () => {
     expect(queryByTestId("tracker-row-e2")).toBeNull();
   });
 
-  it("expands a row on tap to show Bearbeiten/Löschen, and collapses it again on a second tap", async () => {
+  it("opens the entry flyout on row tap and does not expand the row inline", async () => {
     setUpHappyPath();
     const TrackerScreen = loadTrackerScreen();
     const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
 
+    expect(queryByTestId("tracker-entry-sheet")).toBeNull();
     await fireEvent.press(getByTestId("tracker-row-e1-header"));
-    expect(getByTestId("tracker-row-e1-edit-button")).toBeTruthy();
-    expect(getByTestId("tracker-row-e1-delete-button")).toBeTruthy();
 
-    await fireEvent.press(getByTestId("tracker-row-e1-header"));
+    expect(getByTestId("tracker-entry-sheet")).toBeTruthy();
     expect(queryByTestId("tracker-row-e1-expanded")).toBeNull();
+    expect(queryByTestId("tracker-row-e1-edit-button")).toBeNull();
   });
 
-  describe("inline edit", () => {
-    it("Bearbeiten swaps in an inline form pre-filled with the current payer and date", async () => {
+  describe("entry flyout edit", () => {
+    it("is pre-filled with the current payer and date", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-button"));
 
-      expect(getByTestId("tracker-row-e1-edit-payer-u1").props.accessibilityState.selected).toBe(true);
-      expect(getByTestId("tracker-row-e1-edit-date-field")).toBeTruthy();
+      expect(getByTestId("tracker-entry-sheet-payer-u1").props.accessibilityState.selected).toBe(true);
+      expect(getByTestId("tracker-entry-sheet-date-field")).toBeTruthy();
     });
 
-    it("Speichern calls useSetPayment with the entry's existing paid_at as existingPaidAt (never silently overwritten)", async () => {
+    it("shows no 'days since' hint on the payer chips (the entry's own date is in the date field)", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
+
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+
+      expect(queryByTestId("tracker-entry-sheet-payer-hint-u1")).toBeNull();
+      expect(queryByTestId("tracker-entry-sheet-payer-hint-u2")).toBeNull();
+    });
+
+    it("Speichern calls useSetPayment with the entry's existing paid_at as existingPaidAt", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-button"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-payer-u2"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-save-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-u2"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-save-button"));
 
       expect(mockSetPaymentMutate).toHaveBeenCalledWith(
         {
@@ -281,78 +301,106 @@ describe("TrackerScreen", () => {
       );
     });
 
-    it("shows the 'Zahlung gespeichert' toast once the edit save succeeded", async () => {
-      setUpHappyPath();
-      const TrackerScreen = loadTrackerScreen();
-      const { getByTestId } = await render(<TrackerScreen />);
-
-      await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-button"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-save-button"));
-      expect(mockShowToast).not.toHaveBeenCalled();
-
-      await act(async () => {
-        mockSetPaymentMutate.mock.calls[0][1].onSuccess();
-      });
-      expect(mockShowToast).toHaveBeenCalledWith("Zahlung gespeichert");
-    });
-
-    it("Abbrechen discards the edit and returns to the Bearbeiten/Löschen buttons", async () => {
+    it("shows the toast and closes the flyout once the save succeeded", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-button"));
-      await fireEvent.press(getByTestId("tracker-row-e1-edit-cancel-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-save-button"));
+      expect(mockShowToast).not.toHaveBeenCalled();
 
-      expect(queryByTestId("tracker-row-e1-edit-form")).toBeNull();
-      expect(getByTestId("tracker-row-e1-edit-button")).toBeTruthy();
+      await act(async () => {
+        mockSetPaymentMutate.mock.calls[0][1].onSuccess();
+      });
+      expect(mockShowToast).toHaveBeenCalledWith("Zahlung gespeichert", { variant: "success" });
+      expect(queryByTestId("tracker-entry-sheet")).toBeNull();
+    });
+
+    it("shows a red error toast and keeps the flyout open when the save failed", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-save-button"));
+
+      await act(async () => {
+        mockSetPaymentMutate.mock.calls[0][1].onError(new Error("boom"));
+      });
+      expect(mockShowToast).toHaveBeenCalledWith("Zahlung konnte nicht gespeichert werden", { variant: "error" });
+      expect(queryByTestId("tracker-entry-sheet")).toBeTruthy();
+    });
+
+    it("the sheet close button dismisses the flyout without saving", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
+
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      await fireEvent.press(getByTestId("sheet-close-button"));
+
+      expect(queryByTestId("tracker-entry-sheet")).toBeNull();
+      expect(mockSetPaymentMutate).not.toHaveBeenCalled();
     });
   });
 
-  describe("inline delete", () => {
-    it("Löschen shows an inline 'Wirklich löschen?' confirmation, not a Sheet/modal", async () => {
+  describe("entry flyout delete", () => {
+    it("Löschen is the rightmost button of the action row (after Speichern)", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
-      const { getByTestId, getByText, queryByTestId } = await render(<TrackerScreen />);
+      const { getByTestId, getAllByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-delete-button"));
-
-      expect(getByTestId("tracker-row-e1-delete-confirm")).toBeTruthy();
-      expect(getByText("Wirklich löschen?")).toBeTruthy();
-      expect(queryByTestId("sheet-backdrop")).toBeNull();
+      const ids = getAllByTestId(/^tracker-entry-sheet-(save|delete)-button$/).map((n) => n.props.testID);
+      expect(ids).toEqual(["tracker-entry-sheet-save-button", "tracker-entry-sheet-delete-button"]);
     });
 
-    it("confirming delete calls useDeletePayment for that entry", async () => {
+    it("Löschen shows a 'Wirklich löschen?' confirmation inside the flyout", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
-      const { getByTestId } = await render(<TrackerScreen />);
+      const { getByTestId, getByText } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-delete-button"));
-      await fireEvent.press(getByTestId("tracker-row-e1-delete-confirm-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-delete-button"));
+
+      expect(getByTestId("tracker-entry-sheet-delete-confirm")).toBeTruthy();
+      expect(getByText("Wirklich löschen?")).toBeTruthy();
+      expect(mockDeletePaymentMutate).not.toHaveBeenCalled();
+    });
+
+    it("confirming delete calls useDeletePayment for that entry and closes on success", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
+
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-delete-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-delete-confirm-button"));
 
       expect(mockImpactAsync).toHaveBeenCalledWith("medium");
       expect(mockDeletePaymentMutate).toHaveBeenCalledWith(
         { groupId: "g1", watchlistEntryId: "e1" },
         expect.objectContaining({ onSuccess: expect.any(Function) }),
       );
+
+      await act(async () => {
+        mockDeletePaymentMutate.mock.calls[0][1].onSuccess();
+      });
+      expect(queryByTestId("tracker-entry-sheet")).toBeNull();
     });
 
-    it("Abbrechen on the delete confirmation returns to the Bearbeiten/Löschen buttons without deleting", async () => {
+    it("Abbrechen on the confirmation returns to the edit form without deleting", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-row-e1-delete-button"));
-      await fireEvent.press(getByTestId("tracker-row-e1-delete-cancel-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-delete-button"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-delete-cancel-button"));
 
-      expect(queryByTestId("tracker-row-e1-delete-confirm")).toBeNull();
+      expect(queryByTestId("tracker-entry-sheet-delete-confirm")).toBeNull();
       expect(mockDeletePaymentMutate).not.toHaveBeenCalled();
-      expect(getByTestId("tracker-row-e1-delete-button")).toBeTruthy();
+      expect(getByTestId("tracker-entry-sheet-delete-button")).toBeTruthy();
     });
   });
 
@@ -363,7 +411,7 @@ describe("TrackerScreen", () => {
 
     await fireEvent.press(getByTestId("tracker-group-settings-button"));
 
-    expect(mockPush).toHaveBeenCalledWith("/settings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings");
   });
 
   it("opens the 'Zahlung erfassen' modal via the 💰 button, listing only unpaid diary movies", async () => {

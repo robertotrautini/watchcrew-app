@@ -13,12 +13,7 @@
 
 import { renderHook } from "@testing-library/react-native";
 
-jest.mock("expo-router", () => ({
-  useFocusEffect: (callback: () => void | (() => void)) => {
-    const React = require("react");
-    React.useEffect(() => callback(), []);
-  },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 import { useFocusedGroupScreen } from "@/stores/useFocusedGroupScreen";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";

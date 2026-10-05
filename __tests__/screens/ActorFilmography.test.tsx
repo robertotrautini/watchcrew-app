@@ -1,31 +1,19 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render } from "@testing-library/react-native";
 
-// Same Ionicons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
+// Same MaterialIcons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
 // (the real implementation doesn't forward name/color to the host node RNTL
 // queries) -- MovieGrid itself is used for real here (not mocked), since
 // this is a screen-integration test of the wiring into it.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 const mockUseLocalSearchParams = jest.fn();
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => mockUseLocalSearchParams(),
-  useRouter: () => ({ push: mockPush }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock({ useLocalSearchParams: () => mockUseLocalSearchParams() }));
 
-const mockUseCurrentUserId = jest.fn();
 const mockUseUserGroups = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseActorFilmography = jest.fn();
 
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 jest.mock("@/hooks/useUserGroups", () => ({
   useUserGroups: mockUseUserGroups,
 }));
@@ -117,7 +105,7 @@ const WATCHLIST_ENTRIES = [
 
 function setUpHappyPath() {
   mockUseLocalSearchParams.mockReturnValue({ personId: "77" });
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseUserGroups.mockReturnValue({
     data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
     isLoading: false,
@@ -145,7 +133,7 @@ describe("ActorFilmographyScreen", () => {
 
   it("renders a loading state while the filmography query is loading", async () => {
     mockUseLocalSearchParams.mockReturnValue({ personId: "77" });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseActorFilmography.mockReturnValue({ data: undefined, isLoading: true, isError: false, error: null });
@@ -158,7 +146,7 @@ describe("ActorFilmographyScreen", () => {
 
   it("shows an error state when personId is missing/invalid", async () => {
     mockUseLocalSearchParams.mockReturnValue({ personId: undefined });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseActorFilmography.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
@@ -171,7 +159,7 @@ describe("ActorFilmographyScreen", () => {
 
   it("shows an error state when the filmography query fails", async () => {
     mockUseLocalSearchParams.mockReturnValue({ personId: "77" });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseActorFilmography.mockReturnValue({ data: undefined, isLoading: false, isError: true, error: { message: "boom" } });
@@ -225,7 +213,7 @@ describe("ActorFilmographyScreen", () => {
 
     await fireEvent.press(getByTestId("actor-filmography-screen-grid-item-3"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockRouter.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "3" },
     });

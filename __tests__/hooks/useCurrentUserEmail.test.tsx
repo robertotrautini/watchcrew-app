@@ -14,7 +14,7 @@ jest.mock("@/lib/supabase", () => ({
 }));
 
 // Lazily required — same Babel CJS-hoisting reason as
-// __tests__/useCurrentUserId.test.tsx.
+// __tests__/hooks/useCurrentUserId.test.tsx.
 function loadUseCurrentUserEmail() {
   return require("@/hooks/useCurrentUserEmail").useCurrentUserEmail;
 }

@@ -1,11 +1,8 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace }),
-  Stack: { Screen: () => null },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 // Mutable so individual tests can swap in a "real URL" value without
 // needing jest.doMock/resetModules gymnastics -- see the "legal document
@@ -29,10 +26,8 @@ jest.mock("expo-linking", () => ({
   openURL: (...args: unknown[]) => mockOpenURL(...args),
 }));
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+let mockUpdateIsPending = false;
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseCurrentUserEmail = jest.fn();
 jest.mock("@/hooks/useCurrentUserEmail", () => ({
@@ -46,7 +41,7 @@ jest.mock("@/hooks/useOwnProfile", () => ({
 
 const mockMutateAsync = jest.fn();
 jest.mock("@/hooks/useUpdateDisplayName", () => ({
-  useUpdateDisplayName: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
+  useUpdateDisplayName: () => ({ mutateAsync: mockMutateAsync, isPending: mockUpdateIsPending }),
 }));
 
 const mockSignOut = jest.fn();
@@ -61,21 +56,6 @@ jest.mock("@/lib/toast", () => ({
 
 // Real usePreferencesStore (genuine Zustand + fake-MMKV store), same
 // convention as __tests__/screens/Tagebuch.test.tsx — reset via setState.
-jest.mock("react-native-mmkv", () => {
-  const map = new Map<string, string>();
-  return {
-    createMMKV: jest.fn().mockImplementation(() => ({
-      getString: (key: string) => map.get(key),
-      set: (key: string, value: string) => {
-        map.set(key, value);
-      },
-      remove: (key: string) => {
-        map.delete(key);
-      },
-    })),
-  };
-});
-
 function loadPreferencesStore() {
   return require("@/stores/usePreferencesStore").usePreferencesStore;
 }
@@ -86,16 +66,16 @@ function loadSettingsScreen() {
 
 describe("SettingsScreen", () => {
   beforeEach(() => {
+    mockUpdateIsPending = false;
     jest.clearAllMocks();
     mockExtra.privacyPolicyUrl = "https://watch-crew.app/privacy";
     mockExtra.termsOfServiceUrl = "https://watch-crew.app/terms";
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseCurrentUserEmail.mockReturnValue("robin@example.com");
     mockUseOwnProfile.mockReturnValue({ data: { display_name: "robin" }, isLoading: false });
     const usePreferencesStore = loadPreferencesStore();
     usePreferencesStore.setState({
       selectedStreamingProviderIds: [],
-      lastSeenChangelogVersion: "1.0.0",
     });
   });
 
@@ -108,7 +88,6 @@ describe("SettingsScreen", () => {
     expect(getByTestId("settings-section-display")).toBeTruthy();
     expect(getByTestId("settings-section-notifications")).toBeTruthy();
     expect(getByTestId("settings-section-group-settings")).toBeTruthy();
-    expect(getByTestId("settings-section-changelog")).toBeTruthy();
     expect(getByTestId("settings-section-delete-account")).toBeTruthy();
   });
 
@@ -117,22 +96,19 @@ describe("SettingsScreen", () => {
     const { getByTestId } = await render(<SettingsScreen />);
 
     await fireEvent.press(getByTestId("settings-section-streaming-services"));
-    expect(mockPush).toHaveBeenCalledWith("/settings/streaming-services");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings/streaming-services");
 
     await fireEvent.press(getByTestId("settings-section-display"));
-    expect(mockPush).toHaveBeenCalledWith("/settings/display");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings/display");
 
     await fireEvent.press(getByTestId("settings-section-notifications"));
-    expect(mockPush).toHaveBeenCalledWith("/settings/notifications");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings/notifications");
 
     await fireEvent.press(getByTestId("settings-section-group-settings"));
-    expect(mockPush).toHaveBeenCalledWith("/group-settings");
-
-    await fireEvent.press(getByTestId("settings-section-changelog"));
-    expect(mockPush).toHaveBeenCalledWith("/settings/changelog");
+    expect(mockRouter.push).toHaveBeenCalledWith("/group-settings");
 
     await fireEvent.press(getByTestId("settings-section-delete-account"));
-    expect(mockPush).toHaveBeenCalledWith("/settings/delete-account");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings/delete-account");
   });
 
   it("shows the user's email and display name", async () => {
@@ -142,6 +118,45 @@ describe("SettingsScreen", () => {
 
     expect(getByTestId("settings-user-email").props.children).toBe("robin@example.com");
     expect(getByTestId("settings-user-display-name").props.value).toBe("robin");
+  });
+
+  describe("display name save button", () => {
+    it("is a round icon-only button on the same row as the input", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId, queryByText } = await render(<SettingsScreen />);
+
+      const save = getByTestId("settings-display-name-save");
+      expect(save.props.className).toContain("rounded-full");
+      expect(save.props.className).toContain("w-12");
+      expect(save.props.accessibilityLabel).toBe("Anzeigename speichern");
+      expect(save.props.accessibilityRole).toBe("button");
+      expect(queryByText("Speichern")).toBeNull();
+      const row = getByTestId("settings-display-name-row");
+      expect(row.props.className).toContain("flex-row");
+      expect(row.props.children.map((c: { props: { testID: string } }) => c.props.testID)).toEqual([
+        "settings-user-display-name",
+        "settings-display-name-save",
+      ]);
+    });
+
+    it("is disabled while the name is unchanged and enabled after an edit", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(true);
+      await fireEvent.changeText(getByTestId("settings-user-display-name"), "robin2");
+      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(false);
+      await fireEvent.changeText(getByTestId("settings-user-display-name"), "   ");
+      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(true);
+    });
+
+    it("shows a spinner while saving", async () => {
+      mockUpdateIsPending = true;
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId } = await render(<SettingsScreen />);
+
+      expect(getByTestId("settings-display-name-save-loading-indicator")).toBeTruthy();
+    });
   });
 
   it("saves an edited display name via the mutation and shows a toast", async () => {
@@ -157,7 +172,7 @@ describe("SettingsScreen", () => {
     });
 
     expect(mockMutateAsync).toHaveBeenCalledWith("Robin T");
-    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename gespeichert");
+    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename gespeichert", { variant: "success" });
   });
 
   it("does not save an empty display name", async () => {
@@ -187,6 +202,7 @@ describe("SettingsScreen", () => {
     });
 
     expect(getByTestId("settings-display-name-error")).toBeTruthy();
+    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename konnte nicht gespeichert werden.", { variant: "error" });
   });
 
   it("shows the app version from expo-constants", async () => {
@@ -205,75 +221,47 @@ describe("SettingsScreen", () => {
     await fireEvent.press(getByTestId("settings-sign-out-button"));
 
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
 
-  it("shows a streaming-services badge with the selected provider count", async () => {
+  it("shows 'N ausgewählt' on the streaming-services row", async () => {
     const usePreferencesStore = loadPreferencesStore();
     usePreferencesStore.setState({ selectedStreamingProviderIds: [8, 337, 119] });
     const SettingsScreen = loadSettingsScreen();
 
-    const { getByTestId } = await render(<SettingsScreen />);
+    const { getByText } = await render(<SettingsScreen />);
 
-    expect(getByTestId("settings-streaming-badge").props.children).toBe(3);
+    expect(getByText("3 ausgewählt")).toBeTruthy();
   });
 
-  it("omits the streaming-services badge when nothing is selected", async () => {
+  it("omits the 'ausgewählt' value when nothing is selected", async () => {
+    const SettingsScreen = loadSettingsScreen();
+
+    const { queryByText } = await render(<SettingsScreen />);
+
+    expect(queryByText(/ausgewählt/)).toBeNull();
+  });
+
+  it("groups rows under Konto / Gruppe / App / Rechtliches headings with 'Aktueller Nutzer' on top", async () => {
+    const SettingsScreen = loadSettingsScreen();
+
+    const { getByText, getByTestId } = await render(<SettingsScreen />);
+
+    for (const heading of ["Konto", "Gruppe", "App", "Rechtliches", "Datenquellen", "Aktueller Nutzer"]) {
+      expect(getByText(heading)).toBeTruthy();
+    }
+    expect(getByTestId("settings-current-user").props.children).toBe("robin");
+    // Last row of a group has no separator below; later rows have one above.
+    expect(getByTestId("settings-sections-item-0").props.className ?? "").not.toContain("border-t");
+    expect(getByTestId("settings-sections-item-2").props.className).toContain("border-t");
+  });
+
+  it("has no changelog row or 'Neue Funktionen' toast (removed; updates go through the store listings)", async () => {
     const SettingsScreen = loadSettingsScreen();
 
     const { queryByTestId } = await render(<SettingsScreen />);
 
-    expect(queryByTestId("settings-streaming-badge")).toBeNull();
-  });
-
-  it("shows a 'Neu' changelog badge when lastSeenChangelogVersion differs from the current version", async () => {
-    const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ lastSeenChangelogVersion: "0.9.0" });
-    const SettingsScreen = loadSettingsScreen();
-
-    const { getByTestId } = await render(<SettingsScreen />);
-
-    expect(getByTestId("settings-changelog-badge")).toBeTruthy();
-  });
-
-  it("omits the changelog badge when lastSeenChangelogVersion already matches", async () => {
-    const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ lastSeenChangelogVersion: "1.0.0" });
-    const SettingsScreen = loadSettingsScreen();
-
-    const { queryByTestId } = await render(<SettingsScreen />);
-
-    expect(queryByTestId("settings-changelog-badge")).toBeNull();
-  });
-
-  it("shows the changelog badge when the version has never been seen (null)", async () => {
-    const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ lastSeenChangelogVersion: null });
-    const SettingsScreen = loadSettingsScreen();
-
-    const { getByTestId } = await render(<SettingsScreen />);
-
-    expect(getByTestId("settings-changelog-badge")).toBeTruthy();
-  });
-
-  it("fires a 'Neue Funktionen verfügbar' toast once when the changelog is unseen", async () => {
-    const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ lastSeenChangelogVersion: "0.9.0" });
-    const SettingsScreen = loadSettingsScreen();
-
-    await render(<SettingsScreen />);
-
-    expect(mockShowToast).toHaveBeenCalledTimes(1);
-    expect(mockShowToast).toHaveBeenCalledWith("Neue Funktionen verfügbar");
-  });
-
-  it("does not fire the changelog toast when the current version has already been seen", async () => {
-    const usePreferencesStore = loadPreferencesStore();
-    usePreferencesStore.setState({ lastSeenChangelogVersion: "1.0.0" });
-    const SettingsScreen = loadSettingsScreen();
-
-    await render(<SettingsScreen />);
-
+    expect(queryByTestId("settings-section-changelog")).toBeNull();
     expect(mockShowToast).not.toHaveBeenCalled();
   });
 
@@ -318,32 +306,28 @@ describe("SettingsScreen", () => {
       expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
     });
   });
-  // Inventory 2.7 — data-source attributions (TMDB/Trakt/JustWatch terms), text only.
+  // Inventory 2.7 — data-source attributions: TMDB + Trakt with logos (JustWatch credit inside the TMDB text).
   describe("Datenquellen attributions", () => {
-    it("renders the section with TMDB, Trakt and JustWatch notices (no KinoCheck)", async () => {
+    it("renders TMDB and Trakt with logos and one-line disclaimers (no JustWatch row, no KinoCheck)", async () => {
       const SettingsScreen = loadSettingsScreen();
-      const { getByTestId, queryByText, getByText } = await render(<SettingsScreen />);
+      const { getByTestId, queryByTestId, queryByText } = await render(<SettingsScreen />);
 
       expect(getByTestId("settings-attributions")).toBeTruthy();
-      expect(getByText("Datenquellen")).toBeTruthy();
-      expect(
-        getByTestId("settings-attribution-tmdb-text").props.children,
-      ).toBe(
-        "Dieses Produkt verwendet die TMDB-API, wird von TMDB aber weder unterstützt noch zertifiziert.",
+      expect(getByTestId("settings-attribution-tmdb-logo")).toBeTruthy();
+      expect(getByTestId("settings-attribution-trakt-logo")).toBeTruthy();
+      expect(getByTestId("settings-attribution-tmdb-text").props.children).toBe(
+        "Dieses Produkt verwendet die TMDB API, wird aber nicht von TMDB unterstützt oder zertifiziert. Streaming-Daten: JustWatch.",
       );
       expect(getByTestId("settings-attribution-trakt-text").props.children).toBe(
-        "Ähnliche Filme werden von Trakt bereitgestellt.",
+        "Ähnliche Filme via Trakt API.",
       );
-      expect(getByTestId("settings-attribution-justwatch-text").props.children).toBe(
-        "Streaming-Daten: JustWatch via TMDB",
-      );
+      expect(queryByTestId("settings-attribution-justwatch")).toBeNull();
       expect(queryByText(/KinoCheck/)).toBeNull();
     });
 
     it.each([
       ["tmdb", "https://www.themoviedb.org"],
       ["trakt", "https://trakt.tv"],
-      ["justwatch", "https://www.justwatch.com"],
     ])("opens the %s site on press", async (key, url) => {
       const SettingsScreen = loadSettingsScreen();
       const { getByTestId } = await render(<SettingsScreen />);

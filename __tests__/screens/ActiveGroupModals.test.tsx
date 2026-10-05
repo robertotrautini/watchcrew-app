@@ -3,20 +3,13 @@ import { render } from "@testing-library/react-native";
 // Regression: modal screens must target the PERSISTED active group (see
 // src/hooks/useActiveGroup.ts), not blindly the first group of the user.
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return { Ionicons: (props: Record<string, unknown>) => <View {...props} /> };
-});
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return { __esModule: true, default: (props: Record<string, unknown>) => <View {...props} /> };
 });
 
 const mockParams = jest.fn();
-jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => mockParams(),
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock({ useLocalSearchParams: () => mockParams() }));
 jest.mock("@/hooks/useCurrentUserId", () => ({ useCurrentUserId: () => "u1" }));
 jest.mock("@/hooks/useUserGroups", () => ({
   useUserGroups: () => ({

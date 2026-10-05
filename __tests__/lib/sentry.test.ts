@@ -25,7 +25,7 @@ describe("initSentry", () => {
       },
     }));
 
-    const { initSentry } = require("../src/lib/sentry");
+    const { initSentry } = require("../../src/lib/sentry");
 
     expect(() => initSentry()).not.toThrow();
     expect(mockInit).not.toHaveBeenCalled();
@@ -39,7 +39,7 @@ describe("initSentry", () => {
       },
     }));
 
-    const { initSentry } = require("../src/lib/sentry");
+    const { initSentry } = require("../../src/lib/sentry");
 
     initSentry();
 

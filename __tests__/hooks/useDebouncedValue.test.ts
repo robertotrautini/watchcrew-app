@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react-native";
 
-import { useDebouncedValue } from "../src/hooks/useDebouncedValue";
+import { useDebouncedValue } from "../../src/hooks/useDebouncedValue";
 
 // M7 part 2 (Add-Movie-Modal): generic debounce hook backing the three
 // search modes' differing debounce timings (Film 350ms, Regisseur/

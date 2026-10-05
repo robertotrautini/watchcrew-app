@@ -1,23 +1,6 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-jest.mock("expo-router", () => ({
-  Stack: { Screen: () => null },
-}));
-
-jest.mock("react-native-mmkv", () => {
-  const map = new Map<string, string>();
-  return {
-    createMMKV: jest.fn().mockImplementation(() => ({
-      getString: (key: string) => map.get(key),
-      set: (key: string, value: string) => {
-        map.set(key, value);
-      },
-      remove: (key: string) => {
-        map.delete(key);
-      },
-    })),
-  };
-});
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 function loadPreferencesStore() {
   return require("@/stores/usePreferencesStore").usePreferencesStore;

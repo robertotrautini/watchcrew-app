@@ -1,15 +1,8 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-// Same Ionicons mocking rationale as __tests__/StarRating.test.tsx and
+// Same MaterialIcons mocking rationale as __tests__/components/ui/StarRating.test.tsx and
 // __tests__/components/movie/DiaryPosterTile.test.tsx: the real
 // implementation doesn't forward name/color to the host node RNTL queries.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 import {
   MovieGrid,
   type MovieGridBadge,
@@ -28,6 +21,28 @@ function makeItem(overrides: Partial<MovieGridItem> = {}): MovieGridItem {
 }
 
 describe("MovieGrid", () => {
+  it("pads a short last row with invisible placeholders so tiles keep 1/columns width", async () => {
+    const items = [1, 2, 3, 4].map((id) => makeItem({ tmdbId: id, title: `M${id}` }));
+
+    const { getByTestId, queryByTestId } = await render(
+      <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" columns={3} />,
+    );
+
+    expect(getByTestId("grid-placeholder-0")).toBeTruthy();
+    expect(getByTestId("grid-placeholder-1")).toBeTruthy();
+    expect(queryByTestId("grid-placeholder-2")).toBeNull();
+  });
+
+  it("adds no placeholders when the last row is full", async () => {
+    const items = [1, 2, 3].map((id) => makeItem({ tmdbId: id }));
+
+    const { queryByTestId } = await render(
+      <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" columns={3} />,
+    );
+
+    expect(queryByTestId("grid-placeholder-0")).toBeNull();
+  });
+
   it("renders one tile per item with the correct testID and title", async () => {
     const items = [makeItem({ tmdbId: 1, title: "Alpha" }), makeItem({ tmdbId: 2, title: "Beta" })];
 
@@ -83,6 +98,22 @@ describe("MovieGrid", () => {
     );
 
     expect(getByTestId("grid-item-1").props.accessibilityRole).toBe("button");
+  });
+
+  it("renders edge-to-edge poster tiles with a flush TMDB corner badge and padded info area", async () => {
+    const { getByTestId } = await render(
+      <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" />,
+    );
+    const tile = getByTestId("grid-item-1").props.className as string;
+    expect(tile).toContain("overflow-hidden");
+    expect(tile).not.toMatch(/(^|\s)p[xytblr]?-\d/);
+    expect(getByTestId("grid-item-1-poster-wrapper").props.className).not.toMatch(/rounded/);
+    expect(getByTestId("grid-item-1-poster").props.contentFit).toBe("cover");
+    const score = getByTestId("grid-score-1").props.className as string;
+    expect(score).toContain("bottom-0");
+    expect(score).toContain("right-0");
+    expect(score).toContain("rounded-tl-xl");
+    expect(getByTestId("grid-item-1-info").props.className).toContain("px-1");
   });
 
   describe("badges", () => {
@@ -442,4 +473,13 @@ describe("MovieGrid", () => {
       expect(onPressItem).toHaveBeenCalledWith(items[0]);
     });
   });
+
+describe("MovieGrid quick-add touch target", () => {
+  it("the + button is a 48x48 touch box around the small visual", async () => {
+    const { getByTestId } = await render(
+      <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" onAddItem={jest.fn()} />,
+    );
+    expect(getByTestId("grid-add-1").props.className).toContain("h-12 w-12");
+  });
+});
 });

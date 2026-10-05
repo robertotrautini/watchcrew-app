@@ -12,8 +12,8 @@ import {
   parseGermanDateInput,
   resolvePaymentDate,
   resolveSeenAtDate,
-} from "../src/lib/ratingLogic";
-import { toLocalIsoDate } from "../src/lib/localDate";
+} from "../../src/lib/ratingLogic";
+import { toLocalIsoDate } from "../../src/lib/localDate";
 
 describe("resolvePaymentDate", () => {
   const NOW = new Date("2026-09-20T12:00:00.000Z");

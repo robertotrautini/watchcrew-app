@@ -121,7 +121,9 @@ describe("WatchlistPosterCard", () => {
         />,
       );
 
-      expect(getByTestId("watchlist-poster-card").props.className).toContain("opacity-50");
+      // Only the content dims; the glass surface (blur + tint) stays untouched.
+      expect(getByTestId("watchlist-poster-card").props.className).not.toContain("opacity-50");
+      expect(getByTestId("watchlist-poster-card-content").props.className).toContain("opacity-50");
     });
 
     it("does not dim an already-released movie", async () => {
@@ -137,6 +139,7 @@ describe("WatchlistPosterCard", () => {
       );
 
       expect(getByTestId("watchlist-poster-card").props.className).not.toContain("opacity-50");
+      expect(getByTestId("watchlist-poster-card-content").props.className).not.toContain("opacity-50");
     });
   });
 
@@ -224,6 +227,25 @@ describe("WatchlistPosterCard", () => {
   });
 });
 
+describe("WatchlistPosterCard TMDB badge corner", () => {
+  it.each(["card", "grid"] as const)("%s variant: badge flush bottom-right with inner-corner radius", async (variant) => {
+    const { getByTestId } = await render(
+      <WatchlistPosterCard
+        variant={variant}
+        movie={makeMovie()}
+        streamingAvailability={lookup()}
+        ratedCount={0}
+        totalMembers={3}
+        now={NOW}
+      />,
+    );
+    const cls = getByTestId("watchlist-poster-card-tmdb-badge").props.className as string;
+    expect(cls).toContain("bottom-0");
+    expect(cls).toContain("right-0");
+    expect(cls).toMatch(/rounded-tl-/);
+  });
+});
+
 describe("WatchlistPosterCard poster URL", () => {
   it("expands a bare stored TMDB poster path into a full image URL", async () => {
     const { getByTestId } = await render(
@@ -236,8 +258,32 @@ describe("WatchlistPosterCard poster URL", () => {
         now={NOW}
       />,
     );
-    expect(getByTestId("watchlist-poster-card-poster").props.source).toEqual({
-      uri: "https://image.tmdb.org/t/p/w342/abc.jpg",
-    });
+    expect(getByTestId("watchlist-poster-card-poster").props.source).toEqual([
+      { uri: "https://image.tmdb.org/t/p/w342/abc.jpg" },
+    ]);
+  });
+});
+
+describe("WatchlistPosterCard grid edge-to-edge poster", () => {
+  it("tile has no padding, clips overflow; poster is full width with no radius of its own", async () => {
+    const { getByTestId } = await render(
+      <WatchlistPosterCard
+        variant="grid"
+        movie={makeMovie()}
+        streamingAvailability={lookup()}
+        ratedCount={0}
+        totalMembers={3}
+        now={NOW}
+      />,
+    );
+    const tile = getByTestId("watchlist-poster-card").props.className as string;
+    expect(tile).toContain("overflow-hidden");
+    expect(tile).not.toMatch(/(^|\s)p[xytblr]?-\d/);
+    const wrapper = getByTestId("watchlist-poster-card-poster-wrapper").props.className as string;
+    expect(wrapper).toContain("w-full");
+    expect(wrapper).not.toMatch(/rounded/);
+    const poster = getByTestId("watchlist-poster-card-poster").props;
+    expect(poster.contentFit).toBe("cover");
+    expect(getByTestId("watchlist-poster-card-info").props.className).toContain("px-2");
   });
 });

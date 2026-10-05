@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetMovieProviders = jest.fn();
@@ -14,15 +13,6 @@ jest.mock("@/lib/tmdbProxy", () => ({
 // with a real QueryClientProvider wrapper.
 function loadUseMoviesProviders() {
   return require("@/hooks/useMoviesProviders").useMoviesProviders;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useMoviesProviders", () => {
@@ -39,7 +29,7 @@ describe("useMoviesProviders", () => {
     const useMoviesProviders = loadUseMoviesProviders();
 
     const { result } = await renderHook(() => useMoviesProviders([1, 2]), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -68,7 +58,7 @@ describe("useMoviesProviders", () => {
     const useMoviesProviders = loadUseMoviesProviders();
 
     const { result } = await renderHook(() => useMoviesProviders([1, 2]), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     expect(result.current.isLoading).toBe(true);
@@ -86,7 +76,7 @@ describe("useMoviesProviders", () => {
     const useMoviesProviders = loadUseMoviesProviders();
 
     const { result } = await renderHook(() => useMoviesProviders([1, 2]), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -98,7 +88,7 @@ describe("useMoviesProviders", () => {
     const useMoviesProviders = loadUseMoviesProviders();
 
     const { result } = await renderHook(() => useMoviesProviders([]), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     expect(result.current.isLoading).toBe(false);

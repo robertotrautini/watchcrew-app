@@ -1,8 +1,8 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { render } from "@testing-library/react-native";
 import { Text } from "react-native";
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({ useCurrentUserId: mockUseCurrentUserId }));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 const mockUseActiveGroup = jest.fn();
 jest.mock("@/hooks/useActiveGroup", () => ({ useActiveGroup: mockUseActiveGroup }));
 const mockUseGroupDetails = jest.fn();
@@ -21,7 +21,7 @@ function Probe() {
 describe("ActiveGroupThemeProvider", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseActiveGroup.mockReturnValue({ activeGroupId: "g1" });
   });
 

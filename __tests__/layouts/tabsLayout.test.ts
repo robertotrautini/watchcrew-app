@@ -5,7 +5,7 @@
 // unit-testable as a navigator (that's the interim web visual check's job),
 // but the exported TAB_SCREENS data it renders from is a plain, testable
 // regression guard for "exactly these tabs, no more, no less".
-import { TAB_SCREENS } from "../src/app/(app)/(tabs)/_layout";
+import { TAB_SCREENS } from "../../src/app/(app)/(tabs)/_layout";
 
 describe("(app)/(tabs) TAB_SCREENS", () => {
   it("contains exactly Tracker, Watchlist, Tagebuch, in that order", () => {
@@ -22,22 +22,21 @@ describe("(app)/(tabs) TAB_SCREENS", () => {
 });
 
 // Regression: tabs without `tabBarIcon` fall back to React Navigation's
-// MissingIcon (box with X). Every tab needs a real Ionicons glyph.
-import { Ionicons } from "@expo/vector-icons";
+// MissingIcon (box with X). Every tab needs a real Material glyph (via Icon roles).
+import { ICON_ROLES } from "../../src/components/ui/Icon";
 
 describe("(app)/(tabs) tab icons", () => {
-  it("gives every tab an icon name that exists in the Ionicons glyph map", () => {
+  it("gives every tab active + inactive icon roles that exist in ICON_ROLES", () => {
     for (const tab of TAB_SCREENS) {
-      expect(typeof tab.icon).toBe("string");
-      expect(Object.keys(Ionicons.glyphMap)).toContain(tab.icon);
-      expect(Object.keys(Ionicons.glyphMap)).toContain(`${tab.icon}-outline`);
+      expect(Object.keys(ICON_ROLES)).toContain(tab.icon);
+      expect(Object.keys(ICON_ROLES)).toContain(tab.iconInactive);
     }
   });
 });
 
 // Per-device "Tracker aktiv" flag (inventory 4.12): hidden tab stays a
 // registered route (href: null) so deep links / the file route don't break.
-import { getTabScreens, getInitialTabName } from "../src/app/(app)/(tabs)/_layout";
+import { getTabScreens, getInitialTabName } from "../../src/app/(app)/(tabs)/_layout";
 
 describe("(app)/(tabs) tracker feature flag", () => {
   it("shows all three tabs when the tracker is enabled", () => {

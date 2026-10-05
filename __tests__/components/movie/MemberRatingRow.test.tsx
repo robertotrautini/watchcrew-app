@@ -1,12 +1,5 @@
 import { render } from "@testing-library/react-native";
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 
 const GOLD_STAR_COLOR = "#FFD700";
@@ -43,5 +36,16 @@ describe("MemberRatingRow", () => {
     );
 
     expect(queryAllByRole("adjustable")).toHaveLength(0);
+  });
+
+  it("hideValue omits the numeric value and uses tight read-only stars (28px box)", async () => {
+    const { queryByTestId, getAllByTestId } = await render(
+      <MemberRatingRow memberLabel="Anna" rating={3.5} starColor={GOLD_STAR_COLOR} hideValue />,
+    );
+
+    expect(queryByTestId("member-rating-value")).toBeNull();
+    const boxes = getAllByTestId(/star-rating-touch-/);
+    expect(boxes).toHaveLength(5);
+    expect(boxes[0].props.className).toContain("h-7 w-7");
   });
 });

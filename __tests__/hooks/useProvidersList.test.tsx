@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetProvidersList = jest.fn();
@@ -11,15 +10,6 @@ jest.mock("@/lib/tmdbProxy", () => ({
 
 function loadUseProvidersList() {
   return require("@/hooks/useProvidersList").useProvidersList;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useProvidersList", () => {
@@ -36,7 +26,7 @@ describe("useProvidersList", () => {
     const useProvidersList = loadUseProvidersList();
 
     const { result, unmount } = await renderHook(() => useProvidersList(), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -49,7 +39,7 @@ describe("useProvidersList", () => {
     const useProvidersList = loadUseProvidersList();
 
     const { result, unmount } = await renderHook(() => useProvidersList(), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -62,7 +52,7 @@ describe("useProvidersList", () => {
     const useProvidersList = loadUseProvidersList();
 
     const { result, unmount } = await renderHook(() => useProvidersList(), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

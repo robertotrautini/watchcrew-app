@@ -1,3 +1,4 @@
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 const mockRequestPasswordReset = jest.fn();
@@ -5,11 +6,7 @@ jest.mock("@/lib/auth", () => ({
   requestPasswordReset: mockRequestPasswordReset,
 }));
 
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace, back: jest.fn() }),
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 function loadScreen() {
   return require("@/app/(auth)/forgot-password").default;
@@ -73,6 +70,6 @@ describe("ForgotPasswordScreen", () => {
     await fireEvent.press(getByTestId("forgot-password-submit-button"));
     await waitFor(() => expect(getByTestId("forgot-password-back-button")).toBeTruthy());
     await fireEvent.press(getByTestId("forgot-password-back-button"));
-    expect(mockReplace).toHaveBeenCalledWith("/(auth)/login");
+    expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
   });
 });

@@ -1,28 +1,11 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-jest.mock("expo-router", () => ({
-  Stack: { Screen: () => null },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 const mockUseProvidersList = jest.fn();
 jest.mock("@/hooks/useProvidersList", () => ({
   useProvidersList: mockUseProvidersList,
 }));
-
-jest.mock("react-native-mmkv", () => {
-  const map = new Map<string, string>();
-  return {
-    createMMKV: jest.fn().mockImplementation(() => ({
-      getString: (key: string) => map.get(key),
-      set: (key: string, value: string) => {
-        map.set(key, value);
-      },
-      remove: (key: string) => {
-        map.delete(key);
-      },
-    })),
-  };
-});
 
 function loadPreferencesStore() {
   return require("@/stores/usePreferencesStore").usePreferencesStore;
@@ -33,7 +16,7 @@ function loadScreen() {
 }
 
 const PROVIDERS = [
-  { provider_id: 8, provider_name: "Netflix" },
+  { provider_id: 8, provider_name: "Netflix", logo_path: "/netflix.jpg" },
   { provider_id: 337, provider_name: "Disney Plus" },
   { provider_id: 119, provider_name: "Amazon Prime Video" },
 ];
@@ -44,6 +27,17 @@ describe("SettingsStreamingServicesScreen", () => {
     const usePreferencesStore = loadPreferencesStore();
     usePreferencesStore.setState({ selectedStreamingProviderIds: [] });
     mockUseProvidersList.mockReturnValue({ data: PROVIDERS, isLoading: false, isError: false });
+  });
+
+  it("renders the provider logo (w92) next to the name, none when logo_path is missing", async () => {
+    const Screen = loadScreen();
+
+    const { getByTestId, queryByTestId } = await render(<Screen />);
+
+    expect(getByTestId("settings-streaming-provider-logo-8").props.source).toEqual([
+      { uri: "https://image.tmdb.org/t/p/w92/netflix.jpg" },
+    ]);
+    expect(queryByTestId("settings-streaming-provider-logo-337")).toBeNull();
   });
 
   it("shows a loading indicator while providers are loading", async () => {

@@ -14,7 +14,7 @@ describe("Card", () => {
     expect(getByText("movie night")).toBeTruthy();
   });
 
-  it("applies the themed background, radius, border and shadow tokens", async () => {
+  it("applies the flat themed background, radius and border tokens (no shadow/bevel)", async () => {
     const { getByTestId } = await render(
       <Card testID="card-root">
         <Text>content</Text>
@@ -22,10 +22,11 @@ describe("Card", () => {
     );
 
     const { className } = getByTestId("card-root").props;
-    expect(className).toContain("bg-card");
+    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-card-blur");
     expect(className).toContain("rounded-xl");
     expect(className).toContain("border-glass-border");
-    expect(className).toContain("shadow-card");
+    expect(className).not.toContain("shadow-card");
+    expect(className).not.toMatch(/border-[tb]-/);
   });
 
   it("merges a caller-provided className alongside the base tokens", async () => {
@@ -36,7 +37,7 @@ describe("Card", () => {
     );
 
     const { className } = getByTestId("card-root").props;
-    expect(className).toContain("bg-card");
+    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-card-blur");
     expect(className).toContain("mt-4");
   });
 

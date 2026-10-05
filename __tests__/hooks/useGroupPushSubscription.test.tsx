@@ -1,6 +1,7 @@
+import { queryKeys } from "@/lib/queryKeys";
 // M10 (part): tests for src/hooks/useGroupPushSubscription.ts -- the
 // Settings-hub's per-group push opt-in surface. Mocks src/lib/pushTokens.ts
-// (same convention as __tests__/useSaveRating.test.tsx: mock the src/lib
+// (same convention as __tests__/hooks/useSaveRating.test.tsx: mock the src/lib
 // layer, assert query state + mutation calls + cache invalidation).
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -87,7 +88,7 @@ describe("useGroupPushSubscription", () => {
     await waitFor(() =>
       expect(mockSubscribeToGroupPush).toHaveBeenCalledWith({ groupId: "g1", userId: "u1" }),
     );
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["pushSubscription", "g1", "u1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.pushSubscription.byGroupUser("g1", "u1") });
   });
 
   it("unsubscribe() calls unsubscribeFromGroupPush and invalidates the subscription query", async () => {
@@ -107,6 +108,6 @@ describe("useGroupPushSubscription", () => {
     await waitFor(() =>
       expect(mockUnsubscribeFromGroupPush).toHaveBeenCalledWith({ groupId: "g1", userId: "u1" }),
     );
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["pushSubscription", "g1", "u1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.pushSubscription.byGroupUser("g1", "u1") });
   });
 });

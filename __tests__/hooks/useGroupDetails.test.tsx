@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetWatchGroupDetails = jest.fn();
@@ -11,27 +10,13 @@ jest.mock("@/lib/groups", () => ({
   getWatchGroupsByIds: mockGetWatchGroupsByIds,
 }));
 
-// Lazily required, same Babel CJS-hoisting reason as __tests__/useUserGroups.test.tsx.
+// Lazily required, same Babel CJS-hoisting reason as __tests__/hooks/useUserGroups.test.tsx.
 function loadUseGroupDetails() {
   return require("@/hooks/useGroupDetails").useGroupDetails;
 }
 
 function loadUseGroupNames() {
   return require("@/hooks/useGroupDetails").useGroupNames;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-    },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useGroupDetails", () => {
@@ -46,7 +31,7 @@ describe("useGroupDetails", () => {
     });
     const useGroupDetails = loadUseGroupDetails();
 
-    const { unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createWrapper() });
+    const { unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(mockGetWatchGroupDetails).toHaveBeenCalledWith("g1"));
     await unmount();
@@ -59,7 +44,7 @@ describe("useGroupDetails", () => {
     });
     const useGroupDetails = loadUseGroupDetails();
 
-    const { result, unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createWrapper() });
+    const { result, unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.data?.name).toBe("Filmfreunde"));
     expect(result.current.data?.color_theme).toBe("blue");
@@ -71,7 +56,7 @@ describe("useGroupDetails", () => {
     mockGetWatchGroupDetails.mockResolvedValue({ data: null, error: fakeError });
     const useGroupDetails = loadUseGroupDetails();
 
-    const { result, unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createWrapper() });
+    const { result, unmount } = await renderHook(() => useGroupDetails("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(fakeError);
@@ -81,7 +66,7 @@ describe("useGroupDetails", () => {
   it("does not call getWatchGroupDetails when groupId is undefined (query disabled)", async () => {
     const useGroupDetails = loadUseGroupDetails();
 
-    const { unmount } = await renderHook(() => useGroupDetails(undefined), { wrapper: createWrapper() });
+    const { unmount } = await renderHook(() => useGroupDetails(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetWatchGroupDetails).not.toHaveBeenCalled();
     await unmount();
@@ -100,7 +85,7 @@ describe("useGroupNames", () => {
     });
     const useGroupNames = loadUseGroupNames();
 
-    const { unmount } = await renderHook(() => useGroupNames(["g1", "g2"]), { wrapper: createWrapper() });
+    const { unmount } = await renderHook(() => useGroupNames(["g1", "g2"]), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(mockGetWatchGroupsByIds).toHaveBeenCalledWith(["g1", "g2"]));
     await unmount();
@@ -113,7 +98,7 @@ describe("useGroupNames", () => {
     });
     const useGroupNames = loadUseGroupNames();
 
-    const { result, unmount } = await renderHook(() => useGroupNames(["g1"]), { wrapper: createWrapper() });
+    const { result, unmount } = await renderHook(() => useGroupNames(["g1"]), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.data).toEqual([{ id: "g1", name: "Filmfreunde" }]));
     await unmount();
@@ -124,7 +109,7 @@ describe("useGroupNames", () => {
     mockGetWatchGroupsByIds.mockResolvedValue({ data: null, error: fakeError });
     const useGroupNames = loadUseGroupNames();
 
-    const { result, unmount } = await renderHook(() => useGroupNames(["g1"]), { wrapper: createWrapper() });
+    const { result, unmount } = await renderHook(() => useGroupNames(["g1"]), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(fakeError);
@@ -134,7 +119,7 @@ describe("useGroupNames", () => {
   it("does not call getWatchGroupsByIds for an empty id list (query disabled)", async () => {
     const useGroupNames = loadUseGroupNames();
 
-    const { unmount } = await renderHook(() => useGroupNames([]), { wrapper: createWrapper() });
+    const { unmount } = await renderHook(() => useGroupNames([]), { wrapper: createQueryWrapper() });
 
     expect(mockGetWatchGroupsByIds).not.toHaveBeenCalled();
     await unmount();

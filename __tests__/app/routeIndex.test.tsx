@@ -13,13 +13,13 @@ jest.mock("expo-router", () => ({
 // src/app/index.tsx is the app's initial route and owns the actual
 // auth-gate -> route-group redirect decision (the core logic this M3 task
 // is responsible for getting right). It's required lazily inside each test
-// (see __tests__/useAuthGate.test.tsx for why: a static top-level import
+// (see __tests__/hooks/useAuthGate.test.tsx for why: a static top-level import
 // would be hoisted above these mock factories by Babel's CommonJS interop).
 function loadIndexScreen() {
   return require("@/app/index").default;
 }
 
-describe("src/app/index.tsx (root redirect)", () => {
+describe("../../src/app/index.tsx (root redirect)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -67,7 +67,7 @@ describe("src/app/index.tsx (root redirect)", () => {
   });
 });
 
-describe("src/app/index.tsx (pending invite + tracker flag)", () => {
+describe("../../src/app/index.tsx (pending invite + tracker flag)", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset before any render so no mounted component observes the change.

@@ -1,3 +1,4 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { Linking } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
@@ -8,10 +9,7 @@ import { fireEvent, render } from "@testing-library/react-native";
 // QueryClientProvider needed since useGroupPushSubscription itself is
 // mocked at the module boundary.
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
@@ -60,7 +58,7 @@ function setUpHook(byGroup: Record<string, SubState> = {}) {
 describe("SettingsNotificationsScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [{ group_id: "g1" }, { group_id: "g2" }] });
     mockUseGroupNames.mockReturnValue({
       data: [

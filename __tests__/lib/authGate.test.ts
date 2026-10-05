@@ -1,4 +1,4 @@
-import { resolveAuthGate } from "../src/lib/authGate";
+import { resolveAuthGate } from "../../src/lib/authGate";
 
 // Core redirect-decision logic for M3's navigation shell:
 //   no session              -> 'auth'       (show the (auth) login/register group)

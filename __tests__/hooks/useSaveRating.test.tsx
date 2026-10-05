@@ -1,6 +1,7 @@
+import { queryKeys } from "@/lib/queryKeys";
 // M7 part 2b (Rating-Dialog): TanStack Query mutation tests for
 // src/hooks/useSaveRating.ts, mirroring the mocking convention in
-// __tests__/useMovieDetailMutations.test.tsx (mock the src/lib layer,
+// __tests__/hooks/useMovieDetailMutations.test.tsx (mock the src/lib layer,
 // assert the hook throws-as-error on `{ error }` and invalidates the
 // group's watchlist cache on success).
 
@@ -274,7 +275,7 @@ describe("useSaveRating", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("does not invalidate the cache when the save errors", async () => {
@@ -348,7 +349,7 @@ describe("useResetRating", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockResetRating).toHaveBeenCalledWith({ ratingId: "r1" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ["watchlist", "group-1"] });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
   });
 
   it("surfaces a reset error through React Query's error channel without invalidating the cache", async () => {

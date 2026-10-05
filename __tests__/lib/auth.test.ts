@@ -6,7 +6,7 @@ const mockUpdateUser = jest.fn();
 const mockSetSession = jest.fn();
 const mockExchangeCodeForSession = jest.fn();
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     auth: {
       signUp: mockSignUp,
@@ -33,7 +33,7 @@ describe("auth", () => {
       };
       mockSignUp.mockResolvedValue(fakeResult);
 
-      const { signUpWithEmail } = require("../src/lib/auth");
+      const { signUpWithEmail } = require("../../src/lib/auth");
       const result = await signUpWithEmail("a@b.com", "secret123", "Robin");
 
       expect(mockSignUp).toHaveBeenCalledWith({
@@ -54,7 +54,7 @@ describe("auth", () => {
       };
       mockSignUp.mockResolvedValue(fakeResult);
 
-      const { signUpWithEmail } = require("../src/lib/auth");
+      const { signUpWithEmail } = require("../../src/lib/auth");
       const result = await signUpWithEmail("a@b.com", "secret123", "Robin");
 
       expect(result).toBe(fakeResult);
@@ -69,7 +69,7 @@ describe("auth", () => {
       };
       mockSignInWithPassword.mockResolvedValue(fakeResult);
 
-      const { signInWithEmail } = require("../src/lib/auth");
+      const { signInWithEmail } = require("../../src/lib/auth");
       const result = await signInWithEmail("a@b.com", "secret123");
 
       expect(mockSignInWithPassword).toHaveBeenCalledWith({
@@ -86,7 +86,7 @@ describe("auth", () => {
       };
       mockSignInWithPassword.mockResolvedValue(fakeResult);
 
-      const { signInWithEmail } = require("../src/lib/auth");
+      const { signInWithEmail } = require("../../src/lib/auth");
       const result = await signInWithEmail("a@b.com", "wrong");
 
       expect(result).toBe(fakeResult);
@@ -98,7 +98,7 @@ describe("auth", () => {
       const fakeResult = { error: null };
       mockSignOut.mockResolvedValue(fakeResult);
 
-      const { signOut } = require("../src/lib/auth");
+      const { signOut } = require("../../src/lib/auth");
       const result = await signOut();
 
       expect(mockSignOut).toHaveBeenCalledWith();
@@ -109,7 +109,7 @@ describe("auth", () => {
       const fakeResult = { error: { message: "network error" } };
       mockSignOut.mockResolvedValue(fakeResult);
 
-      const { signOut } = require("../src/lib/auth");
+      const { signOut } = require("../../src/lib/auth");
       const result = await signOut();
 
       expect(result).toBe(fakeResult);
@@ -121,7 +121,7 @@ describe("auth", () => {
       const fakeResult = { data: {}, error: null };
       mockResetPasswordForEmail.mockResolvedValue(fakeResult);
 
-      const { requestPasswordReset } = require("../src/lib/auth");
+      const { requestPasswordReset } = require("../../src/lib/auth");
       const result = await requestPasswordReset("a@b.com");
 
       expect(mockResetPasswordForEmail).toHaveBeenCalledWith("a@b.com", {
@@ -136,7 +136,7 @@ describe("auth", () => {
       const fakeResult = { data: { user: {} }, error: null };
       mockUpdateUser.mockResolvedValue(fakeResult);
 
-      const { updatePassword } = require("../src/lib/auth");
+      const { updatePassword } = require("../../src/lib/auth");
       const result = await updatePassword("newsecret");
 
       expect(mockUpdateUser).toHaveBeenCalledWith({ password: "newsecret" });
@@ -149,7 +149,7 @@ describe("auth", () => {
       const fakeResult = { data: { session: {} }, error: null };
       mockSetSession.mockResolvedValue(fakeResult);
 
-      const { establishSessionFromTokens } = require("../src/lib/auth");
+      const { establishSessionFromTokens } = require("../../src/lib/auth");
       const result = await establishSessionFromTokens("AT", "RT");
 
       expect(mockSetSession).toHaveBeenCalledWith({ access_token: "AT", refresh_token: "RT" });
@@ -160,7 +160,7 @@ describe("auth", () => {
       const fakeResult = { data: { session: {} }, error: null };
       mockExchangeCodeForSession.mockResolvedValue(fakeResult);
 
-      const { exchangeAuthCode } = require("../src/lib/auth");
+      const { exchangeAuthCode } = require("../../src/lib/auth");
       const result = await exchangeAuthCode("abc");
 
       expect(mockExchangeCodeForSession).toHaveBeenCalledWith("abc");

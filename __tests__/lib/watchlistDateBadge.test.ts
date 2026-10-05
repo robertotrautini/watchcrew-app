@@ -1,5 +1,5 @@
-import { getDateBadgeText, isEntryDimmed } from "../src/lib/watchlistDateBadge";
-import type { Movie, StreamingAvailabilityLookup } from "../src/lib/watchlistTypes";
+import { getDateBadgeText, isEntryDimmed } from "../../src/lib/watchlistDateBadge";
+import type { Movie, StreamingAvailabilityLookup } from "../../src/lib/watchlistTypes";
 
 // Fixed "now" for deterministic future/past comparisons.
 const NOW = new Date("2025-06-15T12:00:00Z");

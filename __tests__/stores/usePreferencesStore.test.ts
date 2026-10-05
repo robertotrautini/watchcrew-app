@@ -1,10 +1,10 @@
-// See __tests__/mmkvStorage.test.ts for why react-native-mmkv is mocked with
+// See __tests__/lib/mmkvStorage.test.ts for why react-native-mmkv is mocked with
 // a plain Map-backed fake rather than the real native module.
 //
 // The store module (and the mmkvStorage module it imports) is required
 // lazily inside each test via loadStore(), after (re)seeding
 // mockStorageMap and calling jest.resetModules() — this mirrors the
-// lazy-require pattern already used in __tests__/useAuthGate.test.tsx, and
+// lazy-require pattern already used in __tests__/hooks/useAuthGate.test.tsx, and
 // is required here specifically so the hydration test can control what the
 // "persisted" MMKV data looks like *before* the Zustand `persist` middleware
 // runs its synchronous hydration read at store-creation time.
@@ -278,40 +278,16 @@ describe("usePreferencesStore", () => {
     expect(usePreferencesStore.getState().showTitlesInGrid).toBe(false);
   });
 
-  it("defaults lastSeenChangelogVersion to null when nothing has been persisted yet", () => {
-    const usePreferencesStore = loadStore();
-
-    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBeNull();
-  });
-
-  it("setLastSeenChangelogVersion updates the store's state", () => {
-    const usePreferencesStore = loadStore();
-
-    usePreferencesStore.getState().setLastSeenChangelogVersion("1.0.0");
-
-    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBe("1.0.0");
-  });
-
-  it("persists lastSeenChangelogVersion through the MMKV-backed storage adapter, not just in memory", () => {
-    const usePreferencesStore = loadStore();
-
-    usePreferencesStore.getState().setLastSeenChangelogVersion("1.0.0");
-
-    const raw = mockStorageMap.get("watchcrew-preferences");
-    expect(raw).toBeDefined();
-    const persisted = JSON.parse(raw as string);
-    expect(persisted.state.lastSeenChangelogVersion).toBe("1.0.0");
-  });
-
-  it("hydrates lastSeenChangelogVersion from data already present in MMKV storage on module load", () => {
+  it("ignores the removed lastSeenChangelogVersion key persisted by older installs", () => {
     mockStorageMap.set(
       "watchcrew-preferences",
-      JSON.stringify({ state: { lastSeenChangelogVersion: "0.9.0" }, version: 0 }),
+      JSON.stringify({ state: { lastSeenChangelogVersion: "0.9.0", showTitlesInGrid: false }, version: 0 }),
     );
 
     const usePreferencesStore = loadStore();
 
-    expect(usePreferencesStore.getState().lastSeenChangelogVersion).toBe("0.9.0");
+    expect(usePreferencesStore.getState().showTitlesInGrid).toBe(false);
+    expect(usePreferencesStore.getState()).not.toHaveProperty("setLastSeenChangelogVersion");
   });
 
   it("returns a default list-filter state for a tab+group without stored choices", () => {
@@ -354,5 +330,22 @@ describe("usePreferencesStore", () => {
 
     jest.resetModules();
     expect(loadStore().getState().listFilters["diary:g1"].sortOption).toBe("rating");
+  });
+
+  it("filterPanelOpen defaults to closed for both tabs", () => {
+    const usePreferencesStore = loadStore();
+    expect(usePreferencesStore.getState().filterPanelOpen).toEqual({ watchlist: false, diary: false });
+  });
+
+  it("setFilterPanelOpen updates one tab only and persists/hydrates via MMKV", () => {
+    const usePreferencesStore = loadStore();
+    usePreferencesStore.getState().setFilterPanelOpen("diary", true);
+    expect(usePreferencesStore.getState().filterPanelOpen).toEqual({ watchlist: false, diary: true });
+
+    const persisted = JSON.parse(mockStorageMap.get("watchcrew-preferences") as string);
+    expect(persisted.state.filterPanelOpen.diary).toBe(true);
+
+    jest.resetModules();
+    expect(loadStore().getState().filterPanelOpen).toEqual({ watchlist: false, diary: true });
   });
 });

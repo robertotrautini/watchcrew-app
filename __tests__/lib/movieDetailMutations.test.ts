@@ -1,7 +1,7 @@
 // M6 part 2a: data-layer tests for the Movie Detail Overlay's write
 // operations (toggle-like, delete-from-watchlist, add-to-watchlist).
 //
-// Same convention as __tests__/watchlist.test.ts: mock "../src/lib/supabase"
+// Same convention as __tests__/lib/watchlist.test.ts: mock "../../src/lib/supabase"
 // with jest.fn()-based chain builders, and assert the underlying functions
 // return Supabase's raw `{ data, error }` shape unchanged (never throw).
 //
@@ -14,7 +14,7 @@
 const mockFrom = jest.fn();
 const mockUpsertMovie = jest.fn();
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
   },
@@ -28,7 +28,7 @@ jest.mock("../src/lib/supabase", () => ({
 // module so this suite can assert the two steps (upsert, then insert)
 // independently without needing to fake `supabase.functions.invoke`'s shape
 // here too.
-jest.mock("../src/lib/tmdbProxy", () => ({
+jest.mock("../../src/lib/tmdbProxy", () => ({
   upsertMovie: mockUpsertMovie,
 }));
 
@@ -59,7 +59,7 @@ describe("toggleLike", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { toggleLike } = require("../src/lib/movieDetailMutations");
+    const { toggleLike } = require("../../src/lib/movieDetailMutations");
     const result = await toggleLike({
       watchlistEntryId: "we-1",
       memberId: "user-1",
@@ -80,7 +80,7 @@ describe("toggleLike", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { toggleLike } = require("../src/lib/movieDetailMutations");
+    const { toggleLike } = require("../../src/lib/movieDetailMutations");
     const result = await toggleLike({
       watchlistEntryId: "we-1",
       memberId: "user-1",
@@ -101,7 +101,7 @@ describe("toggleLike", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { toggleLike } = require("../src/lib/movieDetailMutations");
+    const { toggleLike } = require("../../src/lib/movieDetailMutations");
     const result = await toggleLike({
       watchlistEntryId: "we-1",
       memberId: "user-1",
@@ -122,7 +122,7 @@ describe("deleteWatchlistEntry", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { deleteWatchlistEntry } = require("../src/lib/movieDetailMutations");
+    const { deleteWatchlistEntry } = require("../../src/lib/movieDetailMutations");
     const result = await deleteWatchlistEntry({ watchlistEntryId: "we-42" });
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
@@ -135,7 +135,7 @@ describe("deleteWatchlistEntry", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { deleteWatchlistEntry } = require("../src/lib/movieDetailMutations");
+    const { deleteWatchlistEntry } = require("../../src/lib/movieDetailMutations");
     const result = await deleteWatchlistEntry({ watchlistEntryId: "we-42" });
 
     expect(result).toBe(fakeResult);
@@ -153,7 +153,7 @@ describe("addToWatchlist", () => {
     const entriesChain = makeChain(insertResult);
     mockFrom.mockReturnValueOnce(entriesChain);
 
-    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    const { addToWatchlist } = require("../../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
 
     expect(mockUpsertMovie).toHaveBeenCalledWith(603, undefined);
@@ -171,7 +171,7 @@ describe("addToWatchlist", () => {
     const upsertError = { message: "edge function failed" };
     mockUpsertMovie.mockResolvedValue({ data: null, error: upsertError });
 
-    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    const { addToWatchlist } = require("../../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 999, groupId: "group-1", addedBy: "user-1" });
 
     expect(result).toEqual({ data: null, error: upsertError });
@@ -185,7 +185,7 @@ describe("addToWatchlist", () => {
     const insertResult = { data: { id: "we-new-1" }, error: null };
     mockFrom.mockReturnValueOnce(makeChain(insertResult));
 
-    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    const { addToWatchlist } = require("../../src/lib/movieDetailMutations");
     await addToWatchlist({
       tmdbId: 604,
       groupId: "group-1",
@@ -201,7 +201,7 @@ describe("addToWatchlist", () => {
     const insertResult = { data: { id: "we-new-1" }, error: null };
     mockFrom.mockReturnValueOnce(makeChain(insertResult));
 
-    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    const { addToWatchlist } = require("../../src/lib/movieDetailMutations");
     await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
 
     expect(mockUpsertMovie).toHaveBeenCalledWith(603, undefined);
@@ -218,7 +218,7 @@ describe("addToWatchlist", () => {
     const entriesChain = makeChain(insertResult);
     mockFrom.mockReturnValueOnce(entriesChain);
 
-    const { addToWatchlist } = require("../src/lib/movieDetailMutations");
+    const { addToWatchlist } = require("../../src/lib/movieDetailMutations");
     const result = await addToWatchlist({ tmdbId: 603, groupId: "group-1", addedBy: "user-1" });
 
     expect(result).toBe(insertResult);
@@ -240,7 +240,7 @@ describe("saveRating", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { saveRating } = require("../src/lib/movieDetailMutations");
+    const { saveRating } = require("../../src/lib/movieDetailMutations");
     const payload = {
       watchlist_entry_id: "we-1",
       member_id: "user-1",
@@ -262,7 +262,7 @@ describe("saveRating", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { saveRating } = require("../src/lib/movieDetailMutations");
+    const { saveRating } = require("../../src/lib/movieDetailMutations");
     const result = await saveRating({
       watchlist_entry_id: "we-1",
       member_id: "user-1",
@@ -286,7 +286,7 @@ describe("resetRating", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { resetRating } = require("../src/lib/movieDetailMutations");
+    const { resetRating } = require("../../src/lib/movieDetailMutations");
     const result = await resetRating({ ratingId: "r1" });
 
     expect(mockFrom).toHaveBeenCalledWith("ratings");
@@ -301,7 +301,7 @@ describe("resetRating", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { resetRating } = require("../src/lib/movieDetailMutations");
+    const { resetRating } = require("../../src/lib/movieDetailMutations");
     const result = await resetRating({ ratingId: "r1" });
 
     expect(result).toBe(fakeResult);
@@ -318,7 +318,7 @@ describe("savePayment", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { savePayment } = require("../src/lib/movieDetailMutations");
+    const { savePayment } = require("../../src/lib/movieDetailMutations");
     const result = await savePayment({
       watchlistEntryId: "we-1",
       paidByMemberId: "user-2",
@@ -338,7 +338,7 @@ describe("savePayment", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { savePayment } = require("../src/lib/movieDetailMutations");
+    const { savePayment } = require("../../src/lib/movieDetailMutations");
     const result = await savePayment({
       watchlistEntryId: "we-1",
       paidByMemberId: "user-2",
@@ -359,7 +359,7 @@ describe("deletePayment", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { deletePayment } = require("../src/lib/movieDetailMutations");
+    const { deletePayment } = require("../../src/lib/movieDetailMutations");
     const result = await deletePayment({ watchlistEntryId: "we-1" });
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
@@ -372,7 +372,7 @@ describe("deletePayment", () => {
     const fakeResult = { data: null, error: { message: "rls denied" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { deletePayment } = require("../src/lib/movieDetailMutations");
+    const { deletePayment } = require("../../src/lib/movieDetailMutations");
     const result = await deletePayment({ watchlistEntryId: "we-1" });
 
     expect(result).toBe(fakeResult);
@@ -389,7 +389,7 @@ describe("setWatchlistEntryReleaseDate", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { setWatchlistEntryReleaseDate } = require("../src/lib/movieDetailMutations");
+    const { setWatchlistEntryReleaseDate } = require("../../src/lib/movieDetailMutations");
     const result = await setWatchlistEntryReleaseDate({ watchlistEntryId: "we-1", releaseDate: "2026-12-24" });
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
@@ -402,7 +402,7 @@ describe("setWatchlistEntryReleaseDate", () => {
     const chain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
 
-    const { setWatchlistEntryReleaseDate } = require("../src/lib/movieDetailMutations");
+    const { setWatchlistEntryReleaseDate } = require("../../src/lib/movieDetailMutations");
     await setWatchlistEntryReleaseDate({ watchlistEntryId: "we-1", releaseDate: null });
 
     expect(chain.update).toHaveBeenCalledWith({ release_date_override: null });

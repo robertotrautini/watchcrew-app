@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetGroupMembers = jest.fn();
@@ -11,23 +10,9 @@ jest.mock("@/lib/groups", () => ({
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the `mockGetGroupMembers`/`jest.mock` assignments above,
-// matching the convention in __tests__/useUserGroups.test.tsx.
+// matching the convention in __tests__/hooks/useUserGroups.test.tsx.
 function loadUseGroupMembers() {
   return require("@/hooks/useGroupMembers").useGroupMembers;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-    },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useGroupMembers", () => {
@@ -39,7 +24,7 @@ describe("useGroupMembers", () => {
     mockGetGroupMembers.mockResolvedValue({ data: [{ user_id: "u1" }], error: null });
     const useGroupMembers = loadUseGroupMembers();
 
-    await renderHook(() => useGroupMembers("g1"), { wrapper: createWrapper() });
+    await renderHook(() => useGroupMembers("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(mockGetGroupMembers).toHaveBeenCalledWith("g1"));
   });
@@ -54,7 +39,7 @@ describe("useGroupMembers", () => {
     });
     const useGroupMembers = loadUseGroupMembers();
 
-    const { result } = await renderHook(() => useGroupMembers("g1"), { wrapper: createWrapper() });
+    const { result } = await renderHook(() => useGroupMembers("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.data).toHaveLength(2));
   });
@@ -64,7 +49,7 @@ describe("useGroupMembers", () => {
     mockGetGroupMembers.mockResolvedValue({ data: null, error: fakeError });
     const useGroupMembers = loadUseGroupMembers();
 
-    const { result } = await renderHook(() => useGroupMembers("g1"), { wrapper: createWrapper() });
+    const { result } = await renderHook(() => useGroupMembers("g1"), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toEqual(fakeError);
@@ -73,7 +58,7 @@ describe("useGroupMembers", () => {
   it("does not call getGroupMembers when groupId is undefined (query disabled)", async () => {
     const useGroupMembers = loadUseGroupMembers();
 
-    await renderHook(() => useGroupMembers(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useGroupMembers(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetGroupMembers).not.toHaveBeenCalled();
   });

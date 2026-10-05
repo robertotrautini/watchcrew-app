@@ -1,3 +1,4 @@
+import { queryKeys } from "@/lib/queryKeys";
 import { IsRestoringProvider } from "@tanstack/react-query";
 import { act, renderHook, waitFor } from "@testing-library/react-native";
 import React from "react";
@@ -34,7 +35,7 @@ jest.mock("@/lib/groups", () => ({
 //
 // The hook is required lazily inside each test (rather than statically
 // imported at the top), matching the convention already used in
-// __tests__/auth.test.ts / __tests__/supabase.test.ts — a static top-level
+// __tests__/lib/auth.test.ts / __tests__/lib/supabase.test.ts — a static top-level
 // `import` gets hoisted above the `const mockGetSession = jest.fn()`
 // assignments by Babel's CommonJS interop, so the mock factories above would
 // run against not-yet-initialized mock functions.
@@ -184,7 +185,7 @@ describe("useAuthGate", () => {
   describe("offline cold start (persisted query cache)", () => {
     const networkError = { message: "Network request failed" };
     function seedCachedGroups(groups: unknown[]) {
-      require("@/lib/queryClient").queryClient.setQueryData(["userGroups", "u1"], groups);
+      require("@/lib/queryClient").queryClient.setQueryData(queryKeys.userGroups.byUser("u1"), groups);
     }
 
     it("resolves 'app' from the cached userGroups when getUserGroups fails with a network error", async () => {

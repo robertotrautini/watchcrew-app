@@ -3,7 +3,7 @@ const mockEq = jest.fn();
 const mockSelect = jest.fn(() => ({ eq: mockEq, in: mockIn }));
 const mockFrom = jest.fn(() => ({ select: mockSelect }));
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
   },
@@ -18,7 +18,7 @@ describe("getGroupWatchlistEntries", () => {
     const fakeResult = { data: [{ id: "e1" }], error: null };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getGroupWatchlistEntries } = require("../src/lib/watchlist");
+    const { getGroupWatchlistEntries } = require("../../src/lib/watchlist");
     const result = await getGroupWatchlistEntries("group-1");
 
     expect(mockFrom).toHaveBeenCalledWith("watchlist_entries");
@@ -33,7 +33,7 @@ describe("getGroupWatchlistEntries", () => {
     const fakeResult = { data: null, error: { message: "network error" } };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getGroupWatchlistEntries } = require("../src/lib/watchlist");
+    const { getGroupWatchlistEntries } = require("../../src/lib/watchlist");
     const result = await getGroupWatchlistEntries("group-1");
 
     expect(result).toBe(fakeResult);
@@ -49,7 +49,7 @@ describe("getStreamingAvailabilityForTmdbIds", () => {
     const fakeResult = { data: [{ tmdb_id: 1, region: "DE" }], error: null };
     mockIn.mockResolvedValue(fakeResult);
 
-    const { getStreamingAvailabilityForTmdbIds } = require("../src/lib/watchlist");
+    const { getStreamingAvailabilityForTmdbIds } = require("../../src/lib/watchlist");
     const result = await getStreamingAvailabilityForTmdbIds([1, 2, 3]);
 
     expect(mockFrom).toHaveBeenCalledWith("streaming_availability_cache");
@@ -59,7 +59,7 @@ describe("getStreamingAvailabilityForTmdbIds", () => {
   });
 
   it("short-circuits to an empty result without querying when given no tmdb_ids", async () => {
-    const { getStreamingAvailabilityForTmdbIds } = require("../src/lib/watchlist");
+    const { getStreamingAvailabilityForTmdbIds } = require("../../src/lib/watchlist");
     const result = await getStreamingAvailabilityForTmdbIds([]);
 
     expect(mockFrom).not.toHaveBeenCalled();

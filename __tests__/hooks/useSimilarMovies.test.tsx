@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetSimilarMovies = jest.fn();
@@ -11,15 +10,6 @@ jest.mock("@/lib/tmdbProxy", () => ({
 
 function loadUseSimilarMovies() {
   return require("@/hooks/useSimilarMovies").useSimilarMovies;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useSimilarMovies", () => {
@@ -33,7 +23,7 @@ describe("useSimilarMovies", () => {
     const useSimilarMovies = loadUseSimilarMovies();
 
     const { result } = await renderHook(() => useSimilarMovies(42), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toEqual(related));
@@ -46,7 +36,7 @@ describe("useSimilarMovies", () => {
     const useSimilarMovies = loadUseSimilarMovies();
 
     const { result } = await renderHook(() => useSimilarMovies(42), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -56,7 +46,7 @@ describe("useSimilarMovies", () => {
   it("does not fetch when tmdbId is undefined", async () => {
     const useSimilarMovies = loadUseSimilarMovies();
 
-    await renderHook(() => useSimilarMovies(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useSimilarMovies(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetSimilarMovies).not.toHaveBeenCalled();
   });

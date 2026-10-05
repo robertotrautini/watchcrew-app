@@ -8,12 +8,13 @@ import {
   assignMemberColors,
   computeNextPayer,
   daysSincePayment,
+  lastPaidHint,
   getLastPaidAtByMember,
   getPaidEntries,
   getUnpaidDiaryEntries,
-} from "../src/lib/trackerLogic";
-import type { GroupMemberRow } from "../src/lib/groups";
-import type { Rating, WatchlistEntry } from "../src/lib/watchlistTypes";
+} from "../../src/lib/trackerLogic";
+import type { GroupMemberRow } from "../../src/lib/groups";
+import type { Rating, WatchlistEntry } from "../../src/lib/watchlistTypes";
 
 function makeMovie(overrides: Partial<WatchlistEntry["movie"]> = {}): WatchlistEntry["movie"] {
   return {
@@ -263,5 +264,23 @@ describe("assignMemberColors", () => {
     // Member 0 and member 6 (index 0 and 6, palette length 6) share a color.
     expect(colors.get("u0")).toBe(colors.get("u6"));
     expect(colors.get("u1")).toBe(colors.get("u7"));
+  });
+});
+
+describe("lastPaidHint", () => {
+  const NOW = new Date("2026-09-20T18:00:00.000Z");
+
+  it("says 'noch nie bezahlt' when there is no previous payment", () => {
+    expect(lastPaidHint(null, NOW)).toBe("noch nie bezahlt");
+  });
+
+  it("labels the relative time explicitly", () => {
+    expect(lastPaidHint("2026-09-20T00:00:00.000Z", NOW)).toBe("zuletzt bezahlt: heute");
+    expect(lastPaidHint("2026-09-19T00:00:00.000Z", NOW)).toBe("zuletzt bezahlt: gestern");
+    expect(lastPaidHint("2026-09-15T00:00:00.000Z", NOW)).toBe("zuletzt bezahlt: vor 5 Tagen");
+  });
+
+  it("shows the absolute date for a payment dated in the future (never 'heute')", () => {
+    expect(lastPaidHint("2026-10-15", NOW)).toBe("zuletzt bezahlt: 15.10.2026");
   });
 });

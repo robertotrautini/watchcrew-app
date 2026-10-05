@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { Button } from "../src/components/ui/Button";
+import { Button } from "../../../src/components/ui/Button";
 
 describe("Button", () => {
   it("renders a label prop as text", async () => {
@@ -70,8 +70,30 @@ describe("Button", () => {
     );
 
     const { className } = getByTestId("save-button").props;
-    expect(className).toContain("bg-card");
-    expect(className).toContain("border-subtle");
+    expect(className).toContain("bg-white/10");
+    expect(className).toContain("border-glass-border");
+    expect(className).not.toMatch(/border-[tb]-/);
+    expect(className).toContain("active:bg-white/20");
+  });
+
+  it("ghost variant has no fill and transparent border", async () => {
+    const { getByTestId } = await render(
+      <Button label="Go" onPress={() => {}} variant="ghost" testID="b" />,
+    );
+    const { className } = getByTestId("b").props;
+    expect(className).toContain("bg-transparent");
+    expect(className).toContain("border-transparent");
+  });
+
+  it("iconOnly renders an exact circular square without min-h", async () => {
+    const { getByTestId } = await render(
+      <Button iconOnly size="sm" onPress={() => {}} testID="b" accessibilityLabel="x" />,
+    );
+    const { className } = getByTestId("b").props;
+    expect(className).toContain("h-11");
+    expect(className).toContain("w-11");
+    expect(className).toContain("rounded-full");
+    expect(className).not.toContain("min-h");
   });
 
   it("applies the danger variant's danger background className", async () => {
@@ -79,15 +101,36 @@ describe("Button", () => {
       <Button label="Delete" onPress={() => {}} variant="danger" testID="save-button" />,
     );
 
-    expect(getByTestId("save-button").props.className).toContain("bg-danger");
+    const { className } = getByTestId("save-button").props;
+    expect(className).toContain("bg-danger/15");
+    expect(className).toContain("border-danger/30");
+    expect(className).not.toMatch(/border-[tb]-/);
   });
 
-  it("applies reduced opacity className when disabled", async () => {
-    const { getByTestId } = await render(
+  it("primary has a transparent flat border (no 3D bevel)", async () => {
+    const { getByTestId } = await render(<Button label="Go" onPress={() => {}} testID="b" />);
+    const { className } = getByTestId("b").props;
+    expect(className).toContain("border-transparent");
+    expect(className).not.toMatch(/border-[tb]-/);
+  });
+
+  it("danger label uses the readable red text token", async () => {
+    const { getByText } = await render(
+      <Button label="Delete" onPress={() => {}} variant="danger" testID="save-button" />,
+    );
+    expect(getByText("Delete").props.className).toContain("text-danger-text");
+  });
+
+  it("uses a muted fill (no opacity on the gold) when disabled", async () => {
+    const { getByTestId, getByText } = await render(
       <Button label="Save" onPress={() => {}} disabled testID="save-button" />,
     );
 
-    expect(getByTestId("save-button").props.className).toContain("opacity-50");
+    const { className } = getByTestId("save-button").props;
+    expect(className).not.toContain("opacity-50");
+    expect(className).not.toContain("bg-accent");
+    expect(className).toContain("bg-white/10");
+    expect(getByText("Save").props.className).toContain("text-white/35");
   });
 
   it("applies the default size's comfortable min-height className", async () => {
@@ -112,5 +155,25 @@ describe("Button", () => {
     );
 
     expect(getByTestId("save-button").props.accessibilityRole).toBe("button");
+  });
+
+  it("renders a leading icon before the label, coloured by variant", async () => {
+    const { getByTestId, getByText } = await render(
+      <Button label="Speichern" icon="save" variant="primary" testID="b" onPress={() => {}} />,
+    );
+
+    expect(getByText("Speichern")).toBeTruthy();
+    expect(getByTestId("b-icon").props.color).toBe("#0a0a0a");
+  });
+
+  it("mutes the icon colour when disabled and shows no icon without the prop", async () => {
+    const { getByTestId, queryByTestId, rerender } = await render(
+      <Button label="X" icon="close" disabled testID="b" onPress={() => {}} />,
+    );
+    expect(getByTestId("b-icon").props.color).toBe(
+      "rgba(255,255,255,0.35)",
+    );
+    await rerender(<Button label="X" testID="b" onPress={() => {}} />);
+    expect(queryByTestId("b-icon")).toBeNull();
   });
 });

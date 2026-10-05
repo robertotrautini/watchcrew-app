@@ -1,6 +1,5 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import type { ReactNode } from "react";
 import React from "react";
 
 const mockGetCollection = jest.fn();
@@ -10,18 +9,9 @@ jest.mock("@/lib/tmdbProxy", () => ({
 }));
 
 // Lazily required to dodge Babel's CJS hoisting of the mock assignment
-// above, matching the convention in __tests__/useGroupWatchlist.test.tsx.
+// above, matching the convention in __tests__/hooks/useGroupWatchlist.test.tsx.
 function loadUseCollection() {
   return require("@/hooks/useCollection").useCollection;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 describe("useCollection", () => {
@@ -35,7 +25,7 @@ describe("useCollection", () => {
     const useCollection = loadUseCollection();
 
     const { result } = await renderHook(() => useCollection(42, 99), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.data).toEqual(collection));
@@ -48,7 +38,7 @@ describe("useCollection", () => {
     const useCollection = loadUseCollection();
 
     const { result } = await renderHook(() => useCollection(42, 99), {
-      wrapper: createWrapper(),
+      wrapper: createQueryWrapper(),
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -58,7 +48,7 @@ describe("useCollection", () => {
   it("does not fetch when tmdbId is undefined", async () => {
     const useCollection = loadUseCollection();
 
-    await renderHook(() => useCollection(undefined, 99), { wrapper: createWrapper() });
+    await renderHook(() => useCollection(undefined, 99), { wrapper: createQueryWrapper() });
 
     expect(mockGetCollection).not.toHaveBeenCalled();
   });
@@ -66,7 +56,7 @@ describe("useCollection", () => {
   it("does not fetch when collectionId is undefined", async () => {
     const useCollection = loadUseCollection();
 
-    await renderHook(() => useCollection(42, undefined), { wrapper: createWrapper() });
+    await renderHook(() => useCollection(42, undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetCollection).not.toHaveBeenCalled();
   });

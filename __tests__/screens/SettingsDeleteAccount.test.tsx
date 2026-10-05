@@ -1,11 +1,7 @@
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-const mockPush = jest.fn();
-const mockReplace = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush, replace: mockReplace }),
-  Stack: { Screen: () => null },
-}));
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
 
 const mockDeleteOwnAccount = jest.fn();
 jest.mock("@/lib/deleteAccount", () => ({
@@ -87,7 +83,7 @@ describe("SettingsDeleteAccountScreen", () => {
     expect(mockImpactAsync).toHaveBeenCalledWith("medium");
     await waitFor(() => expect(mockDeleteOwnAccount).toHaveBeenCalled());
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
   });
 
   it("on failure: shows an error message and does NOT sign out or navigate", async () => {
@@ -101,6 +97,6 @@ describe("SettingsDeleteAccountScreen", () => {
 
     await waitFor(() => expect(getByTestId("delete-account-error")).toBeTruthy());
     expect(mockSignOut).not.toHaveBeenCalled();
-    expect(mockReplace).not.toHaveBeenCalled();
+    expect(mockRouter.replace).not.toHaveBeenCalled();
   });
 });

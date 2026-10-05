@@ -25,7 +25,7 @@ jest.mock("@/lib/pushTokens", () => ({
 }));
 
 // Lazily required, same Babel-CJS-hoisting-dodge convention as
-// __tests__/useCurrentUserId.test.tsx.
+// __tests__/hooks/useCurrentUserId.test.tsx.
 function loadUsePushRegistration() {
   return require("@/hooks/usePushRegistration").usePushRegistration;
 }

@@ -1,22 +1,16 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { fireEvent, render } from "@testing-library/react-native";
 
-// Same Ionicons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
+// Same MaterialIcons mocking rationale as __tests__/components/movie/MovieGrid.test.tsx
 // / __tests__/screens/Collection.test.tsx (the real implementation doesn't
 // forward name/color to the host node RNTL queries) — MovieGrid is rendered
 // for real here (not mocked), since it's a small, already-tested
 // presentational component and exercising it for real lets this test verify
 // the actual prop wiring (items/testID/badge/filter) end-to-end rather than
 // just asserting on mock call args.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 const mockUseLocalSearchParams = jest.fn();
-const mockPush = jest.fn();
-const mockUseRouter = jest.fn(() => ({ push: mockPush }));
+const mockReplace = jest.fn();
+const mockUseRouter = jest.fn(() => ({ replace: mockReplace }));
 jest.mock("expo-router", () => ({
   useLocalSearchParams: () => mockUseLocalSearchParams(),
   useRouter: () => mockUseRouter(),
@@ -32,10 +26,7 @@ jest.mock("@/hooks/useMoviesProviders", () => ({
   useMoviesProviders: (...args: unknown[]) => mockUseMoviesProviders(...args),
 }));
 
-const mockUseCurrentUserId = jest.fn();
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: () => mockUseCurrentUserId(),
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 
 const mockUseUserGroups = jest.fn();
 jest.mock("@/hooks/useUserGroups", () => ({
@@ -93,7 +84,7 @@ const RELATED_NO_TMDB = { title: "Ohne TMDB-Id", year: 2019, ids: { trakt: 3, sl
 
 function setUpHappyPath() {
   mockUseLocalSearchParams.mockReturnValue({ tmdbId: "678" });
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseUserGroups.mockReturnValue({
     data: [{ group_id: "g1", user_id: "u1", role: "owner", joined_at: "2026-01-01" }],
     isLoading: false,
@@ -118,12 +109,12 @@ function setUpHappyPath() {
 describe("SimilarMoviesScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseRouter.mockReturnValue({ push: mockPush });
+    mockUseRouter.mockReturnValue({ replace: mockReplace });
   });
 
   it("shows the error state when tmdbId is missing/invalid", async () => {
     mockUseLocalSearchParams.mockReturnValue({ tmdbId: "not-a-number" });
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseSimilarMovies.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
@@ -137,7 +128,7 @@ describe("SimilarMoviesScreen", () => {
 
   it("shows the error state when tmdbId param is absent entirely", async () => {
     mockUseLocalSearchParams.mockReturnValue({});
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseUserGroups.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
     mockUseGroupWatchlist.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
     mockUseSimilarMovies.mockReturnValue({ data: undefined, isLoading: false, isError: false, error: null });
@@ -211,7 +202,7 @@ describe("SimilarMoviesScreen", () => {
     expect(getByTestId("similar-movies-screen-grid-item-102-poster-placeholder")).toBeTruthy();
   });
 
-  it("calls router.push with tmdbId only when the tapped movie is NOT already in the library", async () => {
+  it("calls router.replace with tmdbId only when the tapped movie is NOT already in the library", async () => {
     setUpHappyPath();
 
     const SimilarMoviesScreen = loadSimilarMoviesScreen();
@@ -219,13 +210,13 @@ describe("SimilarMoviesScreen", () => {
 
     await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "101" },
     });
   });
 
-  it("calls router.push with groupId/source=watchlist/watchlistEntryId when the tapped movie is on the group's watchlist (unrated)", async () => {
+  it("calls router.replace with groupId/source=watchlist/watchlistEntryId when the tapped movie is on the group's watchlist (unrated)", async () => {
     setUpHappyPath();
     mockUseGroupWatchlist.mockReturnValue({
       data: {
@@ -242,13 +233,13 @@ describe("SimilarMoviesScreen", () => {
 
     await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "101", groupId: "g1", source: "watchlist", watchlistEntryId: "e1" },
     });
   });
 
-  it("calls router.push with groupId/source=diary/watchlistEntryId when the tapped movie is already watched (rated)", async () => {
+  it("calls router.replace with groupId/source=diary/watchlistEntryId when the tapped movie is already watched (rated)", async () => {
     setUpHappyPath();
     mockUseGroupWatchlist.mockReturnValue({
       data: {
@@ -281,7 +272,7 @@ describe("SimilarMoviesScreen", () => {
 
     await fireEvent.press(getByTestId("similar-movies-screen-grid-item-101"));
 
-    expect(mockPush).toHaveBeenCalledWith({
+    expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "101", groupId: "g1", source: "diary", watchlistEntryId: "e1" },
     });

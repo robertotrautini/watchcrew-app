@@ -1,21 +1,24 @@
+import { mockCurrentUserId } from "../helpers/mockCurrentUser";
+import { mockRouter } from "../helpers/mockRouter";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 // M7 part 2 (Add-Movie-Modal): the new "+" button navigates via expo-router,
 // so this screen now needs a router mock too (it previously had none).
 // M10: also needs `useFocusEffect` now (src/hooks/useRegisterFocusedGroupScreen.ts) --
 // mocked as "run the effect once on mount, cleanup once on unmount", same
-// convention as __tests__/useRegisterFocusedGroupScreen.test.tsx.
-const mockPush = jest.fn();
-jest.mock("expo-router", () => ({
-  useRouter: () => ({ push: mockPush }),
-  useFocusEffect: (callback: () => void | (() => void)) => {
-    const React = require("react");
-    React.useEffect(() => callback(), []);
-  },
+// convention as __tests__/hooks/useRegisterFocusedGroupScreen.test.tsx.
+jest.mock("@/hooks/useGroupQuickSwitch", () => ({
+  useGroupQuickSwitch: () => ({
+    activeGroupName: null,
+    activeGroupId: undefined,
+    groupCount: 1,
+    switchToNext: jest.fn(),
+  }),
 }));
 
+jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());
+
 // --- Hook mocks -------------------------------------------------------
-const mockUseCurrentUserId = jest.fn();
 const mockUseActiveGroup = jest.fn();
 const mockUseGroupWatchlist = jest.fn();
 const mockUseGroupMembers = jest.fn();
@@ -29,9 +32,7 @@ const mockSetWatchlistViewMode = jest.fn();
 const mockUseGroupRealtimeSync = jest.fn();
 const mockUseRegisterFocusedGroupScreen = jest.fn();
 
-jest.mock("@/hooks/useCurrentUserId", () => ({
-  useCurrentUserId: mockUseCurrentUserId,
-}));
+jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 jest.mock("@/hooks/useActiveGroup", () => ({
   useActiveGroup: mockUseActiveGroup,
 }));
@@ -60,6 +61,9 @@ jest.mock("@/stores/usePreferencesStore", () => {
     setWatchlistViewMode: () => {},
     showTitlesInGrid: true,
     selectedStreamingProviderIds: [],
+    filterPanelOpen: { watchlist: false, diary: false },
+    setFilterPanelOpen: (tab: string, open: boolean) =>
+      set((state: any) => ({ filterPanelOpen: { ...state.filterPanelOpen, [tab]: open } })),
     listFilters: {},
     setListFilters: (tab: string, groupId: string, patch: object) =>
       set((state: any) => {
@@ -165,7 +169,7 @@ const ENTRY_GAMMA = makeEntry({
 });
 
 function setUpHappyPath(entries = [ENTRY_ALPHA, ENTRY_BETA, ENTRY_GAMMA]) {
-  mockUseCurrentUserId.mockReturnValue("u1");
+  mockCurrentUserId.mockReturnValue("u1");
   mockUseActiveGroup.mockReturnValue({
     activeGroupId: "g1",
     setActiveGroup: jest.fn(),
@@ -200,6 +204,7 @@ function setUpPreferencesStore(
     showTitlesInGrid,
     selectedStreamingProviderIds: [],
     listFilters: {},
+    filterPanelOpen: { watchlist: true, diary: false },
   });
 }
 
@@ -213,7 +218,7 @@ describe("WatchlistScreen", () => {
   });
 
   it("renders a loading state while the watchlist query is loading", async () => {
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: jest.fn(),
@@ -229,7 +234,7 @@ describe("WatchlistScreen", () => {
   });
 
   it("renders an error state when the watchlist query fails", async () => {
-    mockUseCurrentUserId.mockReturnValue("u1");
+    mockCurrentUserId.mockReturnValue("u1");
     mockUseActiveGroup.mockReturnValue({
       activeGroupId: "g1",
       setActiveGroup: jest.fn(),
@@ -289,6 +294,49 @@ describe("WatchlistScreen", () => {
     expect(getByTestId("watchlist-entry-e1-title")).toBeTruthy();
   });
 
+  it("filter panel is closed by default (only search, add and toggle visible), toggle opens it and persists", async () => {
+    setUpHappyPath();
+    require("@/stores/usePreferencesStore").usePreferencesStore.setState({
+      filterPanelOpen: { watchlist: false, diary: false },
+    });
+
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
+
+    expect(getByTestId("watchlist-search-input")).toBeTruthy();
+    expect(getByTestId("watchlist-add-movie-button")).toBeTruthy();
+    expect(queryByTestId("watchlist-filter-panel")).toBeNull();
+    expect(queryByTestId("watchlist-sort-button")).toBeNull();
+    expect(queryByTestId("watchlist-view-mode-toggle")).toBeNull();
+
+    await fireEvent.press(getByTestId("watchlist-filter-toggle"));
+
+    expect(getByTestId("watchlist-filter-panel")).toBeTruthy();
+    expect(getByTestId("watchlist-sort-button")).toBeTruthy();
+    expect(getByTestId("watchlist-view-mode-toggle")).toBeTruthy();
+    expect(require("@/stores/usePreferencesStore").usePreferencesStore.getState().filterPanelOpen.watchlist).toBe(true);
+  });
+
+  it("shows the active dot for a non-default sort", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
+    expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
+
+    await fireEvent.press(getByTestId("watchlist-sort-button"));
+    await fireEvent.press(getByTestId("watchlist-sort-option-tmdb_score"));
+
+    expect(getByTestId("watchlist-filter-active-dot")).toBeTruthy();
+  });
+
+  it("does not show the active dot for a non-default view mode alone", async () => {
+    setUpHappyPath();
+    setUpPreferencesStore("grid");
+    const WatchlistScreen = loadWatchlistScreen();
+    const { queryByTestId } = await render(<WatchlistScreen />);
+    expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
+  });
+
   it("switches to grid mode via the view-mode toggle and persists the choice", async () => {
     setUpHappyPath();
 
@@ -308,7 +356,7 @@ describe("WatchlistScreen", () => {
 
     await fireEvent.press(getByTestId("watchlist-add-movie-button"));
 
-    expect(mockPush).toHaveBeenCalledWith("/add-movie");
+    expect(mockRouter.push).toHaveBeenCalledWith("/add-movie");
   });
 
   it("navigates to the Settings hub when the gear button is tapped (lock-out guard)", async () => {
@@ -319,7 +367,7 @@ describe("WatchlistScreen", () => {
 
     await fireEvent.press(getByTestId("watchlist-settings-button"));
 
-    expect(mockPush).toHaveBeenCalledWith("/settings");
+    expect(mockRouter.push).toHaveBeenCalledWith("/settings");
   });
 
   describe("tapping an entry opens the movie detail overlay", () => {
@@ -338,7 +386,7 @@ describe("WatchlistScreen", () => {
       const target = mode === "list" ? "watchlist-list-row-e1" : "watchlist-entry-e1";
       await fireEvent.press(getByTestId(target));
 
-      expect(mockPush).toHaveBeenCalledWith(EXPECTED);
+      expect(mockRouter.push).toHaveBeenCalledWith(EXPECTED);
     });
   });
 

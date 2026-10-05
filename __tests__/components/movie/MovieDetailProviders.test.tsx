@@ -75,4 +75,27 @@ describe("MovieDetailProviders", () => {
     expect(queryByTestId("movie-detail-provider-3")).toBeNull();
     expect(queryByText("Google Play")).toBeNull();
   });
+
+  it("gives the 'Alle Anbieter anzeigen' toggle its own vertical spacing so it never sits on the provider rows", async () => {
+    const providers: TmdbMovieProviders = {
+      flatrate: [provider(1, "A"), provider(2, "B"), provider(3, "C"), provider(4, "D")],
+      rent: [],
+      buy: [],
+    };
+    const { getByTestId } = await render(<MovieDetailProviders providers={providers} />);
+
+    const cls = getByTestId("movie-detail-providers-toggle").props.className as string;
+    expect(cls).toMatch(/\bmt-\d/);
+    expect(cls).toContain("min-h-touch-comfortable");
+  });
+
+  it("the 'Alle Anbieter anzeigen' toggle is at least 48dp high", async () => {
+    const providers: TmdbMovieProviders = {
+      flatrate: [provider(1, "A"), provider(2, "B"), provider(3, "C"), provider(4, "D")],
+      rent: [],
+      buy: [],
+    };
+    const { getByTestId } = await render(<MovieDetailProviders providers={providers} />);
+    expect(getByTestId("movie-detail-providers-toggle").props.className).toContain("min-h-touch-comfortable");
+  });
 });

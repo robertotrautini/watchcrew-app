@@ -4,13 +4,13 @@ const mockSelect = jest.fn(() => ({ eq: mockEq, in: mockIn }));
 // Typed as plain `jest.Mock` (not inferred from the arrow function below) so
 // the M9-part-2 tests further down can `mockReturnValue` a differently-
 // shaped chainable mock (`makeChain`, mirroring
-// __tests__/movieDetailMutations.test.ts) without fighting the narrower
+// __tests__/lib/movieDetailMutations.test.ts) without fighting the narrower
 // inferred return type from this file's original `getUserGroups`/
 // `getGroupMembers` mock shape.
 const mockFrom: jest.Mock = jest.fn(() => ({ select: mockSelect }));
 const mockRpc = jest.fn();
 
-jest.mock("../src/lib/supabase", () => ({
+jest.mock("../../src/lib/supabase", () => ({
   supabase: {
     from: mockFrom,
     rpc: mockRpc,
@@ -29,7 +29,7 @@ describe("getUserGroups", () => {
     };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getUserGroups } = require("../src/lib/groups");
+    const { getUserGroups } = require("../../src/lib/groups");
     const result = await getUserGroups("u1");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_group_members");
@@ -42,7 +42,7 @@ describe("getUserGroups", () => {
     const fakeResult = { data: [], error: null };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getUserGroups } = require("../src/lib/groups");
+    const { getUserGroups } = require("../../src/lib/groups");
     const result = await getUserGroups("u-no-groups");
 
     expect(result).toBe(fakeResult);
@@ -52,7 +52,7 @@ describe("getUserGroups", () => {
     const fakeResult = { data: null, error: { message: "network error" } };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getUserGroups } = require("../src/lib/groups");
+    const { getUserGroups } = require("../../src/lib/groups");
     const result = await getUserGroups("u1");
 
     expect(result).toBe(fakeResult);
@@ -80,7 +80,7 @@ describe("getGroupMembers", () => {
       error: null,
     });
 
-    const { getGroupMembers } = require("../src/lib/groups");
+    const { getGroupMembers } = require("../../src/lib/groups");
     const result = await getGroupMembers("g1");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_group_members");
@@ -115,7 +115,7 @@ describe("getGroupMembers", () => {
     });
     mockIn.mockResolvedValue({ data: [], error: null });
 
-    const { getGroupMembers } = require("../src/lib/groups");
+    const { getGroupMembers } = require("../../src/lib/groups");
     const result = await getGroupMembers("g1");
 
     expect(result.data).toEqual([
@@ -127,7 +127,7 @@ describe("getGroupMembers", () => {
     const fakeResult = { data: [], error: null };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getGroupMembers } = require("../src/lib/groups");
+    const { getGroupMembers } = require("../../src/lib/groups");
     const result = await getGroupMembers("g1");
 
     expect(mockIn).not.toHaveBeenCalled();
@@ -138,7 +138,7 @@ describe("getGroupMembers", () => {
     const fakeResult = { data: null, error: { message: "network error" } };
     mockEq.mockResolvedValue(fakeResult);
 
-    const { getGroupMembers } = require("../src/lib/groups");
+    const { getGroupMembers } = require("../../src/lib/groups");
     const result = await getGroupMembers("g1");
 
     expect(result).toBe(fakeResult);
@@ -153,7 +153,7 @@ describe("getGroupMembers", () => {
     const fakeProfilesError = { data: null, error: { message: "profiles lookup failed" } };
     mockIn.mockResolvedValue(fakeProfilesError);
 
-    const { getGroupMembers } = require("../src/lib/groups");
+    const { getGroupMembers } = require("../../src/lib/groups");
     const result = await getGroupMembers("g1");
 
     expect(result).toBe(fakeProfilesError);
@@ -168,7 +168,7 @@ describe("createWatchGroup", () => {
   it("calls the create_watch_group RPC with p_name/p_color_theme and reshapes the returned uuid into { groupId }", async () => {
     mockRpc.mockResolvedValue({ data: "new-group-id", error: null });
 
-    const { createWatchGroup } = require("../src/lib/groups");
+    const { createWatchGroup } = require("../../src/lib/groups");
     const result = await createWatchGroup("Filmfreunde", "blue");
 
     expect(mockRpc).toHaveBeenCalledWith("create_watch_group", {
@@ -181,7 +181,7 @@ describe("createWatchGroup", () => {
   it("passes a group name containing an apostrophe straight through with no client-side escaping", async () => {
     mockRpc.mockResolvedValue({ data: "new-group-id", error: null });
 
-    const { createWatchGroup } = require("../src/lib/groups");
+    const { createWatchGroup } = require("../../src/lib/groups");
     await createWatchGroup("Filmfreunde O'Brien", "gold");
 
     expect(mockRpc).toHaveBeenCalledWith("create_watch_group", {
@@ -194,7 +194,7 @@ describe("createWatchGroup", () => {
     const fakeError = { message: "invalid color theme: nope", code: "WC002", details: null, hint: null };
     mockRpc.mockResolvedValue({ data: null, error: fakeError });
 
-    const { createWatchGroup } = require("../src/lib/groups");
+    const { createWatchGroup } = require("../../src/lib/groups");
     const result = await createWatchGroup("Filmfreunde", "nope");
 
     expect(result).toEqual({ data: null, error: fakeError });
@@ -209,7 +209,7 @@ describe("joinWatchGroupByToken", () => {
   it("calls the join_watch_group_by_token RPC with p_token and reshapes the returned uuid into { groupId }", async () => {
     mockRpc.mockResolvedValue({ data: "joined-group-id", error: null });
 
-    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const { joinWatchGroupByToken } = require("../../src/lib/groups");
     const result = await joinWatchGroupByToken("11111111-1111-1111-1111-111111111111");
 
     expect(mockRpc).toHaveBeenCalledWith("join_watch_group_by_token", {
@@ -222,7 +222,7 @@ describe("joinWatchGroupByToken", () => {
     const fakeError = { message: "network error", code: null, details: null, hint: null };
     mockRpc.mockResolvedValue({ data: null, error: fakeError });
 
-    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const { joinWatchGroupByToken } = require("../../src/lib/groups");
     const result = await joinWatchGroupByToken("some-token");
 
     expect(result).toEqual({ data: null, error: fakeError });
@@ -232,7 +232,7 @@ describe("joinWatchGroupByToken", () => {
     const fakeError = { message: "invalid or disabled invite token", code: "WC003", details: null, hint: null };
     mockRpc.mockResolvedValue({ data: null, error: fakeError });
 
-    const { joinWatchGroupByToken } = require("../src/lib/groups");
+    const { joinWatchGroupByToken } = require("../../src/lib/groups");
     const result = await joinWatchGroupByToken("bad-token");
 
     expect(result).toEqual({ data: null, error: fakeError });
@@ -240,7 +240,7 @@ describe("joinWatchGroupByToken", () => {
 });
 
 // M9 part 2: a minimal thenable Supabase query-builder mock, same pattern as
-// __tests__/movieDetailMutations.test.ts's `makeChain` -- every chain
+// __tests__/lib/movieDetailMutations.test.ts's `makeChain` -- every chain
 // method returns the SAME object, which resolves to `finalResult` when
 // awaited, mirroring the real supabase-js PostgrestFilterBuilder's own
 // thenable behavior regardless of how many methods were chained onto it.
@@ -267,7 +267,7 @@ describe("getWatchGroupDetails", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { getWatchGroupDetails } = require("../src/lib/groups");
+    const { getWatchGroupDetails } = require("../../src/lib/groups");
     const result = await getWatchGroupDetails("g1");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_groups");
@@ -281,7 +281,7 @@ describe("getWatchGroupDetails", () => {
     const fakeResult = { data: null, error: { message: "network error" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { getWatchGroupDetails } = require("../src/lib/groups");
+    const { getWatchGroupDetails } = require("../../src/lib/groups");
     const result = await getWatchGroupDetails("g1");
 
     expect(result).toBe(fakeResult);
@@ -305,7 +305,7 @@ describe("getWatchGroupsByIds", () => {
     chain.in = jest.fn(() => chain);
     mockFrom.mockReturnValue(chain);
 
-    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const { getWatchGroupsByIds } = require("../../src/lib/groups");
     const result = await getWatchGroupsByIds(["g1", "g2"]);
 
     expect(mockFrom).toHaveBeenCalledWith("watch_groups");
@@ -315,7 +315,7 @@ describe("getWatchGroupsByIds", () => {
   });
 
   it("short-circuits to an empty result without querying, for an empty id list", async () => {
-    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const { getWatchGroupsByIds } = require("../../src/lib/groups");
     const result = await getWatchGroupsByIds([]);
 
     expect(mockFrom).not.toHaveBeenCalled();
@@ -328,7 +328,7 @@ describe("getWatchGroupsByIds", () => {
     chain.in = jest.fn(() => chain);
     mockFrom.mockReturnValue(chain);
 
-    const { getWatchGroupsByIds } = require("../src/lib/groups");
+    const { getWatchGroupsByIds } = require("../../src/lib/groups");
     const result = await getWatchGroupsByIds(["g1"]);
 
     expect(result).toBe(fakeResult);
@@ -345,7 +345,7 @@ describe("setGroupColorTheme", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { setGroupColorTheme } = require("../src/lib/groups");
+    const { setGroupColorTheme } = require("../../src/lib/groups");
     const result = await setGroupColorTheme("g1", "blue");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_groups");
@@ -365,7 +365,7 @@ describe("renameWatchGroup", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { renameWatchGroup } = require("../src/lib/groups");
+    const { renameWatchGroup } = require("../../src/lib/groups");
     const result = await renameWatchGroup("g1", "Neuer Name");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_groups");
@@ -378,7 +378,7 @@ describe("renameWatchGroup", () => {
     const chain = makeChain({ data: null, error: null });
     mockFrom.mockReturnValue(chain);
 
-    const { renameWatchGroup } = require("../src/lib/groups");
+    const { renameWatchGroup } = require("../../src/lib/groups");
     await renameWatchGroup("g1", "O'Brien's Crew");
 
     expect(chain.update).toHaveBeenCalledWith({ name: "O'Brien's Crew" });
@@ -388,7 +388,7 @@ describe("renameWatchGroup", () => {
     const fakeResult = { data: null, error: { message: "new row violates row-level security policy" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { renameWatchGroup } = require("../src/lib/groups");
+    const { renameWatchGroup } = require("../../src/lib/groups");
     const result = await renameWatchGroup("g1", "Neuer Name");
 
     expect(result).toBe(fakeResult);
@@ -405,7 +405,7 @@ describe("setInviteEnabled", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { setInviteEnabled } = require("../src/lib/groups");
+    const { setInviteEnabled } = require("../../src/lib/groups");
     const result = await setInviteEnabled("g1", false);
 
     expect(mockFrom).toHaveBeenCalledWith("watch_groups");
@@ -423,7 +423,7 @@ describe("regenerateInviteToken", () => {
   it("calls the regenerate_invite_token RPC and reshapes the returned uuid into { inviteToken }", async () => {
     mockRpc.mockResolvedValue({ data: "new-token-uuid", error: null });
 
-    const { regenerateInviteToken } = require("../src/lib/groups");
+    const { regenerateInviteToken } = require("../../src/lib/groups");
     const result = await regenerateInviteToken("g1");
 
     expect(mockRpc).toHaveBeenCalledWith("regenerate_invite_token", { p_group_id: "g1" });
@@ -434,7 +434,7 @@ describe("regenerateInviteToken", () => {
     const fakeError = { message: "regenerate_invite_token requires group ownership", code: "WC004", details: null, hint: null };
     mockRpc.mockResolvedValue({ data: null, error: fakeError });
 
-    const { regenerateInviteToken } = require("../src/lib/groups");
+    const { regenerateInviteToken } = require("../../src/lib/groups");
     const result = await regenerateInviteToken("g1");
 
     expect(result).toEqual({ data: null, error: fakeError });
@@ -451,7 +451,7 @@ describe("removeMember", () => {
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
-    const { removeMember } = require("../src/lib/groups");
+    const { removeMember } = require("../../src/lib/groups");
     const result = await removeMember("g1", "u2");
 
     expect(mockFrom).toHaveBeenCalledWith("watch_group_members");
@@ -465,7 +465,7 @@ describe("removeMember", () => {
     const fakeResult = { data: null, error: { message: "new row violates row-level security policy" } };
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
-    const { removeMember } = require("../src/lib/groups");
+    const { removeMember } = require("../../src/lib/groups");
     const result = await removeMember("g1", "u2");
 
     expect(result).toBe(fakeResult);
@@ -474,13 +474,13 @@ describe("removeMember", () => {
 
 describe("isInvalidInviteTokenError", () => {
   it("returns true for an error with the WC003 code", () => {
-    const { isInvalidInviteTokenError } = require("../src/lib/groups");
+    const { isInvalidInviteTokenError } = require("../../src/lib/groups");
 
     expect(isInvalidInviteTokenError({ code: "WC003" })).toBe(true);
   });
 
   it("returns false for a generic error, and for null/undefined", () => {
-    const { isInvalidInviteTokenError } = require("../src/lib/groups");
+    const { isInvalidInviteTokenError } = require("../../src/lib/groups");
 
     expect(isInvalidInviteTokenError({ code: "WC001" })).toBe(false);
     expect(isInvalidInviteTokenError(null)).toBe(false);

@@ -4,16 +4,9 @@ import { act, fireEvent, render, within } from "@testing-library/react-native";
 
 jest.mock("@/lib/toast", () => ({ showToast: jest.fn() }));
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 // M7 consolidation (Item 3): "Gesehen am"/"Bezahlt am" now render a real
 // native date-picker (src/components/ui/DateField.tsx) instead of a plain
-// TextInput -- mocked the same way as the Ionicons mock above.
+// TextInput -- mocked the same way as the MaterialIcons mock above.
 jest.mock("@react-native-community/datetimepicker", () => {
   const { View } = require("react-native");
   return {
@@ -117,7 +110,7 @@ describe("RatingDialog", () => {
     );
 
     expect(within(getByTestId("rating-dialog-seen-at-input")).getByText("10.09.2026")).toBeTruthy();
-    expect(getByTestId("star-rating-heart-icon").props.name).toBe("heart");
+    expect(getByTestId("star-rating-heart-icon").props.name).toBe("favorite");
   });
 
   it("includes the like-heart in 'direct' mode too (resolved decision: uniform across all three contexts)", async () => {
@@ -139,8 +132,50 @@ describe("RatingDialog", () => {
     expect(within(otherRatingsSection).queryByText("Anna")).toBeNull();
   });
 
-  it("hides the other-ratings section entirely when there are no other members' ratings", async () => {
-    const { queryByTestId } = await render(<RatingDialog {...baseProps({ ratings: [] })} />);
+  it("shows other members with empty stars when they have not rated yet", async () => {
+    const { getByTestId } = await render(<RatingDialog {...baseProps({ ratings: [] })} />);
+    const section = getByTestId("rating-dialog-other-ratings");
+    expect(within(section).getByText("Ben")).toBeTruthy();
+    // the number behind the stars was removed in the dialog (stars only)
+    expect(within(section).queryByTestId("member-rating-value")).toBeNull();
+  });
+
+  describe("touch targets and star layout", () => {
+    it("shows no numeric rating value anywhere in the dialog", async () => {
+      const { queryAllByTestId } = await render(
+        <RatingDialog {...baseProps({ ratings: [makeRating({ member_id: "user-2", rating: 4 })] })} />,
+      );
+      expect(queryAllByTestId("member-rating-value")).toHaveLength(0);
+    });
+
+    it("own star row: 5 stars + heart, 44x48 boxes with labels", async () => {
+      const { getByTestId, getAllByTestId } = await render(<RatingDialog {...baseProps({ ratings: [] })} />);
+      const own = getAllByTestId(/^star-rating-touch-/).filter((n) => n.props.accessibilityRole === "adjustable");
+      expect(own).toHaveLength(5);
+      for (const star of own) {
+        expect(star.props.className).toContain("w-[44px]");
+        expect(star.props.className).toContain("h-touch-comfortable");
+        expect(star.props.accessibilityLabel).toMatch(/Stern/);
+      }
+      expect(getByTestId("star-rating-heart-touch").props.accessibilityLabel).toBe("Mag ich");
+    });
+
+    it("checkbox rows and reset button reach 48dp", async () => {
+      const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
+      expect(getByTestId("rating-dialog-checkbox-unknown").props.className).toContain("min-h-touch-comfortable");
+      expect(getByTestId("rating-dialog-reset-button").props.hitSlop).toEqual({
+        top: 6,
+        bottom: 6,
+        left: 6,
+        right: 6,
+      });
+    });
+  });
+
+  it("hides the group-ratings section when there are no other members", async () => {
+    const { queryByTestId } = await render(
+      <RatingDialog {...baseProps({ ratings: [], groupMembers: [makeMember("user-1", "Anna")] })} />,
+    );
     expect(queryByTestId("rating-dialog-other-ratings")).toBeNull();
   });
 
@@ -174,7 +209,7 @@ describe("RatingDialog", () => {
       const onSuccess = mockResetMutate.mock.calls[0][1].onSuccess;
       await act(async () => onSuccess());
 
-      expect(getByTestId("star-rating-heart-icon").props.name).toBe("heart-outline");
+      expect(getByTestId("star-rating-heart-icon").props.name).toBe("favorite-border");
     });
   });
 
@@ -304,11 +339,11 @@ describe("RatingDialog", () => {
     it("saves with the current rating/liked/seenAt/memberId, shows a success alert, and closes on success", async () => {
       const onClose = jest.fn();
       const onSaved = jest.fn();
-      const { getByTestId } = await render(
+      const { getByTestId, getAllByTestId } = await render(
         <RatingDialog {...baseProps({ onClose, onSaved })} />,
       );
 
-      await fireEvent(getByTestId("star-rating-touch-3"), "press", { nativeEvent: { locationX: 40 } });
+      await fireEvent(getAllByTestId("star-rating-touch-3")[0], "press", { nativeEvent: { locationX: 40 } });
       await fireEvent.press(getByTestId("rating-dialog-save-button"));
 
       expect(mockSaveMutate).toHaveBeenCalledWith(
@@ -328,12 +363,12 @@ describe("RatingDialog", () => {
       await act(async () => onSuccess());
 
       expect(onSaved).toHaveBeenCalled();
-      expect(showToast).toHaveBeenCalledWith("Bewertung gespeichert");
+      expect(showToast).toHaveBeenCalledWith("Bewertung gespeichert", { variant: "success" });
       expect(Alert.alert).not.toHaveBeenCalled();
       expect(onClose).toHaveBeenCalled();
     });
 
-    it("shows an error alert and does NOT close when the save mutation errors", async () => {
+    it("shows a red error toast and does NOT close when the save mutation errors", async () => {
       const onClose = jest.fn();
       const { getByTestId } = await render(<RatingDialog {...baseProps({ onClose })} />);
 
@@ -342,10 +377,11 @@ describe("RatingDialog", () => {
       const onError = mockSaveMutate.mock.calls[0][1].onError;
       await act(async () => onError(new Error("boom")));
 
-      expect(Alert.alert).toHaveBeenCalledWith(
-        "Fehler",
+      expect(showToast).toHaveBeenCalledWith(
         "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+        { variant: "error" },
       );
+      expect(Alert.alert).not.toHaveBeenCalled();
       expect(onClose).not.toHaveBeenCalled();
     });
   });

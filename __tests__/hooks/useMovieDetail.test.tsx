@@ -1,3 +1,5 @@
+import { queryKeys } from "@/lib/queryKeys";
+import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react-native";
 import type { ReactNode } from "react";
@@ -19,23 +21,9 @@ jest.mock("@/lib/movieDetail", () => ({
 
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the mock assignments above, matching the convention in
-// __tests__/useGroupWatchlist.test.tsx / __tests__/useUserGroups.test.tsx.
+// __tests__/hooks/useGroupWatchlist.test.tsx / __tests__/hooks/useUserGroups.test.tsx.
 function loadUseMovieDetail() {
   return require("@/hooks/useMovieDetail").useMovieDetail;
-}
-
-function createWrapper() {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-      },
-    },
-  });
-  return function wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
 }
 
 const okDetails = {
@@ -75,7 +63,7 @@ describe("useMovieDetail", () => {
   it("does not fetch when tmdbId is undefined (query disabled)", async () => {
     const useMovieDetail = loadUseMovieDetail();
 
-    await renderHook(() => useMovieDetail(undefined), { wrapper: createWrapper() });
+    await renderHook(() => useMovieDetail(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetMovieDetails).not.toHaveBeenCalled();
     expect(mockGetMovieTrailer).not.toHaveBeenCalled();
@@ -88,7 +76,7 @@ describe("useMovieDetail", () => {
     mockAllSucceed();
     const useMovieDetail = loadUseMovieDetail();
 
-    await renderHook(() => useMovieDetail(42), { wrapper: createWrapper() });
+    await renderHook(() => useMovieDetail(42), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(mockGetMovieDetails).toHaveBeenCalledWith(42));
     expect(mockGetMovieTrailer).toHaveBeenCalledWith(42);
@@ -101,7 +89,7 @@ describe("useMovieDetail", () => {
     mockAllSucceed();
     const useMovieDetail = loadUseMovieDetail();
 
-    const { result } = await renderHook(() => useMovieDetail(42), { wrapper: createWrapper() });
+    const { result } = await renderHook(() => useMovieDetail(42), { wrapper: createQueryWrapper() });
 
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(result.current.data).toEqual({
@@ -126,7 +114,7 @@ describe("useMovieDetail", () => {
     await renderHook(() => useMovieDetail(42), { wrapper });
 
     await waitFor(() => {
-      expect(queryClient.getQueryData(["movieDetail", 42])).toBeDefined();
+      expect(queryClient.getQueryData(queryKeys.movieDetail(42))).toBeDefined();
     });
   });
 
@@ -144,7 +132,7 @@ describe("useMovieDetail", () => {
       getMock().mockResolvedValue({ data: null, error: fakeError });
 
       const useMovieDetail = loadUseMovieDetail();
-      const { result } = await renderHook(() => useMovieDetail(42), { wrapper: createWrapper() });
+      const { result } = await renderHook(() => useMovieDetail(42), { wrapper: createQueryWrapper() });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
       expect(result.current.error).toEqual(fakeError);

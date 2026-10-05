@@ -133,6 +133,13 @@ describe("PaymentModal", () => {
     expect(queryByTestId("payment-modal-movie-e3")).toBeNull();
   });
 
+  it("labels the payer hint explicitly: 'zuletzt bezahlt: ...' / 'noch nie bezahlt'", async () => {
+    const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
+    // u1 paid ALREADY_PAID on 2026-09-01, NOW = 2026-09-20 -> 19 days; u2 never paid.
+    expect(getByTestId("payment-modal-payer-hint-u1").props.children).toBe("zuletzt bezahlt: vor 19 Tagen");
+    expect(getByTestId("payment-modal-payer-hint-u2").props.children).toBe("noch nie bezahlt");
+  });
+
   it("filters the movie list via the search field", async () => {
     const { getByTestId, queryByTestId } = await render(<PaymentModal {...baseProps()} />);
     await fireEvent.changeText(getByTestId("payment-modal-search-input"), "Alpha");
@@ -175,9 +182,31 @@ describe("PaymentModal", () => {
 
     const onSuccess = mockSetPaymentMutate.mock.calls[0][1].onSuccess;
     onSuccess();
-    expect(showToast).toHaveBeenCalledWith("Zahlung gespeichert");
+    expect(showToast).toHaveBeenCalledWith("Zahlung gespeichert", { variant: "success" });
     expect(onSaved).toHaveBeenCalled();
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it("shows a red error toast and stays open when the payment save fails", async () => {
+    const onClose = jest.fn();
+    const { getByTestId } = await render(<PaymentModal {...baseProps({ onClose })} />);
+    await fireEvent.press(getByTestId("payment-modal-movie-e1"));
+    await fireEvent.press(getByTestId("payment-modal-save-button"));
+
+    mockSetPaymentMutate.mock.calls[0][1].onError(new Error("boom"));
+    expect(showToast).toHaveBeenCalledWith("Zahlung konnte nicht gespeichert werden", { variant: "error" });
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("payer pills get a 12dp vertical hitSlop (48dp touch) and movie rows are 48dp high", async () => {
+    const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
+    expect(getByTestId("payment-modal-payer-button-u1").props.hitSlop).toEqual({
+      top: 12,
+      bottom: 12,
+      left: 0,
+      right: 0,
+    });
+    expect(getByTestId("payment-modal-movie-e1").props.className).toContain("min-h-touch-comfortable");
   });
 
   it("disables the save button until both a movie and a payer are selected", async () => {

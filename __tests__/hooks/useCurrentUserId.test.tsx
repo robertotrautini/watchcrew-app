@@ -17,7 +17,7 @@ const mockReadStoredSession = jest.fn();
 jest.mock("@/lib/storedSession", () => ({ readStoredSession: mockReadStoredSession }));
 
 // Lazily required (not statically imported) — same Babel CJS-hoisting reason
-// as __tests__/useAuthGate.test.tsx: a top-level `import` would run before
+// as __tests__/hooks/useAuthGate.test.tsx: a top-level `import` would run before
 // the `jest.mock` factory above is wired up.
 function loadUseCurrentUserId() {
   return require("@/hooks/useCurrentUserId").useCurrentUserId;

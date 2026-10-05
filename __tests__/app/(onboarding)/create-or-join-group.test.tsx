@@ -1,15 +1,8 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-// Same convention as __tests__/StarRating.test.tsx: mock the native Ionicons
+// Same convention as __tests__/components/ui/StarRating.test.tsx: mock the native MaterialIcons
 // implementation as a plain View that spreads its props through, so
 // testID/name/color assertions on the rendered node work under RNTL.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 const mockReplace = jest.fn();
 jest.mock("expo-router", () => ({
   router: { replace: (...args: unknown[]) => mockReplace(...args) },
@@ -28,7 +21,7 @@ jest.mock("@/lib/groups", () => ({
 // reference plain jest.fn()s declared in this same scope, and this
 // component itself has no problematic top-of-file mock-hoisting concerns —
 // but importing it after the mocks are declared, in the same pattern as
-// __tests__/useAuthGate.test.tsx, keeps the mock/import ordering obviously
+// __tests__/hooks/useAuthGate.test.tsx, keeps the mock/import ordering obviously
 // correct regardless of Babel's hoisting behavior for the `jest.mock` calls
 // above).
 import CreateOrJoinGroupScreen from "../../../src/app/(onboarding)/create-or-join-group";

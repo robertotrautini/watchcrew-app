@@ -1,23 +1,16 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { StarRating } from "../src/components/ui/StarRating";
+import { StarRating } from "../../../src/components/ui/StarRating";
 
-// `@expo/vector-icons`'s real Ionicons implementation resolves `name`/`color`
+// `@expo/vector-icons`'s real MaterialIcons implementation resolves `name`/`color`
 // into a glyph + native style internally and does not forward those raw
 // props down to the host node it renders, so RNTL's testID-based queries
 // (which return the deepest matching host node) can't see them. Mocking it
 // as a plain `View` that spreads its props through (as `View` itself does)
 // keeps `name`/`color` inspectable via `.props` for behavior assertions,
 // same pattern as this repo's existing native-module mocks (see
-// __tests__/sentry.test.ts, __tests__/supabase.test.ts). jest hoists this
+// __tests__/lib/sentry.test.ts, __tests__/lib/supabase.test.ts). jest hoists this
 // call above the imports above at execution time regardless of its position.
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 // M11 (haptic polish): `expo-haptics` mocked so `Haptics.impactAsync` calls
 // can be asserted without touching a real native module -- same pattern as
 // this file's existing `@expo/vector-icons` mock.
@@ -45,13 +38,13 @@ describe("StarRating", () => {
       const { getAllByTestId } = await render(<StarRating rating={0} starColor={GOLD_STAR_COLOR} />);
       const stars = starIcons(getAllByTestId("star-rating-icon") as never);
       expect(stars).toHaveLength(5);
-      expect(stars.every((s) => s.name === "star-outline" && s.color === STAR_EMPTY_COLOR)).toBe(true);
+      expect(stars.every((s) => s.name === "star-border" && s.color === STAR_EMPTY_COLOR)).toBe(true);
     });
 
     it("renders 5 empty stars for rating=null", async () => {
       const { getAllByTestId } = await render(<StarRating rating={null} starColor={GOLD_STAR_COLOR} />);
       const stars = starIcons(getAllByTestId("star-rating-icon") as never);
-      expect(stars.every((s) => s.name === "star-outline" && s.color === STAR_EMPTY_COLOR)).toBe(true);
+      expect(stars.every((s) => s.name === "star-border" && s.color === STAR_EMPTY_COLOR)).toBe(true);
     });
 
     it("renders 3 full, 1 half, 1 empty for rating=3.5", async () => {
@@ -61,7 +54,7 @@ describe("StarRating", () => {
       expect(stars[1]).toEqual({ name: "star", color: GOLD_STAR_COLOR });
       expect(stars[2]).toEqual({ name: "star", color: GOLD_STAR_COLOR });
       expect(stars[3]).toEqual({ name: "star-half", color: GOLD_STAR_COLOR });
-      expect(stars[4]).toEqual({ name: "star-outline", color: STAR_EMPTY_COLOR });
+      expect(stars[4]).toEqual({ name: "star-border", color: STAR_EMPTY_COLOR });
     });
 
     it("renders 5 full stars for rating=5", async () => {
@@ -145,7 +138,7 @@ describe("StarRating", () => {
       );
 
       const heart = getByTestId("star-rating-heart-icon");
-      expect(heart.props.name).toBe("heart-outline");
+      expect(heart.props.name).toBe("favorite-border");
 
       await fireEvent.press(getByTestId("star-rating-heart-touch"));
       expect(onToggleLike).toHaveBeenCalledTimes(1);
@@ -159,7 +152,7 @@ describe("StarRating", () => {
           onToggleLike={onToggleLike}
         />,
       );
-      expect(getByTestId("star-rating-heart-icon").props.name).toBe("heart");
+      expect(getByTestId("star-rating-heart-icon").props.name).toBe("favorite");
     });
 
     it("always renders the heart in the fixed color, regardless of the theme's star color", async () => {

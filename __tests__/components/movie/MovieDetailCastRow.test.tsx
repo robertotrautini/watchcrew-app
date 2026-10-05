@@ -1,12 +1,5 @@
 import { fireEvent, render } from "@testing-library/react-native";
 
-jest.mock("@expo/vector-icons", () => {
-  const { View } = require("react-native");
-  return {
-    Ionicons: (props: Record<string, unknown>) => <View {...props} />,
-  };
-});
-
 import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
 import type { TmdbCastMember, TmdbCrewMember } from "@/lib/movieDetailTypes";
 
@@ -78,5 +71,46 @@ describe("MovieDetailCastRow", () => {
     );
 
     expect(queryByTestId("movie-detail-cast-member-0")).toBeNull();
+  });
+});
+
+describe("MovieDetailCastRow gold frame", () => {
+  it("frames the cast block with faint gold hairlines", async () => {
+    const { render } = require("@testing-library/react-native");
+    const { MovieDetailCastRow } = require("@/components/movie/MovieDetailCastRow");
+    const view = await render(
+      <MovieDetailCastRow
+        director={null}
+        cast={[{ id: 1, name: "A", character: "B", profile_path: null }]}
+        onDirectorPress={() => {}}
+        onCastMemberPress={() => {}}
+      />,
+    );
+    const cls = view.getByTestId("movie-detail-cast-frame").props.className as string;
+    expect(cls).toContain("border-y");
+    expect(cls).toContain("border-accent-a30");
+  });
+
+  it("uses the same gold hairline colour above Regie as around the cast block", async () => {
+    const { render } = require("@testing-library/react-native");
+    const { MovieDetailCastRow } = require("@/components/movie/MovieDetailCastRow");
+    const view = await render(
+      <MovieDetailCastRow director={director} cast={[]} onDirectorPress={() => {}} onCastMemberPress={() => {}} />,
+    );
+    const cls = view.getByTestId("movie-detail-director").parent?.props.className as string;
+    expect(cls).toContain("border-t");
+    expect(cls).toContain("border-accent-a30");
+  });
+
+  it("the director link is at least 48dp high", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailCastRow
+        director={{ id: 1, name: "D" } as never}
+        cast={[]}
+        onDirectorPress={jest.fn()}
+        onCastMemberPress={jest.fn()}
+      />,
+    );
+    expect(getByTestId("movie-detail-director").props.className).toContain("min-h-touch-comfortable");
   });
 });
