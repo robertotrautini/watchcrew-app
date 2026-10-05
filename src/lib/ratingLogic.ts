@@ -1,3 +1,4 @@
+import { formatPlainDate } from "@/lib/dateFormat";
 // M7 part 2b: pure business-logic functions for the Rating-Dialog
 // (src/components/movie/RatingDialog.tsx). Kept side-effect-free and
 // independent of Supabase/React so the single most bug-prone rule in this
@@ -148,9 +149,5 @@ export function parseGermanDateInput(input: string): string | null {
 }
 
 export function formatDateForInput(dateIso: string | null): string {
-  if (!dateIso) {
-    return "";
-  }
-  const [year, month, day] = dateIso.slice(0, 10).split("-");
-  return `${day}.${month}.${year}`;
+  return formatPlainDate(dateIso);
 }

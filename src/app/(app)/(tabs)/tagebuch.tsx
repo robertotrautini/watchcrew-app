@@ -1,351 +1,24 @@
-import { useRouter } from "expo-router";
-import { useParallaxScroll } from "@/components/parallaxContext";
-import { useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { DiaryEntryCard } from "@/components/movie/DiaryEntryCard";
-import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
+import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
+import { TagebuchFilterPanel } from "@/components/tagebuch/TagebuchFilterPanel";
+import { TagebuchSortSheet } from "@/components/tagebuch/TagebuchSortSheet";
 import { AppHeader } from "@/components/ui/AppHeader";
-import { FadeInItem } from "@/components/ui/FadeInItem";
-import { Chip } from "@/components/ui/Chip";
-import { Button } from "@/components/ui/Button";
-import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
-import { Glass, GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
-import { SortButton } from "@/components/ui/SortButton";
-import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
-import { Sheet } from "@/components/ui/Sheet";
-import { useActiveGroup } from "@/hooks/useActiveGroup";
-import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { useGroupMembers } from "@/hooks/useGroupMembers";
-import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
-import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
-import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
-import {
-  computeAverageRating,
-  deriveGenreNamesById,
-  deriveGroupMemberIds,
-  formatSeenAtDate,
-  genreDisplayLabel,
-  memberDisplayLabel,
-} from "@/lib/diaryDisplay";
-import {
-  DIARY_SORT_SHORT_LABELS,
-  DEFAULT_LIST_FILTERS,
-  getNoResultsMessage,
-  hasActiveListFilters,
-  listFiltersKey,
-  toggleProviderCategory,
-} from "@/lib/listFilters";
-import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
-import {
-  ALL_PROVIDER_CATEGORIES,
-  type ProviderCategory,
-} from "@/lib/movieProviderFilter";
-import { useGroupTheme } from "@/components/GroupThemeProvider";
-import { buildTmdbImageUrl } from "@/lib/tmdbImage";
-import {
-  searchEntries,
-  sortDiary,
-  splitWatchlistAndDiary,
-} from "@/lib/watchlistLogic";
-import type {
-  DiarySortOption,
-  WatchlistEntry,
-  YearFilterValue,
-} from "@/lib/watchlistTypes";
-import { usePreferencesStore } from "@/stores/usePreferencesStore";
+import { useTagebuchScreen } from "@/hooks/useTagebuchScreen";
+import { getNoResultsMessage } from "@/lib/listFilters";
 
 /**
- * The real Tagebuch (diary) screen content (M5 part 2). Full spec extracted
- * verbatim from docs/feature-inventory.md into the task brief — see that
- * brief (and the module-level comments in the files linked below) for the
- * exact business rules being implemented here. This file is screen-level
- * wiring only; the actual sort/filter/split rules live in
- * `src/lib/watchlistLogic.ts` and are consumed here, never reimplemented.
- *
- * --- Active-group resolution (M9 part 2) ---
- * The former "first group = active group" interim simplification (see
- * docs/interim-decisions.md "M5") is now resolved via `useActiveGroup`
- * (src/hooks/useActiveGroup.ts) -- a real, persisted active-group choice
- * (Group-Settings switcher), falling back to the first group only when
- * nothing has been explicitly picked yet or the stored choice has gone
- * stale. The star color comes from `useGroupTheme()` (ActiveGroupThemeProvider in
- * src/app/(app)/_layout.tsx supplies the ACTIVE group's color_theme).
- *
- * --- M5 FAST-FOLLOW: member display names & genre names ---
- * The per-member rating rows and the genre filter pills previously showed
- * uuid-prefix placeholders (no `profiles` table and no genre-name join
- * existed yet). Both are now wired to real data:
- *  - `useGroupMembers` (src/hooks/useGroupMembers.ts, already added by the
- *    parallel Watchlist task for its "x/y bewertet" badge) now also returns
- *    each member's joined `profiles.display_name`
- *    (`supabase/migrations/20260920120000_profiles_table_and_display_name_trigger.sql`
- *    adds the table + an auto-provisioning trigger on `auth.users` insert).
- *    This screen looks up a member's name from that roster and passes it to
- *    `memberDisplayLabel`, which still falls back to the uuid-prefix
- *    placeholder if a profile row is somehow missing.
- *  - The member ROSTER itself (which ids get a row at all) intentionally
- *    still comes from `deriveGroupMemberIds` (the union-of-ratings
- *    approximation) rather than switching to `useGroupMembers`'s real
- *    membership list — that roster-completeness gap (a member who never
- *    rated anything won't get a "–" row) is a separate, not-yet-flagged
- *    concern, out of scope for this fast-follow, which only closes the two
- *    display-NAME gaps.
- *  - `deriveGenreNamesById` (src/lib/diaryDisplay.ts) resolves a genre_id to
- *    its real name from `movie.movie_genres[].genres.name`, now nested in
- *    `useGroupWatchlist`'s query.
+ * Tagebuch (diary) tab (M5 part 2). View state lives in `useTagebuchScreen`
+ * (see its doc comment for member/genre/active-group wiring); the filter
+ * panel, entry list and sort sheet are in src/components/tagebuch/. The
+ * sort/filter/split rules live in src/lib/watchlistLogic.ts.
  */
-
-const SORT_OPTIONS: { value: DiarySortOption; label: string }[] = [
-  { value: "my_diary", label: "Mein Tagebuch" },
-  { value: "all_rated", label: "Von allen bewertet" },
-  { value: "missing", label: "Fehlende Bewertungen" },
-  { value: "rating", label: "Beste Bewertung" },
-  { value: "tmdb_score", label: "TMDB Score" },
-  { value: "my_streaming", label: "Meine Streaming-Dienste" },
-  { value: "genre", label: "Nach Genre" },
-  { value: "year", label: "Nach Jahr" },
-  { value: "liked", label: "Mag ich" },
-];
-
-const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
-  flatrate: "Flatrate",
-  rent: "Leihen",
-  buy: "Kaufen",
-};
-
-function sortOptionLabel(option: DiarySortOption): string {
-  return SORT_OPTIONS.find((o) => o.value === option)?.label ?? option;
-}
-
-function getYearFromDate(dateStr: string): number {
-  return Number(dateStr.slice(0, 4));
-}
-
-/** Distinct genre ids present across the given (already-Diary) entries, for the "Nach Genre" pill row. */
-function deriveAvailableGenreIds(entries: WatchlistEntry[]): string[] {
-  const ids = new Set<string>();
-  for (const entry of entries) {
-    for (const link of entry.movie.movie_genres ?? []) {
-      ids.add(link.genre_id);
-    }
-  }
-  return Array.from(ids).sort();
-}
-
-/** The CURRENT user's own seen_at years present across the given (already-Diary) entries, plus whether any has no date, for the "Nach Jahr" pill row. */
-function deriveAvailableYears(
-  entries: WatchlistEntry[],
-  currentUserId: string,
-): { years: number[]; hasNoDate: boolean } {
-  const years = new Set<number>();
-  let hasNoDate = false;
-  for (const entry of entries) {
-    const ownSeenAt =
-      entry.ratings.find((r) => r.member_id === currentUserId)?.seen_at ?? null;
-    if (ownSeenAt == null) {
-      hasNoDate = true;
-    } else {
-      years.add(getYearFromDate(ownSeenAt));
-    }
-  }
-  return { years: Array.from(years).sort((a, b) => b - a), hasNoDate };
-}
-
 export default function TagebuchScreen() {
-  const parallaxScroll = useParallaxScroll();
-  const router = useRouter();
-  const userId = useCurrentUserId();
-  // M9 part 2: real, persisted active-group resolution (replaces the former
-  // "first group = active group" interim simplification) -- see
-  // src/hooks/useActiveGroup.ts.
-  const { activeGroupId, groupsQuery } = useActiveGroup(userId);
+  const screen = useTagebuchScreen();
+  const { filters } = screen;
 
-  // M10 (Realtime foreground sync, ADR 0006): see the identical comment in
-  // src/app/(app)/(tabs)/watchlist.tsx -- same wiring, same reasoning.
-  useGroupRealtimeSync(activeGroupId);
-  useRegisterFocusedGroupScreen(activeGroupId);
-
-  const watchlistQuery = useGroupWatchlist(activeGroupId);
-  const groupMembersQuery = useGroupMembers(activeGroupId);
-
-  const diaryViewMode = usePreferencesStore((s) => s.diaryViewMode);
-  const setDiaryViewMode = usePreferencesStore((s) => s.setDiaryViewMode);
-  // M10 Settings hub ("Filmtitel in Grid anzeigen" toggle,
-  // src/app/(app)/(modals)/settings/display.tsx): Tagebuch's grid mode never
-  // showed a title at all before M10 (unlike Watchlist's grid, which always
-  // did) -- this preference now ADDS one below the poster tile when true,
-  // per docs/interim-decisions.md's "M10 — Settings hub" entry.
-  const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
-
-  // Sort/genre/year/provider-category choices persist per group (MMKV, see
-  // usePreferencesStore `listFilters`); the search text is session-local.
-  const storedFilters = usePreferencesStore((s) =>
-    activeGroupId
-      ? s.listFilters[listFiltersKey("diary", activeGroupId)]
-      : undefined,
-  );
-  const setListFilters = usePreferencesStore((s) => s.setListFilters);
-  const filterPanelOpen = usePreferencesStore((s) => s.filterPanelOpen.diary);
-  const setFilterPanelOpen = usePreferencesStore((s) => s.setFilterPanelOpen);
-  const myProviderIds = usePreferencesStore(
-    (s) => s.selectedStreamingProviderIds,
-  );
-  const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
-  const sortOption = (filters.sortOption ?? "my_diary") as DiarySortOption;
-  const selectedGenreIds = filters.genreIds;
-  const selectedYear: YearFilterValue | undefined = filters.year ?? undefined;
-  const providerCategories = filters.providerCategories;
-
-  function updateFilters(patch: Partial<typeof DEFAULT_LIST_FILTERS>) {
-    if (activeGroupId) {
-      setListFilters("diary", activeGroupId, patch);
-    }
-  }
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isSortSheetVisible, setSortSheetVisible] = useState(false);
-
-  const starColor = useGroupTheme().colors.starColor;
-
-  const rawEntries = useMemo(
-    () => watchlistQuery.data?.entries ?? [],
-    [watchlistQuery.data],
-  );
-
-  // Roster of "everyone in this group": real members (useGroupMembers) unioned
-  // with rating authors (see deriveGroupMemberIds).
-  const groupMemberIds = useMemo(
-    () =>
-      deriveGroupMemberIds(
-        rawEntries,
-        (groupMembersQuery.data ?? []).map((m) => m.user_id),
-      ),
-    [rawEntries, groupMembersQuery.data],
-  );
-
-  // Real display names, joined via `useGroupMembers` (see the M5 fast-follow
-  // module comment above) — `memberDisplayLabel` falls back to the
-  // uuid-prefix placeholder for any id missing from this map.
-  const displayNameById = useMemo(() => {
-    const names = new Map<string, string>();
-    for (const member of groupMembersQuery.data ?? []) {
-      if (member.profiles?.display_name) {
-        names.set(member.user_id, member.profiles.display_name);
-      }
-    }
-    return names;
-  }, [groupMembersQuery.data]);
-
-  const diaryEntries = useMemo(() => {
-    if (!userId) return [];
-    return splitWatchlistAndDiary(rawEntries, userId).diary;
-  }, [rawEntries, userId]);
-
-  // Providers are only loaded (cache-backed, one batch call) while the
-  // "Meine Streaming-Dienste" sort is active.
-  const providersQuery = useMyStreamingProviders(
-    diaryEntries.map((entry) => entry.movie.tmdb_id),
-    sortOption === "my_streaming",
-  );
-  const providersByTmdbId = providersQuery.data;
-
-  const sortedEntries = useMemo(() => {
-    if (!userId) return [];
-    return sortDiary(diaryEntries, sortOption, userId, {
-      groupMemberIds,
-      genreIds: selectedGenreIds,
-      year: selectedYear,
-      providersByTmdbId,
-      myProviderIds,
-      providerCategories,
-    });
-  }, [
-    diaryEntries,
-    sortOption,
-    userId,
-    groupMemberIds,
-    selectedGenreIds,
-    selectedYear,
-    providersByTmdbId,
-    myProviderIds,
-    providerCategories,
-  ]);
-
-  const visibleEntries = useMemo(
-    () => searchEntries(sortedEntries, searchQuery),
-    [sortedEntries, searchQuery],
-  );
-
-  const availableGenreIds = useMemo(
-    () => deriveAvailableGenreIds(diaryEntries),
-    [diaryEntries],
-  );
-  const genreNamesById = useMemo(
-    () => deriveGenreNamesById(diaryEntries),
-    [diaryEntries],
-  );
-  const { years: availableYears, hasNoDate: hasNoDateYear } = useMemo(
-    () => deriveAvailableYears(diaryEntries, userId ?? ""),
-    [diaryEntries, userId],
-  );
-
-  const isLoading =
-    !userId ||
-    groupsQuery.isLoading ||
-    (!!activeGroupId &&
-      (watchlistQuery.isLoading || groupMembersQuery.isLoading));
-  const isError =
-    groupsQuery.isError || watchlistQuery.isError || groupMembersQuery.isError;
-  const isDiaryEmpty = diaryEntries.length === 0;
-  const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
-
-  function toggleGenre(genreId: string) {
-    updateFilters({
-      genreIds: selectedGenreIds.includes(genreId)
-        ? selectedGenreIds.filter((id) => id !== genreId)
-        : [...selectedGenreIds, genreId],
-    });
-  }
-
-  function selectSortOption(option: DiarySortOption) {
-    updateFilters({ sortOption: option });
-    setSortSheetVisible(false);
-  }
-
-  function ownRating(entry: WatchlistEntry) {
-    return entry.ratings.find((r) => r.member_id === userId);
-  }
-
-  function openEntry(entry: WatchlistEntry) {
-    if (!activeGroupId) {
-      return;
-    }
-    navigateToMovieDetail(router, {
-      tmdbId: entry.movie.tmdb_id,
-      groupId: activeGroupId,
-      source: "diary",
-      watchlistEntryId: entry.id,
-    });
-  }
-
-  function seenDateLabel(entry: WatchlistEntry): string {
-    const ownSeenAt = ownRating(entry)?.seen_at ?? null;
-    return ownSeenAt
-      ? `Gesehen am ${formatSeenAtDate(ownSeenAt)}`
-      : "Kein Datum";
-  }
-
-  if (isLoading) {
+  if (screen.isLoading) {
     return (
       <SafeAreaView
         edges={["top"]}
@@ -357,7 +30,7 @@ export default function TagebuchScreen() {
     );
   }
 
-  if (isError) {
+  if (screen.isError) {
     return (
       <SafeAreaView
         edges={["top"]}
@@ -376,106 +49,9 @@ export default function TagebuchScreen() {
     // Safe-Area"): same reasoning as tracker.tsx/watchlist.tsx.
     <SafeAreaView edges={["top"]} className="flex-1" testID="tagebuch-screen">
       <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
-      <CollapsibleFilterPanel
-        testID="tagebuch-filter"
-        open={filterPanelOpen}
-        onToggle={() => setFilterPanelOpen("diary", !filterPanelOpen)}
-        hasActiveFilters={hasActiveListFilters(filters, "my_diary")}
-        search={
-          <TextInput
-            testID="tagebuch-search-input"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Film suchen…"
-            placeholderTextColor="#888888"
-            className={GLASS_SEARCH_INPUT_CLASSNAME}
-          />
-        }
-      >
-        <View className="flex-row items-stretch gap-2">
-          <SortButton
-            testID="tagebuch-sort-button"
-            shortLabel={
-              DIARY_SORT_SHORT_LABELS[sortOption] ?? sortOptionLabel(sortOption)
-            }
-            fullLabel={sortOptionLabel(sortOption)}
-            onPress={() => setSortSheetVisible(true)}
-          />
-          <ViewModeToggle
-            testID="tagebuch-view-mode-toggle"
-            value={diaryViewMode}
-            onChange={setDiaryViewMode}
-            buttonTestID={(mode) => `tagebuch-view-mode-${mode}`}
-          />
-        </View>
-        {sortOption === "genre" ? (
-          <View
-            testID="tagebuch-genre-pills"
-            className="flex-row flex-wrap gap-2"
-          >
-            {availableGenreIds.map((genreId) => (
-              <Chip
-                key={genreId}
-                testID={`tagebuch-genre-pill-${genreId}`}
-                active={selectedGenreIds.includes(genreId)}
-                onPress={() => toggleGenre(genreId)}
-                label={genreDisplayLabel(genreId, genreNamesById.get(genreId))}
-              />
-            ))}
-          </View>
-        ) : null}
+      <TagebuchFilterPanel screen={screen} />
 
-        {sortOption === "year" ? (
-          <View
-            testID="tagebuch-year-pills"
-            className="flex-row flex-wrap gap-2"
-          >
-            {availableYears.map((year) => (
-              <Chip
-                key={year}
-                testID={`tagebuch-year-pill-${year}`}
-                active={selectedYear === year}
-                onPress={() => updateFilters({ year })}
-                label={String(year)}
-              />
-            ))}
-            {hasNoDateYear ? (
-              <Chip
-                testID="tagebuch-year-pill-no_date"
-                active={selectedYear === "no_date"}
-                onPress={() => updateFilters({ year: "no_date" })}
-                label="Kein Datum"
-              />
-            ) : null}
-          </View>
-        ) : null}
-
-        {sortOption === "my_streaming" ? (
-          <View
-            testID="tagebuch-provider-categories"
-            className="flex-row flex-wrap gap-2"
-          >
-            {ALL_PROVIDER_CATEGORIES.map((category) => (
-              <Chip
-                key={category}
-                testID={`tagebuch-provider-category-${category}`}
-                active={providerCategories.includes(category)}
-                onPress={() =>
-                  updateFilters({
-                    providerCategories: toggleProviderCategory(
-                      providerCategories,
-                      category,
-                    ),
-                  })
-                }
-                label={PROVIDER_CATEGORY_LABELS[category]}
-              />
-            ))}
-          </View>
-        ) : null}
-      </CollapsibleFilterPanel>
-
-      {isDiaryEmpty ? (
+      {screen.isDiaryEmpty ? (
         <View
           className="flex-1 items-center justify-center px-6"
           testID="tagebuch-empty"
@@ -484,187 +60,25 @@ export default function TagebuchScreen() {
             Noch keine bewerteten Filme.
           </Text>
         </View>
-      ) : hasNoResults ? (
+      ) : screen.hasNoResults ? (
         <View
           className="flex-1 items-center justify-center px-6"
           testID="tagebuch-no-results"
         >
           <Text className="text-center text-text-secondary">
-            {getNoResultsMessage(searchQuery)}
+            {getNoResultsMessage(filters.searchQuery)}
           </Text>
         </View>
       ) : (
-        <ScrollView
-          {...parallaxScroll}
-          testID="tagebuch-entry-list"
-          contentContainerClassName="gap-3 px-4 pb-8 pt-3"
-        >
-          {diaryViewMode === "grid" ? (
-            <View className="flex-row flex-wrap gap-3">
-              {visibleEntries.map((entry, index) => (
-                <FadeInItem
- replayTab="tagebuch"
-                  key={entry.id}
-                  index={index}
-                  testID={`tagebuch-entry-${entry.id}`}
-                  className="w-[30%]"
-                >
-                  <Pressable
-                    testID={`tagebuch-entry-press-${entry.id}`}
-                    accessibilityRole="button"
-                    onPress={() => openEntry(entry)}
-                  >
-                    <DiaryPosterTile
-                      posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-                      title={entry.movie.name}
-                      starColor={starColor}
-                      averageRating={computeAverageRating(entry)}
-                      liked={ownRating(entry)?.liked === true}
-                      tmdbScore={entry.movie.vote_average}
-                    >
-                      {showTitlesInGrid ? (
-                        <Text
-                          testID={`tagebuch-grid-title-${entry.id}`}
-                          className="text-xs text-text-primary"
-                          numberOfLines={1}
-                        >
-                          {entry.movie.name}
-                        </Text>
-                      ) : null}
-                    </DiaryPosterTile>
-                  </Pressable>
-                </FadeInItem>
-              ))}
-            </View>
-          ) : diaryViewMode === "list" ? (
-            <Glass className="overflow-hidden">
-              <View className="flex-row gap-2 border-b border-glass-border px-3 py-2">
-                <Text className="flex-1 text-xs text-text-secondary">Film</Text>
-                <Text className="w-14 text-xs text-text-secondary">
-                  Gesehen
-                </Text>
-                <Text className="w-10 text-right text-xs text-text-secondary">
-                  Ø
-                </Text>
-                <Text className="w-10 text-right text-xs text-text-secondary">
-                  TMDB
-                </Text>
-              </View>
-              {visibleEntries.map((entry, entryIndex) => {
-                const ownSeenAt = ownRating(entry)?.seen_at ?? null;
-                const average = computeAverageRating(entry);
-                return (
-                  <Pressable
-                    key={entry.id}
-                    testID={`tagebuch-entry-${entry.id}`}
-                    accessibilityRole="button"
-                    onPress={() => openEntry(entry)}
-                    className={`flex-row items-center gap-2 px-3 py-3 ${
-                      entryIndex < visibleEntries.length - 1
-                        ? "border-b border-glass-border"
-                        : ""
-                    }`}
-                  >
-                    <Text
-                      testID={`tagebuch-list-title-${entry.id}`}
-                      className="flex-1 font-display-bold text-accent-light"
-                      numberOfLines={1}
-                    >
-                      {entry.movie.name}
-                    </Text>
-                    <Text
-                      testID={`tagebuch-list-year-${entry.id}`}
-                      className="w-14 text-sm text-text-secondary"
-                    >
-                      {ownSeenAt ? getYearFromDate(ownSeenAt) : "–"}
-                    </Text>
-                    <Text
-                      testID={`tagebuch-list-average-${entry.id}`}
-                      className="w-10 text-right text-sm font-semibold text-text-primary"
-                    >
-                      {average != null ? average.toFixed(1) : "–"}
-                    </Text>
-                    <Text
-                      testID={`tagebuch-list-tmdb-${entry.id}`}
-                      className="w-10 text-right text-sm text-text-secondary"
-                    >
-                      {entry.movie.vote_average != null
-                        ? entry.movie.vote_average.toFixed(1)
-                        : "–"}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </Glass>
-          ) : (
-            // "cards" (default)
-            visibleEntries.map((entry, index) => (
-              <FadeInItem
- replayTab="tagebuch"
-                key={entry.id}
-                index={index}
-                testID={`tagebuch-entry-${entry.id}`}
-              >
-                <Pressable
-                  testID={`tagebuch-entry-press-${entry.id}`}
-                  accessibilityRole="button"
-                  onPress={() => openEntry(entry)}
-                >
-                  <DiaryEntryCard
-                    posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-                    title={entry.movie.name}
-                    seenLabel={seenDateLabel(entry)}
-                    seenLabelTestID={`tagebuch-entry-seen-date-${entry.id}`}
-                    starColor={starColor}
-                    averageRating={computeAverageRating(entry)}
-                    liked={ownRating(entry)?.liked === true}
-                    tmdbScore={entry.movie.vote_average}
-                    members={groupMemberIds.map((memberId) => ({
-                      id: memberId,
-                      label: memberDisplayLabel(
-                        memberId,
-                        displayNameById.get(memberId),
-                      ),
-                      rating:
-                        entry.ratings.find((r) => r.member_id === memberId)
-                          ?.rating ?? null,
-                    }))}
-                  />
-                </Pressable>
-              </FadeInItem>
-            ))
-          )}
-        </ScrollView>
+        <TagebuchEntryList screen={screen} />
       )}
 
-      <Sheet
-        visible={isSortSheetVisible}
-        onClose={() => setSortSheetVisible(false)}
-        title="Sortieren nach"
-      >
-        <View testID="tagebuch-sort-sheet" className="gap-1">
-          {SORT_OPTIONS.map((option) => (
-            <Pressable
-              key={option.value}
-              testID={`tagebuch-sort-option-${option.value}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: sortOption === option.value }}
-              onPress={() => selectSortOption(option.value)}
-              className="py-3"
-            >
-              <Text
-                className={
-                  sortOption === option.value
-                    ? "font-semibold text-accent"
-                    : "text-text-primary"
-                }
-              >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </Sheet>
+      <TagebuchSortSheet
+        visible={filters.sortSheetVisible}
+        sortOption={filters.sortOption}
+        onClose={() => filters.setSortSheetVisible(false)}
+        onSelect={filters.selectSortOption}
+      />
     </SafeAreaView>
   );
 }

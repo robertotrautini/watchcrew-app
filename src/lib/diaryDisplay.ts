@@ -1,3 +1,4 @@
+import { formatPlainDate } from "@/lib/dateFormat";
 // M5 part 2 (Tagebuch screen): small presentational helpers layered on top
 // of `src/lib/watchlistLogic.ts`'s pure business logic. Nothing here
 // encodes a business rule of its own — it's purely "how do we show this
@@ -32,11 +33,7 @@ export function computeAverageRating(entry: WatchlistEntry): number | null {
 
 /** "Gesehen am DD.MM.YYYY" date part, or the "Kein Datum" fallback copy for a null seen_at. */
 export function formatSeenAtDate(dateStr: string | null): string {
-  if (!dateStr) {
-    return "Kein Datum";
-  }
-  const [year, month, day] = dateStr.slice(0, 10).split("-");
-  return `${day}.${month}.${year}`;
+  return formatPlainDate(dateStr, "Kein Datum");
 }
 
 /**

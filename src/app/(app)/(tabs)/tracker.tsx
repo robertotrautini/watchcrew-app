@@ -23,6 +23,7 @@ import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
+import { formatPlainDate } from "@/lib/dateFormat";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import { assignMemberColors, getPaidEntries } from "@/lib/trackerLogic";
 import { searchEntries } from "@/lib/watchlistLogic";
@@ -42,14 +43,6 @@ import { searchEntries } from "@/lib/watchlistLogic";
  * -- Group-Settings is one of that hub's sub-sections now (see the hub's own
  * "Gruppe verwalten" row), not a standalone destination from here anymore.
  */
-
-function formatPlainDate(dateStr: string | null): string {
-  if (dateStr == null) {
-    return "";
-  }
-  const [year, month, day] = dateStr.slice(0, 10).split("-");
-  return `${day}.${month}.${year}`;
-}
 
 export default function TrackerScreen() {
   const parallaxScroll = useParallaxScroll();
