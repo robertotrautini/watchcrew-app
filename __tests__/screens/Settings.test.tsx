@@ -221,7 +221,12 @@ describe("SettingsScreen", () => {
     await fireEvent.press(getByTestId("settings-sign-out-button"));
 
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
+    expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
+    // Navigation must happen BEFORE the session/cache/theme reset (Android
+    // ScreenStackFragment crash, docs/interim-decisions.md).
+    expect(mockRouter.replace.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSignOut.mock.invocationCallOrder[0],
+    );
   });
 
   it("shows 'N ausgewählt' on the streaming-services row", async () => {

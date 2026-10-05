@@ -70,7 +70,7 @@ describe("SettingsDeleteAccountScreen", () => {
     expect(mockImpactAsync).not.toHaveBeenCalled();
   });
 
-  it("on success: calls deleteOwnAccount, then signOut, then navigates to '/'", async () => {
+  it("on success: calls deleteOwnAccount, then navigates to login, then signOut", async () => {
     mockDeleteOwnAccount.mockResolvedValue({ error: null });
     mockSignOut.mockResolvedValue({ error: null });
     const Screen = loadScreen();
@@ -83,7 +83,15 @@ describe("SettingsDeleteAccountScreen", () => {
     expect(mockImpactAsync).toHaveBeenCalledWith("medium");
     await waitFor(() => expect(mockDeleteOwnAccount).toHaveBeenCalled());
     await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
-    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/"));
+    await waitFor(() => expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login"));
+    expect(mockRouter.replace).not.toHaveBeenCalledWith("/");
+    // Delete first, then navigate BEFORE signOut (Android ScreenStackFragment crash).
+    expect(mockDeleteOwnAccount.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRouter.replace.mock.invocationCallOrder[0],
+    );
+    expect(mockRouter.replace.mock.invocationCallOrder[0]).toBeLessThan(
+      mockSignOut.mock.invocationCallOrder[0],
+    );
   });
 
   it("on failure: shows an error message and does NOT sign out or navigate", async () => {

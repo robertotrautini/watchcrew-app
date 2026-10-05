@@ -16,10 +16,8 @@ import { GLASS_INSET_EDGE } from "@/components/ui/Glass";
  * requiring the user to type the exact phrase "LÖSCHEN" before the delete
  * button even enables (per docs/interim-decisions.md, "M10 — Settings hub").
  *
- * On success: signs the local session out, then explicitly navigates to "/"
- * so `useAuthGate` (src/hooks/useAuthGate.ts) re-evaluates fresh and
- * redirects to the login screen — same explicit-navigation reasoning as
- * settings.tsx's own "Abmelden" handler.
+ * On success: navigates to the login screen, then signs the local session
+ * out — same order and reasoning as settings.tsx's "Abmelden" handler.
  */
 
 const CONFIRMATION_PHRASE = "LÖSCHEN";
@@ -61,8 +59,11 @@ export default function SettingsDeleteAccountScreen() {
       return;
     }
 
+    // Navigate FIRST, then end the session (see settings.tsx handleSignOut:
+    // signOut() resets cache/theme while this modal stack is mounted and
+    // crashes Android). Account deletion has already completed here.
+    router.replace("/(auth)/login");
     await signOut();
-    router.replace("/");
   }
 
   return (

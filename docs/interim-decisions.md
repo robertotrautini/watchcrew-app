@@ -173,6 +173,8 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [Sterne fest gelb, Header weiss, Logo wechselt Gruppe](#sterne-fest-gelb-header-weiss-logo-wechselt-gruppe)
 - [Zurück-Wischgeste: Navigations-Stack, Android-BackSwipeView, Ähnliche Filme ersetzt statt stapelt](#zurück-wischgeste-navigations-stack-android-backswipeview-ähnliche-filme-ersetzt-statt-stapelt)
 - [ESLint: eslint-config-expo (flat config)](#eslint-eslint-config-expo-flat-config)
+- [Tooling — ESLint: `no-require-imports` und `import/first` nur in `__tests__/**` aus](#tooling--eslint-no-require-imports-und-importfirst-nur-in-__tests__-aus)
+- [Abmelden: erst nach /(auth)/login navigieren, dann signOut (Android ScreenStackFragment-Crash)](#abmelden-erst-nach-authlogin-navigieren-dann-signout-android-screenstackfragment-crash)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2528,3 +2530,23 @@ Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
 - **Anlass:** `npm run lint` (`expo lint`) war ohne Config/Pakete faktisch tot (R2 in `docs/code-health-r-items.md`). Nutzer hat `eslint-config-expo` als devDependency freigegeben.
 - **Entscheidung:** devDependencies `eslint` (^9) + `eslint-config-expo` (~57.0.2, passend zum SDK); `eslint.config.js` (flat) = `eslint-config-expo/flat` + Ignores (`dist`, `.expo`, `node_modules`, `supabase/functions`). Keine eigenen Zusatzregeln, keine Regel-Abschaltungen, kein Auto-Fix über die Codebase. `react-native/no-inline-styles` ist in der Expo-Config nicht enthalten (kein Plugin) und wurde nicht ergänzt.
 - **Aenderung spaeter:** Regeln/Ignores nur in `eslint.config.js`; Schärfen (z. B. no-require-imports in Tests, no-inline-styles-Plugin) ist eine eigene Entscheidung.
+
+## Tooling — ESLint: `no-require-imports` und `import/first` nur in `__tests__/**` aus
+
+**Entscheidung (vom Nutzer freigegeben):** In `eslint.config.js` sind `@typescript-eslint/no-require-imports` und `import/first` per Flat-Config-Override ausschließlich für `__tests__/**` deaktiviert. Grund: Jest-Tests nutzen `jest.mock()` + `require()` nach Mocks bzw. Imports hinter Mock-Aufrufen; das ist dort idiomatisch, die Regeln erzeugten nur Rauschen (Lint auf `__tests__`: 381 Probleme -> 37, 3 Errors bleiben anderer Art).
+
+**Folgen einer Änderung:** Override entfernen -> Warnungen/Errors in Tests kehren zurück. Produktionscode (`src/**`) ist unverändert streng geprüft.
+
+## R3/R4 — Tagebuch/Watchlist: Controller-Hooks, Sektionskomponenten, gemeinsame Filter-Logik
+
+**Entscheidung (Nutzer hat R3/R4 freigegeben):** Reiner Refactor ohne Verhaltens-/Optikaenderung. `useTagebuchScreen`/`useWatchlistScreen` (src/hooks/) halten den View-State, gemeinsamer Filter-State in `useEntryFilters(tab, groupId, defaultSort)`; JSX in `src/components/{tagebuch,watchlist}/` (FilterPanel, EntryList, SortSheet) plus geteilte Pill-Reihen in `src/components/entries/EntryFilterPills.tsx` (per `testIDPrefix`, Maestro-testIDs unveraendert). Reine Helfer in `lib/entryFilters.ts` und `lib/dateFormat.ts` (`formatPlainDate(date, fallback)`; `formatSeenAtDate`/`formatDateForInput` delegieren). Sort-Sheets nicht geteilt, weil testIDs/Accessibility-Props je Screen verschieden sind und identisch bleiben muessen; `watchlistDateBadge.formatDate` nicht umgestellt (pad2-Verhalten).
+
+## Abmelden: erst nach /(auth)/login navigieren, dann signOut (Android ScreenStackFragment-Crash)
+
+**Problem:** Auf Android crashte der Tipp auf "Abmelden" (Maestro `auth-screens`) mit `IllegalStateException: ScreenStackFragment added into a non-stack container` (react-native-screens, `ScreenStackHeaderConfig.onUpdate`).
+
+**Ursache (per Bisect auf dem Pixel 6 Pro):** Nicht die Layouts. Weder das Vereinheitlichen des Root-`screenLayout` noch dessen Entfernen noch das Entfernen des `(modals)`-`screenLayout` behob den Crash. Ursache war die Reihenfolge: `signOut()` leert Query-Cache und Gruppen-Theme (Header-Farben der `(modals)`-Stack-Screens aendern sich), waehrend der Stack noch gemountet ist und erst danach per `router.replace("/")` abgebaut wird -> Header-Update auf einem gerade entfernten Screen.
+
+**Entscheidung:** `handleSignOut` in `settings.tsx` navigiert zuerst (`router.replace("/(auth)/login")`), dann `await signOut()`; das nachgelagerte `replace("/")` entfaellt. Optik unveraendert, Layouts unveraendert. Jest prueft die Reihenfolge (`__tests__/screens/Settings.test.tsx`).
+
+**Folgen einer Aenderung:** Die gleiche Reihenfolge-Falle besteht potenziell in `settings/delete-account.tsx` (signOut, dann `replace("/")`); dort bisher kein Crash beobachtet, nicht angefasst.

@@ -124,18 +124,14 @@ export default function SettingsScreen() {
     (s) => s.selectedStreamingProviderIds,
   );
   async function handleSignOut() {
+    // Navigate to login FIRST, then end the session. signOut() clears the
+    // query cache and resets the group theme; doing that while this modal
+    // stack is still mounted makes react-native-screens update the header of
+    // a screen that is being popped and crashes Android ("ScreenStackFragment
+    // added into a non-stack container"). The (auth) group has no guard, and
+    // `useAuthGate` re-evaluates on the next visit to "/".
+    router.replace("/(auth)/login");
     await signOut();
-    // `useAuthGate` (src/hooks/useAuthGate.ts) reacts to the SIGNED_OUT
-    // Supabase auth event via `onAuthStateChange` -- but only in whichever
-    // component instance is actually still mounted and subscribed. This
-    // screen sits deep in the (app) stack, several navigations away from
-    // the root `index.tsx` that owns the gate; rather than assume that
-    // screen is still mounted and will react on its own (the exact kind of
-    // auth-gate gap M9 part 2's Group-Settings screen already ran into for
-    // a different case -- see its own `ONBOARDING_ROUTE` comment), this
-    // explicitly forces navigation back to "/" so `useAuthGate` re-evaluates
-    // fresh either way.
-    router.replace("/");
   }
 
   const displayName = ownProfileQuery.data?.display_name ?? "";
