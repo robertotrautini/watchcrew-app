@@ -1,0 +1,26 @@
+appId: com.watchcrew.app
+---
+# Normalises the Watchlist tab to the app default WITHOUT relying on persisted
+# state (MMKV filters/panel survive aborted runs): sort "Hinzugefügt" (added,
+# no streaming filter), panel CLOSED. Precondition: Watchlist tab visible.
+- runFlow:
+    when:
+      notVisible:
+        id: "watchlist-filter-panel"
+    commands:
+      - tapOn:
+          id: "watchlist-filter-toggle"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-sort-button"
+    timeout: 5000
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-added"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- tapOn:
+    id: "watchlist-filter-toggle"
+- assertNotVisible:
+    id: "watchlist-filter-panel"

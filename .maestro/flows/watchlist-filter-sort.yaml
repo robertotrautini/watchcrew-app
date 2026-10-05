@@ -2,24 +2,16 @@ appId: com.watchcrew.app
 ---
 # watchlist-filter-sort.yaml — Watchlist tab: search, collapsible filter panel,
 # every sort option, filter dot, all 3 view modes, genre/year/provider chips.
-# Restores: sort "Meine Streaming-Dienste", view mode grid, panel closed.
+# Restores: sort "Hinzugefügt" (app default), view mode grid, panel closed.
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-watchlist.yaml
 - extendedWaitUntil:
     visible:
       id: "watchlist-screen"
     timeout: 15000
-# Panel open state persists (MMKV): an aborted earlier run can leave it open.
-# Normalise to the documented default (closed) before the first shot.
-- runFlow:
-    when:
-      visible:
-        id: "watchlist-filter-panel"
-    commands:
-      - tapOn:
-          id: "watchlist-filter-toggle"
-      - assertNotVisible:
-          id: "watchlist-filter-panel"
+# Persisted sort/filters/panel state is NOT trusted: normalise to the app
+# default (sort "Hinzugefügt", panel closed) before the first shot.
+- runFlow: ../subflows/watchlist-normalize.yaml
 - takeScreenshot: 01-watchlist-default-closed
 
 # --- search ---
@@ -139,6 +131,16 @@ appId: com.watchcrew.app
       - assertVisible:
           id: "watchlist-provider-categories"
 
+# my_streaming + Flatrate chip can hide every film (e.g. only Hokum on the
+# list) -> no grid/list rendered. Back to "Hinzugefügt" (shows all entries)
+# before the view-mode checks.
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-added"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+
 # --- view modes ---
 - tapOn:
     id: "watchlist-view-mode-cards-button"
@@ -156,7 +158,6 @@ appId: com.watchcrew.app
     id: "watchlist-grid-or-cards"
 - takeScreenshot: 19-watchlist-view-grid
 
-# --- restore: close panel ---
-- tapOn:
-    id: "watchlist-filter-toggle"
+# --- restore: sort back to default "Hinzugefügt", panel closed ---
+- runFlow: ../subflows/watchlist-normalize.yaml
 - takeScreenshot: 20-watchlist-restored-closed

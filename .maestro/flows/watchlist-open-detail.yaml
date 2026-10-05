@@ -1,9 +1,12 @@
 appId: com.watchcrew.app
 ---
 # watchlist-open-detail.yaml — read-only: open first watchlist entry, assert
-# detail overlay renders. PRECONDITION: group with >=1 watchlist film.
+# detail overlay renders. PRECONDITION: group with >=1 watchlist film (any,
+# e.g. only Hokum). Sets default sort "Hinzugefügt" explicitly (no streaming
+# filter) so every entry is listed; search cleared; panel closed.
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-watchlist.yaml
+- runFlow: ../subflows/watchlist-normalize.yaml
 - extendedWaitUntil:
     visible:
       id: "watchlist-(entry|list-row)-.*"
