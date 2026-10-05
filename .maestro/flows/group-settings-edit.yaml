@@ -1,0 +1,120 @@
+appId: com.watchcrew.app
+---
+# group-settings-edit.yaml — Group settings: rename (restored), all 6 themes
+# (ends on Gold), invite link/toggle (restored)/share sheet, members, leave
+# confirm (cancelled). "Neu generieren" (irreversibly kills the old invite
+# link), member removal and the real leave are NOT automated.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- tapOn:
+    id: "settings-section-group-settings"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-screen"
+    timeout: 10000
+- takeScreenshot: 01-group-settings-top
+
+# --- rename (restored) ---
+# Guard: only overwrite the name if it is the documented baseline.
+- assertVisible: "Maestro Test Gruppe"
+- tapOn:
+    id: "group-settings-name-input"
+- eraseText
+- inputText: "Maestro Test Gruppe 2"
+- hideKeyboard
+- tapOn:
+    id: "group-settings-rename-save-button"
+- takeScreenshot: 02-group-settings-renamed
+- tapOn:
+    id: "group-settings-name-input"
+- eraseText
+- inputText: "Maestro Test Gruppe"
+- hideKeyboard
+- tapOn:
+    id: "group-settings-rename-save-button"
+- takeScreenshot: 03-group-settings-rename-restored
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-red"
+- tapOn:
+    id: "group-settings-theme-swatch-red"
+- takeScreenshot: 04-group-settings-theme-red
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-blue"
+- tapOn:
+    id: "group-settings-theme-swatch-blue"
+- takeScreenshot: 05-group-settings-theme-blue
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-green"
+- tapOn:
+    id: "group-settings-theme-swatch-green"
+- takeScreenshot: 06-group-settings-theme-green
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-purple"
+- tapOn:
+    id: "group-settings-theme-swatch-purple"
+- takeScreenshot: 07-group-settings-theme-purple
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-orange"
+- tapOn:
+    id: "group-settings-theme-swatch-orange"
+- takeScreenshot: 08-group-settings-theme-orange
+
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-gold"
+- tapOn:
+    id: "group-settings-theme-swatch-gold"
+- takeScreenshot: 09-group-settings-theme-gold
+
+# --- invite ---
+- scrollUntilVisible:
+    element:
+      id: "group-settings-invite-toggle"
+- takeScreenshot: 10-group-settings-invite
+- tapOn:
+    id: "group-settings-invite-toggle"
+- takeScreenshot: 11-group-settings-invite-disabled
+- tapOn:
+    id: "group-settings-invite-toggle"
+- takeScreenshot: 12-group-settings-invite-restored
+- tapOn:
+    id: "group-settings-invite-share-button"
+- takeScreenshot: 13-group-settings-share-sheet
+- back
+
+# --- members + leave (cancelled) ---
+- scrollUntilVisible:
+    element:
+      id: "group-settings-leave-button"
+- takeScreenshot: 14-group-settings-members
+- tapOn:
+    id: "group-settings-leave-button"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-leave-confirm"
+    timeout: 5000
+- scrollUntilVisible:
+    element:
+      id: "group-settings-leave-cancel-button"
+- takeScreenshot: 15-group-settings-leave-confirm
+- tapOn:
+    id: "group-settings-leave-cancel-button"
+- assertNotVisible:
+    id: "group-settings-leave-confirm"
+- takeScreenshot: 16-group-settings-leave-cancelled

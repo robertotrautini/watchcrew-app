@@ -1,0 +1,88 @@
+appId: com.watchcrew.app
+---
+# auth-screens.yaml — signs OUT via Settings, walks the logged-out screens
+# (login validation + wrong-password error, forgot-password, register forms),
+# then signs back IN by re-using login.yaml (credentials live only there).
+# Does NOT submit forgot-password (would send a real e-mail) or register
+# (would create an account). Ends logged in, on the Tracker.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+- tapOn:
+    id: "settings-sign-out-button"
+- extendedWaitUntil:
+    visible:
+      id: "login-screen"
+    timeout: 20000
+- takeScreenshot: 01-login-screen
+
+# --- login validation / wrong password ---
+- tapOn:
+    id: "login-submit-button"
+- takeScreenshot: 02-login-validation-empty
+- tapOn:
+    id: "login-email-input"
+- inputText: "maestro-wrong@example.com"
+- hideKeyboard
+- tapOn:
+    id: "login-password-input"
+- inputText: "wrong-password-123"
+- hideKeyboard
+- tapOn:
+    id: "login-submit-button"
+- extendedWaitUntil:
+    visible:
+      id: "login-api-error"
+    timeout: 20000
+- takeScreenshot: 03-login-wrong-password-error
+
+# --- forgot password (not submitted) ---
+- tapOn:
+    id: "login-forgot-password-link"
+- extendedWaitUntil:
+    visible:
+      id: "forgot-password-screen"
+    timeout: 10000
+- takeScreenshot: 04-forgot-password-screen
+- tapOn:
+    id: "forgot-password-submit-button"
+- takeScreenshot: 05-forgot-password-validation-empty
+- tapOn:
+    id: "forgot-password-back-button"
+- extendedWaitUntil:
+    visible:
+      id: "login-screen"
+    timeout: 10000
+
+# --- register (not submitted) ---
+- tapOn:
+    id: "login-register-link"
+- extendedWaitUntil:
+    visible:
+      id: "register-screen"
+    timeout: 10000
+- takeScreenshot: 06-register-screen
+- tapOn:
+    id: "register-submit-button"
+- takeScreenshot: 07-register-validation-empty
+- tapOn:
+    id: "register-login-link"
+- extendedWaitUntil:
+    visible:
+      id: "login-screen"
+    timeout: 10000
+
+# --- sign back in (credentials live only in login.yaml) ---
+- runFlow: login.yaml
+- extendedWaitUntil:
+    visible: "Tracker"
+    timeout: 30000
+- takeScreenshot: 08-signed-back-in-tracker

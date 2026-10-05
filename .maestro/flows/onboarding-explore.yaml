@@ -4,7 +4,7 @@ appId: com.watchcrew.app
 # Only meaningful for an account WITHOUT a group. For the normal test account
 # (has "Maestro Test Gruppe") the guarded block is skipped and the flow passes
 # after asserting the Tracker tab. Creates/joins nothing.
-- runFlow: ../subflows/launch.yaml
+- runFlow: ../subflows/ensure-app.yaml
 - runFlow:
     when:
       visible: "Willkommen bei WatchCrew"

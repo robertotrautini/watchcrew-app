@@ -28,15 +28,14 @@ appId: com.watchcrew.app
 # revisit-Watchlist steps are an untested guess at the right shape and may
 # need adjustment once this can actually run.
 
-- runFlow: ../subflows/launch.yaml
+- runFlow: ../subflows/ensure-app.yaml
 
-- tapOn: "Watchlist"
+- runFlow: ../subflows/go-watchlist.yaml
 - extendedWaitUntil:
     visible:
       id: "watchlist-add-movie-button"
     timeout: 10000
 # Let any toast settle/disappear before tapping.
-- waitForAnimationToEnd
 - tapOn:
     id: "watchlist-add-movie-button"
 - extendedWaitUntil:
@@ -47,15 +46,24 @@ appId: com.watchcrew.app
 - tapOn:
     id: "add-movie-film-search-input"
 - inputText: "Inception"
+- hideKeyboard
 - extendedWaitUntil:
-    visible: "Inception"
-    timeout: 10000
-- takeScreenshot: 02-add-movie-results
+    visible:
+      id: "add-movie-film-grid-item-27205"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 02-add-movie-results
 
-- tapOn: "Inception"
+# Tap the result tile by testID (a text tap on "Inception" used to hit the
+# search input and never opened the detail overlay).
+- tapOn:
+    id: "add-movie-film-grid-item-27205"
 - extendedWaitUntil:
-    visible: "Inception"
-    timeout: 10000
+    visible:
+      id: "movie-detail-title"
+    timeout: 20000
 - takeScreenshot: 03-movie-detail-overlay
 
 # --- Add to watchlist for real (exercises upsert_movie + addToWatchlist) ---
@@ -79,9 +87,10 @@ appId: com.watchcrew.app
       # navigating away, so the Watchlist-tab re-check below isn't racing
       # the write.
       - extendedWaitUntil:
-          visible: "Zur Watchlist"
+          notVisible:
+            id: "movie-detail-action-zur_watchlist"
           timeout: 10000
-- takeScreenshot: 04-after-add-to-watchlist-tap
+      - takeScreenshot: 04-after-add-to-watchlist-tap
 
 # movie-detail.tsx has headerShown:false with its own manual back button
 # (testID movie-detail-back-button); add-movie.tsx uses the (modals) group's

@@ -1,0 +1,114 @@
+appId: com.watchcrew.app
+---
+# tracker-payment.yaml — Tracker tab functions: search, add payment (sheet),
+# row flyout (edit view, delete confirm shown + cancelled), real save, then
+# delete payment to RESTORE state. deletePayment only clears paid_by/paid_at
+# (watchlist entry + rating stay). PRECONDITION: Tagebuch has the rated film
+# Inception and the Tracker has NO Inception row. Other Tracker rows (e.g.
+# entries the user created by hand) are allowed and are NEVER touched.
+# SELF-OWNED RULE: the flow only edits/deletes the "Inception" row it created
+# itself, targeted by visible film title (never "first row" / index). If the
+# precondition does not hold or the row is missing, the flow FAILS LOUDLY
+# before/instead of deleting anything.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- extendedWaitUntil:
+    visible:
+      id: "tracker-screen"
+    timeout: 15000
+# Guard: Inception must not already be paid (else the row would not be ours).
+- assertNotVisible: "Inception"
+- takeScreenshot: 01-tracker-before
+- tapOn:
+    id: "tracker-search-input"
+- inputText: "xyz"
+- hideKeyboard
+- takeScreenshot: 02-tracker-search-no-match
+- tapOn:
+    id: "tracker-search-input"
+- eraseText
+- hideKeyboard
+
+# --- Payment sheet ---
+- tapOn:
+    id: "tracker-log-payment-button"
+- extendedWaitUntil:
+    visible:
+      id: "payment-modal"
+    timeout: 10000
+- takeScreenshot: 03-payment-sheet-open
+- tapOn:
+    id: "payment-modal-search-input"
+- inputText: "Inception"
+- hideKeyboard
+- takeScreenshot: 04-payment-sheet-search
+- tapOn:
+    id: "payment-modal-movie-.*"
+    index: 0
+- takeScreenshot: 05-payment-sheet-movie-selected
+- tapOn:
+    id: "payment-modal-save-button"
+- extendedWaitUntil:
+    notVisible:
+      id: "payment-modal"
+    timeout: 15000
+- extendedWaitUntil:
+    visible: "Inception"
+    timeout: 15000
+- takeScreenshot: 06-tracker-with-payment
+- tapOn:
+    id: "tracker-search-input"
+- hideKeyboard
+
+# --- Row flyout (target OUR row by film title) ---
+- extendedWaitUntil:
+    visible: "Inception"
+    timeout: 15000
+- tapOn: "Inception"
+- extendedWaitUntil:
+    visible:
+      id: "tracker-entry-sheet"
+    timeout: 10000
+- takeScreenshot: 07-tracker-flyout
+- tapOn:
+    id: "tracker-entry-sheet-delete-button"
+- extendedWaitUntil:
+    visible:
+      id: "tracker-entry-sheet-delete-confirm"
+    timeout: 5000
+- takeScreenshot: 08-tracker-flyout-delete-confirm
+- tapOn:
+    id: "tracker-entry-sheet-delete-cancel-button"
+- assertVisible:
+    id: "tracker-entry-sheet-save-button"
+- takeScreenshot: 09-tracker-flyout-after-cancel
+# Save unchanged (payer + date already set) -> edit path.
+- tapOn:
+    id: "tracker-entry-sheet-save-button"
+- extendedWaitUntil:
+    notVisible:
+      id: "tracker-entry-sheet"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Inception"
+    timeout: 10000
+- takeScreenshot: 10-tracker-after-edit-save
+
+# --- Restore: delete OUR Inception payment (by title; fails if row missing) ---
+- tapOn: "Inception"
+- extendedWaitUntil:
+    visible:
+      id: "tracker-entry-sheet-delete-button"
+    timeout: 10000
+# Sheet title is the film name: assert it is Inception before confirming.
+- assertVisible:
+    text: "Inception"
+    index: 1
+- tapOn:
+    id: "tracker-entry-sheet-delete-button"
+- tapOn:
+    id: "tracker-entry-sheet-delete-confirm-button"
+- extendedWaitUntil:
+    notVisible: "Inception"
+    timeout: 15000
+- takeScreenshot: 11-tracker-restored

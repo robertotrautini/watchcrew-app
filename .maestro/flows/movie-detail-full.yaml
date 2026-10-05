@@ -1,0 +1,154 @@
+appId: com.watchcrew.app
+---
+# movie-detail-full.yaml — Movie detail (opened from the Tagebuch, diary
+# context): sections, expanders, edit-rating dialog (cancelled), similar
+# movies, delete confirm (cancelled), director + cast filmography screens.
+# Nothing is saved or deleted.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tagebuch.yaml
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-entry-press-.*"
+    timeout: 15000
+- tapOn:
+    id: "tagebuch-entry-press-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 15000
+- takeScreenshot: 01-detail-top
+
+- runFlow:
+    when:
+      visible:
+        id: "movie-detail-description-toggle"
+    commands:
+      - tapOn:
+          id: "movie-detail-description-toggle"
+      - takeScreenshot: 02-detail-description-expanded
+      - tapOn:
+          id: "movie-detail-description-toggle"
+- scrollUntilVisible:
+    element:
+      id: "movie-detail-ratings-section"
+- takeScreenshot: 03-detail-scrolled-ratings
+- tapOn:
+    id: "movie-detail-ratings-toggle"
+- takeScreenshot: 04-detail-ratings-toggled
+- tapOn:
+    id: "movie-detail-ratings-toggle"
+- runFlow:
+    when:
+      visible:
+        id: "movie-detail-providers"
+    commands:
+      - scrollUntilVisible:
+          element:
+            id: "movie-detail-providers"
+      - takeScreenshot: 05-detail-providers
+      - runFlow:
+          when:
+            visible:
+              id: "movie-detail-providers-toggle"
+          commands:
+            - tapOn:
+                id: "movie-detail-providers-toggle"
+            - takeScreenshot: 06-detail-providers-toggled
+            - tapOn:
+                id: "movie-detail-providers-toggle"
+- scrollUntilVisible:
+    element:
+      id: "movie-detail-director"
+    centerElement: true
+- takeScreenshot: 07-detail-cast-director
+
+# --- edit rating dialog, cancelled ---
+- tapOn:
+    id: "movie-detail-action-bearbeiten"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog"
+    timeout: 10000
+- takeScreenshot: 08-detail-rating-dialog
+- tapOn:
+    id: "rating-dialog-cancel-button"
+- assertNotVisible:
+    id: "rating-dialog"
+
+# --- delete confirm, cancelled ---
+- tapOn:
+    id: "movie-detail-action-loeschen"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-delete-cancel-button"
+    timeout: 10000
+- takeScreenshot: 09-detail-delete-confirm
+- tapOn:
+    id: "movie-detail-delete-cancel-button"
+- assertVisible:
+    id: "movie-detail-action-bar"
+
+# --- director + cast filmographies ---
+- tapOn:
+    id: "movie-detail-director"
+- extendedWaitUntil:
+    visible:
+      id: "director-filmography-screen-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 10-director-filmography
+- back
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 10000
+# centerElement: stop only once the avatar is centered, i.e. clear of the fixed
+# bottom action bar (plain scrollUntilVisible stops while it is half covered).
+# Tap avatar 1, not 0: when centered, avatar 0 sits exactly under the floating
+# dev-client "Tools" bubble (left screen edge, mid-height), which swallows the
+# tap and opens the dev menu instead of navigating.
+- scrollUntilVisible:
+    element:
+      id: "movie-detail-cast-member-1"
+    centerElement: true
+- tapOn:
+    id: "movie-detail-cast-member-1"
+- extendedWaitUntil:
+    visible:
+      id: "actor-filmography-screen-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 11-actor-filmography
+- back
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 10000
+
+# --- similar movies ---
+- tapOn:
+    id: "movie-detail-action-aehnliche"
+- extendedWaitUntil:
+    visible:
+      id: "similar-movies-screen-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 12-similar-movies
+- back
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 10000
+- back
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-screen"
+    timeout: 10000
+- takeScreenshot: 13-back-on-tagebuch

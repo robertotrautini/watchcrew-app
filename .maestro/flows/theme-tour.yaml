@@ -1,0 +1,224 @@
+appId: com.watchcrew.app
+onFlowComplete:
+  - runFlow: ../subflows/restore-theme-gold.yaml
+---
+# theme-tour.yaml — highlight colour follows the group theme. Sets the group
+# theme to RED, screenshots every reachable screen/state (hunt for leftover
+# gold/yellow; documented exceptions: none besides the splash), spot-checks
+# BLUE, then restores GOLD. Gold is restored by `onFlowComplete`
+# (subflows/restore-theme-gold.yaml) even when a step fails; manual recovery:
+# Tracker -> gear -> Gruppen-Einstellungen -> Gold swatch.
+# Read-only except the group theme (restored). Only cancels dialogs.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- takeScreenshot: 00-settings-hub-gold-baseline
+- tapOn:
+    id: "settings-section-group-settings"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-screen"
+    timeout: 10000
+# Guard: only touch the shared test group.
+- assertVisible: "Maestro Test Gruppe"
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-red"
+- tapOn:
+    id: "group-settings-theme-swatch-red"
+- takeScreenshot: 01-red-group-settings-swatches
+- scrollUntilVisible:
+    element:
+      id: "group-settings-leave-button"
+- takeScreenshot: 02-red-group-settings-members
+- scrollUntilVisible:
+    element:
+      id: "group-settings-invite-toggle"
+- takeScreenshot: 03-red-group-settings-invite
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-red"
+    direction: UP
+- back
+
+# --- settings hub + sub screens ---
+- takeScreenshot: 04-red-settings-hub
+- scrollUntilVisible:
+    element:
+      id: "settings-sign-out-button"
+- takeScreenshot: 05-red-settings-hub-bottom
+- scrollUntilVisible:
+    element:
+      id: "settings-section-streaming-services"
+    direction: UP
+- tapOn:
+    id: "settings-section-streaming-services"
+- extendedWaitUntil:
+    visible:
+      id: "settings-streaming-screen"
+    timeout: 10000
+- takeScreenshot: 06-red-settings-streaming
+- back
+- tapOn:
+    id: "settings-section-display"
+- extendedWaitUntil:
+    visible:
+      id: "settings-display-screen"
+    timeout: 10000
+- takeScreenshot: 07-red-settings-display
+- back
+- tapOn:
+    id: "settings-section-notifications"
+- extendedWaitUntil:
+    visible:
+      id: "settings-notifications-screen"
+    timeout: 10000
+- takeScreenshot: 08-red-settings-notifications
+- back
+- back
+
+# --- tracker ---
+- runFlow: ../subflows/go-tracker.yaml
+- takeScreenshot: 09-red-tracker
+- tapOn:
+    id: "tracker-log-payment-button"
+- extendedWaitUntil:
+    visible:
+      id: "payment-modal"
+    timeout: 10000
+- takeScreenshot: 10-red-payment-sheet
+- back
+- assertVisible:
+    id: "tracker-screen"
+
+# --- watchlist: view modes, filter panel, sort sheet ---
+- runFlow: ../subflows/go-watchlist.yaml
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 11-red-watchlist-grid
+- tapOn:
+    id: "watchlist-view-mode-cards-button"
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 12-red-watchlist-cards
+- tapOn:
+    id: "watchlist-view-mode-list-button"
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 13-red-watchlist-list
+- tapOn:
+    id: "watchlist-view-mode-grid-button"
+- tapOn:
+    id: "watchlist-filter-toggle"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-filter-panel"
+    timeout: 5000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 14-red-watchlist-filter-panel
+- tapOn:
+    id: "watchlist-sort-button"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-sort-options"
+    timeout: 5000
+- takeScreenshot: 15-red-watchlist-sort-sheet
+- back
+- tapOn:
+    id: "watchlist-filter-toggle"
+
+# --- movie detail + rating dialog (opened and cancelled, nothing saved) ---
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-(entry|list-row)-.*"
+    timeout: 15000
+- tapOn:
+    id: "watchlist-(entry|list-row)-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-screen"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 16-red-movie-detail
+- scrollUntilVisible:
+    element:
+      id: "movie-detail-action-bewerten"
+- tapOn:
+    id: "movie-detail-action-bewerten"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog"
+    timeout: 10000
+- takeScreenshot: 17-red-rating-dialog
+- tapOn:
+    id: "rating-dialog-cancel-button"
+- assertNotVisible:
+    id: "rating-dialog"
+- back
+- assertVisible:
+    id: "watchlist-screen"
+
+# --- add movie ---
+- tapOn:
+    id: "watchlist-add-movie-button"
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-screen"
+    timeout: 10000
+- takeScreenshot: 18-red-add-movie
+- back
+
+# --- tagebuch ---
+- runFlow: ../subflows/go-tagebuch.yaml
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 19-red-tagebuch
+- tapOn:
+    id: "tagebuch-filter-toggle"
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 20-red-tagebuch-filter-panel
+- tapOn:
+    id: "tagebuch-filter-toggle"
+
+# --- BLUE spot check ---
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- tapOn:
+    id: "settings-section-group-settings"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-screen"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-blue"
+- tapOn:
+    id: "group-settings-theme-swatch-blue"
+- takeScreenshot: 21-blue-group-settings
+- back
+- takeScreenshot: 22-blue-settings-hub
+- back
+- takeScreenshot: 23-blue-tracker
+- runFlow: ../subflows/go-watchlist.yaml
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 24-blue-watchlist
+# Gold is restored by onFlowComplete (restore-theme-gold.yaml).

@@ -1,0 +1,34 @@
+appId: com.watchcrew.app
+---
+# deeplinks.yaml — screens only reachable via URL: studio filmography,
+# join/[token] (fake token, nothing is joined), auth/callback (no tokens ->
+# error state). Read-only; ends back on the Tracker.
+- runFlow: ../subflows/ensure-app.yaml
+- openLink: "watchcrew:///filmography/studio/174"
+- extendedWaitUntil:
+    visible:
+      id: "studio-filmography-screen-grid"
+    timeout: 25000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 01-studio-filmography
+- back
+- runFlow: ../subflows/launch.yaml
+- openLink: "watchcrew:///join/maestro-fake-token"
+- extendedWaitUntil:
+    visible:
+      id: "join-token-.*"
+    timeout: 15000
+- takeScreenshot: 02-join-token-screen
+- runFlow: ../subflows/launch.yaml
+- openLink: "watchcrew:///auth/callback"
+- extendedWaitUntil:
+    visible:
+      id: "auth-callback-.*"
+    timeout: 15000
+- takeScreenshot: 03-auth-callback-no-tokens
+- runFlow: ../subflows/launch.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- assertVisible:
+    id: "tracker-screen"

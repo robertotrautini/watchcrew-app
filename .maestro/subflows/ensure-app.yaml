@@ -1,0 +1,26 @@
+appId: com.watchcrew.app
+---
+# Fast replacement for launch.yaml at the start of a flow. A cold start costs
+# ~20 s; when the app is already in the foreground with the tab bar showing
+# (every flow restores its state and ends on a tab or one back-press away),
+# nothing is relaunched. Only when the tab bar is NOT visible: try up to two
+# back-presses (leave a modal), then fall back to the real cold start
+# (launch.yaml, which also handles the dev-client server picker).
+# Use launch.yaml directly (cold) only for login, deeplink and offline cases.
+# Tab bar visibility = tab label "Watchlist" is in the hierarchy (the active-tab
+# indicator View has no accessibility node).
+- runFlow:
+    when:
+      notVisible: "Watchlist"
+    commands:
+      - back
+- runFlow:
+    when:
+      notVisible: "Watchlist"
+    commands:
+      - back
+- runFlow:
+    when:
+      notVisible: "Watchlist"
+    commands:
+      - runFlow: launch.yaml

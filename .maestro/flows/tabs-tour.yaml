@@ -3,17 +3,23 @@ appId: com.watchcrew.app
 # tabs-tour.yaml — tabs (labels; icons have no testIDs), Settings hub and its
 # sub-screens (headers), Group-Settings. Read-only. PRECONDITION: account has
 # a group. Each sub-screen is left via hardware back.
-- runFlow: ../subflows/launch.yaml
-- assertVisible: "Tracker"
-- takeScreenshot: 01-tab-tracker
-- tapOn: "Watchlist"
+- runFlow: ../subflows/ensure-app.yaml
+# go-<tab> point-taps the tab and asserts its screen testID, so each shot is
+# the intended tab (previously 01 showed the Watchlist: "Tracker" text matched
+# the tab label on any tab).
+- runFlow: ../subflows/go-tracker.yaml
 - assertVisible:
-    id: "watchlist-screen"
+    id: "tracker-group-settings-button"
+- takeScreenshot: 01-tab-tracker
+# Header brand = group quick-switch button. Only asserted, NEVER tapped: the dev account has
+# several groups, a tap would change the persisted active group (side effect).
+- assertVisible:
+    id: "app-header-brand-button"
+- runFlow: ../subflows/go-watchlist.yaml
 - takeScreenshot: 02-tab-watchlist
-- tapOn: "Tagebuch"
-- assertVisible: "Suche im Tagebuch"
+- runFlow: ../subflows/go-tagebuch.yaml
 - takeScreenshot: 03-tab-tagebuch
-- tapOn: "Tracker"
+- runFlow: ../subflows/go-tracker.yaml
 - tapOn:
     id: "tracker-group-settings-button"
 - extendedWaitUntil:
@@ -61,15 +67,6 @@ appId: com.watchcrew.app
     timeout: 10000
 - assertVisible:
     id: "settings-notifications-screen"
-- back
-
-- tapOn:
-    id: "settings-section-changelog"
-- extendedWaitUntil:
-    visible: "Changelog"
-    timeout: 10000
-- assertVisible:
-    id: "settings-changelog-screen"
 - back
 
 - tapOn:

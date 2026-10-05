@@ -136,6 +136,43 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [M12-Vorbereitung (Live-Bug-Fix) — Nachbesserung Datenquellen-Attribution (Settings), Inline-Style-Audit](#m12-vorbereitung-live-bug-fix--nachbesserung-datenquellen-attribution-settings-inline-style-audit)
 - [M12-Vorbereitung — Entscheidung Legacy-Cron "Erscheinungsdatum nachtragen" entfällt, Lazy-Refresh date-loser Filme](#m12-vorbereitung--entscheidung-legacy-cron-erscheinungsdatum-nachtragen-entfällt-lazy-refresh-date-loser-filme)
 - [Design-Angleichung Welle 1 — Legacy-Look: Hintergrundfoto, Glas ohne Blur, AppHeader, Tab-Leiste, Icons](#design-angleichung-welle-1--legacy-look-hintergrundfoto-glas-ohne-blur-appheader-tab-leiste-icons)
+- [Design-Angleichung Welle 2A — Tracker, Watchlist, Tagebuch](#design-angleichung-welle-2a--tracker-watchlist-tagebuch)
+- [Design-Angleichung Welle 2B — Detail-Overlay, Bewertungsdialog, Film hinzufügen](#design-angleichung-welle-2b--detail-overlay-bewertungsdialog-film-hinzufügen)
+- [Design-Angleichung Welle 2C — Settings, Changelog, Auth, Onboarding, EmptyState](#design-angleichung-welle-2c--settings-changelog-auth-onboarding-emptystate)
+- [Design-Angleichung Geräte-Prüfung](#design-angleichung-geräte-prüfung)
+- [Nachbesserung nach Praxistest (UI)](#nachbesserung-nach-praxistest-ui)
+- [Nachbesserung nach Praxistest (Plattform)](#nachbesserung-nach-praxistest-plattform)
+- [Praxistest-Nachbesserungen Geräte-Prüfung](#praxistest-nachbesserungen-geräte-prüfung)
+- [Nachbesserung: Datum in Bearbeiten, Aktionsleiste, Glas](#nachbesserung-datum-in-bearbeiten-aktionsleiste-glas)
+- [Echter Blur (expo-blur)](#echter-blur-expo-blur)
+- [Glas sichtbar ueber dem Vollfoto-Hintergrund](#glas-sichtbar-ueber-dem-vollfoto-hintergrund)
+- [Blur flächendeckend, Sheet ohne Modal](#blur-flächendeckend-sheet-ohne-modal)
+- [Geräte-Prüfung final (Blur, Einstellungen, Logos)](#geräte-prüfung-final-blur-einstellungen-logos)
+- [Einstellungen neu gegliedert, Logos, Badges, Trailer](#einstellungen-neu-gegliedert-logos-badges-trailer)
+- [Glas dunkler (wie Legacy), Settings mit Hintergrundbild, Stern-Zentrierung](#glas-dunkler-wie-legacy-settings-mit-hintergrundbild-stern-zentrierung)
+- [Glas-Buttons, 3D-Kante statt Rand, Stern-Zentrierung](#glas-buttons-3d-kante-statt-rand-stern-zentrierung)
+- [Tagebuch-Karte: Bewertung als Eck-Badge](#tagebuch-karte-bewertung-als-eck-badge)
+- [Kacheln: Poster randlos](#kacheln-poster-randlos)
+- [TMDB-Logo im Sheet-Badge, Changelog entfernt](#tmdb-logo-im-sheet-badge-changelog-entfernt)
+- [Einheitliche Chips, Besetzung-Rahmen, ruhiger Glas-Hintergrund für Detail-Views](#einheitliche-chips-besetzung-rahmen-ruhiger-glas-hintergrund-für-detail-views)
+- [Chips lesbar auf dem Foto, Parallax-Hintergrund](#chips-lesbar-auf-dem-foto-parallax-hintergrund)
+- [Speichern als runder Icon-Button hinter Namensfeldern](#speichern-als-runder-icon-button-hinter-namensfeldern)
+- [Icons: Material Icons über zentrale Icon-Komponente](#icons-material-icons-über-zentrale-icon-komponente)
+- [Einklappbares Filter-Panel (Watchlist, Tagebuch)](#einklappbares-filter-panel-watchlist-tagebuch)
+- [Hintergrund v2: Original-Foto, Höhen-Fit, horizontaler Swipe-Parallax](#hintergrund-v2-original-foto-höhen-fit-horizontaler-swipe-parallax)
+- [Motion: gestaffeltes Einblenden auch beim Tab-Wechsel](#motion-gestaffeltes-einblenden-auch-beim-tab-wechsel)
+- [Flat-Material-Stil, Backdrop-Dimmung, Danger-Styleguide](#flat-material-stil-backdrop-dimmung-danger-styleguide)
+- [Verifikations-Workflow: vollständige Maestro-Suite + alle Screenshots nach jeder Änderung](#verifikations-workflow-vollständige-maestro-suite--alle-screenshots-nach-jeder-änderung)
+- [Maestro: Use-Case-Bereiche (Areas), schnellere Flows, Animationen aus](#maestro-use-case-bereiche-areas-schnellere-flows-animationen-aus)
+- [Toast-Varianten (grün/rot), Touch-Targets (48dp), Bewertungs-Sterne enger](#toast-varianten-grün-rot-touch-targets-48dp-bewertungs-sterne-enger)
+- [Brand-Assets: Legacy-Icon, Splash mit Verlauf](#brand-assets-legacy-icon-splash-mit-verlauf)
+- [Material-3-Switch (`SwitchIndicator`) und Auth-Links mit lesbarer Farbe](#material-3-switch-switchindicator-und-auth-links-mit-lesbarer-farbe)
+- [Toast-X, Loeschen rechts, nativer M3-Switch](#toast-x-loeschen-rechts-nativer-m3-switch)
+- [Button-Icons ueberall, Zahler-Hinweis nur im Zahlungs-Modal](#button-icons-ueberall-zahler-hinweis-nur-im-zahlungs-modal)
+- [Highlight-Farbe folgt überall dem Gruppen-Theme](#highlight-farbe-folgt-überall-dem-gruppen-theme)
+- [Sterne fest gelb, Header weiss, Logo wechselt Gruppe](#sterne-fest-gelb-header-weiss-logo-wechselt-gruppe)
+- [Zurück-Wischgeste: Navigations-Stack, Android-BackSwipeView, Ähnliche Filme ersetzt statt stapelt](#zurück-wischgeste-navigations-stack-android-backswipeview-ähnliche-filme-ersetzt-statt-stapelt)
+- [ESLint: eslint-config-expo (flat config)](#eslint-eslint-config-expo-flat-config)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2057,7 +2094,7 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 - **Datenmodell:** Das Datum lag nur in `movies.release_date` (geteilt, TMDB, nur per Service-Role schreibbar). Neue additive, nullable Spalte `watchlist_entries.release_date_override date` (Migration `20261001090000_watchlist_entries_release_date_override.sql`); `NULL` = TMDB-Datum. Keine RLS-/Grant-Änderung nötig: `watchlist_entries_update_group_members` + UPDATE-Grant für `authenticated` decken die Spalte ab. Andere Gruppen und die `movies`-Zeile bleiben unberührt.
 - **Wirksames Datum:** `getEffectiveReleaseDate(entry)` = Override, sonst `movie.release_date` (`watchlistLogic.ts`); `withEffectiveReleaseDate` für Komponenten, die nur ein `Movie` nehmen (Poster-Karte). Genutzt von „Kommt noch“ (`isUpcoming`/`filterUpcoming`), Jahresfilter, Jahres-Pills, Listenansicht, Datums-Badge/Dimmung und der „datumslos“-Auswahl für die Streaming-Auffrischung in `useGroupWatchlist`.
 - **Push-Erinnerungen:** `run_release_reminders()` wird in derselben Migration per `create or replace` angepasst (`coalesce(we.release_date_override, m.release_date)`), sonst Rest unverändert. Folge: `release_reminder_log` dedupliziert pro (Eintrag, Typ) für immer; wer das Datum ändert, nachdem z. B. „14_days“ schon gesendet wurde, bekommt diesen Typ nicht erneut (die anderen Stufen feuern normal).
-- **UI:** Neue Aktion „Erscheinungsdatum bearbeiten“ (`erscheinungsdatum`) in der Detail-Aktionsleiste, nur bei Gruppenkontext mit `source = watchlist` (Tagebuch-Einträge nicht). Öffnet ein Sheet mit dem bestehenden `DateField` (Anzeige DD.MM.YYYY, Speicherung ISO); Datum wählen speichert sofort und schließt, „Auf TMDB-Datum zurücksetzen“ (nur sichtbar bei vorhandenem Override) speichert `NULL`. Toasts: „Erscheinungsdatum gespeichert“ bzw. „Erscheinungsdatum zurückgesetzt“. Mutation `useSetReleaseDateOverride` invalidiert `["watchlist", groupId]` (auch die Detailansicht liest daraus). Die Detailansicht zeigt bei Override „Erscheinungsdatum <Datum>“ statt dem deutschen Kino-/Digital-Datum; auch der „Gesehen am = Erscheinungsdatum“-Haken im Bewertungsdialog nutzt dann das Override.
+- **UI (überholt, siehe „Nachbesserung: Datum in Bearbeiten, Aktionsleiste, Glas“ – es gibt keinen eigenen Button mehr, das Datum wird über „Bearbeiten“ geändert):** Neue Aktion „Erscheinungsdatum bearbeiten“ (`erscheinungsdatum`) in der Detail-Aktionsleiste, nur bei Gruppenkontext mit `source = watchlist` (Tagebuch-Einträge nicht). Öffnet ein Sheet mit dem bestehenden `DateField` (Anzeige DD.MM.YYYY, Speicherung ISO); Datum wählen speichert sofort und schließt, „Auf TMDB-Datum zurücksetzen“ (nur sichtbar bei vorhandenem Override) speichert `NULL`. Toasts: „Erscheinungsdatum gespeichert“ bzw. „Erscheinungsdatum zurückgesetzt“. Mutation `useSetReleaseDateOverride` invalidiert `["watchlist", groupId]` (auch die Detailansicht liest daraus). Die Detailansicht zeigt bei Override „Erscheinungsdatum <Datum>“ statt dem deutschen Kino-/Digital-Datum; auch der „Gesehen am = Erscheinungsdatum“-Haken im Bewertungsdialog nutzt dann das Override.
 
 **Mehrdeutigkeiten / einfachste Lesart:** (a) Mitgliedschaft wird nur über den Gruppenkontext der Route + RLS durchgesetzt (kein eigener Client-Check). (b) Beim Zurücksetzen gibt es einen eigenen Toast-Text (nicht „gespeichert“). (c) Bei Override hat das Detail-Label immer „Erscheinungsdatum“.
 
@@ -2143,6 +2180,351 @@ Nutzer hat den Push auf das reale `watchcrew-dev`-Projekt explizit freigegeben (
 
 **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
 
+
+## Design-Angleichung Welle 2A — Tracker, Watchlist, Tagebuch
+
+**Problem/Lücke:** Die drei Haupt-Tabs sahen nach Welle 1 noch nicht wie die Legacy-Referenzen (`docs/reference-screenshots/02/04/05/10/13`) aus: Tracker-Zeilen direkt auf dem Foto, Watchlist-Karten als ein riesiges Poster pro Screen, Tagebuch-Liste mit unbeschrifteten Zahlen, schwere Textbuttons in den Steuerzeilen.
+
+**Entscheidung:**
+- **Gemeinsam:** Suchzeile in einem `Glass strong`-Panel mit runden Icon-Buttons (Gold-Aktion rechts, Sortieren als runder Outline-Button). Karten/Grid/Liste-Umschalter als drei kleine runde Icon-Buttons (`ViewModeToggle`, Ionicons `albums-outline`/`grid-outline`/`list-outline`) im Header-Aktionsslot; testIDs und Accessibility-Labels unverändert. Neu: `ChangelogBanner` (goldenes "Neue Features"-Banner, nur sichtbar solange `lastSeenChangelogVersion` != `CURRENT_CHANGELOG_VERSION`, Tap öffnet `/settings/changelog`, markiert nicht als gesehen); aktuell nur im Tracker eingebunden.
+- **Tracker:** Tabelle in EINER Glas-Karte (ScrollView statt FlatList, `tracker-list`); Zahler-Spalte `w-24` mit `numberOfLines={1}`/Ellipsis in Mitgliedsfarbe (dokumentierte Inline-Style-Ausnahme, Laufzeitfarbe), Datum fix `w-28`, Filmtitel flexibel (max. 2 Zeilen). Zahlungs-Button jetzt rund in der Suchzeile (testID `tracker-log-payment-button`), nicht mehr im Header. Inline-Aktionen Bearbeiten/Löschen klein, Outline (Löschen nur rot umrandet/rote Schrift); die Löschen-Bestätigung bleibt der rote Danger-Button.
+- **Watchlist:** "Karten" = kompakte Legacy-Glas-Zeile (Poster 96px breit 2:3, goldener Playfair-Titel, Datums-/Status-Badge-Text, Beschreibung 2 Zeilen kursiv bzw. "Keine Beschreibung vorhanden", TMDB-Badge, Fortschrittsbadge und Abdunkelregeln unverändert). "Grid" unverändert (Poster mit Pills). "Liste" = dichte, zusammenhängende Textliste mit Titel, Datum und TMDB-Score. "+" ist der runde Gold-Button in der Suchzeile, Sortieren runder Icon-Button.
+- **Tagebuch:** "Karten" = Legacy-Zeile (`DiaryEntryCard`): Glas, kleines Poster, goldener Titel, "Gesehen am ...", pro Mitglied eine beschriftete Sternzeile (kompakte Sterne, "–" bei fehlender Bewertung), Durchschnitts-Stern oben rechts (Zahl im Stern), Herz bei Gefallen, TMDB-Badge. "Grid" unverändert (`DiaryPosterTile` mit Stern-/Herz-Badges). "Liste" = Glas-Tabelle mit Spaltenköpfen (Film/Gesehen/Ø/TMDB). Sortier-Button zeigt weiterhin das aktuelle Kriterium (Icon + Kurztext), da kein Platz für eine eigene Zeile.
+- `StarRating` bekommt die optionale Prop `compactBox` (22px-Box statt 48px-Touch-Ziel, nur read-only Listen); `MemberRatingRow` die Prop `compact`.
+
+**Abweichungen von der Legacy:** keine Blur/Gradient im Banner (Vollfarbe `bg-accent`); TMDB-Badge als Text "TMDB" + Score statt Logo; Beschreibung ist nur da, wenn der Film-Datensatz sie enthält (`movie.overview`); Tagebuch-Karten zeigen zusätzlich die kleine Zahl neben den Sternen (bestehende Tests/Logik).
+
+**Gerätetest nötig:** Lesbarkeit der Glas-Karten über dem Foto, Zahler-Spalte bei langen Namen, Banner über der Tab-Leiste, Watchlist-Zeilenhöhe bei langen Titeln, Tap-Ziele der 36px-Umschalter, Scrollperformance Tracker (ScrollView).
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## Design-Angleichung Welle 2B — Detail-Overlay, Bewertungsdialog, Film hinzufügen
+
+- **Detail** (`movie/[tmdbId].tsx`, `MovieDetail*`): Poster hochkant zentriert (55 % Breite, Glas-Rahmen; beim Trailer-Abspielen wieder 16:9), Titel Playfair-Bold in `accent-light`, TMDB-Badge (cyan, "TMDB" + Score) plus roter Herz-Button, goldumrandete Genre-Pills, "Regie"-Zeile, runde Besetzungsfotos (`profile_path`, Fallback `person`-Icon) mit Name/Rolle. Aktionsleiste unten: `bg-bg-sheet` + Glas-Rand, Aktionen als Icon-Glas-Buttons (umbrechend, Löschen rot). Alle testIDs, Sichtbarkeitsregeln und der Null-Höhe-Wrapper der Beschreibung unverändert.
+- **Bewertungsdialog**: Checkboxen nebeneinander, Sterne größer (neues optionales `iconSize` in `StarRating`, Default unverändert), Gruppen-Sektion "Bewertungen der Gruppe" zeigt alle anderen Mitglieder (ohne Bewertung: leere Sterne), Zahler-Chips einzeilig als Pills, Buttons Abbrechen/Speichern mit Icons; Speichern während des Ladens als gedämpftes Glas statt halbtransparentem Gold. Tracker-Flag-Verhalten unverändert.
+- **Film hinzufügen / `MovieGrid`**: neue optionale Prop `columns` (Default 3, Suche nutzt 4), Kachel als Glas-Karte mit Titel (1 Zeile) und cyan Score-Badge darunter, Poster-Fallback mit `film-outline` + Titel-Overlay, Leerzustand mit Icon. Modus-Chips als gleich breite Pills, goldumrandetes Suchfeld.
+- **Abweichungen**: Poster nicht gekippt (Referenz 06 zeigt es gerade); Modus-Chips stehen weiter über dem Suchfeld (Referenz: darunter), da pro Modus unterschiedliche Eingabefelder; Sheet-Dialog statt Vollbild; keine Blur.
+
+**Gerätetest nötig:** Aktionsleiste mit vielen Aktionen (Umbruch), Rating-Dialog-Höhe bei vielen Mitgliedern/Tastatur, 4-Spalten-Raster Lesbarkeit.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## Design-Angleichung Welle 2C — Settings, Changelog, Auth, Onboarding, EmptyState
+
+**Entscheidung (reversibel, nur Optik):**
+- Neue Komponenten: `Brand` (Spulen-Icon + WATCHCREW-Wortmarke, mittig, für Auth/Onboarding), `SettingsRow` (Glas-Zeile, linkes Ionicon, goldener Chevron, optionales Badge), `EmptyState` (Icon in Glaskreis + gedämpfter Text, exportiert für andere Screens), `GLASS_INPUT_CLASSNAME` in `Glass.tsx`.
+- Settings-Hub: Zeilen mit Icons (`tv-outline`, `color-palette-outline`, `notifications-outline`, `people-outline`, `newspaper-outline`, `trash-outline`, `document-text-outline`); Abmelden als Glas-Button mit `log-out-outline`; Datenquellen-Karten gedämpft; alle testIDs unverändert.
+- Abweichung vom Referenz-Screenshot: Changelog bleibt eine Zeile in der Liste (mit "Neu"-Badge) statt eigenem Glas-Button; Datenquellen ohne Logos (kein neues Asset ohne Freigabe), KinoCheck weiterhin absichtlich nicht aufgeführt.
+- Changelog: goldene vertikale Linie links je Eintrag, Serifen-Titel, Datum klein darüber (ohne Punkte, wie im Referenz-Screenshot).
+- Login/Registrieren/Passwort vergessen/Callback: Brand-Header über Glas-Karte, Glas-Eingabefelder; Onboarding: zwei Glas-Karten mit `add-circle-outline` / `enter-outline`; Join-Screen zeigt Brand.
+- Prettier lief über die Auth-/Onboarding-Dateien (Einrückung/Quotes), daher größere Diffs.
+
+**Gerätetest nötig:** Lesbarkeit, Tastatur-Verhalten bei Register (4 Felder in Glas-Karte), Chevron-/Icon-Farben, Abmelden-Button.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## Design-Angleichung Geräte-Prüfung
+
+Geräteprüfung auf Pixel 6 Pro (2026-10-01), Screenshots in `.scratch-screenshots/design-wave2-2026-10-01/`. Geprüft: Tracker, Watchlist (Karten/Grid/Liste, Sortieren-Sheet), Tagebuch (Karten/Grid/Liste), Detail, Bewertungsdialog, Film hinzufügen (Treffer + leer), Settings-Hub, Changelog, Gruppe verwalten, Ähnliche Filme, Toast, Auth-Callback (Deep-Link). Login/Register/Passwort-vergessen nur per Unit-Test (kein Abmelden).
+
+Behoben:
+- Tracker: fehlender `key` auf den Zeilen (LogBox-Fehler).
+- Detail: Cast-Fotos `rounded-full` auf expo-image warf "Cannot set prop borderRadius" -> `rounded-[32px]`.
+- Detail-Aktionsleiste: umbrach schon bei 3 Buttons auf zwei Zeilen und ragte aus dem Bildschirm; jetzt eine Zeile bis 4 Aktionen (Umbruch erst ab 5), Hintergrund wieder `bg-bg-primary` (Inhalt schimmerte durch).
+- `bg-sheet`-Token auf voll deckend (1.0): Sheets/Dialoge/Toast zeigten durchscheinenden Text; Toast nutzt `bg-bg-sheet`.
+- Tagebuch-Karte: Ø-Stern 40px, Zahl 9px (Zahl ragte aus dem Stern).
+- Maestro `tabs-tour`: Assertion auf `tagebuch-search-input` statt Text "Suche im Tagebuch".
+
+Ergebnis: 6 Maestro-Flows zweimal hintereinander grün; tsc sauber; jest vollständig grün.
+
+**Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+---
+
+## Nachbesserung nach Praxistest (UI)
+
+Rückmeldung nach Test mit dem echten Preview-Build.
+
+- **Kreis vs. Box:** `rounded-full` nur noch für Elemente mit gleicher Breite/Höhe (Icon-Buttons, Avatare/Cast-Fotos, Punkte, Switch-Tracks, Fortschrittsbalken, Tab-Indikator). Alles mit Text (Filter-/Genre-/Jahr-/Anbieter-Pills, Zahler-Chips, Modus-Chips in Film hinzufügen, Bewertungs-Chips, Genre-Tags, Text-Badges) ist eine Box: `rounded-lg` (Pills/Chips), `rounded-md` (kleine Overlay-Badges). Ovale gibt es nicht mehr.
+- **Filter/Sortieren:** immer rein Icon-Button (`options-outline`, rund 48px), öffnet das Sheet. Tagebuch zeigte bisher Text im Button; jetzt nur Icon, `accessibilityLabel` = "Sortieren, aktuell: <Name>", aktuelle Sortierung im Sheet fett/akzentfarben (Test-ID `tagebuch-sort-button` bleibt, `tagebuch-sort-button-label` entfällt).
+- **Ansichts-Umschalter:** aus dem Header entfernt, jetzt zweite Zeile in derselben Glas-Karte wie die Suche (Zeile 1: Suche, Watchlist: Gold-"+", Filter; Zeile 2: segmentierter Umschalter, drei gleich breite Icon-Segmente, aktiv Gold). Test-IDs unverändert.
+- **Raster:** Letzte Zeile mit weniger Einträgen als Spalten dehnte den Rest auf volle Breite (`flex-1`). Lösung: `padToFullRows` (`src/lib/gridPadding.ts`) füllt mit unsichtbaren Platzhaltern auf; angewandt in MovieGrid, Watchlist-Grid und Streaming-Dienste-Raster.
+- **Detail-Aktionsleiste:** Label "Datum" (volle Beschriftung als `accessibilityLabel`), Labels einzeilig; bis 4 Aktionen eine Zeile gleich breit, bei 5 ein 3+2-Raster (zweite Zeile zentriert, `w-[31%]`), kein `flex-wrap` mehr. Scroll-Inhalt mit mehr Bodenabstand (`pb-60`/`pb-40`). Unterer Inset bleibt über das `SafeAreaView` der Leiste im Screen (kein zusätzliches `useSafeAreaInsets`, um doppeltes Padding und Provider-Pflicht in Tests zu vermeiden).
+
+**Status:** Geräte-Prüfung steht aus.
+
+---
+
+## Nachbesserung nach Praxistest (Plattform)
+
+Rückmeldung nach Test mit dem echten EAS-Preview-APK (Release-JS). Alle Fixes sind reines JS, kein neuer EAS-Build wegen nativer Module nötig (nur ein neuer Build, damit der Preview-APK die Fixes enthält).
+
+- **Hintergrundbild fehlte:** Das Bild war im APK enthalten (`res/1a.jpg`, 25173 Byte = `cinema-bg.jpg`, git-getrackt, nicht ignoriert); Ursache war die Geometrie: `AppBackground` bekam Position/Größe nur über NativeWind-Klassen (`absolute inset-0`, `h-full w-full` auf `expo-image`). Im Release-Bundle (lokal mit `expo start --no-dev --minify` reproduziert: flacher #0a0a0a-Hintergrund) kollabierte das Bild auf Größe 0. Fix: `StyleSheet.absoluteFill` für Wrapper und Bild (statische Styles); Test `AppBackground.test.tsx`. Mit Production-Metro auf dem Gerät verifiziert.
+- **Tab-Wisch:** neue `TabSwipeView` (`react-native-gesture-handler` `Gesture.Pan`, `activeOffsetX` ±25, `failOffsetY` ±20, min. 60 px und überwiegend horizontal, Spec 4.10) um den Tab-Navigator; Ziel über reine Logik `getAdjacentTab` (`src/lib/tabSwipe.ts`): nächster/vorheriger SICHTBARER Tab, kein Wrap-Around, Tracker-Flag berücksichtigt. Vertikales Scrollen bleibt frei (Pan scheitert bei frühem vertikalem Versatz). Horizontaler Scroller (Besetzung) liegt in der Detail-Modal-Route, außerhalb des Wrappers.
+- **Tastatur:** Android-`Modal` und (Edge-to-Edge) auch das Hauptfenster werden nicht von der Tastatur verkleinert; `KeyboardAvoidingView` allein half nicht. Neu: `useKeyboardHeight` (Keyboard-Events); `Sheet` hebt das Panel auf Android um die Tastaturhöhe, begrenzt `maxHeight` (`sheetMaxHeight`) und scrollt den Inhalt (`ScrollView`, `keyboardShouldPersistTaps="handled"`); iOS bleibt bei `padding`. Für Vollbild-Screens `KeyboardInsetView` (Padding um Tastaturhöhe, add-movie) und `KeyboardAwareScrollView` (zusätzlich scrollt das fokussierte Feld über `measureInWindow` ins Bild; Settings, Gruppen-Einstellungen). Die inline `paddingBottom`/`maxHeight`-Werte sind bewusst dynamisch (Tastatur-/Fensterhöhe), nicht als Klasse ausdrückbar. `softwareKeyboardLayoutMode` unverändert (Expo-Default).
+
+**Status:** Geräte-Prüfung durch dich steht aus (neuer Preview-Build nötig).
+
+## Praxistest-Nachbesserungen Geräte-Prüfung
+
+Prüfung auf Pixel 6 Pro (Dev-Client, Metro, Maestro-Konto), Screenshots in `.scratch-screenshots/postfix-verify-2026-10-01/`.
+
+- **Geprüft und in Ordnung:** Hintergrundbild sichtbar (alle Screens); Filter/Sort nur als Icon, Sheet hebt aktuelle Sortierung hervor (Watchlist, Tagebuch); EINE Glass-Karte mit Suchzeile (Watchlist inkl. Gold-+) und darunter Ansichts-Umschalter; Grid-Letztzeile (Ähnliche Filme 37 Treffer, Filmreihe, Watchlist/Tagebuch-Grid) gleiche Kachelbreite, linksbündig; Detail-Leiste mit 5 Aktionen als 3+2, "Datum" einzeilig, "Löschen" rot, Inhalt scrollt bis über die Leiste; 4 Aktionen einreihig; Tab-Wisch links/rechts (auch mit ausgeblendetem Tracker, danach wieder eingeschaltet), vertikales Scrollen in Ähnliche Filme intakt; Tastatur: Zahlungs-Sheet, Anzeigename, Gruppenname, Tagebuch-Suche, Add-Movie-Suche (Text jeweils sichtbar).
+- **Gefunden und behoben:** (1) React-`key` im Props-Spread der Aktionsleiste (`MovieDetailActionsBar`) löste in Dev eine LogBox-Meldung aus, die die untere Leiste verdeckte; jetzt `Fragment key` pro Aktion. (2) Ovale statt Boxen: `rounded-full` ist im Tailwind-Config `50%` (nur für Quadrate Kreis), und `rounded-lg` (12px) auf 24-dp-Chips wirkte wie eine Pille. Kleine Textchips/Badges (Genre-Tags, Flatrate/Leihen/Kaufen, Jahr/Genre-Pillen, Zahlungs-/Rating-Chips, Score-/Datums-Badges) nutzen jetzt `rounded-sm` (6px), Rating-Dialog-Payer-Chips `rounded-md`.
+- **Tests:** tsc sauber; Jest 147 Suites / 1286 Tests grün; alle 6 Maestro-Flows zweimal in README-Reihenfolge grün (keine Selektor-Anpassung nötig).
+- **Offen:** Genre-Tags/Chips nach der letzten Radius-Änderung nur teilweise per Screenshot nachgeprüft (Genre-Tags, Filmreihe-Chips ok); Add-Movie-Modus-Chips und Settings-Zeilen weiterhin `rounded-lg`/`rounded-xl` (Boxen, aber bei kleiner Höhe rundlich).
+
+---
+
 ---
 
 Neue Einträge werden von den Implementierungs-Subagents laufend ergänzt, sobald weitere Milestones reversible Detailentscheidungen treffen.
+
+## Nachbesserung: Datum in Bearbeiten, Aktionsleiste, Glas
+
+Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
+
+- **Datum in „Bearbeiten“:** Die separate Aktion `erscheinungsdatum` („Datum“) ist entfernt (`ActionButtonId`, `getVisibleActions`, Label/Icon). Bei Einträgen der Watchlist (`source = watchlist`) öffnet „Bearbeiten“ jetzt das Sheet „Eintrag bearbeiten“ mit dem Feld „Erscheinungsdatum“ (`DateField`, Anzeige DD.MM.YYYY, Speicherung ISO), „Auf TMDB-Datum zurücksetzen“ nur bei vorhandenem Override, Toasts „Erscheinungsdatum gespeichert“ / „…zurückgesetzt“ (unverändert, `useSetReleaseDateOverride`). Bei Tagebuch-Einträgen öffnet „Bearbeiten“ weiter den Bewertungsdialog. Nur das Datum ist editierbar, nicht der Titel. Die Leiste bekommt dafür die Prop `source`.
+- **Aktionsleiste:** Bis 4 Aktionen eine Zeile mit gleich breiten Buttons; bei 5 (Bewerten, Bearbeiten, Ähnliche Filme, Löschen, Filmreihe) zentriertes 3+2-Raster (Fallback unverändert). Labels einzeilig.
+- **Glas (JS-only, ohne Blur):** Hellere, durchscheinende Füllungen plus deutlich sichtbarer Rand. Tokens in `tailwind.config.js`: `bg-card` rgba(100,100,108,.55), `bg-glass` rgba(72,72,80,.62), `bg-glass-strong` rgba(62,62,70,.74), `bg-sheet`/`bg-tab-bar` rgba(30,30,36,.95), `glass-border` rgba(255,255,255,.18). Sheet/Leiste/Tab-Leiste bewusst .95 statt ~.85: darunterliegender Text scheint sonst durch die Buttons. Zentrale Konstanten in `Glass.tsx` (`GLASS_CLASSNAMES`, `GLASS_TILE/BAR/SHEET_CLASSNAME`, `GLASS_TAB_BAR_STYLE`, `GLASS_SEARCH_INPUT_CLASSNAME`), damit ein späterer `expo-blur`-`BlurView` an wenigen Stellen eingehängt werden kann (Glass, Sheet-Surface, Detail-Leiste, `tabBarBackground`).
+- **Status:** Offen für deine finale Bestätigung / Änderungswunsch.
+
+## Echter Blur (expo-blur)
+
+- **Entscheidung:** Du willst echtes Glas. `expo-blur` (~57.0.3, natives Modul, kein Config-Plugin nötig) ist installiert.
+- **Wrapper/Fallback:** `src/components/ui/GlassBlur.tsx` lädt `expo-blur` per `require` in try/catch. Fehlt das native Modul (alter Dev-Client), wird die bisherige getönte Füllung (`bg-bg-sheet` .95) gerendert, nichts crasht. Mit Blur: `BlurView` (tint dark, intensity 40, `blurMethod="dimezisBlurView"`) + darüberliegende transparente Tönung (`bg-bg-sheet-blur` rgba(24,24,30,.55), Tab-Leiste `bg-tab-bar-blur` .5). Jest-Mock in `__mocks__/expo-blur.js`.
+- **Android-Einschränkung:** expo-blur 57 blurrt auf Android nur den Inhalt einer `BlurTargetView`. Diese umschließt im Root-Layout den App-Hintergrund (`GlassBlurTarget`), geblurrt wird also das Foto, nicht darüber scrollende Listeninhalte. RN `Modal` ist ein eigenes Android-Fenster; ein BlurView darin kann die App dahinter nicht blurren. Entscheidung (sichere Variante): **Sheet bleibt** getönt-translucent (.95) mit abgedunkeltem Modal-Backdrop, kein Blur im Sheet.
+- **Eingesetzt:** Toast (`Glass variant="panel"`), Aktionsleiste im Film-Detail, Tab-Leiste (`tabBarBackground`). Karten/Zeilen bleiben bewusst ohne Blur (Performance, Listen-Scrollen).
+- **Wichtig:** Neuer Dev-Client UND neuer Preview-Build nötig (neues natives Modul); der alte Dev-Client nutzt den Fallback.
+- **Status:** Offen für deine Geräte-Prüfung nach dem Neubau.
+
+## Einstellungen neu gegliedert, Logos, Badges, Trailer
+
+- **Einstellungen:** Hub gegliedert in "Aktueller Nutzer" plus je eine Glas-Karte pro Abschnitt (Konto mit Anzeigename-Editor und rotem "Konto löschen", Gruppe, App mit "N ausgewählt"/Neu-Badge, Rechtliches), darunter Datenquellen, Abmelden als volle Glas-Schaltfläche, Version. Trennlinien nur ZWISCHEN Zeilen (`SettingsGroup`, `SettingsRow` ohne eigenen Kasten, `SettingsToggleRow`). Unterseiten haben unten eine Glas-"Zurück"-Schaltfläche (`SettingsBackBar`) zusätzlich zum Header-Pfeil. Alle testIDs bleiben (Badge `settings-streaming-badge` entfällt, ersetzt durch Text "N ausgewählt").
+- **Hintergrund:** Settings-Routen (Hub, Unterseiten, Gruppe verwalten) bekommen in `(modals)/_layout.tsx` `contentStyle` `#0a0a0a`: kein Projektor-Foto dort, Tabs/Detail unverändert.
+- **Zahnrad:** `SettingsButton` ist eine eigene Pressable (`h-11 w-11 aspect-square shrink-0`). Ursache des Ovals: `min-h-touch-min` des Buttons wird von twMerge nicht durch `min-h-0` ersetzt.
+- **Streaming-Logos:** `logo_path` kam schon vom Edge-Function-Endpoint durch (kein Deploy nötig). Liste = umbrechende Chips mit 40px-Logo (w92) links vom Namen; Detail-Anbieter zeigen 24px-Logo.
+- **Tabellen:** keine Trennlinie nach der letzten Zeile (Tracker, Tagebuch-Liste, Add-Movie-Ergebnislisten).
+- **YouTube:** eigenes Vollbild (Modal, zweites WebView, Button, Orientation-Lock) entfernt; Standard-Player mit `allowsFullscreenVideo`. `expo-screen-orientation` wird nicht mehr importiert (Paket bleibt in package.json).
+- **Badges:** Durchschnitts-Stern in 44x44-Box mit zentrierter Zahl (nicht abgeschnitten). TMDB-Badge bündig in der Ecke unten rechts (`absolute bottom-0 right-0 rounded-tl-xl`) bei Tagebuch-/Watchlist-Karten, Watchlist-Grid und Tagebuch-Kachel; `MovieGrid` unverändert (Score steht dort unter dem Poster).
+- **Datenquellen:** nur TMDB und Trakt mit Logos (`assets/images/tmdb-logo.png` 240x103, `trakt-logo.png` 96x96; aus den SVGs des Legacy-Repos per Headless-Chromium gerendert, nichts aus dem Netz). JustWatch-Zeile entfällt; der Pflicht-Credit steht im TMDB-Text ("Streaming-Daten: JustWatch.").
+- **Status:** Offen für deine Geräte-Prüfung.
+
+## Blur flächendeckend, Sheet ohne Modal
+
+- **Ursache "grauer Schleier":** Blur lief technisch (Dev-Client mit ExpoBlur, Log ohne Warnungen, Testkasten zeigt unscharfes Foto), war aber unsichtbar: Foto ist stark abgedunkelt, `tint="dark"` dunkelte weiter ab, und Cards/Tabellen/Karten hatten gar keinen BlurView (nur `panel`, Tab-Bar, Detail-Leiste). Außerdem existiert die Klasse `bg-card` im Tailwind-Setup nicht (Token heißt `bg-bg-card`), die Fills waren teils wirkungslos.
+- **Glass:** alle Varianten (`default`, `strong`, `panel`) laufen über `GlassBlur` (BlurView, `tint="default"`, Intensität 30, helle Overlay-Tints `bg-bg-card-blur` 9 %, `bg-bg-glass-strong-blur` 14 %; Panel/Sheet/Tab-Bar dunkel 42 %). `Card` nutzt `Glass`. Fallback ohne Modul/Jest: getönte Fläche wie vorher. `GlassBlur` kann `onPress` (Pressable). Watchlist-Listenzeilen sind `GlassBlur`.
+- **Sheet:** kein RN-`Modal` mehr (eigenes Android-Fenster, BlurView sieht das Foto dort nicht). Overlay im Fenster, `position:absolute`, `zIndex/elevation 1000`, im Baum des aufrufenden Screens (funktioniert auch in Modal-Routen, Foto wird geblurt). Slide-up per Animated, Backdrop-Tap und Android-Zurück schließen, API unverändert. Tastatur: Anhebung nur um den Teil, der das Overlay überlappt (Overlay-Unterkante vs. Tastatur-Oberkante).
+- **Einschränkung:** In Tab-Screens endet das Sheet über der Tab-Bar (Backdrop deckt die Leiste nicht ab). Grid-Kacheln (`WatchlistPosterCard` Grid via `Card`) blurren pro Kachel; Poster decken fast alles ab.
+- **Status:** Rein JS, kein neuer EAS-Build nötig (ExpoBlur steckt im Dev-Client 17db0985; die EAS-Preview f1ca9c0f enthielt es bereits). Offen für deine Geräte-Prüfung.
+
+## Geräte-Prüfung final (Blur, Einstellungen, Logos)
+
+- **Geprüft** auf Pixel 6 Pro (Dev-Client, Screenshots in `.scratch-screenshots/final-2026-10-02/`): Glass/Blur auf Karten, Tracker-Tabelle, Sheets, Toast, Tab-Bar, Detail-Leiste; Einstellungen-Hub und Unterscreens; Streaming-Dienste mit Logos; Tagebuch-/Watchlist-Badges; Trailer; Scroll-Performance der Add-Movie-Ergebnisse (gfxinfo: 0,4 % Janky Frames, kein `blur={false}` nötig).
+- **Fix Sheets in der Detail-Leiste:** "Eintrag bearbeiten" und "Film löschen?" lagen in der unteren Leiste und wurden dort abgeschnitten (Overlay füllt nur den nächsten Eltern-View). Neu: `SheetHost` in `Sheet.tsx`; Sheets unterhalb eines Hosts zeichnen ihr Overlay im Host. Der Movie-Detail-Screen hostet auf Screen-Ebene. Ohne Host unverändertes Verhalten.
+- **Fix Trailer-Vollbild:** App ist portrait-gesperrt, YouTube-Vollbild blieb deshalb im Hochformat. Die eingebettete Seite meldet `fullscreenchange` per injiziertem JS; `expo-screen-orientation` sperrt nur währenddessen auf Landscape und danach wieder auf Portrait (auch beim Verlassen des Screens). Kein eigenes Vollbild-UI.
+- **Fix Lesbarkeit:** `text-secondary` von `#888888` auf `#a8a8a8` angehoben (grauer Text auf Glas war kaum lesbar).
+- **Fix Konsistenz:** "Gruppe verwalten" hat jetzt die untere "Zurück"-Leiste wie die übrigen Einstellungs-Unterscreens.
+- **Sheets in Tab-Screens:** enden über der Tab-Bar, Backdrop dimmt sie nicht; als akzeptabel bewertet (Tab-Bar bleibt bedienbar, Optik stimmig). Ein Overlay über der Tab-Bar bräuchte einen Host oberhalb des Navigators und gefährdet das Blur-Sampling; nicht umgesetzt.
+- **Perf-Overlay:** der Dev-Menü-Schalter "Toggle performance monitor" ließ das Overlay stehen; ausgeblendet über "Open React Native dev menu" > Perf Monitor und App-Neustart.
+- **Tests:** tsc sauber, Jest 149 Suites / 1312 Tests grün, alle 6 Maestro-Flows zweimal grün. Neue EAS-Preview des Arbeitsbaums: Build fb867d39-02a5-4681-b6af-1e3e6531f848.
+- **Status:** Offen für deine Geräte-Prüfung.
+
+## Glas dunkler (wie Legacy), Settings mit Hintergrundbild, Stern-Zentrierung
+
+- **Anlass:** Glas wirkte grau/hell; Legacy ist dunkles Rauchglas (`--bg-card` rgba(20,20,20,.5), Blur 12-20px, Rand 6 Prozent weiss).
+- **Blur:** `GlassBlur` Standard `tint="dark"`, `intensity` 30 (Sheet 40). Fuell-Tokens (`tailwind.config.js`): `bg-card`/`bg-card-blur` rgba(10,10,12,.5); `bg-glass-strong-blur` .62; `bg-sheet-blur`/`bg-tab-bar-blur` .62. Kein-Blur-Fallback (dunkel, deckender): `bg-glass` .72, `bg-glass-strong` .82, `bg-sheet`/`bg-tab-bar` rgba(12,12,14,.96).
+- **Rand:** `glass-border` rgba(255,255,255,.12); neu `glass-border-strong` .16 (Variante `strong`); Tab-Bar-Top-Border .12.
+- **Hintergrundfoto:** `assets/images/cinema-bg.jpg` Helligkeit x2.0 (Graustufen, Mittelwert 19 auf 39, Max 85 auf 170), damit Karten dunkler als das Foto wirken.
+- **Settings:** kein opakes `#0a0a0a` mehr; `contentStyle` rgba(0,0,0,.35) (Foto gedimmt; Hub, Unterscreens, Gruppen-Einstellungen). `SettingsGroup` nutzt jetzt `Glass` (echter Blur; auf dem Geraet geprueft, Blur funktioniert in der Modal-Route).
+- **Stern-Badge (`DiaryEntryCard`):** Ziffern-Mitte lag 5,5 px (Pixel 6 Pro, 3,5x) ueber dem Stern-Schwerpunkt; `pt-[3px]` am Overlay, danach Abweichung dx 0,2 px / dy 0,1 px.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Glas-Buttons, 3D-Kante statt Rand, Stern-Zentrierung
+
+- **Ein Button-System** (`src/components/ui/Button.tsx`): Varianten `primary` (Akzent-Fuellung, dunkler Text, Top-Highlight `border-t-white/40`, gedrueckt `accent-light`), `secondary` (Glas: Fuellung `white/10`, gedrueckt `white/20`, Kante wie Karten, Text `font-medium` hell), `ghost` (nur Text/Icon, gedrueckt `white/10`), `danger` (Text `danger-text` #e5675a auf `danger/15`, Kante `danger/30`). Disabled hat eigene gedaempfte Klassen (`white/10` bzw. `white/5`, Text `white/35`), kein `opacity-50` mehr (kein braunes Gold). Groessen `default` (48), `sm` (44), `xs` (36, Chips/Inline-Buttons); `iconOnly` = exaktes Quadrat (48/44/36), `rounded-full`, ohne `min-h-*` (twMerge ersetzt `min-h-touch-*` nicht). Export `BUTTON_ICON_COLORS`.
+- **Migriert:** Settings (Speichern, Abmelden), `SettingsBackBar`, Zahnrad (`SettingsButton`), Sheet-Schliessen, Filter-/Sortier-Icon, Add-Button, Zahlung-Button (Tracker), Tracker Bearbeiten/Loeschen, Filter-Chips (Tagebuch, Watchlist, MovieGrid), Add-Movie-Modi/Streaming-Chip, Bewertungsdialog (Abbrechen/Speichern, Zahler-Chips), Gruppenwechsel + Einladungs-Toggle, Detail-Zurueck. Nicht migriert (bewusst): ViewModeToggle (Segment, Inset-Container), Zahler-Chips mit Mitgliedsfarbe (Tracker/PaymentModal), Aktionsleisten-Kacheln (Glas-Kachel), Zeilen/Sortier-Optionen. testIDs und a11y-Labels unveraendert.
+- **3D-Kante statt Outline** (zentral in `Glass.tsx` + `tailwind.config.js`): `glass-border` .06 (rundum), `glass-border-strong` .08, `glass-edge-top` rgba(255,255,255,.16), `glass-edge-bottom` rgba(0,0,0,.35), `glass-inset-bottom` rgba(255,255,255,.10). `GLASS_EDGE` = `border border-glass-border border-t-glass-edge-top border-b-glass-edge-bottom` fuer Glass/Card/Tile/Buttons; Sheet nur Top-Highlight (`border-t-glass-edge-top`); Tab-Bar `borderTopColor` .16. Inputs invertiert (`GLASS_INSET_EDGE`: oben dunkel, unten hell .10, Fuellung `black/35`). Per-Seite-Borderfarben mit Radius rendern auf Android (Pixel 6 Pro) sauber.
+- **Stern-Zentrierung:** Mass ist der Mittelpunkt des Inkreises (= Umkreismitte, aus Stern-Bbox: R = B/1,902 bzw. H/1,809), nicht der Pixel-Schwerpunkt; Ziffern-Bbox aus dunklen Pixeln. Vorher (40dp-Stern, 11px, `pt-[3px]`): Ziffern 1,0 px links und 3,1 px ueber der Sternmitte (Inkreis-r ca. 26 px < Ziffernbreite 47 px). Jetzt: Stern 44dp, Ziffern 10px bold, `pl-[2px] pt-[7.5px]`: dx +0,5 px, dy +0,3 px (3,5x). Konstanten in `DiaryEntryCard.tsx` (`STAR_BADGE_*`), Unit-Test.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Tagebuch-Karte: Bewertung als Eck-Badge
+
+- **Entscheidung:** Der Stern mit Zahl (44dp-Stern, Ziffern darueber) in `DiaryEntryCard` ist ersetzt, nachdem die Zentrierung wiederholt nicht stimmte. Neu: Eck-Badge `absolute top-0 right-0 rounded-bl-xl bg-black/60 px-3 py-1` (Gegenstueck zum TMDB-Badge unten rechts, bündig an der Kartenecke): gelber Stern (14px, `starColor`) + Durchschnitt (`text-xs font-semibold text-white`). Gelikt: rotes Herz (14px, `#e05c6e`) vor dem Stern im selben Badge. Titelzeile mit `pr-20`, damit Titel vor dem Badge abgeschnitten wird.
+- **Entfernt:** `STAR_BADGE_*`-Konstanten samt Messkommentar und Test. testIDs unveraendert (`poster-card-average-badge`, `-average-value`, `-like-badge`, `-like-icon`).
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Kacheln: Poster randlos
+
+- **Entscheidung:** Alle Grid-Kacheln (Watchlist `WatchlistPosterCard` grid, Tagebuch `DiaryPosterTile`, `MovieGrid` fuer Aehnliche Filme/Filmreihe/Filmografien/Add-Movie) sind eine Glas-`Card` mit `overflow-hidden` und ohne Innenabstand. Das Poster (expo-image, `contentFit="cover"`, `aspect-[2/3] w-full`, ohne eigenen Radius) sitzt buendig an Links/Oben/Rechts; die oberen Ecken folgen dem Radius der Kachel, die Unterkante ist ein gerader Schnitt. Darunter ein Infobereich mit eigenem Padding (`px-2 py-1.5`, MovieGrid `px-1 py-1.5`) fuer den Titel.
+- **TMDB-Score:** In allen Kacheln buendig in der Poster-Ecke unten rechts (`absolute bottom-0 right-0 rounded-tl-xl bg-black/60`), nur die Zahl (Kacheln sind klein). In MovieGrid wandert der Score damit aus der Infozeile aufs Poster. Datums-/Fortschritts-/Auge-/Bookmark-/Plus-Badges bleiben oben auf dem Poster.
+- **Technik:** `DiaryPosterTile` ist jetzt selbst die `Card` und nimmt den Titel als `children` (Infobereich nur wenn vorhanden); Tagebuch-Screen reicht den Titel hinein. `MovieGrid`-Kachel nutzt `Card` statt eigener Pressable-Klassen. `WatchlistPosterCard` grid nutzt `expo-image` (`@/components/ui/Image`). testIDs, a11y-Labels, Press-Handler, Dimming und feste Breiten (`padToFullRows`) unveraendert.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## TMDB-Logo im Sheet-Badge, Changelog entfernt
+
+- **Begriffe (Vokabular):** "Sheet" = Listeneintrag mit Bild links und Text rechts (Karten-Ansicht: `DiaryEntryCard`, `WatchlistPosterCard` Card-Variante). "Kachel" (tile) = Poster oben, Titel darunter (Grid-Ansicht).
+- **TMDB-Logo:** Das Badge zeigt statt des Texts "TMDB" das echte TMDB-Kurzlogo (wie die Legacy-App; Asset `assets/images/tmdb-logo.png`, schon im Settings-Footer genutzt, kein neues Asset noetig) plus Score. Neue gemeinsame Komponente `src/components/ui/TmdbBadge.tsx` (Logo 14dp hoch / 32dp breit, `contentFit="contain"`, a11y-Label "TMDB Bewertung 8.4"), genutzt in beiden Sheets (Eck-Badge `absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-3 py-1`) und in der Titelzeile des Film-Details. Kacheln (Grid) behalten das reine Score-Eck-Badge. testIDs unveraendert.
+- **Changelog komplett entfernt (Entscheidung des Nutzers):** "Changelog koennen wir entfernen, auch die Toasts dazu; Updates und Features werden ueber die Store-Infos kommuniziert." Entfernt: Settings-Zeile samt "Neu"-Badge, Route/Screen `settings/changelog`, `ChangelogBanner` im Tracker, Start-Toast (`useChangelogStartupToast`), Toast "Neue Funktionen verfuegbar" in den Einstellungen, `src/lib/changelog.ts` (`CURRENT_CHANGELOG_VERSION`), Preference `lastSeenChangelogVersion` samt Setter, zugehoerige Tests und der Changelog-Schritt in `.maestro/flows/tabs-tour.yaml`. Alte Installationen: Zustand-persist ignoriert den unbekannten Key (per Test abgesichert). Das Toast-System selbst bleibt.
+- **Ersetzt:** Alle frueheren Changelog-Eintraege in diesem Dokument (M10 Settings-Hub Changelog, Startup-Toast, "Neu"-Badge) sind damit hinfaellig; der Verlauf bleibt als Historie stehen. `docs/feature-inventory.md` (Legacy-Spec) bleibt unveraendert.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Einheitliche Chips, Besetzung-Rahmen, ruhiger Glas-Hintergrund für Detail-Views
+
+- **Ein Chip-Stil für die ganze App** (`src/components/ui/Chip.tsx`, Tokens exportiert): `h-9`, `rounded-lg` (12px, bewusst keine Ovale), `px-3`, `border`, Text `text-sm`. Inaktiv: Gold-getönte Fläche `bg-accent-a15` + Rand `border-accent-a40` + Text `text-accent-light`. Aktiv: massives Gold `bg-accent`/`border-accent` + dunkler Text `text-bg-primary font-semibold`. `Chip` (Pressable, `active`, a11y `selected`) und `ChipTag` (statisch, Genre-Tags).
+- **Ursache der "dunklen Ovale":** NativeWinds `/NN`-Opacity-Modifier funktioniert nicht auf `var()`-Farben (`border-accent/60` rendert dunkel). Deshalb neue Alpha-Tokens `accent-a15/a30/a40/a45` (Tailwind-Config + pro Theme in `src/global.css`). Nie mehr `bg-accent/NN` verwenden.
+- **Migriert:** Genre-Tags im Detail, Filter-/Kategorie-Chips in `MovieGrid` (Flatrate/Leihen/Kaufen, auch Ähnliche/Filmreihe/Filmografie), Watchlist- und Tagebuch-Genre/Jahr/Provider-Pillen, Add-Movie-Modus-Chips und Streaming-Toggle, Zahler-Chips im `RatingDialog`, Provider-Auswahl in "Meine Streaming-Dienste" (gleiche Farb-Tokens, Logo-Layout bleibt). Zahler-Chips in `PaymentModal`/Tracker behalten die Mitglieds-Farben.
+- **Besetzung-Rahmen:** `movie-detail-cast-frame` mit Haarlinien oben/unten (`border-y border-accent-a30`), Avatare mit goldenem Ring (`border-[1.5px] border-accent-a45`). Regie bleibt darüber.
+- **Ruhiger Glas-Hintergrund:** `ScreenBackdrop` (`src/components/ui/ScreenBackdrop.tsx`): statischer Vollbild-`GlassBlur` (Intensität 90, Tint `bg-black/70`, Fallback `bg-black/85`) hinter Filmdetail, Ähnliche Filme, Filmreihe, Filmografie (Regie/Schauspieler/Studio) und Add-Movie. Angebunden über `screenLayout` des (modals)-Stacks (expo-router verwirft ein `layout`-Prop an `Stack.Screen`), gefiltert nach Routenname. Tabs und Settings unverändert. Blur samplet auch hinter Modal-Routen den Foto-Hintergrund (am Gerät geprüft).
+- **Zurück-Button im Filmdetail:** jetzt fix (nicht mehr im ScrollView), innerhalb der Safe-Area oben links; scrollt nicht weg.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Chips lesbar auf dem Foto, Parallax-Hintergrund
+
+- **Chips (inaktiv) zweilagig:** Dunkle, fast deckende Basis `bg-chip-base` = `rgba(14,12,8,.88)` (theme-neutral, Tailwind-Token) plus Gold-Tönung `bg-accent-a15` als eigene Layer-View (`<testID>-tint`, absoluteFill per Style-Objekt, `borderRadius` 7), Rand `border-accent-a55` (neuer Token, pro Theme in `global.css`, vorher a40), Text `text-accent-light font-medium`. Aktiv unverändert massives Gold. Platzierung: Chip-Reihen bleiben unter der Glas-Karte (nicht hineinverschoben, Karte ist schon hoch; testIDs unverändert); die deckende Basis macht sie auf dem Foto lesbar (am Gerät geprüft). Gilt für alle Nutzungen (`Chip`, `ChipTag`, exportierte Tokens).
+- **Legacy-Parallax (filmkritiker `js/tabs.js` `BG_POSITIONS`, `styles.css` `body::before`):** fixiertes Foto, 140vw breit (left -20vw), `background-position` X pro Tab (Tracker 30 %, Watchlist 50 %, Tagebuch 70 %) mit 600 ms `cubic-bezier(.4,0,.2,1)`. Kein Scroll-Link, kein Neigungssensor (kein `expo-sensors` nötig).
+- **Umsetzung (Update 2026-10-03, Framing wie Legacy):** `AppBackground` zeigt das Foto per Cover-Fit nach Höhe (ganzer Projektor sichtbar wie in der Legacy-App, kein Zoom; Asset 720x1280, Pixel 6 Pro: Foto 1.05 x Bildschirmhöhe, Breite = Höhe x 0.5625). Kein 140 %/120 %-Overscan mehr. Reanimated auf dem UI-Thread: (1) Tab-Pan über den realen horizontalen Spielraum (`slackX = boxBreite - Bildschirmbreite`): `translateX = -((pos-50)/100) * slackX`, Positionen Tracker 15 / Watchlist 50 / Tagebuch 85 (Weg Tracker->Tagebuch = 0.7 x slackX, Pixel 6 Pro ca. 295 px = 112 dp; vorher ca. 92 px = 35 dp), 600 ms Ease; (2) Scroll-Drift: `translateY = -min(scrollY * 0.2, 0.05 * Höhe)` (5 % vertikaler Overscan, Box oben bündig). Reine Funktionen in `src/lib/parallax.ts` (`backgroundLayout`, getestet). `ParallaxProvider` (Root-Layout) hält `scrollY`/`tabPosition` als Shared Values; Screens spreaden `useParallaxScroll()` (`onScroll`, Throttle 16) auf Tracker, Watchlist, Tagebuch, Settings, Gruppen-Einstellungen, Benachrichtigungen, Streaming-Dienste, Filmdetail, Add-Movie, `MovieGrid`. Tabs-Layout setzt bei Routenwechsel `scrollY` mit 300 ms auf 0 und aktualisiert den Tab-Pan. Reduce-Motion: kein Parallax. Blur samplet das bewegte Foto weiter. Reanimated nur in Provider/AppBackground, Jest-Mock `__mocks__/react-native-reanimated.js`.
+- **Gerät:** Settings-Scroll 470 px -> Foto-Detail verschiebt sich ~94 px (Faktor 0,2); gfxinfo beim Scrollen 0,5 % (Settings) bzw. 3,5 % (Add-Movie-Raster) Janky Frames. Auf Detail-Routen mit ruhigem Backdrop (Blur 90 + 70 % Schwarz) ist die Bewegung kaum sichtbar.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Speichern als runder Icon-Button hinter Namensfeldern
+
+- **Muster:** Einzelfeld-Editoren mit "Speichern" (Anzeigename in den Einstellungen, Gruppenname in den Gruppen-Einstellungen) zeigen Eingabefeld (`flex-1`) und einen runden Icon-Button (`Button iconOnly`, 48px, `rounded-full`, primary/Gold wie Plus- und Zahlungs-Button, Ionicons `save-outline` in `BUTTON_ICON_COLORS.primary`) in EINER Zeile (`settings-display-name-row`, `group-settings-rename-row`). Fehlertext steht unter der Zeile.
+- **Zustände:** Deaktiviert (muted, kein Matsch-Gold, Icon `BUTTON_ICON_COLOR_DISABLED`), solange der Name unverändert oder leer ist; während des Speicherns Spinner im Button (`loading`). Toasts ("Anzeigename gespeichert", "Gruppe umbenannt"), Validierung, `KeyboardAwareScrollView` und alle testIDs unverändert. A11y: "Anzeigename speichern" bzw. "Gruppenname speichern", Rolle button.
+- **Bewusst unverändert:** Vollbreite Primär-Buttons bei Formularen mit mehreren Feldern oder Haupt-CTAs (Login, Registrierung, Onboarding, Konto löschen).
+- **Änderung später:** Reine Klassen-/Struktur-Änderung in `settings.tsx` und `group-settings.tsx`.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Icons: Material Icons über zentrale Icon-Komponente
+
+- **Familie:** `MaterialIcons` (`@expo/vector-icons`), Ionicons komplett ersetzt. Zugriff nur über `src/components/ui/Icon.tsx`: Prop `name` ist eine semantische Rolle (`back`, `close`, `film`, `heart`, `heartEmpty`, `tabWatchlist` ...), nie ein Roh-Glyph; `ICON_ROLES` mappt Rolle -> Glyph (per Test gegen die Glyph-Map geprüft).
+- **Größen:** Tokens `S` = 16 (Badges/inline, vorher 14-18), `M` = 24 (Buttons/Zeilen/Tab-Bar, vorher 20-28), `L` = 40 (Poster-Platzhalter/Empty-State/Theme-Swatch, vorher 32-56). `StarRating` `iconSize` ist jetzt ein Token.
+- **Stil:** Material ist überwiegend gefüllt; `-border`/`-outline`-Glyphen nur dort, wo sie Zustand tragen (leerer Stern, leeres Herz, Checkbox aus, Watchlist-Tab inaktiv, Watchlist-Aktionsbutton). Tracker- und Tagebuch-Tab haben keine Outline-Variante und bleiben gefüllt (aktiv/inaktiv nur über Farbe).
+- **Vereinheitlicht:** ein Zurück-Icon `arrow-back` (SettingsBackBar, Filmdetail); Sheet-Schließen-"×" jetzt `close`-Icon; Bearbeiten `edit`; Sortieroption "Mag ich" ohne Text-Herz; Auswahl-Häkchen `check-circle` gefüllt wie alle anderen Glyphen.
+- **Änderung später:** Rolle in `ICON_ROLES` umhängen -> wirkt überall.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Einklappbares Filter-Panel (Watchlist, Tagebuch)
+
+- **Muster (wie Legacy):** Eingeklappt zeigt die Glas-Karte nur Suchfeld, (Watchlist) Plus-Button und Filter-Button (`options`/tune). Sortierung (Button "Sortieren: <aktuell>", öffnet weiter das Sort-Flyout), `ViewModeToggle` und alle Chip-Reihen (Genre, Jahr, Flatrate/Leihen/Kaufen) liegen im Panel. Tracker unverändert.
+- **Komponente:** `src/components/ui/CollapsibleFilterPanel.tsx`, von beiden Tabs genutzt. testIDs: `<tab>-filter-toggle`, `<tab>-filter-panel`, `<tab>-filter-active-dot` (Tab `watchlist`/`tagebuch`). Panel-Inhalt wird nur gemountet, wenn offen.
+- **Animation:** RN-eigene `LayoutAnimation` (easeInEaseOut), keine neue Abhängigkeit.
+- **Aktiv-Zustand:** Filter-Button gold gefüllt (`primary`), wenn offen. Goldener Punkt am Button (`hasActiveListFilters` in `src/lib/listFilters.ts`) bei nicht-Standard-Sortierung, anderen Provider-Kategorien oder Ansicht ungleich Karten.
+- **Persistenz:** `filterPanelOpen: { watchlist, diary }` im `usePreferencesStore` (MMKV, pro Gerät und Tab, nicht pro Gruppe), Standard zu.
+- **Änderung später:** Reine Layout-Änderung in der Komponente bzw. den zwei Tab-Screens.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Flat-Material-Stil, Backdrop-Dimmung, Danger-Styleguide
+
+- **Referenz:** `docs/style-guide.md` (Tokens, Varianten nach Funktion, Border-, Backdrop-, Danger-Regel).
+- **Flat statt 3D:** Eine gleichmaessige Border `border-glass-border` = `rgba(255,255,255,.10)`, 1px. Entfernt: Top-Highlight, dunkle Unterkante, Inset-Kanten, `shadow-card`, Doppel-Border an Glass, Button, Sheet, SortButton, ViewModeToggle, Inputs, Poster, Leisten. Tokens `glass-edge-*`, `glass-inset-bottom`, `glass-border-strong` und `boxShadow.card` entfallen. Blur/Transluzenz bleiben.
+- **Backdrop:** Nur Tracker/Watchlist/Tagebuch ungedimmt. `ScreenBackdrop` hat `level` `calm` (black 70%, Detail-Referenz) und `dim` (black 80%) bei Blur 90; Settings-`contentStyle`-Dim entfaellt. `dim` auch fuer Auth/Onboarding/Join/Callback per Root-`screenLayout`.
+- **Danger:** Ein roter Look (`bg-danger/15`, Border `danger/30`, Text/Icon `#e5675a`) als gemeinsame Tokens in `Button.tsx`, genutzt von `Button variant="danger"`, `SettingsRow danger`, Icon-Button (`RatingDialog` Reset) und Loesch-Kachel in `MovieDetailActionsBar`.
+- **Warum leicht aenderbar:** Alles ueber wenige Tokens/Konstanten (`tailwind.config.js`, `Glass.tsx`, `Button.tsx`, `ScreenBackdrop.tsx`).
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Verifikations-Workflow: vollständige Maestro-Suite + alle Screenshots nach jeder Änderung
+
+- **Regel (Nutzervorgabe):** Nach jeder App-Änderung: `tsc` + `jest`, dann `scripts/maestro-all.sh` auf dem Pixel 6 Pro (alle Flows, jeder Screen, jede Funktion; Laufzeit egal), Screenshots selbst sichten und **alle** Screenshots per SendUserFile an den Nutzer schicken, plus kurze Zusammenfassung.
+- **Umsetzung:** `scripts/maestro-all.sh` (feste Flow-Reihenfolge, sammelt jeden `takeScreenshot` mit geordneten Namen `NN-<flow>--<shot>.png` in ein Ausgabeverzeichnis, Pass/Fail je Flow, Exit-Code != 0 bei Fehler). Abdeckung: `docs/maestro-coverage.md` (Screen/Funktion -> Flow -> Screenshot -> Status).
+- **Definition of Done:** Flows (inkl. Screenshots) für neue Features/Screens gehören zum Feature; `docs/maestro-coverage.md` wird mitgepflegt.
+- **Flow-Regeln:** Flows stellen den Testzustand wieder her (Name Robin, Gruppe "Maestro Test Gruppe", Theme Gold, Netflix aus, Watchlist-Sortierung "Meine Streaming-Dienste" / Grid / Panel zu, Tagebuch "Mein Tagebuch" / Karten / Panel zu, Tracker leer). Destruktive Dialoge werden gezeigt und abgebrochen; echte Schreibzyklen nur mit selbst angelegten Daten und anschließendem Rückbau.
+- **Screenshot-Helfer:** Maestros `takeScreenshot` scheitert bei posterlastigen Screens (PNG > 4 MB gRPC-Limit). Dafür `.maestro/subflows/shot.yaml` + `scripts/maestro-shot-server.py` (`adb screencap`), vom Runner gestartet.
+- **Änderung später:** Flow-Liste nur in `scripts/maestro-all.sh` (Array `FLOWS`) und `docs/maestro-coverage.md`.
+- **Status:** Offen fuer deine Geraete-Pruefung.
+
+## Maestro: Use-Case-Bereiche (Areas), schnellere Flows, Animationen aus
+
+**Anlass:** Vollständiger Lauf dauerte ca. 43 Min. Messung: Kosten stecken nicht in der App-Animation, sondern in Maestro/UiAutomator (Hierarchie-Abruf ca. 2,2 s selbst auf dem Launcher, ein Screenshot ca. 1,4 s, `waitForAnimationToEnd` = 2 Screenshots = ca. 3 s auch auf statischem Screen, Tap per testID = 2 Hierarchie-Abrufe = ca. 3,5-4,5 s, Kaltstart ca. 20 s).
+**Entscheidung (vom Nutzer freigegeben, "Preview-APK" ausdrücklich abgelehnt):**
+- Kein `waitForAnimationToEnd` mehr; stattdessen `assertVisible`/`assertNotVisible`/`extendedWaitUntil` auf konkrete testIDs (vorhandene testIDs genügten, keine App-Änderung).
+- Tab-Wechsel per Punkt-Tap auf die Tab-Bar (`subflows/go-<tab>.yaml`, ca. 2 s schneller als Label-Tap) mit Screen-testID-Assertion.
+- `subflows/ensure-app.yaml` ersetzt den Kaltstart am Flow-Anfang: Relaunch nur, wenn die Tab-Bar nicht sichtbar ist (zwei `back`, dann `launch.yaml`). Echte Kaltstarts bleiben für `login`, `auth-screens` (Login), `deeplinks`.
+- Der Runner setzt `window_animation_scale`/`transition_animation_scale`/`animator_duration_scale` auf 0 und stellt die vorher gelesenen Werte per `trap` wieder her (ursprünglich nicht gesetzt = `delete`).
+- `.maestro/areas.json` + `scripts/maestro-areas.py` + `docs/maestro-areas.md`: Bereiche -> Flows und Quellpfad-Muster -> Bereiche; `scripts/maestro-all.sh --area/--changed/--smoke/--list-areas`. Ohne Flag weiterhin voller Lauf.
+- Flow-Bugfixes: `tabs-tour` Screenshot 01 zeigte die Watchlist (jetzt `go-tracker` + Tracker-only-Element); `movie-detail` tippte per Text "Inception" ins Suchfeld statt aufs Ergebnis (Detail öffnete nie) -> Tap per testID `add-movie-film-grid-item-27205`.
+- **Prozess-Doku:** Alle Arbeitsprozess-Regeln stehen gebündelt in `docs/working-process.md` (Pointer in `CLAUDE.md`).
+- **Änderung später:** Alles rein Test-Infrastruktur; Rückbau = Flows auf `launch.yaml` zurück, Runner-Flags entfernen.
+- **Status:** Offen fuer deine Pruefung.
+
+## Toast-Varianten (grün/rot), Touch-Targets (48dp), Bewertungs-Sterne enger
+
+- **Toasts:** `showToast(msg, { variant })` mit `success` (grün: `bg-success/15`, Border `success/40`, Text `success-text`, Icon check-circle), `error` (rot: gleiche Danger-Tokens, Icon error) und `info` (neutral, Standard, Accent-Border). Neue Tokens `success` `#2e9e5b` / `success-text` `#5fcf8a` in `tailwind.config.js`. Alle Speichern/Hinzufügen-Toasts sind `success`; alle Fehlerpfade (Bewertung speichern/zurücksetzen, Watchlist-Add, Zahlung, Gruppe umbenennen, Farbthema, Erscheinungsdatum, Anzeigename) zeigen jetzt einen roten Fehler-Toast statt `Alert.alert` bzw. gar kein Feedback. Realtime-Hinweise und "Wird bald ergänzt" bleiben `info`. Error-Toasts haben `accessibilityLiveRegion="assertive"`.
+- **Touch-Targets:** `src/components/ui/touchTarget.ts` (`MIN_TOUCH_TARGET` 48, `MIN_TOUCH_TARGET_IOS` 44, `hitSlopFor`). Kleine Controls behalten ihre Optik und bekommen `hitSlop` (Button sm/xs, Chip, Reset-Icon, Payer-Pillen) oder eine 48er Touch-Box um das kleine Visual (View-Mode-Segmente, "+" im MovieGrid). Sheet-Schließen-X jetzt 48 statt 44 (a11y-Label "Schließen").
+- **Sterne:** Touch-Box 44x48 statt 48x48 (Glyph bleibt 40, Lücke 8 -> 4dp); 5 Sterne + Herz + Reset = 300dp passt in 328dp Inhaltsbreite eines 360dp-Phones. 44 breit = iOS-Minimum; Android-Soll 48 wird in der Breite bewusst um 4dp unterschritten (kein Overlap-hitSlop), Höhe 48. Zahl hinter den Sternen im Bewertungsdialog (Gruppenzeilen) entfernt (`MemberRatingRow hideValue`).
+- **Änderung später:** `STAR_TOUCH_WIDTH` auf 48 setzen (Reset-Button dann ggf. umbrechen); Farben nur in `tailwind.config.js`/`Toast.tsx` (`TOAST_VARIANT_STYLES`).
+- **Status:** Offen für deine Geräte-Prüfung.
+
+## Brand-Assets: Legacy-Icon, Splash mit Verlauf
+
+- **Icon:** Das Glyph (goldener Ring + Mittelpunkt + drei gedimmte Punkte auf `#0a0a0a`) stammt aus dem Legacy-Icon (`filmkritiker/icon-512.png`, nur lesend). Geometrie/Farben wurden vermessen und in `scripts/generate-brand-assets.py` als Vektor neu gezeichnet (Legacy-PNG hat nur 512px). Ausgabe: `icon.png` 1024, Adaptive-Layer (Ring = 55 % der Fläche, innerhalb der 61 %-Safe-Zone), Monochrom (weiss), `splash-icon.png`, `favicon.png`, `splash-bg.png`. `ios.icon` (Expo-Template `expo.icon`) entfernt, iOS nutzt `icon.png`.
+- **Splash:** Nativ schwarz (`#000000`) + Glyph (`imageWidth` 288, Android-12-Splash kann nur zentriertes Icon, keinen Vollbild-Verlauf; iOS-Vollbild ungetestet, daher gleich). In-App (`AnimatedSplashOverlay`): `splash-bg.png` (schräger Verlauf, oben links `#2c2c2c` nach Schwarz unten rechts) + Glyph. Kein `expo-linear-gradient` (nicht installiert) -> vorgerenderte Grafik.
+- **Verlauf:** linear (35 Grad) statt radial: gleichmässigeres diagonales Auslaufen wie gewünscht, radial lässt oben rechts einen Lichtfleck. Vorschau beider Kandidaten im Scratchpad.
+- **Änderung später:** Konstanten in `generate-brand-assets.py` ändern (`--kind radial`, `lift`) und neu ausführen. Icon/nativer Splash brauchen einen neuen EAS-Build.
+
+## Material-3-Switch (`SwitchIndicator`) und Auth-Links mit lesbarer Farbe
+
+- **Switch:** Der alte Toggle hatte einen dunklen Daumen (`bg-bg-primary`) auf Gold und wirkte kaputt. Neu: `src/components/ui/Switch.tsx` (`SwitchIndicator`), Track 52x32; an = Accent-Track + heller 24dp-Daumen (`text-primary`), aus = grau umrandeter Track + 16dp-Daumen. Bewusst ein eigener Baustein statt React Natives `Switch`: der Android-`Switch` ist ein M2-Control (duenner Track) und nicht M3. Alle Switch-Zeilen laufen ueber `SettingsToggleRow` (Darstellung, Benachrichtigungen, Gruppe verwalten "Einladungen aktiv"). Streaming-Dienste sind Chips (`checkbox`), keine Switches. Aenderung spaeter: nur `Switch.tsx`.
+- **Auth-Links:** `className` auf expo-routers `<Link>` erreicht den Text nicht -> Standard-Schwarz auf dunkler Karte. Jetzt `<Link asChild><Pressable><Text className="text-accent-light"/></Pressable></Link>` (48dp Touch-Hoehe).
+
+## Hintergrund v2: Original-Foto, Höhen-Fit, horizontaler Swipe-Parallax
+
+- **Ursache der Pixeligkeit:** `cinema-bg.jpg` war ein 720x1280-Graustufen-Ausschnitt (32 KB), auf ca. 3100 px Bildschirmhöhe hochskaliert. Jetzt das unveränderte Original der Legacy-App (Unsplash `photo-1478720568477-152d9b164e26?w=1920&q=80`, 1920x1280 Farb-JPEG, 426831 Byte, byte-genau, nicht neu kodiert/optimiert).
+- **Dimmen ohne Neukodierung:** `mixBlendMode: "luminosity"` + `opacity` 0.6 (`BG_IMAGE_OPACITY`) über dem dunklen App-Hintergrund (wie Legacy `mix-blend-mode: luminosity`; ergibt Graustufen, Helligkeit etwa wie das alte vorgedimmte Asset).
+- **Layout:** Foto auf 100 % Bildschirmhöhe (Skalierung = Höhe / 1280), kein vertikaler Overscan, kein Zoom, kein vertikaler Parallax (Scroll-Link entfernt, `useParallaxScroll` ist No-Op). Schmalere Bilder als der Bildschirm: Cover-Fallback ohne negativen Spielraum.
+- **Parallax:** nur horizontal, Positionen aus der Tab-Anzahl N (sichtbare Tabs): Tab 0 = translateX `-BG_PARALLAX_EDGE_INSET_DP` (40 dp, ca. 140 px auf dem Pixel 6 Pro; Projektor-Anfang bleibt sichtbar), letzter Tab = `-(Spielraum - 40)` (Linse sichtbar), Mitte zentriert, dazwischen linear (`tabPanFraction`); Inset auf Spielraum/2 geklemmt. Pixel 6 Pro (Spielraum 926 dp): Weg vorher 926 dp (0 bis -926), jetzt 846 dp (-40 bis -886). Position folgt dem Wisch live (`TabSwipeView`: Pan-Update als UI-Thread-Worklet schreibt `tabProgress`), Tab-Leiste/Loslassen glättet mit 600 ms. Wisch-Schwellen (`src/lib/tabSwipe.ts`, `shouldCommitSwipe`): Wechsel bei Weg > 18 % Bildschirmbreite ODER Fling > 550 px/s in Wischrichtung (min. 24 dp Weg); Pan aktiviert ab 10 dp horizontal, bricht bei 15 dp vertikal ab (vorher 60 px Mindestweg, 25/20). Nicht-Tab-Screens behalten die letzte Position.
+
+## Glas sichtbar ueber dem Vollfoto-Hintergrund
+
+- **Ursache:** Blur-Radius war nur 30/4 = ~7px (zu schwach gegen das scharfe Vollfoto), Tints nur .5-.62; bei "Kommt noch" lag `opacity-50` auf der ganzen Karte inkl. Glas-Flaeche.
+- **Aenderung:** `GLASS_BLUR_INTENSITY` = 100 (25px) fuer alle GlassBlur/Sheet; Tints angehoben (siehe style-guide); Dim nur noch auf Inhaltsschicht (`WatchlistPosterCard` `*-content`).
+- **Fallback, falls Blur auf dem Geraet weiter fehlt:** dichterer Tint reicht fuer Lesbarkeit; Ursache dann wohl `mixBlendMode` im Blur-Target.
+- **Status:** Geraete-Pruefung offen (Pixel 6 Pro nicht erreichbar).
+
+## Toast-X, Loeschen rechts, nativer M3-Switch
+
+- **Toast/Trailer-X:** Sprachdiktat "Poster" gedeutet als Toasts (bleiben zu lange stehen): jeder Toast hat ein 48dp-Schliessen-X (`toast-close`); zusaetzlich X am Trailer-Player (`movie-detail-trailer-close-button`), vorher gab es keins.
+- **Loeschen immer rechts/zuletzt:** Tracker-Flyout (`Speichern | Loeschen`) und Film-Aktionsleiste (`filmreihe` vor `loeschen`) umsortiert; Regel in style-guide + working-process.
+- **Switch:** `@expo/ui` (seit 2026-09-19 in package.json, Native-Modul `expo.modules.ui.ExpoUIModule` inkl. `SwitchView` im installierten Dev-Client) -> auf Android echter M3-Compose-Switch in Gruppen-Akzentfarbe, kein neuer Build noetig. Fallback (iOS/Jest/Web) = `FallbackSwitch`, M3-exakt (Check-Icon, 28dp pressed, State-Layer, disabled). Kein RN-Core-`Switch` (M2).
+
+## Button-Icons ueberall, Zahler-Hinweis nur im Zahlungs-Modal
+
+- **Button-Icons:** Jeder beschriftete Aktions-`Button` hat ein fuehrendes Material-Icon (`icon`-Prop, Rolle aus `Icon.tsx`; Farbe/Groesse automatisch nach Variante/`size`). Neue Rollen: `login`, `next`, `share`, `regenerate`, `reset`, `send`, `register`, `leave`, `removeMember`, `change`. Ausnahmen: Chips/Pillen/Segmente/Listenzeilen/Tabs/Textlinks, `iconOnly`, Gruppen-Umschalter in Gruppen-Einstellungen. Durchgesetzt per `__tests__/buttonIcons.test.ts`. Tabelle: `docs/style-guide.md` "Button-Icons".
+- **Zahler-Hinweis:** Ursache fuer "heute" im Tracker-Flyout: der Hinweis nahm das letzte `paid_at` des Mitglieds ueber ALLE Eintraege (inkl. des bearbeiteten, hier 15.10.2026 = Zukunft) und `daysSincePayment` klemmte `diff <= 0` auf "heute". Entscheid: im Bearbeiten-Flyout entfaellt der Hinweis ganz (das eigene Datum steht im Datumsfeld); im "Zahlung erfassen"-Modal (nur unbezahlte Filme, also nur fruehere Zahlungen) bleibt er, explizit beschriftet ("zuletzt bezahlt: vor 3 Tagen" / "... gestern" / "... heute" / "noch nie bezahlt"; Zukunftsdatum als absolutes Datum). Zweck laut Legacy (`daysSince()`): Hilfe, wer als naechstes dran ist. Aenderung spaeter: `lastPaidHint` in `trackerLogic.ts`.
+
+## Motion: gestaffeltes Einblenden auch beim Tab-Wechsel
+
+- **Bestand:** Beim Ansichtswechsel (Sheet/Tile/Liste) remountet die FlatList (`key={viewMode}`); jeder Eintrag (`FadeInItem`) blendet 220 ms (RN Animated, Standard-Easing inOut(ease), Native-Driver) mit 40 ms Versatz pro Index (max. Index 8) ein.
+- **Neu:** dieselbe Animation beim Tab-Wechsel. Tabs bleiben gemountet, daher Replay ueber `TabSwitchContext` (Epoche nur bei Tab-zu-Tab-Wechsel, `nextTabSwitchState`) + `FadeInItem replayTab`. Tracker-Zeilen bekommen ebenfalls `FadeInItem`. Konstanten zentral in `src/lib/motion.ts`; Reduce-Motion = keine Animation.
+- **Aenderung spaeter:** nur `motion.ts` (Werte) bzw. `FadeInItem`/`_layout.tsx` (Trigger). Siehe style-guide "Motion".
+
+## Highlight-Farbe folgt überall dem Gruppen-Theme
+
+- **Anlass:** Bei Theme Rot blieben einzelne Stellen gelb (Reel-Icon in Header/Brand, Chevron-Pfeile in Settings-Zeilen, Watchlist-Bookmark im Grid, Zurück-Pfeil/Titel der Modal-Header, Navigation-`primary`), weil sie feste Hex-Werte hatten.
+- **Entscheid:** Alle Highlight-/Brand-Akzente laufen über Theme-Tokens: Klassen `accent*` (CSS-Variablen aus `global.css`, inkl. `accent-aNN`) bzw. `useGroupTheme().colors.*` für Props, die einen Hex brauchen. Navigation-Theme-Farben in `src/lib/navTheme.ts` (Root = Gold-Default, `(app)/_layout.tsx` setzt den Akzent der aktiven Gruppe).
+- **Bewusste Ausnahmen (bleiben fix):** Danger rot, Success grün, Like-Herz rosa, Gesehen-Auge grün, TMDB-Badge; Splash/App-Icon-Assets (statisches Brand-Gold, laufen vor jeder Gruppe); Auth-/Onboarding-Screens ohne Gruppe (Gold-Default). Sterne folgen dem Theme-Token `star-color` (bestehende Regel, Gold = `#FFD700`, andere Themes = Akzent).
+- **Durchsetzung:** `__tests__/theme/noHardcodedAccent.test.ts` scheitert, wenn Gold-Hex/gelbe Tailwind-Klassen in `src/` ausserhalb von `groupTheme.ts`/`global.css` auftauchen; Komponententests in `__tests__/theme/`. Geräte-Tour: Flow `theme-tour` (Rot, Blau-Stichprobe, Gold wird per `onFlowComplete` wiederhergestellt).
+
+## Sterne fest gelb, Header weiss, Logo wechselt Gruppe
+
+- **Anlass:** Nutzerwunsch nach der Theme-Umstellung: Sterne sollen wie vorher immer gelb sein; Header-Schriftzug, Gruppenname und Icon immer weiss; Tippen aufs Logo wechselt die Gruppe.
+- **Entscheid:** `starColor` ist in allen Themes `#FFD700` (`STAR_YELLOW` in `groupTheme.ts`, `--color-star` in `global.css`; der alte Gold-Wert aus dem Theme-Gold-Eintrag). `AppHeader`/`Brand`: Schriftzug `text-white`, Icon `#ffffff`, Gruppenname weiss (wird aus der aktiven Gruppe gelesen, wenn keine `groupName`-Prop kommt). Logo-Tap (`useGroupQuickSwitch`, `nextGroupId` in `src/lib/groupCycle.ts`) setzt `activeGroupId` (persistiert wie im Gruppen-Switcher, Store-Write synchron = optimistisch), Info-Toast mit neuem Gruppennamen; bei nur einer Gruppe Toast "Nur eine Gruppe". Trennlinien bleiben `glass-border` (neutral).
+- **Aenderung spaeter:** Sternfarbe nur `STAR_YELLOW`/`global.css`; Toast-Texte im Hook; Header-Farben in `AppHeader.tsx`/`Brand.tsx`.
+
+## Zurück-Wischgeste: Navigations-Stack, Android-BackSwipeView, Ähnliche Filme ersetzt statt stapelt
+
+- **Befund:** Der Android-Systemgest (Kantenwisch) und die Hardware-Zurück-Taste funktionieren (per Gerät verifiziert, `enableOnBackInvokedCallback=false`), starten aber nur direkt am Bildschirmrand. Das erwartete "von links nach rechts irgendwo wischen" gab es nicht (iOS: `(modals)` war als `presentation: "modal"` eingebunden, dort hat der erste Screen keine Zurück-Wischgeste).
+- **Entscheidung:** (1) `(modals)` im `(app)`-Stack ist eine normale Karte statt "modal". (2) `(modals)`-Stack: `gestureEnabled` + `fullScreenGestureEnabled` (iOS Vollbild-Wisch). (3) Android: `BackSwipeView` (`src/components/BackSwipeView.tsx`, Pan aus der linken 25 % der Breite, Logik `src/lib/backSwipe.ts`) per `modalScreenLayout` um jeden `(modals)`-Screen. (4) `useSafeBack` für eigene Zurück-Buttons (Fallback `replace("/")` ohne History, z.B. Deep-Link). (5) Ähnliche Filme: Tipp auf einen Film nutzt `router.replace` statt `push`, damit Zurück vom ähnlichen Film direkt im Detail des vorherigen Films landet, dann beim Ursprung.
+- **Aenderung spaeter:** Zone/Schwellen nur in `src/lib/backSwipe.ts`; Raster in "Ähnliche Filme" erhalten = in `similar/[tmdbId].tsx` `replace` wieder auf `push`; `presentation: "modal"` wieder in `(app)/_layout.tsx` (dann ohne iOS-Wisch am ersten Screen).
+
+## ESLint: eslint-config-expo (flat config)
+
+- **Anlass:** `npm run lint` (`expo lint`) war ohne Config/Pakete faktisch tot (R2 in `docs/code-health-r-items.md`). Nutzer hat `eslint-config-expo` als devDependency freigegeben.
+- **Entscheidung:** devDependencies `eslint` (^9) + `eslint-config-expo` (~57.0.2, passend zum SDK); `eslint.config.js` (flat) = `eslint-config-expo/flat` + Ignores (`dist`, `.expo`, `node_modules`, `supabase/functions`). Keine eigenen Zusatzregeln, keine Regel-Abschaltungen, kein Auto-Fix über die Codebase. `react-native/no-inline-styles` ist in der Expo-Config nicht enthalten (kein Plugin) und wurde nicht ergänzt.
+- **Aenderung spaeter:** Regeln/Ignores nur in `eslint.config.js`; Schärfen (z. B. no-require-imports in Tests, no-inline-styles-Plugin) ist eine eigene Entscheidung.

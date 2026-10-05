@@ -46,3 +46,22 @@ Migration from the old IONOS/MySQL database happens **exclusively read-only** �
 - `docs/planning-report.html` — visual architecture overview, design tokens, milestone roadmap (M0–M12)
 - `docs/adr/` — architecture decision records, the authoritative source for "has this already been decided"
 - `docs/feature-inventory.md` — functional spec of the legacy app's screens/API/business rules (architecture parts of that document are outdated — see its header note; `docs/adr/` is authoritative for architecture)
+
+---
+
+## Working process (read at session start)
+
+Read `docs/working-process.md` at the start of every session: it is the single source of truth for HOW we work (delegation, TDD, verification, Maestro speed rules, git and Supabase rules). Any change to the working process must be written to `docs/working-process.md` (and to memory) immediately and kept up to date.
+
+## Verification workflow (standing rule)
+
+User-set standing rule: after every app change, verify on the real device and show the result.
+
+1. `npx tsc --noEmit` and `npx jest` (green).
+2. `scripts/maestro-all.sh --changed` on the Pixel 6 Pro (`19221FDEE001ZS`, Metro on :8081, dev-client). It derives the affected use-case areas from the git changes (`.maestro/areas.json`, `docs/maestro-areas.md`) and runs only their flows; exits non-zero on failure. Explicit: `--area <name>[,<name>]`, `--smoke`, `--list-areas`. Full setup/gotchas: `.maestro/README.md`.
+3. Run the **full suite** (`scripts/maestro-all.sh`, no flag) for cross-cutting/shared-component changes (`src/components/ui/**`, theme, layout, providers; `--changed` escalates automatically for files listed under `full`), when the user asks, and before milestones.
+4. Inspect the screenshots yourself; fix anything broken or visually wrong before reporting.
+5. Send the screenshots of the flows that ran to the user in chat (SendUserFile; ALL of them for a full run) plus a short summary (flows pass/fail, what changed, anything not automatable).
+6. Keep `docs/maestro-coverage.md` and `.maestro/areas.json` current whenever a screen or function is added/changed. Flows (with named screenshots) for new features are part of the feature: **definition of done**.
+
+Flow rules: flows must restore test state (name Robin, group "Maestro Test Gruppe", theme Gold, Netflix off, Watchlist sort "Meine Streaming-Dienste" + grid + panel closed, Tagebuch "Mein Tagebuch" + cards + panel closed, Tracker empty); never delete pre-existing data; destructive dialogs are screenshotted and cancelled; target by `testID` (add missing testIDs with tests, no visual change); never `clearState`.

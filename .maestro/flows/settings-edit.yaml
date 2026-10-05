@@ -1,0 +1,134 @@
+appId: com.watchcrew.app
+---
+# settings-edit.yaml — Settings hub functions: display-name edit (restored to
+# "Robin"), display toggles (restored), streaming-services toggle (Netflix
+# on, then off again), notifications screen (read-only: toggling triggers the
+# OS permission dialog + push-token registration -> not automated), delete-
+# account sheet (opened, NEVER confirmed). Nothing is left changed.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- takeScreenshot: 01-settings-hub-top
+
+# --- display name edit ---
+# Guard: only overwrite the name if it is the documented baseline.
+- assertVisible:
+    id: "settings-user-display-name"
+    text: "Robin"
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Robin Maestro"
+- hideKeyboard
+- takeScreenshot: 02-settings-display-name-edited-unsaved
+- tapOn:
+    id: "settings-display-name-save"
+- extendedWaitUntil:
+    visible: "Anzeigename gespeichert"
+    timeout: 10000
+- takeScreenshot: 03-settings-display-name-saved-toast
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Robin"
+- hideKeyboard
+- tapOn:
+    id: "settings-display-name-save"
+- extendedWaitUntil:
+    visible: "Anzeigename gespeichert"
+    timeout: 10000
+- takeScreenshot: 04-settings-display-name-restored
+
+# --- delete account (never confirmed) ---
+- tapOn:
+    id: "settings-section-delete-account"
+- extendedWaitUntil:
+    visible:
+      id: "settings-delete-account-screen"
+    timeout: 10000
+- takeScreenshot: 05-delete-account-screen
+- tapOn:
+    id: "delete-account-open-button"
+- extendedWaitUntil:
+    visible:
+      id: "delete-account-confirm-input"
+    timeout: 10000
+- takeScreenshot: 06-delete-account-confirm-sheet
+- back
+- runFlow:
+    when:
+      visible:
+        id: "delete-account-confirm-input"
+    commands:
+      - back
+- runFlow:
+    when:
+      visible:
+        id: "settings-delete-account-screen"
+    commands:
+      - back
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+
+# --- display toggles ---
+- tapOn:
+    id: "settings-section-display"
+- extendedWaitUntil:
+    visible:
+      id: "settings-display-screen"
+    timeout: 10000
+- takeScreenshot: 07-display-initial
+- tapOn:
+    id: "settings-display-titles-toggle"
+- takeScreenshot: 08-display-titles-toggled
+- tapOn:
+    id: "settings-display-titles-toggle"
+- tapOn:
+    id: "settings-display-tracker-toggle"
+- takeScreenshot: 09-display-tracker-toggled-off
+- tapOn:
+    id: "settings-display-tracker-toggle"
+- takeScreenshot: 10-display-restored
+- back
+
+# --- streaming services ---
+- tapOn:
+    id: "settings-section-streaming-services"
+- extendedWaitUntil:
+    visible:
+      id: "settings-streaming-provider-grid"
+    timeout: 15000
+- takeScreenshot: 11-streaming-initial
+- tapOn:
+    id: "settings-streaming-search-input"
+- inputText: "Netflix"
+- hideKeyboard
+- takeScreenshot: 12-streaming-search-netflix
+- tapOn:
+    id: "settings-streaming-provider-8"
+- takeScreenshot: 13-streaming-netflix-on
+- tapOn:
+    id: "settings-streaming-provider-8"
+- takeScreenshot: 14-streaming-netflix-off-restored
+- back
+
+# --- notifications (read-only) ---
+- tapOn:
+    id: "settings-section-notifications"
+- extendedWaitUntil:
+    visible:
+      id: "settings-notifications-screen"
+    timeout: 10000
+- takeScreenshot: 15-notifications-screen
+- back
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000

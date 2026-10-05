@@ -1,0 +1,27 @@
+appId: com.watchcrew.app
+---
+# Guaranteed-restore helper for theme-tour (runs as onFlowComplete, also after a
+# failed run): navigates to Group settings of "Maestro Test Gruppe" and selects
+# Gold. Idempotent (selecting the active theme again is harmless).
+# Manual recovery: Tracker -> gear (settings) -> Gruppen-Einstellungen -> swatch "Gold".
+- runFlow: ensure-app.yaml
+- runFlow: go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- tapOn:
+    id: "settings-section-group-settings"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-screen"
+    timeout: 10000
+- scrollUntilVisible:
+    element:
+      id: "group-settings-theme-swatch-gold"
+- tapOn:
+    id: "group-settings-theme-swatch-gold"
+- back
+- back

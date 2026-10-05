@@ -1,0 +1,20 @@
+appId: com.watchcrew.app
+---
+# offline-banner.yaml — airplane mode on -> offline banner / cached screens
+# -> airplane mode off. Always restores the connection at the end.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
+- setAirplaneMode: enabled
+- extendedWaitUntil:
+    visible:
+      id: "offline-banner"
+    timeout: 30000
+- takeScreenshot: 01-watchlist-offline-banner
+- runFlow: ../subflows/go-tagebuch.yaml
+- takeScreenshot: 02-tagebuch-offline-cached
+- setAirplaneMode: disabled
+- extendedWaitUntil:
+    notVisible:
+      id: "offline-banner"
+    timeout: 60000
+- takeScreenshot: 03-back-online

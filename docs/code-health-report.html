@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WatchCrew Code-Health-Report</title>
+<style>
+:root{--bg:#0a0a0a;--card:#141414;--card2:#1b1b1b;--line:#2a2a2a;--text:#e9e6df;--muted:#9a968c;--gold:#d4a843;--gold2:#f0cd7a;--red:#e0645a;--amber:#e3a23b;--green:#6fbf73;--blue:#6aa7e0}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:1.9rem;margin:.2em 0;color:var(--gold2);font-family:Georgia,"Playfair Display",serif}
+h2{font-size:1.3rem;color:var(--gold);border-bottom:1px solid var(--line);padding-bottom:6px;margin-top:2.2em;font-family:Georgia,serif}
+h3{font-size:1.05rem;color:var(--gold2);margin:1.4em 0 .4em}
+p,li{color:var(--text)}
+.muted{color:var(--muted);font-size:.9rem}
+code{background:var(--card2);padding:1px 5px;border-radius:4px;font-size:.85em;color:var(--gold2);word-break:break-word}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.score{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.score b{font-size:1.5rem}
+.s-good{color:var(--green)}.s-mid{color:var(--amber)}.s-bad{color:var(--red)}
+.bar{height:6px;background:var(--card2);border-radius:3px;margin:8px 0;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--gold)}
+.w10{width:10%}.w20{width:20%}.w30{width:30%}.w40{width:40%}.w50{width:50%}.w60{width:60%}.w70{width:70%}.w80{width:80%}.w90{width:90%}
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+th{color:var(--gold);font-weight:600;white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{display:inline-block;padding:1px 8px;border-radius:99px;font-size:.75rem;font-weight:600;border:1px solid}
+.hi{color:var(--red);border-color:var(--red)}.med{color:var(--amber);border-color:var(--amber)}.lo{color:var(--green);border-color:var(--green)}
+.eff{color:var(--blue);border-color:var(--blue)}
+.note{border-left:3px solid var(--gold);background:var(--card);padding:10px 14px;border-radius:0 8px 8px 0;margin:14px 0}
+.tree{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font:.82rem/1.5 ui-monospace,Menlo,monospace;color:var(--text);white-space:pre}
+.rec{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0}
+.rec h3{margin-top:0}
+.rec .meta{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+ul{padding-left:20px}
+ol{padding-left:22px}
+.ok{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}
+footer{margin-top:40px;color:var(--muted);font-size:.8rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>WatchCrew Code-Health-Report</h1>
+<p class="muted">Stand 2026-10-03 &middot; Branch <code>main</code> (Working Tree mit ca. 151 uncommitted Aenderungen, davon 100 modifizierte Dateien) &middot; Alle Zahlen per <code>find</code>/<code>wc</code>/<code>grep</code>/eigenem Node-Import-Graph-Skript ermittelt. Read-only-Analyse, nichts im Repo geaendert. <code>tsc --noEmit</code> laeuft fehlerfrei durch.</p>
+
+<div class="note"><b>Hinweis zur CLAUDE.md-Hard-Rule:</b> Alle Empfehlungen unten sind <b>Vorschlaege</b>. Keine davon ist in <code>docs/adr/</code> entschieden; jede Umsetzung (Tool-Wahl, Struktur, Namenskonvention) braucht vorher deine Bestaetigung.</div>
+
+<h2>0. Scorecard</h2>
+<div class="grid">
+  <div class="card"><div class="score"><span>Typsicherheit</span><b class="s-good">8/10</b></div><div class="bar"><i class="w80"></i></div><span class="muted">tsc sauber, 0 ts-ignore, nur 3 <code>any</code> + 4 <code>as unknown as</code> in src.</span></div>
+  <div class="card"><div class="score"><span>Architektur / Schichten</span><b class="s-good">7/10</b></div><div class="bar"><i class="w70"></i></div><span class="muted">0 Zyklen, klare lib/hooks/components-Trennung; 1 Screen mit direktem supabase-Import, 1 lib-&gt;components-Import.</span></div>
+  <div class="card"><div class="score"><span>Dateigroesse / Komplexitaet</span><b class="s-bad">4/10</b></div><div class="bar"><i class="w40"></i></div><span class="muted">Screens bis 560 Zeilen, Komponentenfunktionen bis ca. 467 Zeilen, 30 Hooks in einem Screen.</span></div>
+  <div class="card"><div class="score"><span>Dead Code / Template-Reste</span><b class="s-bad">3/10</b></div><div class="bar"><i class="w30"></i></div><span class="muted">7 ungenutzte Template-Dateien, 7 ungenutzte Assets, ca. 8 ungenutzte/Peer-Deps.</span></div>
+  <div class="card"><div class="score"><span>Tests</span><b class="s-mid">7/10</b></div><div class="bar"><i class="w70"></i></div><span class="muted">155 Dateien / 1303 Tests, Verhaeltnis Test:Src = 1,26. Aber 262 <code>jest.mock</code>, null zentrales Setup, keine Snapshots.</span></div>
+  <div class="card"><div class="score"><span>Tooling (Lint/CI)</span><b class="s-bad">3/10</b></div><div class="bar"><i class="w30"></i></div><span class="muted">Kein ESLint (keine Config, kein Paket) obwohl <code>npm run lint</code> und 11 <code>eslint-disable</code> existieren.</span></div>
+  <div class="card"><div class="score"><span>Styling-Konsistenz (NativeWind)</span><b class="s-mid">6/10</b></div><div class="bar"><i class="w60"></i></div><span class="muted">577 <code>className</code> vs. 47 <code>style={}</code>; davon ca. 29 in toten Template-Dateien, der Rest meist dynamisch (legitim).</span></div>
+  <div class="card"><div class="score"><span>Fehlerbehandlung / i18n</span><b class="s-mid">5/10</b></div><div class="bar"><i class="w50"></i></div><span class="muted">Kein ErrorBoundary, Sentry nur in <code>lib/sentry.ts</code>; deutsche Strings hartcodiert, keine i18n-Lib in package.json.</span></div>
+</div>
+<p class="muted">Gesamteindruck: solide, typsichere und gut getestete Codebasis mit sauberem Abhaengigkeitsgraphen. Die Schulden liegen bei den grossen Screen-Komponenten, Template-Altlasten, fehlendem Linting und Test-Mock-Duplikation. Nichts davon ist akut gefaehrlich.</p>
+
+<h2>1. Projektstruktur</h2>
+<div class="tbl"><table>
+<tr><th>Bereich</th><th class="n">Dateien</th><th class="n">LOC (ts/tsx/sql/yaml)</th><th>Anmerkung</th></tr>
+<tr><td><code>src/app</code> (Routen)</td><td class="n">29</td><td class="n">5.667</td><td>Expo Router; (app)/(tabs), (app)/(modals), (auth), (onboarding), join, auth/callback</td></tr>
+<tr><td><code>src/components</code> gesamt</td><td class="n">61</td><td class="n">5.165</td><td>inkl. Root-Dateien (Provider, Template-Reste)</td></tr>
+<tr><td>&nbsp;&nbsp;<code>components/ui</code></td><td class="n">28</td><td class="n">2.045</td><td>Glass, Sheet, Button, Icon, Toast ...</td></tr>
+<tr><td>&nbsp;&nbsp;<code>components/movie</code></td><td class="n">16</td><td class="n">2.337</td><td>MovieDetail*, RatingDialog, MovieGrid ...</td></tr>
+<tr><td>&nbsp;&nbsp;<code>components/settings</code></td><td class="n">4</td><td class="n">155</td><td></td></tr>
+<tr><td><code>src/hooks</code></td><td class="n">39</td><td class="n">2.126</td><td>TanStack-Query-Hooks, Auth, Push</td></tr>
+<tr><td><code>src/lib</code></td><td class="n">51</td><td class="n">4.322</td><td>Logik, Supabase-Zugriff, Persistenz, Typen</td></tr>
+<tr><td><code>src/stores</code></td><td class="n">3</td><td class="n">188</td><td>Zustand-Stores</td></tr>
+<tr><td><code>supabase/functions</code></td><td class="n">25</td><td class="n">5.020</td><td>tmdb-proxy, send-push, delete-account, cleanup-inactive-accounts (inkl. Deno-Tests)</td></tr>
+<tr><td><code>supabase/migrations</code></td><td class="n">12</td><td class="n">1.695</td><td>11 SQL-Migrationen</td></tr>
+<tr><td><code>__tests__</code></td><td class="n">155</td><td class="n">22.039</td><td>1303 <code>it/test</code>-Faelle; 71 Dateien flach im Root</td></tr>
+<tr><td><code>.maestro</code></td><td class="n">9</td><td class="n">408</td><td>6 E2E-Flows</td></tr>
+</table></div>
+<p class="muted">Src gesamt (ts/tsx in app+components+hooks+lib+stores): 17.468 LOC &middot; Tests: 22.039 LOC &middot; <code>src/</code> hat 185 Dateien.</p>
+<div class="tree">src/
+  app/            29 Dateien   5.667 LOC   (tabs: tagebuch, watchlist, tracker; modals: add-movie, group-settings, movie/[tmdbId], settings/*)
+  components/     61 Dateien   5.165 LOC   (ui 28, movie 16, settings 4, root 13)
+  hooks/          39 Dateien   2.126 LOC
+  lib/            51 Dateien   4.322 LOC
+  stores/          3 Dateien     188 LOC
+  constants/      theme.ts (65 LOC, nur noch von Template-Resten + use-theme genutzt)
+supabase/{functions 25 Dateien, migrations 12}
+__tests__/        155 Dateien (71 im Root, components/ 24, screens/ 22, lib/ 21, app/ 2)
+.maestro/flows/   6 Flows</div>
+
+<h2>2. Pakete &amp; Modularitaet</h2>
+<h3>2.1 Abhaengigkeiten (aus package.json)</h3>
+<p>Runtime: 41 Pakete &middot; Dev: 6 Pakete (<code>@testing-library/react-native</code>, <code>@types/jest</code>, <code>@types/react</code>, <code>jest</code>, <code>jest-expo</code>, <code>typescript</code>). Mehrere Dev-Pakete stehen als <code>"*"</code> (nicht gepinnt).</p>
+<div class="tbl"><table>
+<tr><th>Zweck</th><th>Pakete</th><th>Typ</th></tr>
+<tr><td>Framework / Routing</td><td>expo, expo-router, react, react-native, react-native-screens, react-native-safe-area-context, react-native-gesture-handler, expo-linking, expo-constants</td><td>nativ</td></tr>
+<tr><td>Backend / Daten</td><td>@supabase/supabase-js, @tanstack/react-query, @tanstack/react-query-persist-client, zustand, react-native-mmkv, expo-secure-store</td><td>JS (mmkv, secure-store nativ)</td></tr>
+<tr><td>Styling / UI</td><td>nativewind, tailwindcss, tailwind-merge, clsx, expo-blur, expo-glass-effect, expo-image, @expo/vector-icons, expo-symbols, react-native-reanimated, react-native-worklets, expo-font, @expo-google-fonts/playfair-display</td><td>gemischt</td></tr>
+<tr><td>Geraet / Native</td><td>expo-haptics, expo-notifications, expo-device, expo-screen-orientation, expo-system-ui, expo-status-bar, expo-splash-screen, expo-web-browser, react-native-webview, @react-native-community/datetimepicker, expo-dev-client</td><td>nativ</td></tr>
+<tr><td>Observability / Suche</td><td>@sentry/react-native, fuse.js</td><td>nativ / JS</td></tr>
+<tr><td>Web</td><td>react-dom, react-native-web</td><td>JS (nur fuer <code>expo start --web</code>)</td></tr>
+</table></div>
+
+<h3>2.2 Ungenutzte oder fragwuerdige Dependencies</h3>
+<p class="muted">Methode: <code>grep</code> nach <code>from '&lt;pkg&gt;'</code>/<code>require</code> in <code>src/</code>, <code>__tests__/</code> und Config-Dateien (depcheck/knip nicht installiert). "Kein Import" heisst nicht automatisch "entfernbar" (Peer-Deps, Config-Plugins).</p>
+<div class="tbl"><table>
+<tr><th>Paket</th><th>Befund</th><th>Einschaetzung</th></tr>
+<tr><td><code>@expo/ui</code></td><td>0 Importe, nicht in app.config.ts</td><td class="bad">vermutlich entfernbar</td></tr>
+<tr><td><code>expo-glass-effect</code></td><td>0 Importe (GlassBlur nutzt nur <code>expo-blur</code>)</td><td class="bad">vermutlich entfernbar</td></tr>
+<tr><td><code>expo-device</code></td><td>0 Importe (Push-Registrierung nutzt es nicht)</td><td class="warn">pruefen; ggf. Peer von expo-notifications</td></tr>
+<tr><td><code>expo-symbols</code></td><td>nur in totem <code>ui/collapsible.tsx</code></td><td class="warn">faellt mit Template-Rest weg</td></tr>
+<tr><td><code>expo-font</code>, <code>react-native-screens</code>, <code>expo-system-ui</code>, <code>tailwindcss</code>, <code>react-native-web</code>, <code>react-dom</code></td><td>kein direkter Import</td><td class="ok">Peer-/Plattform-Deps, behalten (react-native-web/dom nur falls Web-Target gewollt)</td></tr>
+<tr><td><code>expo-dev-client</code></td><td>kein Import</td><td class="ok">noetig fuer Dev-Client-Build</td></tr>
+<tr><td><code>clsx</code> + <code>tailwind-merge</code></td><td>je 1 Importstelle (vermutlich ein <code>cn()</code>-Helper)</td><td class="lo">Doppel-Zweck ist ueblich; ok</td></tr>
+<tr><td><code>@types/jest</code>, <code>jest</code>, <code>jest-expo</code>, <code>@testing-library/react-native</code></td><td>als <code>"*"</code> gepinnt</td><td class="warn">Versionen nicht reproduzierbar ausser per Lockfile</td></tr>
+<tr><td>eslint</td><td><b>fehlt komplett</b> (kein Paket, keine Config), obwohl <code>"lint": "expo lint"</code></td><td class="bad">Script laeuft ins Leere bzw. fragt interaktiv nach Installation</td></tr>
+</table></div>
+<p>Duplikat-Zweck: <code>expo-blur</code> + <code>expo-glass-effect</code> (nur ersteres benutzt); <code>expo-symbols</code> + <code>@expo/vector-icons</code> (Icon-Wrapper <code>ui/Icon.tsx</code> nutzt nur MaterialIcons; MaterialIcons wird ausserhalb von <code>Icon.tsx</code> nirgends in src importiert, gut).</p>
+
+<h3>2.3 Import-Graph (eigenes Skript ueber 185 src-Dateien)</h3>
+<div class="grid">
+<div class="card"><b class="ok">0 zirkulaere Abhaengigkeiten</b><br><span class="muted">DFS ueber alle relativen und <code>@/</code>-Importe.</span></div>
+<div class="card"><b>Hotspots (Anzahl Importeure)</b><br><span class="muted"><code>lib/tmdbProxy.ts</code> 28 &middot; <code>ui/Icon.tsx</code> 27 &middot; <code>ui/Button.tsx</code> 24 &middot; <code>ui/Glass.tsx</code> 23 &middot; <code>lib/watchlistTypes.ts</code> 18 &middot; <code>lib/supabase.ts</code> 17 &middot; <code>hooks/useCurrentUserId.ts</code> 15 &middot; <code>stores/usePreferencesStore.ts</code> 15</span></div>
+<div class="card"><b>Groesster Fan-out</b><br><span class="muted"><code>movie/[tmdbId].tsx</code> 29 &middot; <code>tagebuch.tsx</code> 28 &middot; <code>watchlist.tsx</code> 28 &middot; <code>add-movie.tsx</code> 24 &middot; <code>tracker.tsx</code> 20</span></div>
+</div>
+<p><b>Auffaellig:</b> <code>lib/tmdbProxy.ts</code> (271 LOC) ist mit 28 Importeuren der zentrale Kopplungspunkt. Vermutlich importieren viele nur Typen daraus; Typen und Client-Aufruf sind in einer Datei gemischt. Barrels (<code>index.ts</code>) gibt es in <code>src/</code> nicht: jede Datei importiert direkt, Abhaengigkeitsrichtung ist ueberwiegend app &rarr; components/hooks &rarr; lib.</p>
+
+<h3>2.4 Schichtverletzungen</h3>
+<ul>
+<li><b>Screen importiert Supabase direkt:</b> nur <code>src/app/join/[token].tsx:11</code> (<code>supabase.auth.getSession()</code> in Zeile 37). Alle anderen Screens gehen ueber hooks/lib. Der Rest der Supabase-Zugriffe (<code>.from()/.rpc()/functions.invoke</code>) liegt in 8 lib-Dateien (deleteAccount, groups, movieDetailMutations, movieDetail, profile, pushTokens, tmdbProxy, watchlist). Sauber.</li>
+<li><b>lib &rarr; components:</b> <code>src/lib/addMovieLogic.ts</code> importiert aus <code>components/movie/MovieGrid.tsx</code> (vermutlich Typ). Umgekehrte Abhaengigkeit; Typ gehoert nach lib.</li>
+<li><b>components &rarr; hooks (Business-Logik in UI):</b> <code>MovieDetailActionsBar</code> (useMovieDetailMutations), <code>PaymentModal</code> (useTrackerPayments), <code>RatingDialog</code> (useSaveRating), <code>ActiveGroupThemeProvider</code> (3 Hooks). Pragmatisch ok, aber diese Komponenten sind dadurch nur mit Mocks testbar und nicht "dumm".</li>
+<li><b>components &rarr; lib:</b> 48 Importe, 1 &rarr; stores. Keine Komponente importiert aus <code>app/</code>; kein Hook importiert Komponenten.</li>
+<li><b>Gemischte Belange in <code>lib/</code>:</b> reine Logik (<code>watchlistLogic</code>, <code>trackerLogic</code>, <code>ratingLogic</code>), Datenzugriff (<code>groups</code>, <code>watchlist</code>), Plattform-Infrastruktur (<code>sentry</code>, <code>mmkvStorage</code>, <code>connectivity</code>, <code>queryPersistence</code>, <code>platformKeyboardAvoiding</code>) und Typen (<code>watchlistTypes</code>) liegen flach in einem Ordner mit 51 Dateien. <code>lib/ratingLogic.ts</code> und <code>lib/movieDetailNavigation.ts</code> importieren RN/Expo-Module, obwohl sie "Logic" heissen.</li>
+</ul>
+
+<h2>3. Technische Schulden &amp; Code Smells</h2>
+
+<h3>3.1 Top 15 Dateien nach LOC (src + supabase/functions, ohne Tests)</h3>
+<div class="tbl"><table>
+<tr><th class="n">LOC</th><th>Datei</th><th>Bemerkung</th></tr>
+<tr><td class="n">767</td><td><code>supabase/functions/tmdb-proxy/tmdb-client.ts</code></td><td>enthaelt noch 2 veraltete TODO-Platzhalter (Z. 37, 67)</td></tr>
+<tr><td class="n">560</td><td><code>src/app/(app)/(tabs)/tagebuch.tsx</code></td><td>Screen-Funktion Z. 145-560 (ca. 415 Zeilen), 30 Hook-Aufrufe</td></tr>
+<tr><td class="n">553</td><td><code>src/app/(app)/(modals)/add-movie.tsx</code></td><td>Screen-Funktion Z. 86-553 (ca. 467 Zeilen)</td></tr>
+<tr><td class="n">550</td><td><code>supabase/functions/tmdb-proxy/index.ts</code></td><td></td></tr>
+<tr><td class="n">495</td><td><code>src/lib/watchlistLogic.ts</code></td><td>groesste lib-Datei</td></tr>
+<tr><td class="n">486</td><td><code>src/app/(app)/(modals)/group-settings.tsx</code></td><td>Komponente Z. 77-486 (ca. 409 Zeilen)</td></tr>
+<tr><td class="n">457</td><td><code>src/app/(app)/(tabs)/watchlist.tsx</code></td><td>Komponente Z. 111-457 (ca. 346 Zeilen)</td></tr>
+<tr><td class="n">422</td><td><code>src/app/(app)/(tabs)/tracker.tsx</code></td><td>Komponente Z. 56-422 (ca. 366 Zeilen)</td></tr>
+<tr><td class="n">397</td><td><code>src/app/(app)/(modals)/movie/[tmdbId].tsx</code></td><td>Komponente Z. 66-397 (ca. 331 Zeilen), 29 Imports</td></tr>
+<tr><td class="n">393</td><td><code>src/components/movie/RatingDialog.tsx</code></td><td>Komponente ca. 277 Zeilen, 2x eslint-disable exhaustive-deps</td></tr>
+<tr><td class="n">380</td><td><code>src/components/movie/MovieDetailActionsBar.tsx</code></td><td>Komponente ca. 216 Zeilen</td></tr>
+<tr><td class="n">345</td><td><code>supabase/functions/send-push/push-sender.ts</code></td><td></td></tr>
+<tr><td class="n">319</td><td><code>src/app/(onboarding)/create-or-join-group.tsx</code></td><td>Komponente ca. 240 Zeilen</td></tr>
+<tr><td class="n">303</td><td><code>supabase/functions/tmdb-proxy/movie-upsert.ts</code></td><td></td></tr>
+<tr><td class="n">274</td><td><code>src/components/movie/MovieGrid.tsx</code></td><td></td></tr>
+</table></div>
+<p class="muted">Zeilenspannen = Start der letzten Komponentenfunktion bis Dateiende (Naeherung, per <code>grep -n</code>). Dateien sind ueberwiegend UI-Screens; reine Logik ist bereits in <code>lib/*Logic.ts</code> ausgelagert, was gut ist.</p>
+
+<h3>3.2 Duplikation</h3>
+<ul>
+<li><b>Exakte Duplikate (8-Zeilen-Fenster, normalisiert):</b> nur 1 Paar in src: <code>(auth)/forgot-password.tsx:85</code> &harr; <code>(auth)/login.tsx:92</code>. Exakte Copy-Paste-Duplikation ist also gering.</li>
+<li><b>Strukturelle Aehnlichkeit tagebuch vs. watchlist:</b> beide Screens haben denselben Aufbau (Suche, Sortier-Sheet, Genre-/Jahr-Pills, <code>useMemo</code>-Kette base &rarr; sorted &rarr; searched). Parallele Helfer: <code>tagebuch.tsx:117 deriveAvailableGenreIds</code> &asymp; <code>watchlist.tsx:86 getDistinctGenreIds</code> (identisch bis auf <code>.sort()</code>); <code>tagebuch.tsx:108 sortOptionLabel</code> &asymp; <code>watchlist.tsx:68 sortOptionLabel</code> (nur Feldname <code>value</code> vs. <code>key</code>).</li>
+<li><b>Datumsformatierung verstreut:</b> <code>formatPlainDate</code> existiert doppelt (<code>watchlist.tsx:78</code>, <code>tracker.tsx:48</code>), dazu <code>lib/watchlistDateBadge.ts:24 formatDate</code>, <code>lib/diaryDisplay.ts:34 formatSeenAtDate</code>, <code>lib/ratingLogic.ts:150 formatDateForInput</code>; 6 Stellen mit <code>split("-")</code>-Parsing.</li>
+<li><b>Hook-Zwilling:</b> <code>hooks/useMovieProviders.ts</code> (17 LOC) und <code>hooks/useMoviesProviders.ts</code> (42 LOC). Der Singular-Hook wird in src nirgends importiert (nur durch <code>__tests__/useMovieProviders.test.tsx</code>).</li>
+<li><b>Query-Keys:</b> 43 Stellen mit Inline-<code>queryKey: [...]</code>, der Literal <code>"watchlist"</code> allein 11x; keine zentrale Key-Factory. Invalidierungen (28 Aufrufe) sind fehleranfaellig bei Umbenennung.</li>
+</ul>
+
+<h3>3.3 Typ- und Lint-Disziplin</h3>
+<div class="tbl"><table>
+<tr><th>Metrik</th><th class="n">src</th><th class="n">__tests__</th><th>Fundstellen</th></tr>
+<tr><td><code>any</code> (as any / : any / &lt;any&gt;)</td><td class="n">3</td><td class="n">7</td><td><code>ui/GlassBlur.tsx:21,23</code> (optionales <code>require("expo-blur")</code>)</td></tr>
+<tr><td><code>as unknown as</code></td><td class="n">4</td><td class="n">6</td><td><code>ui/KeyboardAwareScrollView.tsx:29</code>, <code>lib/storedSession.ts:16</code> (supabase.auth.storageKey, interne API), <code>hooks/useGroupWatchlist.ts:68,106</code></td></tr>
+<tr><td><code>@ts-ignore/@ts-expect-error/@ts-nocheck</code></td><td class="n">0</td><td class="n">0</td><td class="ok">sauber</td></tr>
+<tr><td><code>eslint-disable</code></td><td colspan="2" class="n">11 gesamt</td><td>6x <code>react-hooks/exhaustive-deps</code> (ParallaxProvider:25, FadeInItem:41, RatingDialog:154,165, PaymentModal:79,88), 4x in GlassBlur/Tests; <b>ESLint ist nicht installiert</b>, die Kommentare sind wirkungslos</td></tr>
+<tr><td>TODO/FIXME</td><td colspan="2" class="n">3 echte</td><td><code>supabase/functions/tmdb-proxy/tmdb-client.ts:37,67</code> ("implement full DE+EN merge" - wirkt veraltet, da movie-upsert/index existieren; pruefen) und ein Verweis in <code>group-settings.tsx:43</code></td></tr>
+<tr><td><code>console.*</code></td><td class="n">7</td><td class="n">-</td><td>alles <code>console.warn</code> (forgot-password:40, sentry:11, useAuthGate:93, usePushPermissionStatus:20, usePushRegistration:76,79); kein Logger-Abstraktion</td></tr>
+</table></div>
+
+<h3>3.4 Inline-Styles (Projektregel: CSS-Klassen/NativeWind)</h3>
+<p>Gesamt <code>style={</code> in <code>src/**/*.tsx</code>: <b>47</b> (gegen 577 <code>className=</code>). Aufschluesselung:</p>
+<ul>
+<li><b>29 in toten/Template-Dateien:</b> animated-icon.tsx (9), animated-icon.web.tsx (6), collapsible.tsx (4), web-badge.tsx (3), hint-row.tsx (2) plus themed-text/themed-view. Verschwinden mit dem Loeschen (siehe 3.5). 7 Dateien nutzen <code>StyleSheet.create</code>, 6 davon sind Template-Reste, die siebte ist <code>ui/Sheet.tsx</code>.</li>
+<li><b>Legitim dynamisch (Animation/berechnet):</b> <code>FadeInItem:45</code> (opacity), <code>Toast:108</code> (opacity/translateY), <code>KeyboardInsetView:28</code> (paddingBottom), <code>MovieGrid:217</code> (Breite in %), <code>PaymentModal:184</code> und <code>tracker.tsx:264,327</code> (dynamische Zahler-Farbe), <code>Sheet:165-175</code> (Animated-Styles).</li>
+<li><b>Potenziell durch Klassen ersetzbar:</b> <code>StyleSheet.absoluteFill</code> (GlassBlur x4, AppBackground x2, ScreenBackdrop) &rarr; <code>className="absolute inset-0"</code>; <code>Chip.tsx:31</code> (<code>CHIP_TINT_STYLE</code> konstant); <code>Sheet.tsx</code> <code>styles.overlay</code>.</li>
+</ul>
+<p>Fazit: echte Regelverletzungen sind wenige (ca. 8-10), der Grossteil sind Template-Altlasten.</p>
+
+<h3>3.5 Dead Code &amp; ungenutzte Assets</h3>
+<div class="tbl"><table>
+<tr><th>Datei / Asset</th><th>Befund</th></tr>
+<tr><td><code>src/components/external-link.tsx</code>, <code>hint-row.tsx</code>, <code>web-badge.tsx</code>, <code>ui/collapsible.tsx</code></td><td>0 Importeure (Expo-Template-Reste)</td></tr>
+<tr><td><code>src/components/animated-icon.web.tsx</code> (+ <code>animated-icon.module.css</code>)</td><td>nur Web-Variante von <code>animated-icon.tsx</code> (das wird in <code>_layout.tsx:16</code> genutzt; Splash-Overlay mit <code>expo-logo.png</code> - Template-Logo!)</td></tr>
+<tr><td><code>src/components/themed-text.tsx</code>, <code>themed-view.tsx</code>, <code>hooks/use-theme.ts</code>, <code>use-color-scheme(.web).ts</code>, <code>constants/theme.ts</code></td><td>nur von den toten Template-Dateien untereinander genutzt; App nutzt eigene Tokens (tailwind.config.js, groupTheme.ts). <code>use-theme.ts</code>, <code>use-color-scheme*</code> und <code>useQueryCacheLifecycle</code> haben keinen Test.</td></tr>
+<tr><td><code>src/hooks/useMovieProviders.ts</code></td><td>nur durch eigenen Test referenziert</td></tr>
+<tr><td><code>assets/images/react-logo.png</code>, <code>@2x</code>, <code>@3x</code>, <code>tutorial-web.png</code>, <code>tabIcons/</code> (6 Dateien: home/explore)</td><td>0 Referenzen in src oder app.config.ts</td></tr>
+<tr><td><code>assets/images/expo-badge(-white).png</code></td><td>nur von totem <code>web-badge.tsx</code></td></tr>
+<tr><td><code>assets/images/expo-logo.png</code></td><td>nur von <code>animated-icon*.tsx</code>; falls Splash-Overlay das Template-Logo zeigt, ist das auch ein Branding-Thema</td></tr>
+<tr><td><code>app.config.ts</code></td><td>Splash-<code>backgroundColor: "#208AEF"</code> und Android-Adaptive-Icon-Hintergrund <code>#E6F4FE</code> sind Expo-Template-Farben, passen nicht zu Gold-auf-Schwarz</td></tr>
+<tr><td>Edge Function <code>tmdb-client.ts</code></td><td>TODO-Placeholder-Kommentare ("does not call the real TMDB API yet") widersprechen dem 767-Zeilen-Umfang der Datei - Doku vermutlich veraltet</td></tr>
+</table></div>
+
+<h3>3.6 Weitere Smells</h3>
+<ul>
+<li><b>Prop-Drilling / Hook-Dichte:</b> Screens sammeln 12-30 Hook-Aufrufe (tagebuch 30, watchlist 25, group-settings 20, add-movie 17, tracker 17) bei nur 1-3 <code>useState</code>. Zustand lebt also in Query-Hooks, nicht in lokalem State; die Komplexitaet steckt in <code>useMemo</code>-Ketten und JSX. Keine Context-Weitergabe-Probleme gefunden, aber Screens sind de facto Controller+View in einer Funktion.</li>
+<li><b>Magic Numbers/Strings:</b> 78 Farb-Literale (hex/rgba) in src ausserhalb <code>groupTheme.ts</code> (Button 5, MovieGrid 5, _layout 4, register 4, modals/_layout 4, SettingsRow 3). TTLs sind in Konstanten (<code>PERSIST_MAX_AGE_MS</code>, <code>STREAMING_TTL_MS</code>, <code>staleTime</code> in queryClient), aber <code>24*60*60*1000</code> steht doppelt in zwei Dateien. Query-Key-Strings s. 3.2.</li>
+<li><b>Hartcodierte deutsche UI-Strings:</b> ca. 141 Zeilen mit Umlaut-Literalen/typischen deutschen Begriffen in src; <b>keine</b> i18n-Lib in package.json (CLAUDE.md erwaehnt geplante Uebersetzungen). Strings sind ueber Screens, lib (z. B. <code>diaryDisplay</code>, <code>watchlistDateBadge</code>) und Hooks verstreut - spaetere Extraktion wird mittelgross.</li>
+<li><b>Naming-Inkonsistenz:</b> Dateien mischen kebab-case (<code>themed-text.tsx</code>, <code>use-theme.ts</code>, <code>animated-icon.tsx</code>, <code>external-link.tsx</code>) mit PascalCase-Komponenten (<code>Button.tsx</code>) und camelCase-Hooks (<code>useActiveGroup.ts</code>); Ordner <code>components/ui</code> hat <code>collapsible.tsx</code> neben <code>Glass.tsx</code>. Betrifft vor allem die Template-Reste. Ausserdem <code>useMovieProviders</code>/<code>useMoviesProviders</code> (nur ein "s" Unterschied).</li>
+<li><b>Fehlerbehandlung:</b> kein React-<code>ErrorBoundary</code> / Expo-Router-<code>ErrorBoundary</code>-Export irgendwo in src; Sentry wird nur in <code>lib/sentry.ts</code> initialisiert und nirgends explizit via <code>Sentry.captureException</code> genutzt (nur <code>console.warn</code>). 3 leere <code>.catch(() =&gt; {})</code> in <code>MovieDetailPosterTrailer.tsx:56,63,65</code> (Orientation-Lock; vertretbar, aber lautlos). Von 17 <code>catch</code> in src verwerfen die meisten den Fehler nur per <code>console.warn</code>.</li>
+<li><b>Barrierefreiheit:</b> nur 23 <code>accessibilityLabel</code> bei 577 <code>className</code>-Elementen; wahrscheinlich Luecke bei Icon-Buttons.</li>
+</ul>
+
+<h3>3.7 Test-Smells</h3>
+<div class="tbl"><table>
+<tr><th>Befund</th><th>Evidenz</th></tr>
+<tr><td>Mock-Duplikation</td><td>262 <code>jest.mock(</code> in 155 Dateien; <code>@expo/vector-icons</code> in 20 Dateien identisch gemockt (obwohl nur <code>ui/Icon.tsx</code> es importiert), <code>expo-router</code> 29x, <code>@/hooks/useCurrentUserId</code> 16x, <code>@/lib/tmdbProxy</code> 13x, <code>@/hooks/useGroupWatchlist</code> 11x, <code>datetimepicker</code> 8x, <code>react-native-mmkv</code> 7x (obwohl globaler Mock in <code>__mocks__/react-native-mmkv.js</code> existiert), <code>@/lib/supabase</code> 7x + 6x via <code>../src/lib/supabase</code></td></tr>
+<tr><td>Kein zentrales Jest-Setup</td><td>package.json <code>jest</code> hat kein <code>setupFiles/setupFilesAfterEach</code>; <code>__mocks__/</code> hat nur expo-blur, expo-constants, mmkv, reanimated, styleMock</td></tr>
+<tr><td>Over-Mocking</td><td>Screen-Tests mocken Hooks und lib-Module komplett; gut isoliert, aber Integrationsfehler zwischen Hook und Screen werden nur durch Maestro (6 Flows) abgedeckt</td></tr>
+<tr><td>Async-Flakiness-Risiko</td><td>209 <code>waitFor(</code>-Aufrufe, 11 Dateien mit <code>useFakeTimers</code>, nur 1 <code>setTimeout</code>; laut Memory ist <code>await render()/fireEvent()</code> Pflicht, sonst brechen spaetere Tests "silent" - fragiles Konventionswissen, nicht per Lint erzwungen (ESLint fehlt)</td></tr>
+<tr><td>Organisation</td><td>71 Testdateien flach in <code>__tests__/</code> Root (Hooks, Layouts, Logik gemischt) neben Unterordnern; keine Spiegelung der src-Struktur</td></tr>
+<tr><td>Luecken</td><td>ohne Test: <code>lib/homeRoute</code>, <code>lib/passwordRules</code> (per Namens-Grep; ggf. indirekt), <code>hooks/useQueryCacheLifecycle</code>, <code>use-theme</code>, <code>use-color-scheme</code></td></tr>
+<tr><td>Positiv</td><td>0 Snapshots, 1303 Tests, Test:Src-Verhaeltnis 1,26, Deno-Tests fuer Edge Functions, E2E mit Maestro</td></tr>
+</table></div>
+
+<h2>4. Priorisierte Refactoring-Vorschlaege</h2>
+<p class="muted">Alles Vorschlaege; keine Umsetzung ohne deine Bestaetigung (Hard Rule).</p>
+
+<div class="rec"><h3>R1 &middot; Template-Altlasten entfernen</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: S</span></div>
+<p><b>Warum:</b> ca. 29 der 47 Inline-Styles, 5+ ungenutzte Komponenten, 7 Assets, 3 Deps (<code>expo-symbols</code>, ggf. <code>@expo/ui</code>, <code>expo-glass-effect</code>) und verwirrende Parallel-Theme-Welt (<code>constants/theme.ts</code>).</p>
+<p><b>Dateien:</b> <code>components/{external-link,hint-row,web-badge,animated-icon.web,themed-text,themed-view}.tsx</code>, <code>animated-icon.module.css</code>, <code>ui/collapsible.tsx</code>, <code>hooks/use-theme.ts</code>, <code>use-color-scheme*.ts</code>, <code>constants/theme.ts</code>, <code>hooks/useMovieProviders.ts</code> + Test, Assets (react-logo*, tutorial-web, tabIcons, expo-badge*).</p>
+<p><b>Ansatz:</b> Liste mit dir abstimmen (z. B. Web-Target ja/nein entscheidet ueber animated-icon.web), loeschen, <code>tsc</code> + <code>jest</code> laufen lassen, danach Deps pruefen.</p></div>
+
+<div class="rec"><h3>R2 &middot; ESLint einrichten (oder Script entfernen)</h3>
+<div class="meta"><span class="tag hi">Impact: hoch</span><span class="tag eff">Aufwand: S-M</span></div>
+<p><b>Warum:</b> <code>npm run lint</code> ist faktisch tot, 11 <code>eslint-disable</code> sind wirkungslos, <code>exhaustive-deps</code>-Verstoesse (RatingDialog, PaymentModal u. a.) werden nicht geprueft, die RNTL-await-Regel liesse sich per Regel erzwingen.</p>
+<p><b>Ansatz:</b> <code>eslint-config-expo</code> (Expo-Standard) als Vorschlag, anschliessend <code>react-hooks/exhaustive-deps</code> und Inline-Style-Regel (<code>react-native/no-inline-styles</code>) pruefen. Tool-Wahl braucht deine Freigabe.</p></div>
+
+<div class="rec"><h3>R3 &middot; Screens aufteilen (Controller-Hook + Subkomponenten)</h3>
+<div class="meta"><span class="tag hi">Impact: hoch</span><span class="tag eff">Aufwand: L</span></div>
+<p><b>Warum:</b> 6 Screens mit 330-470 Zeilen in einer Funktion, bis 30 Hooks; schwer zu lesen, zu testen, review-feindlich.</p>
+<p><b>Dateien:</b> <code>add-movie.tsx</code>, <code>tagebuch.tsx</code>, <code>group-settings.tsx</code>, <code>tracker.tsx</code>, <code>watchlist.tsx</code>, <code>movie/[tmdbId].tsx</code>, danach <code>RatingDialog.tsx</code>.</p>
+<p><b>Ansatz:</b> pro Screen View-State in <code>hooks/useXScreen.ts</code> bzw. <code>lib/*Logic.ts</code> (Muster existiert bereits mit <code>watchlistLogic</code>), JSX in Abschnitts-Komponenten (Header, Filterleiste, Liste, Sheets). Zuerst tagebuch + watchlist gemeinsam (R4).</p></div>
+
+<div class="rec"><h3>R4 &middot; Gemeinsame Filter/Sort-Logik fuer Tagebuch &amp; Watchlist</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: M</span></div>
+<p><b>Warum:</b> parallele Helfer (<code>deriveAvailableGenreIds</code>/<code>getDistinctGenreIds</code>, <code>sortOptionLabel</code> x2, Genre-/Jahr-Pill-Ableitung, Such-Pipeline) und doppelte <code>formatPlainDate</code> (watchlist/tracker).</p>
+<p><b>Ansatz:</b> <code>lib/entryFilters.ts</code> (Genre/Jahr/Suche) und ein <code>lib/dateFormat.ts</code> als Sammelpunkt fuer die 5 verstreuten Datumsformatierer; evtl. generische <code>useEntryFilters()</code>-Hook. Bestehende Tests (<code>watchlistLogic.test</code>, <code>Tagebuch.test</code>) bleiben als Sicherheitsnetz.</p></div>
+
+<div class="rec"><h3>R5 &middot; Zentrale Test-Setup-Datei + Mock-Helfer</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: M</span></div>
+<p><b>Warum:</b> 20 identische MaterialIcons-Mocks, 29x expo-router, 16x useCurrentUserId, mmkv trotz globalem Mock nochmals 7x; jede API-Aenderung betrifft dutzende Testdateien.</p>
+<p><b>Ansatz:</b> <code>jest.setup.ts</code> (<code>setupFiles</code>) mit globalem <code>@expo/vector-icons</code>-Mock, ggf. <code>__mocks__/@expo/vector-icons.js</code> (automatisch gegriffen) plus <code>__tests__/helpers/</code> (renderWithProviders, mockRouter, mockCurrentUser). Gleichzeitig <code>__tests__/</code> nach src spiegeln (71 Root-Dateien in hooks/, lib/, layouts/ sortieren).</p></div>
+
+<div class="rec"><h3>R6 &middot; Query-Key-Factory</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: S-M</span></div>
+<p><b>Warum:</b> 43 Inline-Keys, <code>"watchlist"</code> 11x; 28 <code>invalidateQueries</code>-Stellen; <code>queryPersistence.ts</code> filtert per <code>queryKey[0]</code>-String (<code>NON_PERSISTED_ROOTS</code>).</p>
+<p><b>Ansatz:</b> <code>lib/queryKeys.ts</code> mit typisierten Funktionen; schrittweise ersetzen, Tests (Hooks) fangen Tippfehler.</p></div>
+
+<div class="rec"><h3>R7 &middot; Fehlerbehandlung &amp; Sentry-Anbindung</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: M</span></div>
+<p><b>Warum:</b> kein ErrorBoundary, Fehler enden in <code>console.warn</code> (7 Stellen) statt in Sentry.</p>
+<p><b>Ansatz:</b> Expo-Router-<code>ErrorBoundary</code>-Export im Root-Layout; duenner <code>lib/logger.ts</code> (warn -&gt; Sentry-Breadcrumb/captureException). Entscheidung zu Verhalten (Toast vs. Screen) liegt bei dir.</p></div>
+
+<div class="rec"><h3>R8 &middot; <code>lib/</code> umstrukturieren</h3>
+<div class="meta"><span class="tag med">Impact: mittel</span><span class="tag eff">Aufwand: M</span></div>
+<p><b>Warum:</b> 51 flache Dateien mit 4 Verantwortlichkeiten; <code>tmdbProxy.ts</code> mit 28 Importeuren mischt Typen und Client; <code>addMovieLogic.ts</code> importiert aus <code>components/movie/MovieGrid</code>.</p>
+<p><b>Ansatz:</b> Unterordner <code>lib/data/</code> (groups, watchlist, profile, ...), <code>lib/logic/</code>, <code>lib/infra/</code> (sentry, mmkv, connectivity, persistence), <code>lib/types/</code>; Typen aus <code>tmdbProxy.ts</code> abspalten; MovieGrid-Typ nach lib. Reine Verschiebung, keine Logikaenderung.</p></div>
+
+<div class="rec"><h3>R9 &middot; i18n-Vorbereitung</h3>
+<div class="meta"><span class="tag lo">Impact: niedrig (jetzt)</span><span class="tag eff">Aufwand: L</span></div>
+<p><b>Warum:</b> ca. 141 hartcodierte deutsche Zeilen, verteilt auf Screens, Hooks und lib. Je spaeter, desto teurer.</p>
+<p><b>Ansatz:</b> erst Entscheidung ueber Bibliothek/Konvention (ADR), dann pro Screen migrieren. Nicht ohne Freigabe starten.</p></div>
+
+<div class="rec"><h3>R10 &middot; Farb- und Style-Konsolidierung</h3>
+<div class="meta"><span class="tag lo">Impact: niedrig</span><span class="tag eff">Aufwand: S-M</span></div>
+<p><b>Warum:</b> 78 Farb-Literale ausserhalb groupTheme, <code>absoluteFill</code>-Styles, Template-Farben in app.config.ts (#208AEF, #E6F4FE).</p>
+<p><b>Ansatz:</b> Tokens aus <code>tailwind.config.js</code> nutzen, <code>absoluteFill</code> -&gt; <code>absolute inset-0</code>, Splash-/Icon-Hintergrund auf App-Farbe setzen (Branding-Entscheidung: deine).</p></div>
+
+<h3>Quick Wins (je unter 1 Stunde)</h3>
+<ol>
+<li>Template-Dateien und ungenutzte Assets loeschen (R1) &ndash; Bundle und Rauschen sinken sofort.</li>
+<li><code>@expo/ui</code> und <code>expo-glass-effect</code> pruefen/entfernen; <code>expo-device</code> klaeren.</li>
+<li>Veraltete TODO-Kommentare in <code>supabase/functions/tmdb-proxy/tmdb-client.ts:37,67</code> korrigieren.</li>
+<li>Jest-Dev-Pakete von <code>"*"</code> auf konkrete Versionen pinnen.</li>
+<li>Globalen <code>@expo/vector-icons</code>-Mock via <code>__mocks__/</code> anlegen und 20 lokale Mocks entfernen.</li>
+<li><code>hooks/useMovieProviders.ts</code> (ungenutzt) loeschen oder mit <code>useMoviesProviders</code> zusammenfuehren.</li>
+<li>Doppeltes <code>formatPlainDate</code> (<code>watchlist.tsx:78</code>, <code>tracker.tsx:48</code>) nach <code>lib</code> ziehen.</li>
+<li><code>src/app/join/[token].tsx:37</code>: <code>supabase.auth.getSession()</code> hinter vorhandenen Hook/lib-Helper (z. B. <code>useCurrentUserId</code>) legen.</li>
+</ol>
+
+<h3>Vorgeschlagene Reihenfolge</h3>
+<ol>
+<li><b>R1</b> Aufraeumen (macht alle Folgeanalysen sauberer).</li>
+<li><b>R2</b> ESLint (Sicherheitsnetz vor grossen Refactorings).</li>
+<li><b>R5</b> Test-Setup (reduziert Aufwand bei R3/R4).</li>
+<li><b>R6</b> Query-Key-Factory (klein, entkoppelt Hooks).</li>
+<li><b>R4 + R3</b> Tagebuch/Watchlist zuerst, dann restliche Screens.</li>
+<li><b>R8</b> lib-Umstrukturierung (nach Screen-Refactor, weniger Merge-Konflikte).</li>
+<li><b>R7</b> Fehlerbehandlung, <b>R10</b> Styles, <b>R9</b> i18n nach Priorisierung und ADR.</li>
+</ol>
+<p class="muted">Hinweis: Working Tree enthaelt ca. 151 uncommitted Aenderungen (laufendes Design-Update). Refactorings vorzugsweise erst nach Commit/Merge dieses Stands starten; Memory-Regeln beachten (kein <code>git stash</code> mit parallelen Agents, keine rekursive Subagent-Delegation).</p>
+
+<h2>Anhang: Methode &amp; Grenzen</h2>
+<ul>
+<li>LOC per <code>wc -l</code> ueber *.ts/*.tsx/*.sql/*.yaml; <code>cloc</code>, <code>madge</code>, <code>depcheck</code>, <code>knip</code> nicht installiert, daher eigenes Node-Skript fuer Import-Graph/Zyklen/Duplikate.</li>
+<li>"Ungenutzt" = kein statischer Import gefunden; dynamische <code>require</code>-Strings, Config-Plugins und Peer-Deps koennen False Positives erzeugen (siehe Tabelle 2.2).</li>
+<li>Funktionslaengen sind Naeherungen (Start der letzten Komponentenfunktion bis Dateiende).</li>
+<li>Deutsche-String-Zaehlung (141) ist eine Heuristik per Regex auf Umlaute/Schluesselwoerter, keine exakte Zaehlung.</li>
+<li>Nicht geprueft: Laufzeit-Performance, Bundle-Groesse, RLS-Policies in den SQL-Migrationen, Sicherheit.</li>
+</ul>
+<footer>WatchCrew Code-Health-Report &middot; automatisch erzeugt, read-only.</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,64 @@
+appId: com.watchcrew.app
+---
+# toasts.yaml — toast variants on the Settings display-name editor:
+#   1. success toast (green): save "Robin Toast" -> "Anzeigename gespeichert"
+#   2. restore name "Robin" (second green toast)
+#   3. error toast (red): a 55-char name is rejected server-side by the
+#      set_display_name RPC (1..50 chars) -> nothing is written -> red toast
+#      "Anzeigename konnte nicht gespeichert werden."; the unsaved draft is
+#      then reset to "Robin" (never saved).
+# Nothing is left changed. Screenshots show the toast (4 s visible).
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tracker.yaml
+- tapOn:
+    id: "tracker-group-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+
+# --- success (green) ---
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Robin Toast"
+- hideKeyboard
+- tapOn:
+    id: "settings-display-name-save"
+- extendedWaitUntil:
+    visible:
+      id: "toast-message"
+    timeout: 10000
+- assertVisible: "Anzeigename gespeichert"
+- takeScreenshot: 01-toast-success-green
+
+# --- restore ---
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Robin"
+- hideKeyboard
+- tapOn:
+    id: "settings-display-name-save"
+- extendedWaitUntil:
+    visible: "Anzeigename gespeichert"
+    timeout: 10000
+
+# --- error (red): too long, rejected by the RPC, nothing written ---
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Maestro Fehler Maestro Fehler Maestro Fehler Maestro Fe"
+- hideKeyboard
+- tapOn:
+    id: "settings-display-name-save"
+- extendedWaitUntil:
+    visible: "Anzeigename konnte nicht gespeichert werden."
+    timeout: 15000
+- takeScreenshot: 02-toast-error-red
+- tapOn:
+    id: "settings-user-display-name"
+- eraseText
+- inputText: "Robin"
+- hideKeyboard
+- takeScreenshot: 03-draft-reset

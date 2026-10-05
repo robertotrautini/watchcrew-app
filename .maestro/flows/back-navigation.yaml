@@ -1,0 +1,144 @@
+appId: com.watchcrew.app
+---
+# back-navigation.yaml — stack order + back gestures. Read-only (nothing saved
+# or deleted). Each level is left with the real left-edge swipe (starts at 1%
+# of the width, i.e. inside the Android system back-gesture area and the
+# in-app BackSwipeView zone) and once with the hardware `back` key.
+#   Tagebuch -> detail A -> Ähnliche Filme -> detail B (replaces the grid)
+#     -> swipe: detail A -> swipe: Tagebuch
+#   Tagebuch -> Einstellungen -> Darstellung -> swipe: Einstellungen -> swipe: Tagebuch
+#   detail -> Löschen-Sheet -> back closes ONLY the sheet (detail stays)
+# PRECONDITION: >=1 Tagebuch entry whose film has similar movies.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tagebuch.yaml
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-entry-press-.*"
+    timeout: 15000
+- tapOn:
+    id: "tagebuch-entry-press-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 15000
+- copyTextFrom:
+    id: "movie-detail-title"
+- evalScript: ${output.titleA = maestro.copiedText}
+- takeScreenshot: 01-detail-a
+
+- tapOn:
+    id: "movie-detail-action-aehnliche"
+- extendedWaitUntil:
+    visible:
+      id: "similar-movies-screen-grid"
+    timeout: 20000
+- extendedWaitUntil:
+    visible:
+      id: "similar-movies-screen-grid-item-[0-9]+"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 02-similar-grid
+- tapOn:
+    id: "similar-movies-screen-grid-item-[0-9]+"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 20000
+- copyTextFrom:
+    id: "movie-detail-title"
+- evalScript: ${output.titleB = maestro.copiedText}
+- assertTrue: ${output.titleA != output.titleB}
+- takeScreenshot: 03-detail-b-from-similar
+
+# Back swipe 1: detail B -> detail A (the similar grid is not on the stack).
+- swipe:
+    start: 1%,50%
+    end: 70%,50%
+    duration: 300
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 10000
+- copyTextFrom:
+    id: "movie-detail-title"
+- assertTrue: ${output.titleA == maestro.copiedText}
+- takeScreenshot: 04-swipe-back-to-detail-a
+
+# Back swipe 2: detail A -> origin (Tagebuch).
+- swipe:
+    start: 1%,50%
+    end: 70%,50%
+    duration: 300
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-screen"
+    timeout: 10000
+- takeScreenshot: 05-swipe-back-to-tagebuch
+
+# Settings chain.
+- tapOn:
+    id: "tagebuch-settings-button"
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- tapOn:
+    id: "settings-section-display"
+- extendedWaitUntil:
+    visible:
+      id: "settings-display-screen"
+    timeout: 10000
+- takeScreenshot: 06-settings-display
+- swipe:
+    start: 1%,50%
+    end: 70%,50%
+    duration: 300
+- extendedWaitUntil:
+    visible:
+      id: "settings-screen"
+    timeout: 10000
+- takeScreenshot: 07-swipe-back-to-settings
+- swipe:
+    start: 1%,50%
+    end: 70%,50%
+    duration: 300
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-screen"
+    timeout: 10000
+- takeScreenshot: 08-swipe-back-to-tagebuch
+
+# Sheet: hardware back closes only the sheet, the detail stays.
+- tapOn:
+    id: "tagebuch-entry-press-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-title"
+    timeout: 15000
+- tapOn:
+    id: "movie-detail-action-loeschen"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-delete-cancel-button"
+    timeout: 10000
+- takeScreenshot: 09-delete-sheet-open
+- back
+- extendedWaitUntil:
+    notVisible:
+      id: "movie-detail-delete-cancel-button"
+    timeout: 5000
+- assertVisible:
+    id: "movie-detail-title"
+- takeScreenshot: 10-sheet-closed-detail-stays
+# Hardware back key pops the detail.
+- back
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-screen"
+    timeout: 10000
+- takeScreenshot: 11-hardware-back-to-tagebuch

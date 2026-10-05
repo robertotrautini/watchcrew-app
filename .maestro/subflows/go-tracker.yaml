@@ -1,0 +1,8 @@
+appId: com.watchcrew.app
+---
+# Switch to the Tracker tab by point tap on the tab bar (no hierarchy lookup,
+# ~2 s faster than tapOn by label). Tabs are equally spaced: x = 17% / 50% / 83%.
+- tapOn:
+    point: "17%,96%"
+- assertVisible:
+    id: "tracker-screen"

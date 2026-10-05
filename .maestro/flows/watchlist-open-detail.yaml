@@ -2,8 +2,8 @@ appId: com.watchcrew.app
 ---
 # watchlist-open-detail.yaml — read-only: open first watchlist entry, assert
 # detail overlay renders. PRECONDITION: group with >=1 watchlist film.
-- runFlow: ../subflows/launch.yaml
-- tapOn: "Watchlist"
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
 - extendedWaitUntil:
     visible:
       id: "watchlist-(entry|list-row)-.*"

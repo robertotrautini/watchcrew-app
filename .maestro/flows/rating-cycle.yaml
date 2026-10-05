@@ -1,0 +1,196 @@
+appId: com.watchcrew.app
+---
+# rating-cycle.yaml — rate / edit rating / reset rating on a film THIS FLOW
+# adds itself (The Matrix, tmdb 603), then removes it again:
+#   0. Guard: Matrix must NOT be on the Watchlist / Tracker at start (else it
+#      would be pre-existing user data -> FAIL, delete nothing).
+#   1. Add Matrix via add-movie -> Watchlist -> detail -> "Bewerten" -> 3 stars
+#      + like -> save
+#   2. Tagebuch -> detail -> "Bearbeiten" -> 4 stars -> save (edit)
+#   3. "Bearbeiten" -> reset button (rating back to none) -> close
+#   4. If the save also created a Tracker payment for Matrix, delete THAT row
+#      (by title) via the flyout.
+#   5. Delete the Matrix watchlist entry (by title) -> back to initial state.
+# SELF-OWNED RULE: every delete targets "Matrix" by title, never "first row".
+# Pre-existing films (Interstellar, Inception, Hokum, user-created tracker
+# entries) are never rated, reset or deleted.
+# PRECONDITION: Matrix is not on the Watchlist, Tagebuch or Tracker.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-add-movie-button"
+    timeout: 15000
+# Guard: Matrix already present = not ours -> fail loudly, touch nothing.
+- assertNotVisible: "Matrix"
+- runFlow: ../subflows/go-tracker.yaml
+- assertNotVisible: "Matrix"
+- runFlow: ../subflows/go-watchlist.yaml
+
+# --- add Matrix (flow-owned) ---
+- tapOn:
+    id: "watchlist-add-movie-button"
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-screen"
+    timeout: 10000
+- tapOn:
+    id: "add-movie-film-search-input"
+- inputText: "The Matrix"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-film-grid-item-603"
+    timeout: 20000
+- tapOn:
+    id: "add-movie-film-grid-item-603"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-action-zur_watchlist"
+    timeout: 20000
+- tapOn:
+    id: "movie-detail-action-zur_watchlist"
+- extendedWaitUntil:
+    notVisible:
+      id: "movie-detail-action-zur_watchlist"
+    timeout: 15000
+- back
+- back
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Matrix"
+    timeout: 15000
+- tapOn: "Matrix"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-action-bewerten"
+    timeout: 15000
+- takeScreenshot: 01-watchlist-detail-actions
+
+# --- rate ---
+- tapOn:
+    id: "movie-detail-action-bewerten"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog"
+    timeout: 10000
+- takeScreenshot: 02-rating-dialog-empty
+- tapOn:
+    id: "star-rating-touch-2"
+- tapOn:
+    id: "star-rating-heart-touch"
+- takeScreenshot: 03-rating-dialog-3-stars-liked
+- tapOn:
+    id: "rating-dialog-save-button"
+- assertNotVisible:
+    id: "rating-dialog"
+- takeScreenshot: 04-rating-saved
+- assertNotVisible:
+    id: "rating-dialog"
+
+# --- verify in Tagebuch ---
+- back
+- runFlow:
+    when:
+      notVisible:
+        id: "tagebuch-screen"
+    commands:
+      - runFlow: ../subflows/go-tagebuch.yaml
+- extendedWaitUntil:
+    visible: "Matrix"
+    timeout: 15000
+- takeScreenshot: 05-tagebuch-with-matrix
+
+# --- edit rating ---
+- tapOn: "Matrix"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-action-bearbeiten"
+    timeout: 15000
+- tapOn:
+    id: "movie-detail-action-bearbeiten"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog"
+    timeout: 10000
+- takeScreenshot: 06-edit-dialog-prefilled
+- tapOn:
+    id: "star-rating-touch-3"
+- takeScreenshot: 07-edit-dialog-4-stars
+- tapOn:
+    id: "rating-dialog-save-button"
+- assertNotVisible:
+    id: "rating-dialog"
+- takeScreenshot: 08-edit-saved
+
+# --- reset rating (restore) ---
+- tapOn:
+    id: "movie-detail-action-bearbeiten"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog-reset-button"
+    timeout: 10000
+- tapOn:
+    id: "rating-dialog-reset-button"
+- takeScreenshot: 09-edit-dialog-after-reset
+- tapOn:
+    id: "rating-dialog-cancel-button"
+- assertNotVisible:
+    id: "rating-dialog"
+- back
+- assertNotVisible:
+    id: "rating-dialog"
+- takeScreenshot: 10-after-reset-back
+
+# --- Tracker leftovers? Only a Matrix row (flow-owned) is ever deleted ---
+- runFlow: ../subflows/go-tracker.yaml
+- takeScreenshot: 11-tracker-after-rating-cycle
+- runFlow:
+    when:
+      visible: "Matrix"
+    commands:
+      - tapOn: "Matrix"
+      - extendedWaitUntil:
+          visible:
+            id: "tracker-entry-sheet-delete-button"
+          timeout: 10000
+      # Sheet title + row both read Matrix -> 2 matches, else abort.
+      - assertVisible:
+          text: "Matrix"
+          index: 1
+      - tapOn:
+          id: "tracker-entry-sheet-delete-button"
+      - tapOn:
+          id: "tracker-entry-sheet-delete-confirm-button"
+      - extendedWaitUntil:
+          notVisible: "Matrix"
+          timeout: 15000
+      - takeScreenshot: 12-tracker-restored
+
+# --- remove flow-owned Matrix watchlist entry (restore) ---
+- runFlow: ../subflows/go-watchlist.yaml
+- extendedWaitUntil:
+    visible: "Matrix"
+    timeout: 15000
+- tapOn: "Matrix"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-action-loeschen"
+    timeout: 15000
+- tapOn:
+    id: "movie-detail-action-loeschen"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-delete-confirm-button"
+    timeout: 10000
+- tapOn:
+    id: "movie-detail-delete-confirm-button"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 15000
+- assertNotVisible: "Matrix"
+- takeScreenshot: 13-watchlist-restored

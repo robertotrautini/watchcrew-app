@@ -1,0 +1,162 @@
+appId: com.watchcrew.app
+---
+# watchlist-filter-sort.yaml — Watchlist tab: search, collapsible filter panel,
+# every sort option, filter dot, all 3 view modes, genre/year/provider chips.
+# Restores: sort "Meine Streaming-Dienste", view mode grid, panel closed.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 15000
+# Panel open state persists (MMKV): an aborted earlier run can leave it open.
+# Normalise to the documented default (closed) before the first shot.
+- runFlow:
+    when:
+      visible:
+        id: "watchlist-filter-panel"
+    commands:
+      - tapOn:
+          id: "watchlist-filter-toggle"
+      - assertNotVisible:
+          id: "watchlist-filter-panel"
+- takeScreenshot: 01-watchlist-default-closed
+
+# --- search ---
+- tapOn:
+    id: "watchlist-search-input"
+- inputText: "Incep"
+- hideKeyboard
+- takeScreenshot: 02-watchlist-search-match
+- eraseText
+- inputText: "zzzzqq"
+- hideKeyboard
+- assertVisible:
+    id: "watchlist-no-results"
+- takeScreenshot: 03-watchlist-search-no-results
+- tapOn:
+    id: "watchlist-search-input"
+- eraseText
+- hideKeyboard
+
+# --- panel open ---
+- tapOn:
+    id: "watchlist-filter-toggle"
+- assertVisible:
+    id: "watchlist-filter-panel"
+- takeScreenshot: 04-watchlist-panel-open
+
+# --- every sort option ---
+- tapOn:
+    id: "watchlist-sort-button"
+- assertVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 05-watchlist-sort-sheet
+- tapOn:
+    id: "watchlist-sort-option-added"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 06-watchlist-sort-added
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-upcoming"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 07-watchlist-sort-upcoming
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-unrated"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 08-watchlist-sort-unrated
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-has_ratings"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 09-watchlist-sort-has-ratings
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-tmdb_score"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 10-watchlist-sort-tmdb-score
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-genre"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- assertVisible:
+    id: "watchlist-genre-pills"
+- takeScreenshot: 11-watchlist-sort-genre-pills
+- tapOn:
+    id: "watchlist-genre-pill-.*"
+    index: 0
+- assertVisible:
+    id: "watchlist-genre-pills"
+- takeScreenshot: 12-watchlist-genre-pill-selected
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-year"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- assertVisible:
+    id: "watchlist-year-pills"
+- takeScreenshot: 13-watchlist-sort-year-pills
+- tapOn:
+    id: "watchlist-year-pill-.*"
+    index: 0
+- assertVisible:
+    id: "watchlist-year-pills"
+- takeScreenshot: 14-watchlist-year-pill-selected
+- tapOn:
+    id: "watchlist-sort-button"
+- tapOn:
+    id: "watchlist-sort-option-my_streaming"
+- assertNotVisible:
+    id: "watchlist-sort-options"
+- takeScreenshot: 15-watchlist-sort-my-streaming
+
+# --- provider categories ---
+- runFlow:
+    when:
+      visible:
+        id: "watchlist-provider-categories"
+    commands:
+      - tapOn:
+          id: "watchlist-provider-category-rent"
+      - assertVisible:
+          id: "watchlist-provider-categories"
+      - takeScreenshot: 16-watchlist-provider-category-rent-toggled
+      - tapOn:
+          id: "watchlist-provider-category-rent"
+      - assertVisible:
+          id: "watchlist-provider-categories"
+
+# --- view modes ---
+- tapOn:
+    id: "watchlist-view-mode-cards-button"
+- assertVisible:
+    id: "watchlist-grid-or-cards"
+- takeScreenshot: 17-watchlist-view-cards
+- tapOn:
+    id: "watchlist-view-mode-list-button"
+- assertVisible:
+    id: "watchlist-list"
+- takeScreenshot: 18-watchlist-view-list-filter-dot
+- tapOn:
+    id: "watchlist-view-mode-grid-button"
+- assertVisible:
+    id: "watchlist-grid-or-cards"
+- takeScreenshot: 19-watchlist-view-grid
+
+# --- restore: close panel ---
+- tapOn:
+    id: "watchlist-filter-toggle"
+- takeScreenshot: 20-watchlist-restored-closed

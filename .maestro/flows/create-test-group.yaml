@@ -23,8 +23,7 @@ appId: com.watchcrew.app
 # login.yaml's header comment for the full "why" -- clearState:true wipes the
 # dev-client's native Metro-server pointer on this build).
 
-- launchApp:
-    clearState: false
+- runFlow: ../subflows/ensure-app.yaml
 - extendedWaitUntil:
     visible: "Willkommen bei WatchCrew|Tracker"
     timeout: 10000

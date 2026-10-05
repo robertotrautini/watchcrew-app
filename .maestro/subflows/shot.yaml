@@ -1,0 +1,12 @@
+appId: com.watchcrew.app
+---
+# Heavy-screen screenshot helper. Usage:
+#   - runFlow:
+#       file: ../subflows/shot.yaml
+#       env:
+#         NAME: 11-actor-filmography
+# Needs scripts/maestro-shot-server.py (started by scripts/maestro-all.sh).
+- runScript:
+    file: shot.js
+    env:
+      NAME: ${NAME}

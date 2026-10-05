@@ -1,0 +1,139 @@
+appId: com.watchcrew.app
+---
+# add-movie-modes.yaml — Add-Movie modal: Film / Regisseur / Besetzung /
+# Studio modes, searches, result grids, change-person, streaming filter
+# toggle, duplicate-warning sheet (cancelled). Adds nothing.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-add-movie-button"
+    timeout: 10000
+- tapOn:
+    id: "watchlist-add-movie-button"
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-screen"
+    timeout: 10000
+- takeScreenshot: 01-add-movie-film-mode-empty
+
+# --- film mode ---
+- tapOn:
+    id: "add-movie-film-search-input"
+- inputText: "Inception"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-film-grid"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 02-add-movie-film-results
+- tapOn:
+    id: "add-movie-streaming-filter-toggle"
+- takeScreenshot: 03-add-movie-streaming-filter-toggled
+- tapOn:
+    id: "add-movie-streaming-filter-toggle"
+# Duplicate warning: Inception is already rated -> quick-add asks first.
+- tapOn:
+    id: "add-movie-film-grid-add-27205"
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-duplicate-cancel-button"
+    timeout: 10000
+- takeScreenshot: 04-add-movie-duplicate-warning
+- tapOn:
+    id: "add-movie-duplicate-cancel-button"
+- assertNotVisible:
+    id: "add-movie-duplicate-cancel-button"
+
+# --- Regisseur ---
+- tapOn:
+    id: "add-movie-mode-regisseur"
+- tapOn:
+    id: "add-movie-person-search-input"
+- inputText: "Nolan"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-person-result-.*"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 05-add-movie-director-results
+- tapOn:
+    id: "add-movie-person-result-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-person-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 06-add-movie-director-filmography
+- tapOn:
+    id: "add-movie-person-change-button"
+- takeScreenshot: 07-add-movie-director-changed
+
+# --- Besetzung ---
+- tapOn:
+    id: "add-movie-mode-besetzung"
+- tapOn:
+    id: "add-movie-person-search-input"
+- inputText: "DiCaprio"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-person-result-.*"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 08-add-movie-cast-results
+- tapOn:
+    id: "add-movie-person-result-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-person-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 09-add-movie-cast-filmography
+
+# --- Studio ---
+- tapOn:
+    id: "add-movie-mode-studio"
+- tapOn:
+    id: "add-movie-company-search-input"
+- inputText: "Warner"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-company-result-.*"
+    timeout: 15000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 10-add-movie-studio-results
+- tapOn:
+    id: "add-movie-company-result-.*"
+    index: 0
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-studio-grid"
+    timeout: 20000
+- runFlow:
+    file: ../subflows/shot.yaml
+    env:
+      NAME: 11-add-movie-studio-filmography
+- back
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 10000
+- takeScreenshot: 12-back-on-watchlist

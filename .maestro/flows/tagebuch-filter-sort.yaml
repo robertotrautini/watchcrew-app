@@ -1,0 +1,164 @@
+appId: com.watchcrew.app
+---
+# tagebuch-filter-sort.yaml — Tagebuch tab: search, filter panel, every sort
+# option, genre/year chips, view modes, open entry. Restores: sort "Mein
+# Tagebuch", view mode cards, panel closed.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-tagebuch.yaml
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-screen"
+    timeout: 15000
+- takeScreenshot: 01-tagebuch-default-closed
+- tapOn:
+    id: "tagebuch-search-input"
+- inputText: "Incep"
+- hideKeyboard
+- takeScreenshot: 02-tagebuch-search-match
+- eraseText
+- inputText: "zzzzqq"
+- hideKeyboard
+- assertVisible:
+    id: "tagebuch-no-results"
+- takeScreenshot: 03-tagebuch-search-no-results
+- tapOn:
+    id: "tagebuch-search-input"
+- eraseText
+- hideKeyboard
+- tapOn:
+    id: "tagebuch-filter-toggle"
+- assertVisible:
+    id: "tagebuch-filter-panel"
+- takeScreenshot: 04-tagebuch-panel-open
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 05-tagebuch-sort-sheet
+- tapOn:
+    id: "tagebuch-sort-option-my_diary"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 06-tagebuch-sort-mein-tagebuch
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-all_rated"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 07-tagebuch-sort-von-allen-bewertet
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-missing"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 08-tagebuch-sort-fehlende-bewertungen
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-rating"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 09-tagebuch-sort-beste-bewertung
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-tmdb_score"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 10-tagebuch-sort-tmdb-score
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-my_streaming"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 11-tagebuch-sort-my-streaming
+- runFlow:
+    when:
+      visible:
+        id: "tagebuch-provider-categories"
+    commands:
+      - tapOn:
+          id: "tagebuch-provider-category-rent"
+      - assertVisible:
+          id: "tagebuch-provider-categories"
+      - takeScreenshot: 17-tagebuch-provider-category-rent-toggled
+      - tapOn:
+          id: "tagebuch-provider-category-rent"
+      - assertVisible:
+          id: "tagebuch-provider-categories"
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-genre"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 12-tagebuch-sort-genre
+- tapOn:
+    id: "tagebuch-genre-pill-.*"
+    index: 0
+- assertVisible:
+    id: "tagebuch-genre-pills"
+- takeScreenshot: 13-tagebuch-genre-pill-selected
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-year"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 14-tagebuch-sort-year
+- tapOn:
+    id: "tagebuch-year-pill-.*"
+    index: 0
+- assertVisible:
+    id: "tagebuch-year-pills"
+- takeScreenshot: 15-tagebuch-year-pill-selected
+- tapOn:
+    id: "tagebuch-sort-button"
+- assertVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-sort-option-liked"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- takeScreenshot: 16-tagebuch-sort-liked
+- tapOn:
+    id: "tagebuch-sort-button"
+- tapOn:
+    id: "tagebuch-sort-option-my_diary"
+- assertNotVisible:
+    id: "tagebuch-sort-sheet"
+- tapOn:
+    id: "tagebuch-view-mode-grid"
+- assertVisible:
+    id: "tagebuch-entry-press-.*"
+- takeScreenshot: 18-tagebuch-view-grid
+- tapOn:
+    id: "tagebuch-view-mode-list"
+- assertVisible:
+    id: "tagebuch-list-title-.*"
+- takeScreenshot: 19-tagebuch-view-list
+- tapOn:
+    id: "tagebuch-view-mode-cards"
+- assertVisible:
+    id: "tagebuch-entry-press-.*"
+- takeScreenshot: 20-tagebuch-view-cards
+- tapOn:
+    id: "tagebuch-filter-toggle"
+- takeScreenshot: 21-tagebuch-restored-closed

@@ -1,0 +1,339 @@
+{
+  "_comment": "Use-case areas -> Maestro flows, and source-path patterns -> areas. Read by scripts/maestro-areas.py (used by scripts/maestro-all.sh --area/--changed/--smoke/--list-areas). Docs: docs/maestro-areas.md. Patterns: '*' = within one path segment, '**' = across segments; first-listed areas are not prioritised, a file may match several areas (union). Flow order is always the runner's canonical order.",
+  "areas": {
+    "auth": {
+      "description": "Login, logout, register/forgot-password forms, session handling",
+      "flows": [
+        "login",
+        "auth-screens"
+      ],
+      "paths": [
+        "src/app/(auth)/**",
+        "src/app/index.tsx",
+        "src/lib/auth.ts",
+        "src/lib/authGate.ts",
+        "src/lib/passwordRules.ts",
+        "src/lib/storedSession.ts",
+        "src/hooks/useAuthGate.ts",
+        "src/hooks/useCurrentUser*.ts"
+      ]
+    },
+    "onboarding": {
+      "description": "No-group onboarding (create/join group)",
+      "flows": [
+        "create-test-group",
+        "onboarding-explore"
+      ],
+      "paths": [
+        "src/app/(onboarding)/**",
+        "src/lib/groups.ts",
+        "src/lib/inviteToken.ts",
+        "src/hooks/useUserGroups.ts"
+      ]
+    },
+    "navigation": {
+      "description": "Tab bar, tab layout, header, tab swipe/parallax, settings hub reachability",
+      "flows": [
+        "tabs-tour"
+      ],
+      "paths": [
+        "src/app/(app)/(tabs)/_layout.tsx",
+        "src/app/(app)/_layout.tsx",
+        "src/app/(app)/(modals)/_layout.tsx",
+        "src/components/TabSwipeView.tsx",
+        "src/components/ui/TabBarButton.tsx",
+        "src/components/ui/AppHeader.tsx",
+        "src/components/ParallaxProvider.tsx",
+        "src/components/parallaxContext.ts",
+        "src/lib/tabSwipe.ts",
+        "src/lib/parallax.ts",
+        "src/lib/homeRoute.ts"
+      ]
+    },
+    "navigation-back": {
+      "description": "Back navigation: back swipe/hardware back pop one level, stack order (detail -> similar -> detail), sheet closes before screen",
+      "flows": [
+        "back-navigation"
+      ],
+      "paths": [
+        "src/app/(app)/_layout.tsx",
+        "src/app/(app)/(modals)/_layout.tsx",
+        "src/components/BackSwipeView.tsx",
+        "src/components/modalScreenLayout.tsx",
+        "src/components/ui/Sheet.tsx",
+        "src/components/settings/SettingsBackBar.tsx",
+        "src/lib/backSwipe.ts",
+        "src/hooks/useSafeBack.ts",
+        "src/app/(app)/(modals)/similar/**"
+      ]
+    },
+    "tracker": {
+      "description": "Tracker tab: payments list, payment sheet, row flyout",
+      "flows": [
+        "tracker-payment"
+      ],
+      "paths": [
+        "src/app/(app)/(tabs)/tracker.tsx",
+        "src/components/movie/Tracker*",
+        "src/components/movie/PaymentModal.tsx",
+        "src/lib/trackerLogic.ts",
+        "src/hooks/useTrackerPayments.ts"
+      ]
+    },
+    "watchlist": {
+      "description": "Watchlist tab: search, filter panel, sorts, views, add/remove entries",
+      "flows": [
+        "watchlist-filter-sort",
+        "watchlist-open-detail",
+        "watchlist-add-remove"
+      ],
+      "paths": [
+        "src/app/(app)/(tabs)/watchlist.tsx",
+        "src/components/movie/WatchlistPosterCard.tsx",
+        "src/lib/watchlist*.ts",
+        "src/lib/listFilters.ts",
+        "src/lib/movieProviderFilter.ts",
+        "src/hooks/useGroupWatchlist.ts",
+        "src/components/ui/SortButton.tsx",
+        "src/components/ui/ViewModeToggle.tsx",
+        "src/components/ui/CollapsibleFilterPanel.tsx",
+        "src/components/ui/Chip.tsx",
+        "src/lib/streamingAvailability.ts",
+        "src/hooks/useMoviesProviders.ts"
+      ]
+    },
+    "tagebuch": {
+      "description": "Tagebuch (diary) tab: search, filter panel, sorts, views",
+      "flows": [
+        "tagebuch-filter-sort"
+      ],
+      "paths": [
+        "src/app/(app)/(tabs)/tagebuch.tsx",
+        "src/components/movie/Diary*",
+        "src/lib/diaryDisplay.ts",
+        "src/lib/listFilters.ts",
+        "src/lib/movieProviderFilter.ts",
+        "src/components/ui/SortButton.tsx",
+        "src/components/ui/ViewModeToggle.tsx",
+        "src/components/ui/CollapsibleFilterPanel.tsx",
+        "src/components/ui/Chip.tsx",
+        "src/lib/streamingAvailability.ts",
+        "src/hooks/useMoviesProviders.ts"
+      ]
+    },
+    "movie-detail": {
+      "description": "Movie detail screen and its sub-screens (filmographies, similar, collection)",
+      "flows": [
+        "movie-detail",
+        "movie-detail-full",
+        "movie-collection",
+        "watchlist-open-detail"
+      ],
+      "paths": [
+        "src/app/(app)/(modals)/movie/**",
+        "src/app/(app)/(modals)/similar/**",
+        "src/app/(app)/(modals)/collection/**",
+        "src/app/(app)/(modals)/filmography/**",
+        "src/components/movie/MovieDetail*",
+        "src/components/movie/MemberRatingRow.tsx",
+        "src/lib/movieDetail*.ts",
+        "src/hooks/useMovieDetail*.ts",
+        "src/hooks/useSimilarMovies.ts",
+        "src/hooks/useCollection.ts",
+        "src/hooks/use*Filmography.ts",
+        "src/lib/trailerEmbed.ts",
+        "src/lib/filmographyProgress.ts"
+      ]
+    },
+    "add-movie": {
+      "description": "Add-movie modal (film/director/cast/studio search), grid, duplicate warning",
+      "flows": [
+        "add-movie-modes",
+        "movie-detail",
+        "watchlist-add-remove"
+      ],
+      "paths": [
+        "src/app/(app)/(modals)/add-movie.tsx",
+        "src/components/movie/MovieGrid.tsx",
+        "src/lib/addMovieLogic.ts",
+        "src/lib/movieLibraryStatus.ts",
+        "src/hooks/useMovieSearch.ts",
+        "src/hooks/usePersonSearch.ts",
+        "src/hooks/useCompanySearch.ts",
+        "src/hooks/useStudioFilmography.ts",
+        "src/lib/tmdbProxy.ts"
+      ]
+    },
+    "rating": {
+      "description": "Rating dialog (stars, like, save/edit/reset) incl. Tracker side effects",
+      "flows": [
+        "rating-cycle"
+      ],
+      "paths": [
+        "src/components/movie/RatingDialog.tsx",
+        "src/components/ui/StarRating.tsx",
+        "src/lib/ratingLogic.ts",
+        "src/hooks/useSaveRating.ts"
+      ]
+    },
+    "settings": {
+      "description": "Settings hub + display, streaming services, notifications, delete account, attributions",
+      "flows": [
+        "settings-edit"
+      ],
+      "paths": [
+        "src/app/(app)/(modals)/settings.tsx",
+        "src/app/(app)/(modals)/settings/**",
+        "src/components/settings/**",
+        "src/components/ui/SettingsRow.tsx",
+        "src/components/ui/SettingsButton.tsx",
+        "src/lib/profile.ts",
+        "src/lib/deleteAccount.ts",
+        "src/lib/legalLinks.ts",
+        "src/hooks/useOwnProfile.ts",
+        "src/hooks/useUpdateDisplayName.ts",
+        "src/hooks/useMyStreamingProviders.ts",
+        "src/hooks/useProvidersList.ts",
+        "src/hooks/usePush*.ts"
+      ]
+    },
+    "toasts": {
+      "description": "Toast variants (green success / red error), toast host and call sites",
+      "flows": [
+        "toasts"
+      ],
+      "paths": [
+        "src/components/ui/Toast.tsx",
+        "src/lib/toast.ts"
+      ]
+    },
+    "group-settings": {
+      "description": "Group settings: rename, theme, invite, members, leave",
+      "flows": [
+        "group-settings-edit"
+      ],
+      "paths": [
+        "src/app/(app)/(modals)/group-settings.tsx",
+        "src/lib/groupTheme.ts",
+        "src/components/GroupThemeProvider.tsx",
+        "src/components/ActiveGroupThemeProvider.tsx",
+        "src/hooks/useGroupSettings.ts",
+        "src/hooks/useGroupDetails.ts",
+        "src/hooks/useGroupMembers.ts",
+        "src/hooks/useActiveGroup.ts"
+      ]
+    },
+    "offline-deeplinks": {
+      "description": "Offline banner/cache, deep links (studio, join token, auth callback)",
+      "flows": [
+        "deeplinks",
+        "offline-banner"
+      ],
+      "paths": [
+        "src/app/join/**",
+        "src/app/auth/**",
+        "src/components/ui/OfflineBanner.tsx",
+        "src/lib/connectivity.ts",
+        "src/lib/authDeepLink.ts",
+        "src/lib/queryPersistence.ts",
+        "src/lib/mmkvStorage.ts",
+        "src/hooks/useQueryCacheLifecycle.ts",
+        "src/hooks/usePushNotificationRouting.ts"
+      ]
+    },
+    "theme": {
+      "description": "Highlight colour follows the group theme (Red tour of every screen, Blue spot check, Gold restored)",
+      "flows": [
+        "theme-tour"
+      ],
+      "paths": [
+        "src/global.css",
+        "src/lib/groupTheme.ts",
+        "src/lib/navTheme.ts",
+        "src/components/GroupThemeProvider.tsx",
+        "src/components/ActiveGroupThemeProvider.tsx",
+        "tailwind.config.js"
+      ]
+    },
+    "design-system": {
+      "description": "Shared UI components, theme, backdrop, icons, buttons, tailwind/global CSS. Cross-cutting: representative smoke over every screen type (tabs, sheets, detail, settings, themes, auth)",
+      "flows": [
+        "tabs-tour",
+        "tracker-payment",
+        "watchlist-open-detail",
+        "movie-detail",
+        "group-settings-edit",
+        "theme-tour",
+        "auth-screens"
+      ],
+      "paths": [
+        "src/components/ui/**",
+        "src/components/animated-icon*",
+        "tailwind.config.js",
+        "global.css",
+        "nativewind-env.d.ts",
+        "metro.config.js",
+        "babel.config.js",
+        "assets/**",
+        "docs/style-guide.md",
+        "src/global.css",
+        "src/lib/sheetLayout.ts",
+        "src/lib/gridPadding.ts",
+        "src/lib/tmdbImage.ts",
+        "src/lib/staggerAnimation.ts",
+        "src/lib/platformKeyboardAvoiding.ts",
+        "src/lib/localDate.ts",
+        "src/hooks/useKeyboardHeight.ts",
+        "src/hooks/useDebouncedValue.ts"
+      ]
+    }
+  },
+  "full": {
+    "description": "Cross-cutting changes: run the whole suite",
+    "paths": [
+      "src/app/_layout.tsx",
+      "src/lib/supabase.ts",
+      "src/lib/queryClient.ts",
+      "src/lib/utils.ts",
+      "src/lib/toast.ts",
+      "src/lib/sentry.ts",
+      "app.config.ts",
+      "package.json",
+      "package-lock.json",
+      "tsconfig.json",
+      ".maestro/subflows/**",
+      ".maestro/config.yaml",
+      "scripts/maestro-*",
+      "src/stores/**",
+      "supabase/migrations/**",
+      "src/lib/realtimeSync.ts",
+      "src/hooks/useGroupRealtimeSync.ts",
+      "src/hooks/useRegisterFocusedGroupScreen.ts",
+      "src/lib/pushTokens.ts",
+      "src/hooks/useGroupPushSubscription.ts"
+    ]
+  },
+  "ignore": [
+    "__tests__/**",
+    "docs/**",
+    "*.md",
+    ".maestro/README.md",
+    ".maestro/areas.json",
+    "deno.lock",
+    ".gitignore",
+    ".claude/**",
+    "supabase/functions/**",
+    "__mocks__/**",
+    "scripts/android-build-env.sh",
+    "scripts/reset-project.js"
+  ],
+  "smoke": {
+    "description": "Fast sanity: login, all tabs/settings, one add-movie path, one write cycle (payment add+edit+delete)",
+    "flows": [
+      "login",
+      "tabs-tour",
+      "movie-detail",
+      "tracker-payment"
+    ]
+  }
+}

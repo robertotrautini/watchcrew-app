@@ -1,0 +1,94 @@
+appId: com.watchcrew.app
+---
+# watchlist-add-remove.yaml — REAL add + remove cycle with a film this flow
+# creates itself (Matrix, tmdb 603): add-movie search -> detail ->
+# "Zur Watchlist" -> appears on Watchlist -> detail "Löschen" -> confirm ->
+# gone again. Only deletes the entry it just added, targeted by title.
+# SELF-OWNED RULE: if "Matrix" is already on the Watchlist at start it is NOT
+# ours (user-added or leftover) -> the flow FAILS LOUDLY and deletes nothing.
+# Remove a leftover Matrix by hand, then re-run.
+- runFlow: ../subflows/ensure-app.yaml
+- runFlow: ../subflows/go-watchlist.yaml
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-add-movie-button"
+    timeout: 10000
+- takeScreenshot: 01-watchlist-before-add
+- assertNotVisible: "Matrix"
+- runFlow:
+    when:
+      notVisible: "Matrix"
+    commands:
+      - tapOn:
+          id: "watchlist-add-movie-button"
+      - extendedWaitUntil:
+          visible:
+            id: "add-movie-screen"
+          timeout: 10000
+      - tapOn:
+          id: "add-movie-film-search-input"
+      - inputText: "The Matrix"
+      - hideKeyboard
+      - extendedWaitUntil:
+          visible:
+            id: "add-movie-film-grid-item-603"
+          timeout: 20000
+      - runFlow:
+          file: ../subflows/shot.yaml
+          env:
+            NAME: 02-add-movie-matrix-results
+      - tapOn:
+          id: "add-movie-film-grid-item-603"
+      - extendedWaitUntil:
+          visible:
+            id: "movie-detail-action-zur_watchlist"
+          timeout: 20000
+      - takeScreenshot: 03-matrix-detail-not-on-watchlist
+      - tapOn:
+          id: "movie-detail-action-zur_watchlist"
+      - extendedWaitUntil:
+          notVisible:
+            id: "movie-detail-action-zur_watchlist"
+          timeout: 15000
+      - takeScreenshot: 04-matrix-detail-after-add
+      - back
+      - back
+      - extendedWaitUntil:
+          visible:
+            id: "watchlist-screen"
+          timeout: 10000
+      - takeScreenshot: 05-watchlist-with-matrix
+- tapOn: "Matrix"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-action-loeschen"
+    timeout: 15000
+
+# --- edit sheet (release date) shown, not saved ---
+- tapOn:
+    id: "movie-detail-action-bearbeiten"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-edit-sheet"
+    timeout: 10000
+- takeScreenshot: 06-watchlist-entry-edit-sheet
+- tapOn:
+    id: "sheet-close-button"
+- assertNotVisible:
+    id: "movie-detail-edit-sheet"
+
+# --- remove (restore) ---
+- tapOn:
+    id: "movie-detail-action-loeschen"
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-delete-confirm-button"
+    timeout: 10000
+- takeScreenshot: 07-delete-confirm
+- tapOn:
+    id: "movie-detail-delete-confirm-button"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-screen"
+    timeout: 15000
+- takeScreenshot: 08-watchlist-after-remove
