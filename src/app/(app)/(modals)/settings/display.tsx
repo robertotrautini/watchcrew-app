@@ -1,5 +1,8 @@
-import { Pressable, Text, View } from "react-native";
+import { View } from "react-native";
 
+import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
+import { SettingsGroup } from "@/components/settings/SettingsGroup";
+import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
@@ -20,40 +23,24 @@ export default function SettingsDisplayScreen() {
   const setTrackerEnabled = usePreferencesStore((s) => s.setTrackerEnabled);
 
   return (
-    <View className="flex-1 px-4 pt-4" testID="settings-display-screen">
-
-      <Pressable
-        testID="settings-display-titles-toggle"
-        accessibilityRole="switch"
-        accessibilityState={{ checked: showTitlesInGrid }}
-        onPress={() => setShowTitlesInGrid(!showTitlesInGrid)}
-        className="flex-row items-center justify-between rounded-lg border border-border-subtle bg-card px-4 py-3"
-      >
-        <Text className="flex-1 pr-3 text-text-primary">Filmtitel in Grid anzeigen</Text>
-        <View
-          className={`h-7 w-12 justify-center rounded-full px-0.5 ${
-            showTitlesInGrid ? "items-end bg-accent" : "items-start bg-border-subtle"
-          }`}
-        >
-          <View className="h-6 w-6 rounded-full bg-bg-primary" />
-        </View>
-      </Pressable>
-      <Pressable
-        testID="settings-display-tracker-toggle"
-        accessibilityRole="switch"
-        accessibilityState={{ checked: trackerEnabled }}
-        onPress={() => setTrackerEnabled(!trackerEnabled)}
-        className="mt-3 flex-row items-center justify-between rounded-lg border border-border-subtle bg-card px-4 py-3"
-      >
-        <Text className="flex-1 pr-3 text-text-primary">Tracker aktiv</Text>
-        <View
-          className={`h-7 w-12 justify-center rounded-full px-0.5 ${
-            trackerEnabled ? "items-end bg-accent" : "items-start bg-border-subtle"
-          }`}
-        >
-          <View className="h-6 w-6 rounded-full bg-bg-primary" />
-        </View>
-      </Pressable>
+    <View className="flex-1" testID="settings-display-screen">
+      <View className="flex-1 px-4 pt-4">
+        <SettingsGroup testID="settings-display-group">
+          <SettingsToggleRow
+            testID="settings-display-titles-toggle"
+            label="Filmtitel in Grid anzeigen"
+            checked={showTitlesInGrid}
+            onPress={() => setShowTitlesInGrid(!showTitlesInGrid)}
+          />
+          <SettingsToggleRow
+            testID="settings-display-tracker-toggle"
+            label="Tracker aktiv"
+            checked={trackerEnabled}
+            onPress={() => setTrackerEnabled(!trackerEnabled)}
+          />
+        </SettingsGroup>
+      </View>
+      <SettingsBackBar />
     </View>
   );
 }

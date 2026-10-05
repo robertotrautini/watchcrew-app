@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Pressable, Text, View } from "react-native";
+import { Icon } from "@/components/ui/Icon";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
-import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { StarRating } from "@/components/ui/StarRating";
@@ -20,6 +19,12 @@ import type { Rating } from "@/lib/watchlistTypes";
 import { showToast } from "@/lib/toast";
 import { toLocalIsoDate } from "@/lib/localDate";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
+import { Chip } from "@/components/ui/Chip";
+import {
+  Button,
+  BUTTON_ICON_COLORS,
+  BUTTON_ICON_COLOR_DISABLED,
+} from "@/components/ui/Button";
 
 /**
  * M7 part 2b: the shared Rating-Dialog, used for all three contexts named
@@ -80,14 +85,14 @@ export interface RatingDialogProps {
 }
 
 /**
- * Error feedback uses `Alert.alert`; success feedback uses the app toast
- * (`showToast`, replaces the earlier native success alert -- see
- * docs/interim-decisions.md "Erfolgs-Toasts").
+ * Feedback uses the app toast (`showToast`, variant `success` green / `error` red --
+ * see docs/style-guide.md "Toasts"; replaced the native alerts).
  */
 const SAVE_SUCCESS_TOAST = "Bewertung gespeichert";
-const SAVE_ERROR_TITLE = "Fehler";
-const SAVE_ERROR_MESSAGE = "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.";
-const RESET_ERROR_MESSAGE = "Die Bewertung konnte nicht zurückgesetzt werden. Bitte versuche es erneut.";
+const SAVE_ERROR_MESSAGE =
+  "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.";
+const RESET_ERROR_MESSAGE =
+  "Die Bewertung konnte nicht zurückgesetzt werden. Bitte versuche es erneut.";
 
 /** `rating == null || rating <= 0` -- the project-wide "0/null both mean no real rating" convention. */
 function hasRealRating(rating: number | null): rating is number {
@@ -135,11 +140,19 @@ export function RatingDialog({
   // so an existing paid_by/paid_at is never touched (or newly stamped) from a hidden UI.
   const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
 
-  const [rating, setRating] = useState<number | null>(ownRating?.rating ?? null);
+  const [rating, setRating] = useState<number | null>(
+    ownRating?.rating ?? null,
+  );
   const [liked, setLiked] = useState<boolean>(ownRating?.liked ?? false);
-  const [seenAtMode, setSeenAtMode] = useState<SeenAtMode>(initialSeenAtMode(ownRating));
-  const [manualDateInput, setManualDateInput] = useState<string>(initialManualDateInput(ownRating));
-  const [selectedPayerId, setSelectedPayerId] = useState<string | null>(paidByMemberId);
+  const [seenAtMode, setSeenAtMode] = useState<SeenAtMode>(
+    initialSeenAtMode(ownRating),
+  );
+  const [manualDateInput, setManualDateInput] = useState<string>(
+    initialManualDateInput(ownRating),
+  );
+  const [selectedPayerId, setSelectedPayerId] = useState<string | null>(
+    paidByMemberId,
+  );
   const [paymentDateInput, setPaymentDateInput] = useState<string>("");
 
   const saveMutation = useSaveRating();
@@ -150,7 +163,6 @@ export function RatingDialog({
   // 2b"): the dialog's local draft state is NOT preserved across
   // open/close cycles (e.g. opening it for a different movie right after
   // closing it for another must not leak the previous draft).
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!visible) {
       return;
@@ -164,6 +176,31 @@ export function RatingDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, watchlistEntryId]);
 
+  // Group section: every OTHER member (also those who have not rated yet, shown with empty
+  // stars like the legacy dialog); falls back to the raw rating rows when no member list is given.
+  const groupRatingRows =
+    groupMembers.filter((m) => m.user_id !== currentUserId).length > 0
+      ? groupMembers
+          .filter((m) => m.user_id !== currentUserId)
+          .map((m) => ({
+            key: m.user_id,
+            label: memberDisplayLabel(
+              m.user_id,
+              m.profiles?.display_name ?? displayNameById.get(m.user_id),
+            ),
+            rating:
+              otherRatings.find((r) => r.member_id === m.user_id)?.rating ??
+              null,
+          }))
+      : otherRatings.map((r) => ({
+          key: r.id,
+          label: memberDisplayLabel(
+            r.member_id,
+            displayNameById.get(r.member_id),
+          ),
+          rating: r.rating,
+        }));
+
   const canReset = hasRealRating(ownRating?.rating ?? null);
   const releaseDateAvailable = movieReleaseDate != null;
 
@@ -175,17 +212,28 @@ export function RatingDialog({
     if (!releaseDateAvailable) {
       return;
     }
-    setSeenAtMode((prev) => (prev === "release_date" ? "manual" : "release_date"));
+    setSeenAtMode((prev) =>
+      prev === "release_date" ? "manual" : "release_date",
+    );
   }
 
   function handleSave() {
     const manualDateIso = parseGermanDateInput(manualDateInput);
-    const seenAt = resolveSeenAtDate(seenAtMode, manualDateIso, movieReleaseDate);
+    const seenAt = resolveSeenAtDate(
+      seenAtMode,
+      manualDateIso,
+      movieReleaseDate,
+    );
 
     const explicitPaidAt = parseGermanDateInput(paymentDateInput);
-    const payment = trackerEnabled && selectedPayerId
-      ? { paidByMemberId: selectedPayerId, explicitPaidAt, existingPaidAt: paidAt }
-      : undefined;
+    const payment =
+      trackerEnabled && selectedPayerId
+        ? {
+            paidByMemberId: selectedPayerId,
+            explicitPaidAt,
+            existingPaidAt: paidAt,
+          }
+        : undefined;
 
     saveMutation.mutate(
       {
@@ -200,11 +248,11 @@ export function RatingDialog({
       {
         onSuccess: () => {
           onSaved?.();
-          showToast(SAVE_SUCCESS_TOAST);
+          showToast(SAVE_SUCCESS_TOAST, { variant: "success" });
           onClose();
         },
         onError: () => {
-          Alert.alert(SAVE_ERROR_TITLE, SAVE_ERROR_MESSAGE);
+          showToast(SAVE_ERROR_MESSAGE, { variant: "error" });
         },
       },
     );
@@ -222,7 +270,7 @@ export function RatingDialog({
           setLiked(false);
         },
         onError: () => {
-          Alert.alert(SAVE_ERROR_TITLE, RESET_ERROR_MESSAGE);
+          showToast(RESET_ERROR_MESSAGE, { variant: "error" });
         },
       },
     );
@@ -231,7 +279,9 @@ export function RatingDialog({
   return (
     <Sheet visible={visible} onClose={onClose} title={SHEET_TITLES[mode]}>
       <View testID="rating-dialog" className="gap-4">
-        <Text className="text-base font-semibold text-text-primary">{movieTitle}</Text>
+        <Text className="font-display-bold text-lg text-accent-light">
+          {movieTitle}
+        </Text>
 
         <View className="gap-2">
           <Text className="text-text-secondary">Gesehen am</Text>
@@ -244,114 +294,153 @@ export function RatingDialog({
             onChangeIso={(iso) => setManualDateInput(formatDateForInput(iso))}
           />
 
-          <Pressable
-            testID="rating-dialog-checkbox-unknown"
-            accessibilityRole="checkbox"
-            accessibilityState={{ checked: seenAtMode === "unknown" }}
-            onPress={toggleUnknown}
-            className="flex-row items-center gap-2 py-1"
-          >
-            <Ionicons
-              name={seenAtMode === "unknown" ? "checkbox" : "square-outline"}
-              size={22}
-              color={starColor}
-            />
-            <Text className="text-text-primary">Weiß nicht</Text>
-          </Pressable>
-
-          {releaseDateAvailable ? (
+          <View className="flex-row flex-wrap gap-x-6">
             <Pressable
-              testID="rating-dialog-checkbox-release-date"
+              testID="rating-dialog-checkbox-unknown"
               accessibilityRole="checkbox"
-              accessibilityState={{ checked: seenAtMode === "release_date" }}
-              onPress={toggleReleaseDate}
-              className="flex-row items-center gap-2 py-1"
+              accessibilityState={{ checked: seenAtMode === "unknown" }}
+              onPress={toggleUnknown}
+              className="min-h-touch-comfortable flex-row items-center gap-2"
             >
-              <Ionicons
-                name={seenAtMode === "release_date" ? "checkbox" : "square-outline"}
-                size={22}
+              <Icon
+                name={seenAtMode === "unknown" ? "checkboxOn" : "checkboxOff"}
+                size="M"
                 color={starColor}
               />
-              <Text className="text-text-primary">Release Date ({formatDateForInput(movieReleaseDate)})</Text>
+              <Text className="text-text-primary">Weiß nicht</Text>
             </Pressable>
-          ) : null}
+
+            {releaseDateAvailable ? (
+              <Pressable
+                testID="rating-dialog-checkbox-release-date"
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: seenAtMode === "release_date" }}
+                onPress={toggleReleaseDate}
+                className="min-h-touch-comfortable flex-row items-center gap-2"
+              >
+                <Icon
+                  name={
+                    seenAtMode === "release_date" ? "checkboxOn" : "checkboxOff"
+                  }
+                  size="M"
+                  color={starColor}
+                />
+                <Text className="text-text-primary">
+                  Release Date ({formatDateForInput(movieReleaseDate)})
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
         </View>
 
         <View className="flex-row items-center justify-between">
           <StarRating
+            iconSize="L"
             rating={rating}
             starColor={starColor}
             onChange={setRating}
             liked={liked}
             onToggleLike={() => setLiked((prev) => !prev)}
           />
-          <Pressable
+          <Button
             testID="rating-dialog-reset-button"
-            accessibilityRole="button"
-            accessibilityState={{ disabled: !canReset }}
+            variant="danger"
+            size="xs"
+            iconOnly
+            accessibilityLabel="Bewertung zurücksetzen"
             disabled={!canReset || resetMutation.isPending}
             onPress={handleReset}
-            className={canReset ? "px-2 py-1" : "px-2 py-1 opacity-40"}
           >
-            <Ionicons name="trash-outline" size={22} color={starColor} />
-          </Pressable>
+            <Icon
+              name="delete"
+              size="M"
+              color={
+                canReset
+                  ? BUTTON_ICON_COLORS.danger
+                  : BUTTON_ICON_COLOR_DISABLED
+              }
+            />
+          </Button>
         </View>
 
-        {otherRatings.length > 0 ? (
-          <View testID="rating-dialog-other-ratings" className="gap-1">
-            <Text className="text-text-secondary">Andere Bewertungen</Text>
-            {otherRatings.map((r) => (
+        {groupRatingRows.length > 0 ? (
+          <View
+            testID="rating-dialog-other-ratings"
+            className="gap-1 border-t border-glass-border pt-3"
+          >
+            <Text className="text-text-secondary">Bewertungen der Gruppe</Text>
+            {groupRatingRows.map((row) => (
               <MemberRatingRow
-                key={r.id}
-                memberLabel={memberDisplayLabel(r.member_id, displayNameById.get(r.member_id))}
-                rating={r.rating}
+                key={row.key}
+                memberLabel={row.label}
+                rating={row.rating}
                 starColor={starColor}
+                hideValue
               />
             ))}
           </View>
         ) : null}
 
         {trackerEnabled ? (
-        <View className="gap-2">
-          <Text className="text-text-secondary">Wer hat bezahlt?</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {groupMembers.map((member) => {
-              const isSelected = selectedPayerId === member.user_id;
-              return (
-                <Pressable
-                  key={member.user_id}
-                  testID={`rating-dialog-payer-chip-${member.user_id}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  onPress={() => setSelectedPayerId(isSelected ? null : member.user_id)}
-                  className={isSelected ? "rounded-full bg-accent px-3 py-1" : "rounded-full bg-card px-3 py-1"}
-                >
-                  <Text className={isSelected ? "text-xs text-bg-primary" : "text-xs text-text-secondary"}>
-                    {memberDisplayLabel(member.user_id, member.profiles?.display_name)}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <View className="gap-2">
+            <View className="flex-row items-center gap-2">
+              <Icon name="price" size="S" color="#888888" />
+              <Text className="text-text-secondary">Wer hat bezahlt?</Text>
+            </View>
+            <View className="flex-row flex-wrap gap-2">
+              {groupMembers.map((member) => {
+                const isSelected = selectedPayerId === member.user_id;
+                return (
+                  <Chip
+                    key={member.user_id}
+                    testID={`rating-dialog-payer-chip-${member.user_id}`}
+                    active={isSelected}
+                    className="shrink-0"
+                    onPress={() =>
+                      setSelectedPayerId(isSelected ? null : member.user_id)
+                    }
+                    label={memberDisplayLabel(
+                      member.user_id,
+                      member.profiles?.display_name,
+                    )}
+                  />
+                );
+              })}
+            </View>
 
-          {selectedPayerId ? (
-            <DateField
-              testID="rating-dialog-payment-date-input"
-              valueIso={parseGermanDateInput(paymentDateInput)}
-              displayText={paymentDateInput}
-              placeholder="Bezahlt am (TT.MM.JJJJ, optional)"
-              onChangeIso={(iso) => setPaymentDateInput(formatDateForInput(iso))}
-            />
-          ) : null}
-        </View>
+            {selectedPayerId ? (
+              <DateField
+                testID="rating-dialog-payment-date-input"
+                valueIso={parseGermanDateInput(paymentDateInput)}
+                displayText={paymentDateInput}
+                placeholder="Bezahlt am (TT.MM.JJJJ, optional)"
+                onChangeIso={(iso) =>
+                  setPaymentDateInput(formatDateForInput(iso))
+                }
+              />
+            ) : null}
+          </View>
         ) : null}
 
-        <Button
-          testID="rating-dialog-save-button"
-          label="Speichern"
-          loading={saveMutation.isPending}
-          onPress={handleSave}
-        />
+        <View className="flex-row gap-3">
+          <Button
+            testID="rating-dialog-cancel-button"
+            variant="secondary"
+            className="flex-1"
+            label="Abbrechen"
+            icon="close"
+            onPress={onClose}
+          />
+          <Button
+            testID="rating-dialog-save-button"
+            variant="primary"
+            className="flex-[1.6]"
+            loading={saveMutation.isPending}
+            label="Speichern"
+            icon="save"
+            onPress={handleSave}
+          />
+        </View>
       </View>
     </Sheet>
   );

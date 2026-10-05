@@ -1,12 +1,28 @@
+import { GlassBlur } from "@/components/ui/GlassBlur";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Icon } from "@/components/ui/Icon";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
-import { Button } from "@/components/ui/Button";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { Chip } from "@/components/ui/Chip";
+import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
+import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { isGridPlaceholder, padToFullRows } from "@/lib/gridPadding";
+import { SortButton } from "@/components/ui/SortButton";
+import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -16,13 +32,18 @@ import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import {
+  WATCHLIST_SORT_SHORT_LABELS,
   DEFAULT_LIST_FILTERS,
   getNoResultsMessage,
+  hasActiveListFilters,
   listFiltersKey,
   toggleProviderCategory,
 } from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
-import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "@/lib/movieProviderFilter";
+import {
+  ALL_PROVIDER_CATEGORIES,
+  type ProviderCategory,
+} from "@/lib/movieProviderFilter";
 import { deriveGenreNamesById, genreDisplayLabel } from "@/lib/diaryDisplay";
 import {
   filterByGenre,
@@ -33,8 +54,15 @@ import {
   splitWatchlistAndDiary,
   withEffectiveReleaseDate,
 } from "@/lib/watchlistLogic";
-import type { WatchlistEntry, WatchlistSortOption, YearFilterValue } from "@/lib/watchlistTypes";
-import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePreferencesStore";
+import type {
+  WatchlistEntry,
+  WatchlistSortOption,
+  YearFilterValue,
+} from "@/lib/watchlistTypes";
+import {
+  usePreferencesStore,
+  type WatchlistViewMode,
+} from "@/stores/usePreferencesStore";
 
 /**
  * Real Watchlist screen content (M5 part 2), replacing the earlier
@@ -54,17 +82,15 @@ const SORT_OPTIONS: Array<{ key: WatchlistSortOption; label: string }> = [
   { key: "year", label: "Nach Jahr" },
 ];
 
+function sortOptionLabel(option: WatchlistSortOption): string {
+  return SORT_OPTIONS.find((o) => o.key === option)?.label ?? option;
+}
+
 const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
   flatrate: "Flatrate",
   rent: "Leihen",
   buy: "Kaufen",
 };
-
-const VIEW_MODES: Array<{ key: WatchlistViewMode; label: string }> = [
-  { key: "cards", label: "Karten" },
-  { key: "grid", label: "Grid" },
-  { key: "list", label: "Liste" },
-];
 
 function formatPlainDate(dateStr: string | null): string {
   if (dateStr == null) {
@@ -100,12 +126,14 @@ function ratedCountFor(entry: WatchlistEntry): number {
 }
 
 export default function WatchlistScreen() {
+  const parallaxScroll = useParallaxScroll();
   const router = useRouter();
   const currentUserId = useCurrentUserId();
   // M9 part 2: real, persisted active-group resolution (replaces the former
   // "first group = active group" interim simplification) -- see
   // src/hooks/useActiveGroup.ts.
-  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
+  const { activeGroupId, groupsQuery: userGroupsQuery } =
+    useActiveGroup(currentUserId);
 
   // M10 (Realtime foreground sync, ADR 0006): subscribes to live
   // watchlist_entries/ratings changes for the active group (silent cache
@@ -121,7 +149,9 @@ export default function WatchlistScreen() {
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const watchlistViewMode = usePreferencesStore((s) => s.watchlistViewMode);
-  const setWatchlistViewMode = usePreferencesStore((s) => s.setWatchlistViewMode);
+  const setWatchlistViewMode = usePreferencesStore(
+    (s) => s.setWatchlistViewMode,
+  );
   // M10 Settings hub ("Filmtitel in Grid anzeigen" toggle,
   // src/app/(app)/(modals)/settings/display.tsx) — see WatchlistPosterCard's
   // `showTitle` prop doc comment for why this only affects grid variant.
@@ -130,10 +160,18 @@ export default function WatchlistScreen() {
   // Sort/genre/year/provider-category choices persist per group (MMKV, see
   // usePreferencesStore `listFilters`); the search text is session-local.
   const storedFilters = usePreferencesStore((s) =>
-    activeGroupId ? s.listFilters[listFiltersKey("watchlist", activeGroupId)] : undefined,
+    activeGroupId
+      ? s.listFilters[listFiltersKey("watchlist", activeGroupId)]
+      : undefined,
   );
   const setListFilters = usePreferencesStore((s) => s.setListFilters);
-  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filterPanelOpen = usePreferencesStore(
+    (s) => s.filterPanelOpen.watchlist,
+  );
+  const setFilterPanelOpen = usePreferencesStore((s) => s.setFilterPanelOpen);
+  const myProviderIds = usePreferencesStore(
+    (s) => s.selectedStreamingProviderIds,
+  );
   const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
   const sortOption = (filters.sortOption ?? "added") as WatchlistSortOption;
   const selectedGenreIds = filters.genreIds;
@@ -149,8 +187,14 @@ export default function WatchlistScreen() {
   const [sortSheetVisible, setSortSheetVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isLoading = userGroupsQuery.isLoading || groupMembersQuery.isLoading || watchlistQuery.isLoading;
-  const isError = userGroupsQuery.isError || groupMembersQuery.isError || watchlistQuery.isError;
+  const isLoading =
+    userGroupsQuery.isLoading ||
+    groupMembersQuery.isLoading ||
+    watchlistQuery.isLoading;
+  const isError =
+    userGroupsQuery.isError ||
+    groupMembersQuery.isError ||
+    watchlistQuery.isError;
 
   const totalMembers = groupMembersQuery.data?.length ?? 0;
 
@@ -158,19 +202,29 @@ export default function WatchlistScreen() {
     if (!watchlistQuery.data || !currentUserId) {
       return [];
     }
-    return splitWatchlistAndDiary(watchlistQuery.data.entries, currentUserId).watchlist;
+    return splitWatchlistAndDiary(watchlistQuery.data.entries, currentUserId)
+      .watchlist;
   }, [watchlistQuery.data, currentUserId]);
 
-  const streamingAvailability = watchlistQuery.data?.streamingAvailability ?? new Map();
+  const streamingAvailability = useMemo(
+    () => watchlistQuery.data?.streamingAvailability ?? new Map(),
+    [watchlistQuery.data?.streamingAvailability],
+  );
 
   // Genre/year pill option sets are computed from the current (pre-sort/
   // filter) watchlist entries, per the task brief.
-  const genrePillIds = useMemo(() => getDistinctGenreIds(baseWatchlistEntries), [baseWatchlistEntries]);
+  const genrePillIds = useMemo(
+    () => getDistinctGenreIds(baseWatchlistEntries),
+    [baseWatchlistEntries],
+  );
   const genreNamesById = useMemo(
     () => deriveGenreNamesById(baseWatchlistEntries),
     [baseWatchlistEntries],
   );
-  const yearPillValues = useMemo(() => getDistinctYears(baseWatchlistEntries), [baseWatchlistEntries]);
+  const yearPillValues = useMemo(
+    () => getDistinctYears(baseWatchlistEntries),
+    [baseWatchlistEntries],
+  );
 
   // Providers are only loaded (cache-backed, one batch call) while the
   // "Meine Streaming-Dienste" sort is active.
@@ -232,16 +286,26 @@ export default function WatchlistScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center" testID="watchlist-screen">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center"
+        testID="watchlist-screen"
+      >
         <ActivityIndicator testID="watchlist-loading" />
-        <Text className="mt-2 text-text-secondary">Watchlist wird geladen…</Text>
+        <Text className="mt-2 text-text-secondary">
+          Watchlist wird geladen…
+        </Text>
       </SafeAreaView>
     );
   }
 
   if (isError) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-4" testID="watchlist-screen">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center px-4"
+        testID="watchlist-screen"
+      >
         <Text testID="watchlist-error" className="text-center text-danger">
           Die Watchlist konnte nicht geladen werden.
         </Text>
@@ -254,170 +318,224 @@ export default function WatchlistScreen() {
     // Safe-Area"): same reasoning as tracker.tsx -- `headerShown: false`
     // tab screen, top inset only (bottom is the Tabs navigator's job).
     <SafeAreaView edges={["top"]} className="flex-1" testID="watchlist-screen">
-      <AppHeader
-        title="Watchlist"
-        settingsTestID="watchlist-settings-button"
-        actions={
-          <>
-            <View className="flex-row gap-2" testID="watchlist-view-mode-toggle">
-              {VIEW_MODES.map((mode) => (
-                <Button
-                  key={mode.key}
-                  size="sm"
-                  variant={watchlistViewMode === mode.key ? "primary" : "secondary"}
-                  label={mode.label}
-                  testID={`watchlist-view-mode-${mode.key}-button`}
-                  onPress={() => setWatchlistViewMode(mode.key)}
-                />
-              ))}
-            </View>
-            <Button
-              size="sm"
-              variant="primary"
-              label="+"
-              testID="watchlist-add-movie-button"
-              accessibilityLabel="Film hinzufügen"
-              onPress={() => router.push("/add-movie")}
-            />
-          </>
+      <AppHeader title="Watchlist" settingsTestID="watchlist-settings-button" />
+
+      <CollapsibleFilterPanel
+        testID="watchlist-filter"
+        open={filterPanelOpen}
+        onToggle={() => setFilterPanelOpen("watchlist", !filterPanelOpen)}
+        hasActiveFilters={hasActiveListFilters(filters, "added")}
+        search={
+          <TextInput
+            testID="watchlist-search-input"
+            className={GLASS_SEARCH_INPUT_CLASSNAME}
+            placeholder="Film suchen…"
+            placeholderTextColor="#8b8b8b"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         }
-      />
-
-      <View className="flex-row items-center gap-2 px-4 pt-3">
-        <TextInput
-          testID="watchlist-search-input"
-          className="flex-1 rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
-          placeholder="Suchen…"
-          placeholderTextColor="#8b8b8b"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <Button
-          size="sm"
-          variant="secondary"
-          testID="watchlist-sort-button"
-          label="Sortieren"
-          onPress={() => setSortSheetVisible(true)}
-        />
-      </View>
-
-      {sortOption === "genre" ? (
-        <View className="flex-row flex-wrap gap-2 px-4 pt-3" testID="watchlist-genre-pills">
-          {genrePillIds.map((genreId) => (
-            <Pressable
-              key={genreId}
-              testID={`watchlist-genre-pill-${genreId}`}
-              onPress={() => toggleGenre(genreId)}
-              className={`rounded-full border border-border-subtle px-3 py-1 ${
-                selectedGenreIds.includes(genreId) ? "bg-accent" : "bg-card"
-              }`}
-            >
-              <Text className="text-xs text-text-primary">
-                {genreDisplayLabel(genreId, genreNamesById.get(genreId))}
-              </Text>
-            </Pressable>
-          ))}
+        actions={
+          <Button
+            testID="watchlist-add-movie-button"
+            variant="primary"
+            iconOnly
+            accessibilityLabel="Film hinzufügen"
+            onPress={() => router.push("/add-movie")}
+          >
+            <Icon name="add" size="M" color={BUTTON_ICON_COLORS.primary} />
+          </Button>
+        }
+      >
+        <View className="flex-row items-stretch gap-2">
+          <SortButton
+            testID="watchlist-sort-button"
+            shortLabel={
+              WATCHLIST_SORT_SHORT_LABELS[sortOption] ??
+              sortOptionLabel(sortOption)
+            }
+            fullLabel={sortOptionLabel(sortOption)}
+            onPress={() => setSortSheetVisible(true)}
+          />
+          <ViewModeToggle
+            testID="watchlist-view-mode-toggle"
+            value={watchlistViewMode}
+            onChange={setWatchlistViewMode}
+            buttonTestID={(mode) => `watchlist-view-mode-${mode}-button`}
+          />
         </View>
-      ) : null}
+        {sortOption === "genre" ? (
+          <View
+            className="flex-row flex-wrap gap-2"
+            testID="watchlist-genre-pills"
+          >
+            {genrePillIds.map((genreId) => (
+              <Chip
+                key={genreId}
+                testID={`watchlist-genre-pill-${genreId}`}
+                active={selectedGenreIds.includes(genreId)}
+                onPress={() => toggleGenre(genreId)}
+                label={genreDisplayLabel(genreId, genreNamesById.get(genreId))}
+              />
+            ))}
+          </View>
+        ) : null}
 
-      {sortOption === "year" ? (
-        <View className="flex-row flex-wrap gap-2 px-4 pt-3" testID="watchlist-year-pills">
-          {yearPillValues.map((year) => (
-            <Pressable
-              key={year}
-              testID={`watchlist-year-pill-${year}`}
-              onPress={() => updateFilters({ year })}
-              className={`rounded-full border border-border-subtle px-3 py-1 ${
-                selectedYear === year ? "bg-accent" : "bg-card"
-              }`}
-            >
-              <Text className="text-xs text-text-primary">{year}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+        {sortOption === "year" ? (
+          <View
+            className="flex-row flex-wrap gap-2"
+            testID="watchlist-year-pills"
+          >
+            {yearPillValues.map((year) => (
+              <Chip
+                key={year}
+                testID={`watchlist-year-pill-${year}`}
+                active={selectedYear === year}
+                onPress={() => updateFilters({ year })}
+                label={String(year)}
+              />
+            ))}
+          </View>
+        ) : null}
 
-      {sortOption === "my_streaming" ? (
-        <View className="flex-row flex-wrap gap-2 px-4 pt-3" testID="watchlist-provider-categories">
-          {ALL_PROVIDER_CATEGORIES.map((category) => (
-            <Pressable
-              key={category}
-              testID={`watchlist-provider-category-${category}`}
-              accessibilityState={{ selected: providerCategories.includes(category) }}
-              onPress={() =>
-                updateFilters({ providerCategories: toggleProviderCategory(providerCategories, category) })
-              }
-              className={`rounded-full border border-border-subtle px-3 py-1 ${
-                providerCategories.includes(category) ? "bg-accent" : "bg-card"
-              }`}
-            >
-              <Text className="text-xs text-text-primary">{PROVIDER_CATEGORY_LABELS[category]}</Text>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
+        {sortOption === "my_streaming" ? (
+          <View
+            className="flex-row flex-wrap gap-2"
+            testID="watchlist-provider-categories"
+          >
+            {ALL_PROVIDER_CATEGORIES.map((category) => (
+              <Chip
+                key={category}
+                testID={`watchlist-provider-category-${category}`}
+                active={providerCategories.includes(category)}
+                onPress={() =>
+                  updateFilters({
+                    providerCategories: toggleProviderCategory(
+                      providerCategories,
+                      category,
+                    ),
+                  })
+                }
+                label={PROVIDER_CATEGORY_LABELS[category]}
+              />
+            ))}
+          </View>
+        ) : null}
+      </CollapsibleFilterPanel>
 
       {sortOption === "my_streaming" && providersQuery.isLoading ? (
-        <View className="flex-1 items-center justify-center px-8" testID="watchlist-providers-loading">
+        <View
+          className="flex-1 items-center justify-center px-8"
+          testID="watchlist-providers-loading"
+        >
           <ActivityIndicator />
-          <Text className="mt-2 text-text-secondary">Streaming-Daten werden geladen…</Text>
+          <Text className="mt-2 text-text-secondary">
+            Streaming-Daten werden geladen…
+          </Text>
         </View>
       ) : searchedEntries.length === 0 && baseWatchlistEntries.length > 0 ? (
-        <View className="flex-1 items-center justify-center px-8" testID="watchlist-no-results">
-          <Text className="text-center text-text-secondary">{getNoResultsMessage(searchQuery)}</Text>
+        <View
+          className="flex-1 items-center justify-center px-8"
+          testID="watchlist-no-results"
+        >
+          <Text className="text-center text-text-secondary">
+            {getNoResultsMessage(searchQuery)}
+          </Text>
         </View>
       ) : searchedEntries.length === 0 ? (
-        <View className="flex-1 items-center justify-center px-8" testID="watchlist-empty">
-          <Text className="text-center text-text-primary">Deine Watchlist ist leer.</Text>
+        <View
+          className="flex-1 items-center justify-center px-8"
+          testID="watchlist-empty"
+        >
+          <Text className="text-center text-text-primary">
+            Deine Watchlist ist leer.
+          </Text>
           <Text className="mt-1 text-center text-text-secondary">
             Füge Filme hinzu, sobald ihr euch für welche entschieden habt.
           </Text>
         </View>
       ) : watchlistViewMode === "list" ? (
         <FlatList
+          {...parallaxScroll}
           testID="watchlist-list"
           data={searchedEntries}
           keyExtractor={(entry) => entry.id}
-          contentContainerClassName="px-4 pt-3"
-          renderItem={({ item }) => (
-            <Pressable
+          contentContainerClassName="px-4 pb-3 pt-3"
+          renderItem={({ item, index }) => (
+            <GlassBlur
               testID={`watchlist-list-row-${item.id}`}
               accessibilityRole="button"
               onPress={() => openEntry(item)}
-              className="flex-row items-center justify-between border-b border-border-subtle py-3"
+              fallbackClassName="bg-glass"
+              blurClassName="bg-bg-card-blur"
+              className={`flex-row items-center gap-3 border-x border-b border-glass-border px-3 py-3 ${
+                index === 0 ? "rounded-t-xl border-t" : ""
+              } ${index === searchedEntries.length - 1 ? "rounded-b-xl" : ""}`}
             >
-              <Text className="flex-1 text-text-primary">{item.movie.name}</Text>
-              <Text className="text-text-secondary">{formatPlainDate(getEffectiveReleaseDate(item))}</Text>
-            </Pressable>
+              <Text
+                numberOfLines={1}
+                className="flex-1 font-display-bold text-accent-light"
+              >
+                {item.movie.name}
+              </Text>
+              <Text className="text-sm text-text-secondary">
+                {formatPlainDate(getEffectiveReleaseDate(item))}
+              </Text>
+              {item.movie.vote_average != null ? (
+                <Text className="w-9 text-right text-sm font-semibold text-text-primary">
+                  {item.movie.vote_average.toFixed(1)}
+                </Text>
+              ) : null}
+            </GlassBlur>
           )}
         />
       ) : (
         <FlatList
+          {...parallaxScroll}
           testID="watchlist-grid-or-cards"
           key={watchlistViewMode}
-          data={searchedEntries}
-          keyExtractor={(entry) => entry.id}
+          data={padToFullRows(
+            searchedEntries,
+            watchlistViewMode === "grid" ? 3 : 1,
+          )}
+          keyExtractor={(entry) =>
+            isGridPlaceholder(entry) ? entry.key : entry.id
+          }
           numColumns={watchlistViewMode === "grid" ? 3 : 1}
           contentContainerClassName="px-4 pt-3 gap-3"
-          columnWrapperClassName={watchlistViewMode === "grid" ? "gap-3" : undefined}
-          renderItem={({ item, index }) => (
-            <FadeInItem index={index} className={watchlistViewMode === "grid" ? "flex-1" : undefined}>
-              <WatchlistPosterCard
-                variant={watchlistViewMode === "grid" ? "grid" : "card"}
-                movie={withEffectiveReleaseDate(item)}
-                streamingAvailability={streamingAvailability}
-                ratedCount={ratedCountFor(item)}
-                totalMembers={totalMembers}
-                showTitle={showTitlesInGrid}
-                onPress={() => openEntry(item)}
-                testID={`watchlist-entry-${item.id}`}
-              />
-            </FadeInItem>
-          )}
+          columnWrapperClassName={
+            watchlistViewMode === "grid" ? "gap-3" : undefined
+          }
+          renderItem={({ item, index }) =>
+            isGridPlaceholder(item) ? (
+              <View className="flex-1" />
+            ) : (
+              <FadeInItem
+ replayTab="watchlist"
+                index={index}
+                className={watchlistViewMode === "grid" ? "flex-1" : undefined}
+              >
+                <WatchlistPosterCard
+                  variant={watchlistViewMode === "grid" ? "grid" : "card"}
+                  movie={withEffectiveReleaseDate(item)}
+                  streamingAvailability={streamingAvailability}
+                  ratedCount={ratedCountFor(item)}
+                  totalMembers={totalMembers}
+                  showTitle={showTitlesInGrid}
+                  onPress={() => openEntry(item)}
+                  testID={`watchlist-entry-${item.id}`}
+                />
+              </FadeInItem>
+            )
+          }
         />
       )}
 
-      <Sheet visible={sortSheetVisible} onClose={() => setSortSheetVisible(false)} title="Sortieren nach">
+      <Sheet
+        visible={sortSheetVisible}
+        onClose={() => setSortSheetVisible(false)}
+        title="Sortieren nach"
+      >
         <View testID="watchlist-sort-options">
           {SORT_OPTIONS.map((option) => (
             <Pressable
@@ -426,7 +544,13 @@ export default function WatchlistScreen() {
               onPress={() => handleSelectSortOption(option.key)}
               className="py-3"
             >
-              <Text className={sortOption === option.key ? "font-semibold text-accent" : "text-text-primary"}>
+              <Text
+                className={
+                  sortOption === option.key
+                    ? "font-semibold text-accent"
+                    : "text-text-primary"
+                }
+              >
                 {option.label}
               </Text>
             </Pressable>

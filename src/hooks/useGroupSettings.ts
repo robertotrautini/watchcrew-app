@@ -9,6 +9,7 @@ import {
   setGroupColorTheme,
   setInviteEnabled,
 } from "@/lib/groups";
+import { queryKeys } from "@/lib/queryKeys";
 
 // M9 part 2 (Group-Settings screen): TanStack Query mutations for the
 // screen's own rename/invite-link/remove-member/leave-group flows. Same
@@ -35,13 +36,18 @@ export function useRenameGroup() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
+      });
       // Prefix match: the group switcher chips read the name from every
       // ["userGroups", userId] query.
-      queryClient.invalidateQueries({ queryKey: ["userGroups"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
       // "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
-      queryClient.invalidateQueries({ queryKey: ["groupNames"] });
-      showToast("Gruppe umbenannt");
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
+      showToast("Gruppe umbenannt", { variant: "success" });
+    },
+    onError: () => {
+      showToast("Gruppe konnte nicht umbenannt werden", { variant: "error" });
     },
   });
 }
@@ -63,9 +69,14 @@ export function useSetGroupTheme() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
-      queryClient.invalidateQueries({ queryKey: ["groupNames"] });
-      showToast("Farbthema geändert");
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
+      showToast("Farbthema geändert", { variant: "success" });
+    },
+    onError: () => {
+      showToast("Farbthema konnte nicht geändert werden", { variant: "error" });
     },
   });
 }
@@ -87,7 +98,9 @@ export function useSetInviteEnabled() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
+      });
     },
   });
 }
@@ -108,7 +121,9 @@ export function useRegenerateInviteToken() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupDetails", variables.groupId] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
+      });
     },
   });
 }
@@ -130,7 +145,9 @@ export function useRemoveMember() {
       }
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupMembers", variables.groupId] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupMembers.byGroup(variables.groupId),
+      });
     },
   });
 }
@@ -159,8 +176,12 @@ export function useLeaveGroup() {
       }
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["groupMembers", variables.groupId] });
-      queryClient.invalidateQueries({ queryKey: ["userGroups", variables.userId] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.groupMembers.byGroup(variables.groupId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.userGroups.byUser(variables.userId),
+      });
     },
   });
 }

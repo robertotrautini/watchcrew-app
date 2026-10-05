@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { SMALL_PILL_HIT_SLOP } from "@/components/ui/touchTarget";
+import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
 import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
@@ -9,7 +11,7 @@ import type { GroupMemberRow } from "@/lib/groups";
 import { searchEntries } from "@/lib/watchlistLogic";
 import {
   computeNextPayer,
-  daysSincePayment,
+  lastPaidHint,
   getLastPaidAtByMember,
   getUnpaidDiaryEntries,
 } from "@/lib/trackerLogic";
@@ -75,7 +77,6 @@ export function PaymentModal({
   // Re-derive the draft every time the modal transitions to visible --
   // same "don't leak a stale draft across open/close cycles" convention as
   // RatingDialog.tsx.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!visible) {
       return;
@@ -91,7 +92,10 @@ export function PaymentModal({
   const searchedEntries = searchEntries(unpaidEntries, searchQuery);
   const lastPaidByMember = getLastPaidAtByMember(entries);
 
-  const canSave = selectedEntryId != null && selectedPayerId != null && !setPaymentMutation.isPending;
+  const canSave =
+    selectedEntryId != null &&
+    selectedPayerId != null &&
+    !setPaymentMutation.isPending;
 
   function handleSave() {
     if (!selectedEntryId || !selectedPayerId) {
@@ -109,8 +113,13 @@ export function PaymentModal({
       {
         onSuccess: () => {
           onSaved?.();
-          showToast(PAYMENT_SAVED_TOAST);
+          showToast(PAYMENT_SAVED_TOAST, { variant: "success" });
           onClose();
+        },
+        onError: () => {
+          showToast("Zahlung konnte nicht gespeichert werden", {
+            variant: "error",
+          });
         },
       },
     );
@@ -121,7 +130,7 @@ export function PaymentModal({
       <View testID="payment-modal" className="gap-3">
         <TextInput
           testID="payment-modal-search-input"
-          className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
+          className={GLASS_SEARCH_INPUT_CLASSNAME}
           placeholder="Film suchen…"
           placeholderTextColor="#8b8b8b"
           value={searchQuery}
@@ -130,7 +139,10 @@ export function PaymentModal({
 
         <View testID="payment-modal-movie-list" className="max-h-48">
           {searchedEntries.length === 0 ? (
-            <Text testID="payment-modal-movie-empty" className="py-3 text-text-secondary">
+            <Text
+              testID="payment-modal-movie-empty"
+              className="py-3 text-text-secondary"
+            >
               Keine unbezahlten Filme gefunden.
             </Text>
           ) : (
@@ -145,11 +157,15 @@ export function PaymentModal({
                   onPress={() => setSelectedEntryId(entry.id)}
                   className={
                     isSelected
-                      ? "rounded-lg bg-accent px-3 py-2"
-                      : "rounded-lg border-b border-border-subtle px-3 py-2"
+                      ? "min-h-touch-comfortable justify-center rounded-lg bg-accent px-3"
+                      : "min-h-touch-comfortable justify-center rounded-lg border-b border-glass-border px-3"
                   }
                 >
-                  <Text className={isSelected ? "text-bg-primary" : "text-text-primary"}>
+                  <Text
+                    className={
+                      isSelected ? "text-bg-primary" : "text-text-primary"
+                    }
+                  >
                     {entry.movie.name}
                   </Text>
                 </Pressable>
@@ -160,19 +176,31 @@ export function PaymentModal({
 
         <View className="gap-2">
           <Text className="text-text-secondary">Wer hat bezahlt?</Text>
-          <View className="flex-row flex-wrap gap-2" testID="payment-modal-payer-buttons">
+          <View
+            className="flex-row flex-wrap gap-2"
+            testID="payment-modal-payer-buttons"
+          >
             {groupMembers.map((member) => {
               const isSelected = selectedPayerId === member.user_id;
               const color = memberColors.get(member.user_id);
-              const hint = daysSincePayment(lastPaidByMember.get(member.user_id) ?? null, effectiveNow);
+              const hint = lastPaidHint(
+                lastPaidByMember.get(member.user_id) ?? null,
+                effectiveNow,
+              );
               return (
                 <Pressable
                   key={member.user_id}
                   testID={`payment-modal-payer-button-${member.user_id}`}
                   accessibilityRole="button"
                   accessibilityState={{ selected: isSelected }}
+                  // visual pill stays small; hitSlop tops the touch area up to 48dp
+                  hitSlop={SMALL_PILL_HIT_SLOP}
                   onPress={() => setSelectedPayerId(member.user_id)}
-                  className={isSelected ? "items-center rounded-full px-3 py-1" : "items-center rounded-full border px-3 py-1"}
+                  className={
+                    isSelected
+                      ? "items-center rounded-sm px-3 py-1"
+                      : "items-center rounded-lg border px-3 py-1"
+                  }
                   // Inline style exception (documented, narrow -- see
                   // docs/interim-decisions.md "M8", same precedent as the
                   // M6-Cleanup MovieGrid progress-bar-fill exception):
@@ -180,19 +208,34 @@ export function PaymentModal({
                   // (src/lib/trackerLogic.ts), one per member, with no fixed
                   // enumerable set NativeWind's JIT could pre-generate
                   // classes for.
-                  style={isSelected ? { backgroundColor: color } : { borderColor: color }}
+                  style={
+                    isSelected
+                      ? { backgroundColor: color }
+                      : { borderColor: color }
+                  }
                 >
-                  <Text className={isSelected ? "text-xs text-bg-primary" : "text-xs text-text-primary"}>
-                    {memberDisplayLabel(member.user_id, member.profiles?.display_name)}
+                  <Text
+                    className={
+                      isSelected
+                        ? "text-xs text-bg-primary"
+                        : "text-xs text-text-primary"
+                    }
+                  >
+                    {memberDisplayLabel(
+                      member.user_id,
+                      member.profiles?.display_name,
+                    )}
                   </Text>
-                  {hint ? (
-                    <Text
-                      testID={`payment-modal-payer-hint-${member.user_id}`}
-                      className={isSelected ? "text-[10px] text-bg-primary" : "text-[10px] text-text-secondary"}
-                    >
-                      {hint}
-                    </Text>
-                  ) : null}
+                  <Text
+                    testID={`payment-modal-payer-hint-${member.user_id}`}
+                    className={
+                      isSelected
+                        ? "text-[10px] text-bg-primary"
+                        : "text-[10px] text-text-secondary"
+                    }
+                  >
+                    {hint}
+                  </Text>
                 </Pressable>
               );
             })}
@@ -213,6 +256,7 @@ export function PaymentModal({
         <Button
           testID="payment-modal-save-button"
           label="Speichern"
+          icon="save"
           disabled={!canSave}
           loading={setPaymentMutation.isPending}
           onPress={handleSave}

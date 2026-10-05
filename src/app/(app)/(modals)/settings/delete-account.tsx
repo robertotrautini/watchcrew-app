@@ -3,10 +3,12 @@ import { useState } from "react";
 import { Text, TextInput, View } from "react-native";
 import * as Haptics from "expo-haptics";
 
+import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { Button } from "@/components/ui/Button";
 import { Sheet } from "@/components/ui/Sheet";
 import { signOut } from "@/lib/auth";
 import { deleteOwnAccount } from "@/lib/deleteAccount";
+import { GLASS_INSET_EDGE } from "@/components/ui/Glass";
 
 /**
  * M10 Settings hub — "Konto löschen". Genuinely irreversible, so this uses a
@@ -64,47 +66,58 @@ export default function SettingsDeleteAccountScreen() {
   }
 
   return (
-    <View className="flex-1 px-4 pt-4" testID="settings-delete-account-screen">
-      <Text className="mb-4 text-text-secondary">
-        Dein Konto sowie alle deine Gruppenmitgliedschaften, Bewertungen und Zahlungsdaten werden
-        endgültig gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden.
-      </Text>
+    <View className="flex-1" testID="settings-delete-account-screen">
+      <View className="flex-1 px-4 pt-4">
+        <Text className="mb-4 text-text-secondary">
+          Dein Konto sowie alle deine Gruppenmitgliedschaften, Bewertungen und
+          Zahlungsdaten werden endgültig gelöscht. Dieser Vorgang kann nicht
+          rückgängig gemacht werden.
+        </Text>
 
-      <Button
-        testID="delete-account-open-button"
-        variant="danger"
-        label="Konto löschen"
-        onPress={openSheet}
-      />
+        <Button
+          testID="delete-account-open-button"
+          variant="danger"
+          label="Konto löschen"
+          icon="delete"
+          onPress={openSheet}
+        />
 
-      <Sheet visible={sheetVisible} onClose={closeSheet} title="Konto endgültig löschen">
-        <View className="gap-3">
-          <Text className="text-text-secondary">
-            Gib zur Bestätigung "{CONFIRMATION_PHRASE}" ein. Diese Aktion ist endgültig.
-          </Text>
-          <TextInput
-            testID="delete-account-confirm-input"
-            className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
-            autoCapitalize="characters"
-            autoCorrect={false}
-            value={confirmationInput}
-            onChangeText={setConfirmationInput}
-          />
-          {errorMessage ? (
-            <Text testID="delete-account-error" className="text-danger">
-              Konto konnte nicht gelöscht werden: {errorMessage}
+        <Sheet
+          visible={sheetVisible}
+          onClose={closeSheet}
+          title="Konto endgültig löschen"
+        >
+          <View className="gap-3">
+            <Text className="text-text-secondary">
+              Gib zur Bestätigung "{CONFIRMATION_PHRASE}" ein. Diese Aktion ist
+              endgültig.
             </Text>
-          ) : null}
-          <Button
-            testID="delete-account-confirm-button"
-            variant="danger"
-            label="Endgültig löschen"
-            disabled={!isConfirmed}
-            loading={isDeleting}
-            onPress={handleConfirmDelete}
-          />
-        </View>
-      </Sheet>
+            <TextInput
+              testID="delete-account-confirm-input"
+              className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              value={confirmationInput}
+              onChangeText={setConfirmationInput}
+            />
+            {errorMessage ? (
+              <Text testID="delete-account-error" className="text-danger">
+                Konto konnte nicht gelöscht werden: {errorMessage}
+              </Text>
+            ) : null}
+            <Button
+              testID="delete-account-confirm-button"
+              variant="danger"
+              label="Endgültig löschen"
+              icon="delete"
+              disabled={!isConfirmed}
+              loading={isDeleting}
+              onPress={handleConfirmDelete}
+            />
+          </View>
+        </Sheet>
+      </View>
+      <SettingsBackBar />
     </View>
   );
 }

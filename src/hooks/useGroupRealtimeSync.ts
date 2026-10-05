@@ -13,6 +13,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { showToast } from "@/lib/toast";
 import { useFocusedGroupScreen } from "@/stores/useFocusedGroupScreen";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * M10 (Realtime foreground sync) — implements the two client-side branches
@@ -101,7 +102,7 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
     }
 
     function handleRelevantChange(kind: RealtimeChangeKind) {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", groupId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(groupId) });
 
       const isOnAffectedScreen = useFocusedGroupScreen.getState().focusedGroupId === groupId;
       const isAppForeground = AppState.currentState === "active";
@@ -128,7 +129,7 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
           { event: "*", schema: "public", table: "ratings" },
           (payload) => {
             const watchlistEntryId = extractWatchlistEntryId(payload);
-            const cached = queryClient.getQueryData<GroupWatchlistData>(["watchlist", groupId]);
+            const cached = queryClient.getQueryData<GroupWatchlistData>(queryKeys.watchlist.byGroup(groupId));
             const belongsToActiveGroup =
               watchlistEntryId != null && (cached?.entries ?? []).some((entry) => entry.id === watchlistEntryId);
             if (!belongsToActiveGroup) {

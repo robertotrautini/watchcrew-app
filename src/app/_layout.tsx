@@ -1,4 +1,4 @@
-import '@/global.css';
+import "@/global.css";
 
 import {
   PlayfairDisplay_400Regular,
@@ -6,26 +6,31 @@ import {
   PlayfairDisplay_700Bold,
   PlayfairDisplay_700Bold_Italic,
   useFonts,
-} from '@expo-google-fonts/playfair-display';
-import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+} from "@expo-google-fonts/playfair-display";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { DarkTheme, Stack, ThemeProvider } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+import { View } from "react-native";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { AppBackground } from '@/components/ui/AppBackground';
-import { OfflineBanner } from '@/components/ui/OfflineBanner';
-import { ToastHost } from '@/components/ui/Toast';
-import { useQueryCacheLifecycle } from '@/hooks/useQueryCacheLifecycle';
-import { initSentry } from '@/lib/sentry';
-import { queryClient } from '@/lib/queryClient';
+import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import { ParallaxProvider } from "@/components/ParallaxProvider";
+import { AppBackground } from "@/components/ui/AppBackground";
+import { GlassBlurTarget } from "@/components/ui/GlassBlur";
+import { rootBackdropLayout } from "@/components/ui/ScreenBackdrop";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { ToastHost } from "@/components/ui/Toast";
+import { useQueryCacheLifecycle } from "@/hooks/useQueryCacheLifecycle";
+import { initSentry } from "@/lib/sentry";
+import { queryClient } from "@/lib/queryClient";
+import { resolveGroupTheme } from "@/lib/groupTheme";
+import { navThemeColors } from "@/lib/navTheme";
 import {
   PERSIST_BUSTER,
   PERSIST_MAX_AGE_MS,
   persistDehydrateOptions,
   queryPersister,
-} from '@/lib/queryPersistence';
+} from "@/lib/queryPersistence";
 
 initSentry();
 
@@ -39,11 +44,7 @@ const APP_NAV_THEME = {
   ...DarkTheme,
   colors: {
     ...DarkTheme.colors,
-    background: 'transparent',
-    card: '#0a0a0a',
-    text: '#e8e8e8',
-    border: 'rgba(255,255,255,0.08)',
-    primary: '#c8a44e',
+    ...navThemeColors(resolveGroupTheme(undefined).colors.accent),
   },
 };
 
@@ -90,9 +91,12 @@ export default function RootLayout() {
       }}
     >
       <ThemeProvider value={APP_NAV_THEME}>
-        <View className="flex-1 bg-bg-primary">
-        <AppBackground />
-        {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
+        <ParallaxProvider>
+          <View className="flex-1 bg-bg-primary">
+            <GlassBlurTarget>
+              <AppBackground />
+            </GlassBlurTarget>
+            {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
             StatusBar"): this app's own color palette (tailwind.config.js's
             `bg-primary`/`text-primary` etc.) is a single fixed dark theme --
             it does NOT follow `useColorScheme()` the way `ThemeProvider`
@@ -104,23 +108,27 @@ export default function RootLayout() {
             icons/text on a light-mode device -- invisible against this
             app's near-black background. `style="light"` is therefore a
             fixed, deliberate choice, not a `colorScheme`-driven one. */}
-        <StatusBar style="light" />
-        <AnimatedSplashOverlay />
-        <OfflineBanner />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(app)" />
-        </Stack>
-        {/* M10 (Realtime foreground sync, ADR 0006): mounted once here so
+            <StatusBar style="light" />
+            <AnimatedSplashOverlay />
+            <OfflineBanner />
+            <Stack
+              screenLayout={rootBackdropLayout}
+              screenOptions={{ headerShown: false }}
+            >
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(onboarding)" />
+              <Stack.Screen name="(app)" />
+            </Stack>
+            {/* M10 (Realtime foreground sync, ADR 0006): mounted once here so
             src/lib/toast.ts's `showToast(...)` (called from
             src/hooks/useGroupRealtimeSync.ts) has somewhere to render,
             app-wide, regardless of which route group is active. Purely
             additive -- doesn't touch the Sentry/font/QueryClientProvider/
             auth-gate logic above. */}
-        <ToastHost />
-        </View>
+            <ToastHost />
+          </View>
+        </ParallaxProvider>
       </ThemeProvider>
     </PersistQueryClientProvider>
   );

@@ -1,17 +1,39 @@
-import { type ReactNode } from "react";
 import {
+  Fragment,
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  Animated,
+  BackHandler,
   Dimensions,
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { BUTTON_ICON_COLORS, Button } from "@/components/ui/Button";
+import {
+  GLASS_PANEL_BLUR_FILL,
+  GLASS_PANEL_FALLBACK_FILL,
+} from "@/components/ui/Glass";
+import { GlassBlur } from "@/components/ui/GlassBlur";
+import { Icon } from "@/components/ui/Icon";
+import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
+import { sheetMaxHeight } from "@/lib/sheetLayout";
 
 /**
  * Below this viewport width, the backdrop uses a flatter/less-transparent
@@ -28,6 +50,44 @@ const SMALL_SCREEN_WIDTH_THRESHOLD = 380;
 const isSmallScreen =
   Dimensions.get("window").width < SMALL_SCREEN_WIDTH_THRESHOLD;
 
+/** Space kept free above the sheet (status bar + a visible backdrop strip). */
+const SHEET_TOP_MARGIN = 80;
+
+interface SheetHostApi {
+  set: (id: string, node: ReactNode | null) => void;
+}
+const SheetHostContext = createContext<SheetHostApi | null>(null);
+
+/**
+ * Optional screen-level host: Sheets rendered below it (even deep inside a
+ * small absolutely positioned bar) draw their overlay here instead, so the
+ * overlay fills the whole host area rather than only the nearest parent view.
+ * Without a host a Sheet renders its overlay inline (unchanged behavior).
+ */
+export function SheetHost({ children }: { children?: ReactNode }) {
+  const [nodes, setNodes] = useState<Record<string, ReactNode>>({});
+  const api = useRef<SheetHostApi>({
+    set: (id, node) =>
+      setNodes((prev) => {
+        if (node == null) {
+          if (!(id in prev)) return prev;
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        }
+        return { ...prev, [id]: node };
+      }),
+  }).current;
+  return (
+    <SheetHostContext.Provider value={api}>
+      {children}
+      {Object.entries(nodes).map(([id, node]) => (
+        <Fragment key={id}>{node}</Fragment>
+      ))}
+    </SheetHostContext.Provider>
+  );
+}
+
 export interface SheetProps {
   /** Whether the sheet is currently shown. */
   visible: boolean;
@@ -40,7 +100,7 @@ export interface SheetProps {
 }
 
 /**
- * Generic bottom-sheet-style modal wrapper — the shared dialog primitive
+ * Generic bottom-sheet overlay (in-window, glass) — the shared dialog primitive
  * referenced in docs/planning-report.html ("Ein wiederverwendetes
  * Sheet/Modal-System treibt jeden Dialog an"). Callers supply the actual
  * dialog content as `children`; this component only owns the backdrop, the
@@ -55,73 +115,141 @@ export interface SheetProps {
  * behavior, which was explicitly out of scope for this task.
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
-  return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
+  // The sheet is an in-window overlay (NOT an RN Modal): a Modal is a separate
+  // Android window where the BlurView cannot sample the app photo (blur target).
+  // Whether the main window is resized by the keyboard is device dependent, so
+  // the lift uses the measured keyboard height as before.
+  const keyboardHeight = useKeyboardHeight();
+  const { height: windowHeight } = useWindowDimensions();
+  // The overlay is hosted inside the calling screen, which may end above the
+  // window bottom (tab bar): lift only by the part of the keyboard that really
+  // overlaps the overlay (overlay bottom edge vs. keyboard top edge).
+  const slide = useRef(new Animated.Value(0)).current;
+  const overlayRef = useRef<View>(null);
+  const [overlayBottom, setOverlayBottom] = useState(windowHeight);
+  useEffect(() => {
+    if (!visible || keyboardHeight === 0) return;
+    overlayRef.current?.measureInWindow((_x, y, _w, h) => {
+      if (h > 0) setOverlayBottom(y + h);
+    });
+  }, [visible, keyboardHeight]);
+  const keyboardTop = Dimensions.get("screen").height - keyboardHeight;
+  const androidLift =
+    Platform.OS === "android"
+      ? Math.max(0, Math.round(overlayBottom - keyboardTop))
+      : 0;
+
+  useEffect(() => {
+    if (!visible) return undefined;
+    slide.setValue(0);
+    Animated.timing(slide, {
+      toValue: 1,
+      duration: 220,
+      useNativeDriver: true,
+    }).start();
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      onClose();
+      return true;
+    });
+    return () => sub.remove();
+  }, [visible, onClose, slide]);
+
+  const host = useContext(SheetHostContext);
+  const hostId = useId();
+
+  // Dynamic (keyboard/window dependent) values: legitimately inline.
+  const liftStyle = { paddingBottom: androidLift };
+  const surfaceStyle = {
+    maxHeight: sheetMaxHeight(windowHeight, androidLift, SHEET_TOP_MARGIN),
+  };
+  const slideStyle = {
+    transform: [
+      {
+        translateY: slide.interpolate({
+          inputRange: [0, 1],
+          outputRange: [windowHeight, 0],
+        }),
+      },
+    ],
+  };
+  const overlay = !visible ? null : (
+    <View
+      ref={overlayRef}
+      testID="sheet-overlay"
+      style={styles.overlay}
+      pointerEvents="box-none"
     >
-      {/*
-       * M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
-       * Keyboard-Avoiding"): RN's `Modal` opens its own native window
-       * (a separate Android Dialog / iOS UIWindow), so it does NOT inherit
-       * the app's own keyboard-resize handling -- without this, several
-       * Sheet-based dialogs with a real text input (PaymentModal's "Film
-       * suchen…", the delete-account confirmation phrase) would get their
-       * bottom-anchored content (incl. the save/confirm button) covered by
-       * the keyboard. `"height"` on Android rather than leaving it
-       * `undefined`, specifically because Android's usual automatic
-       * `windowSoftInputMode="adjustResize"` behavior applies to the main
-       * Activity window, not to a `Modal`'s own separate Dialog window.
-       */}
       <KeyboardAvoidingView
         testID="sheet-keyboard-avoiding-view"
         behavior={modalKeyboardAvoidingBehavior(Platform.OS)}
         className="flex-1"
+        style={liftStyle}
       >
         <Pressable
           testID="sheet-backdrop"
           onPress={onClose}
           className={
             isSmallScreen
-              ? "flex-1 justify-end bg-black/70"
-              : "flex-1 justify-end bg-black/50"
+              ? "flex-1 justify-end bg-black/60"
+              : "flex-1 justify-end bg-black/40"
           }
         >
-          <Pressable
-            onPress={() => {
-              // Swallow the tap so it doesn't bubble to the backdrop
-              // Pressable above and close the sheet when interacting with
-              // its own content.
-            }}
-            testID="sheet-surface"
-            // Near-opaque (.97) on purpose: bg-glass (.7 alpha) let the tab bar and
-            // the screen behind the Modal bleed through the sheet; no blur available.
-            className="rounded-t-xl border-t border-glass-border bg-bg-sheet shadow-card"
-          >
-            <SafeAreaView edges={["bottom"]} testID="sheet-safe-area">
-              {title ? (
-                <View className="flex-row items-center justify-between border-b border-border-subtle px-4 py-3">
-                  <Text className="font-display text-lg text-text-primary">
-                    {title}
-                  </Text>
-                  <Pressable
-                    testID="sheet-close-button"
-                    onPress={onClose}
-                    accessibilityRole="button"
-                    accessibilityLabel="Close"
-                    className="h-touch-min w-touch-min items-center justify-center"
-                  >
-                    <Text className="text-2xl text-text-primary">×</Text>
-                  </Pressable>
-                </View>
-              ) : null}
-              <View className="p-4">{children}</View>
-            </SafeAreaView>
-          </Pressable>
+          <Animated.View style={slideStyle}>
+            <GlassBlur
+              testID="sheet-surface"
+              style={surfaceStyle}
+              className="rounded-t-xl border-t border-glass-border"
+              fallbackClassName={GLASS_PANEL_FALLBACK_FILL}
+              blurClassName={GLASS_PANEL_BLUR_FILL}
+              onPress={() => {
+                // Swallow the tap so it doesn't bubble to the backdrop.
+              }}
+            >
+              <SafeAreaView
+                edges={androidLift > 0 ? [] : ["bottom"]}
+                testID="sheet-safe-area"
+                className="shrink"
+              >
+                {title ? (
+                  <View className="flex-row items-center justify-between border-b border-glass-border px-4 py-3">
+                    <Text className="font-display text-lg text-text-primary">
+                      {title}
+                    </Text>
+                    <Button
+                      testID="sheet-close-button"
+                      variant="ghost"
+                      iconOnly
+                      onPress={onClose}
+                      accessibilityLabel="Schließen"
+                    >
+                      <Icon name="close" color={BUTTON_ICON_COLORS.ghost} />
+                    </Button>
+                  </View>
+                ) : null}
+                <ScrollView
+                  testID="sheet-scroll"
+                  keyboardShouldPersistTaps="handled"
+                  showsVerticalScrollIndicator={false}
+                  contentContainerClassName="p-4"
+                >
+                  {children}
+                </ScrollView>
+              </SafeAreaView>
+            </GlassBlur>
+          </Animated.View>
         </Pressable>
       </KeyboardAvoidingView>
-    </Modal>
+    </View>
   );
+
+  useEffect(() => {
+    host?.set(hostId, overlay);
+  });
+  useEffect(() => () => host?.set(hostId, null), [host, hostId]);
+
+  return host ? null : overlay;
 }
+
+const styles = StyleSheet.create({
+  overlay: { ...StyleSheet.absoluteFill, zIndex: 1000, elevation: 1000 },
+});

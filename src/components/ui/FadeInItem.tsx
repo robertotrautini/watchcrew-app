@@ -1,45 +1,61 @@
-import { useEffect, useRef } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { Animated } from "react-native";
+import { useReducedMotion } from "react-native-reanimated";
 
-import { computeStaggerDelayMs } from "@/lib/staggerAnimation";
+import { TabSwitchContext } from "@/components/tabSwitchContext";
+import {
+  computeStaggerDelayMs,
+  ITEM_FADE_DURATION_MS,
+  ITEM_FADE_EASING,
+} from "@/lib/motion";
 
 /**
- * M11 (animation polish, see docs/interim-decisions.md "M11 — Animation"):
- * a subtle, staggered fade-in for newly-loaded list entries, used by
- * MovieGrid, Watchlist's grid/card list, and Tagebuch's grid/card list (per
- * this task's brief -- a "contained scope" addition, not a general-purpose
- * list-animation system). Entrance-only, matching Toast.tsx's own
- * documented "fade-in only" trade-off -- these are plain `FlatList`/
- * `ScrollView` rows, not modals, so there's no equivalent "dismiss" moment
- * to animate.
- *
- * Runs its animation once per mount only (empty effect deps) -- a list
- * item is expected to mount once when it first appears and then update
- * in place (e.g. a rating changing) without re-mounting, so this does not
- * re-fade an item on every unrelated re-render.
+ * Staggered fade-in for list entries (constants in `src/lib/motion.ts`).
+ * - On mount: fades in once (view-mode switch remounts the list via `key`).
+ * - Tab switch: with `replayTab` set, the fade replays when that tab becomes
+ *   the active one (TabSwitchContext epoch bump) -- same duration, easing and
+ *   per-index delay. Plain re-renders/refetches never replay.
+ * - Reduce motion: no animation, item is shown at once.
  */
-const FADE_DURATION_MS = 220;
-
 export interface FadeInItemProps {
-  /** This item's position in the list -- feeds the stagger delay (see `computeStaggerDelayMs`). */
+  /** This item's position in the list -- feeds the stagger delay. */
   index: number;
   children: React.ReactNode;
   className?: string;
   testID?: string;
+  /** Tab route name this list lives in; enables the replay on tab switch. */
+  replayTab?: string;
 }
 
-export function FadeInItem({ index, children, className, testID }: FadeInItemProps) {
-  const opacity = useRef(new Animated.Value(0)).current;
+export function FadeInItem({ index, children, className, testID, replayTab }: FadeInItemProps) {
+  const reduceMotion = useReducedMotion();
+  const { tab, epoch } = useContext(TabSwitchContext);
+  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+  const seenEpoch = useRef(epoch);
 
-  useEffect(() => {
+  function play() {
+    opacity.setValue(0);
     Animated.timing(opacity, {
       toValue: 1,
-      duration: FADE_DURATION_MS,
+      duration: ITEM_FADE_DURATION_MS,
+      easing: ITEM_FADE_EASING,
       delay: computeStaggerDelayMs(index),
       useNativeDriver: true,
     }).start();
+  }
+
+  useEffect(() => {
+    if (!reduceMotion) play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (epoch === seenEpoch.current) return;
+    seenEpoch.current = epoch;
+    if (reduceMotion || !replayTab || tab !== replayTab) return;
+    play();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [epoch]);
 
   return (
     <Animated.View testID={testID} className={className} style={{ opacity }}>

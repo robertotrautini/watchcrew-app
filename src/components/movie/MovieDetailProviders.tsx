@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { Image } from "@/components/ui/Image";
+import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { shouldShowAllProvidersToggle } from "@/lib/movieDetailLogic";
-import type { TmdbMovieProviders, TmdbProviderRef } from "@/lib/movieDetailTypes";
+import type {
+  TmdbMovieProviders,
+  TmdbProviderRef,
+} from "@/lib/movieDetailTypes";
 
 const PREVIEW_COUNT = 3;
 
 /**
- * Scope decision: renders provider NAMES ONLY (`provider_name`) as plain
- * text — no logo images. The spec doesn't require logo rendering, and doing
- * so would require deciding a raw TMDB image-path-prefix convention that's
- * out of scope for this presentational component.
+ * Renders each provider's name, with its small TMDB logo (w92) in front when
+ * the response carries a `logo_path`.
  *
  * Collapsed-preview decision (interim, not spec-mandated): when
  * `shouldShowAllProvidersToggle` says a toggle is needed, the collapsed
@@ -41,7 +44,9 @@ function flatten(providers: TmdbMovieProviders): FlatProvider[] {
   ];
 }
 
-function groupBySection(items: FlatProvider[]): Map<FlatProvider["section"], FlatProvider[]> {
+function groupBySection(
+  items: FlatProvider[],
+): Map<FlatProvider["section"], FlatProvider[]> {
   const grouped = new Map<FlatProvider["section"], FlatProvider[]>();
   for (const item of items) {
     const existing = grouped.get(item.section) ?? [];
@@ -78,24 +83,40 @@ export function MovieDetailProviders({ providers }: MovieDetailProvidersProps) {
   });
 
   return (
-    <View testID="movie-detail-providers">
+    <View testID="movie-detail-providers" className="gap-2">
       {(["flatrate", "rent", "buy"] as const).map((section) => {
         const items = grouped.get(section);
         if (!items || items.length === 0) {
           return null;
         }
         return (
-          <View key={section} className="py-1">
-            <Text className="text-sm font-semibold text-text-primary">{SECTION_LABELS[section]}</Text>
-            <View className="flex-row flex-wrap gap-2">
+          <View key={section} className="gap-2 py-1">
+            <Text className="text-sm font-semibold text-text-primary">
+              {SECTION_LABELS[section]}
+            </Text>
+            <View className="flex-row flex-wrap gap-x-3 gap-y-2">
               {items.map((item) => (
-                <Text
+                <View
                   key={item.provider_id}
-                  testID={`movie-detail-provider-${globalIndexByProviderId.get(item.provider_id)}`}
-                  className="text-text-secondary"
+                  className="flex-row items-center gap-1.5"
                 >
-                  {item.provider_name}
-                </Text>
+                  {buildTmdbImageUrl(item.logo_path, "w92") ? (
+                    <Image
+                      testID={`movie-detail-provider-logo-${item.provider_id}`}
+                      source={{
+                        uri: buildTmdbImageUrl(item.logo_path, "w92") as string,
+                      }}
+                      contentFit="cover"
+                      className="h-6 w-6 rounded-md"
+                    />
+                  ) : null}
+                  <Text
+                    testID={`movie-detail-provider-${globalIndexByProviderId.get(item.provider_id)}`}
+                    className="text-text-secondary"
+                  >
+                    {item.provider_name}
+                  </Text>
+                </View>
               ))}
             </View>
           </View>
@@ -103,7 +124,12 @@ export function MovieDetailProviders({ providers }: MovieDetailProvidersProps) {
       })}
 
       {showToggle ? (
-        <Pressable testID="movie-detail-providers-toggle" onPress={() => setExpanded((prev) => !prev)}>
+        <Pressable
+          testID="movie-detail-providers-toggle"
+          onPress={() => setExpanded((prev) => !prev)}
+          accessibilityRole="button"
+          className="mt-2 min-h-touch-comfortable justify-center self-start"
+        >
           <Text className="text-accent">Alle Anbieter anzeigen</Text>
         </Pressable>
       ) : null}

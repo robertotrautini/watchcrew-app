@@ -111,11 +111,14 @@ export default function SimilarMoviesScreen() {
           // docs/interim-decisions.md "M6-Cleanup — movie-detail-Routen-
           // Korrektur" for why this replaces the earlier guessed
           // `source: "library"` value, which isn't part of the real enum.
+          // router.replace (not push): the similar grid is part of the opening
+          // detail view, so back from the chosen film lands on the previous
+          // film's detail, then the origin (see docs/style-guide.md "Navigation").
           if (badge !== null && activeGroupId) {
             const matchingEntry = watchlistQuery.data?.entries.find(
               (entry) => entry.movie?.tmdb_id === item.tmdbId
             );
-            router.push({
+            router.replace({
               pathname: "/movie/[tmdbId]",
               params: {
                 tmdbId: String(item.tmdbId),
@@ -125,7 +128,7 @@ export default function SimilarMoviesScreen() {
               },
             });
           } else {
-            router.push({
+            router.replace({
               pathname: "/movie/[tmdbId]",
               params: { tmdbId: String(item.tmdbId) },
             });

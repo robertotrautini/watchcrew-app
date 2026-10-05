@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getOwnProfile } from "@/lib/profile";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * M10 Settings hub: wraps `getOwnProfile` (src/lib/profile.ts) in TanStack
@@ -8,7 +9,7 @@ import { getOwnProfile } from "@/lib/profile";
  */
 export function useOwnProfile(userId: string | undefined) {
   return useQuery({
-    queryKey: ["ownProfile", userId],
+    queryKey: queryKeys.ownProfile.byUser(userId),
     queryFn: async () => {
       const { data, error } = await getOwnProfile(userId as string);
       if (error) {

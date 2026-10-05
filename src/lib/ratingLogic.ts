@@ -3,7 +3,7 @@
 // independent of Supabase/React so the single most bug-prone rule in this
 // feature area (per the project's own bugfix history) --
 // `resolvePaymentDate`'s priority chain -- can be exhaustively unit tested
-// without any mocking (see __tests__/ratingLogic.test.ts).
+// without any mocking (see __tests__/lib/ratingLogic.test.ts).
 
 import { toLocalIsoDate } from "./localDate";
 

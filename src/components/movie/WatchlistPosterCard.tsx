@@ -1,8 +1,15 @@
-import { Image, Text, View, type GestureResponderEvent } from "react-native";
+import { Text, View, type GestureResponderEvent } from "react-native";
+
+import { Image } from "@/components/ui/Image";
 
 import { Card } from "../ui/Card";
+import { TmdbBadge } from "../ui/TmdbBadge";
 import { buildTmdbImageUrl } from "../../lib/tmdbImage";
-import { getDateBadgeText, isEntryDimmed, type DateBadgeMovie } from "../../lib/watchlistDateBadge";
+import {
+  getDateBadgeText,
+  isEntryDimmed,
+  type DateBadgeMovie,
+} from "../../lib/watchlistDateBadge";
 import type { StreamingAvailabilityLookup } from "../../lib/watchlistTypes";
 
 /**
@@ -36,7 +43,11 @@ export type WatchlistPosterCardVariant = "card" | "grid";
 export interface WatchlistPosterCardProps {
   variant: WatchlistPosterCardVariant;
   /** Only the movie fields this component actually renders/needs. */
-  movie: DateBadgeMovie & Pick<import("../../lib/watchlistTypes").Movie, "name" | "poster" | "overview" | "vote_average">;
+  movie: DateBadgeMovie &
+    Pick<
+      import("../../lib/watchlistTypes").Movie,
+      "name" | "poster" | "overview" | "vote_average"
+    >;
   streamingAvailability: StreamingAvailabilityLookup;
   /** How many group members have a real (>0) rating on this entry. */
   ratedCount: number;
@@ -79,64 +90,139 @@ export function WatchlistPosterCard({
   const showProgressBadge = ratedCount > 0 && ratedCount < totalMembers;
   const progressBadgeText = `${ratedCount}/${totalMembers} bewertet`;
   const hasTmdbScore = movie.vote_average != null;
-  const overviewText =
-    movie.overview != null && movie.overview.trim().length > 0 ? movie.overview : OVERVIEW_FALLBACK;
+  const hasOverview =
+    movie.overview != null && movie.overview.trim().length > 0;
+  const overviewText = hasOverview
+    ? (movie.overview as string)
+    : OVERVIEW_FALLBACK;
 
-  const containerClassName = `p-2${dimmed ? " opacity-50" : ""}`;
+  // Dim only the content layer; the glass surface (blur + tint) must stay untouched.
+  const dimClassName = dimmed ? " opacity-50" : "";
 
-  return (
-    <Card testID={testID} onPress={onPress} className={containerClassName}>
-      <View testID={`${testID}-poster-wrapper`} className="relative">
-        <Image
-          testID={`${testID}-poster`}
-          source={posterUrl ? { uri: posterUrl } : undefined}
-          className="aspect-[2/3] w-full rounded-lg bg-card"
-        />
-
-        {showProgressBadge ? (
-          <View className="absolute left-1 top-1 rounded-full bg-black/70 px-2 py-0.5">
-            <Text testID={`${testID}-progress-badge`} className="text-xs text-white">
-              {progressBadgeText}
-            </Text>
+  if (variant === "card") {
+    // Legacy list row: small poster left, gold serif title, date line,
+    // 2-line synopsis, TMDB badge bottom-right.
+    return (
+      <Card testID={testID} onPress={onPress} className="overflow-hidden">
+        <View
+          testID={`${testID}-content`}
+          className={`flex-row${dimClassName}`}
+        >
+          <View
+            testID={`${testID}-poster-wrapper`}
+            className="w-24 self-stretch"
+          >
+            <Image
+              testID={`${testID}-poster`}
+              source={posterUrl ? { uri: posterUrl } : undefined}
+              className="aspect-[2/3] w-24 bg-black/40"
+            />
           </View>
-        ) : variant === "grid" ? (
-          <View className="absolute left-1 top-1 rounded-full bg-black/70 px-2 py-0.5">
-            <Text testID={`${testID}-date-badge-overlay`} className="text-xs text-white">
+
+          <View className="flex-1 px-3 py-2">
+            <View className="flex-row items-start justify-between gap-2">
+              <Text
+                testID={`${testID}-title`}
+                numberOfLines={2}
+                className="flex-1 font-display-bold text-base text-accent-light"
+              >
+                {movie.name}
+              </Text>
+              {showProgressBadge ? (
+                <View className="rounded-sm bg-black/70 px-2 py-0.5">
+                  <Text
+                    testID={`${testID}-progress-badge`}
+                    className="text-xs text-white"
+                  >
+                    {progressBadgeText}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text
+              testID={`${testID}-date-badge`}
+              className="text-sm text-text-secondary"
+            >
               {dateBadgeText}
             </Text>
+            <Text
+              testID={`${testID}-overview`}
+              numberOfLines={2}
+              className={`mt-1 text-sm italic ${hasOverview ? "text-text-secondary" : "text-text-dim"}`}
+            >
+              {overviewText}
+            </Text>
           </View>
-        ) : null}
 
-        {hasTmdbScore ? (
-          <View
-            testID={`${testID}-tmdb-badge`}
-            className="absolute bottom-1 right-1 rounded-full bg-black/70 px-2 py-0.5"
-          >
-            <Text className="text-xs text-white">{formatTmdbScore(movie.vote_average as number)}</Text>
+          {hasTmdbScore ? (
+            <TmdbBadge
+              testID={`${testID}-tmdb-badge`}
+              score={movie.vote_average as number}
+              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-3 py-1"
+            />
+          ) : null}
+        </View>
+      </Card>
+    );
+  }
+
+  // Edge-to-edge poster: the tile (Card, overflow-hidden) clips the poster's top
+  // corners; the bottom edge is a straight cut above the info area.
+  return (
+    <Card testID={testID} onPress={onPress} className="overflow-hidden">
+      <View testID={`${testID}-content`} className={dimClassName.trim()}>
+        <View testID={`${testID}-poster-wrapper`} className="relative w-full">
+          <Image
+            testID={`${testID}-poster`}
+            source={posterUrl ? { uri: posterUrl } : undefined}
+            contentFit="cover"
+            className="aspect-[2/3] w-full bg-black/40"
+          />
+
+          {showProgressBadge ? (
+            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-2 py-0.5">
+              <Text
+                testID={`${testID}-progress-badge`}
+                className="text-xs text-white"
+              >
+                {progressBadgeText}
+              </Text>
+            </View>
+          ) : (
+            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-2 py-0.5">
+              <Text
+                testID={`${testID}-date-badge-overlay`}
+                className="text-xs text-white"
+              >
+                {dateBadgeText}
+              </Text>
+            </View>
+          )}
+
+          {hasTmdbScore ? (
+            <View
+              testID={`${testID}-tmdb-badge`}
+              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2.5 py-1"
+            >
+              <Text className="text-xs font-semibold text-white">
+                {formatTmdbScore(movie.vote_average as number)}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {showTitle ? (
+          <View testID={`${testID}-info`} className="px-2 py-1.5">
+            <Text
+              testID={`${testID}-title`}
+              className="font-semibold text-text-primary"
+              numberOfLines={1}
+            >
+              {movie.name}
+            </Text>
           </View>
         ) : null}
       </View>
-
-      {variant === "card" || showTitle ? (
-        <Text
-          testID={`${testID}-title`}
-          className="mt-2 font-semibold text-text-primary"
-          numberOfLines={variant === "grid" ? 1 : undefined}
-        >
-          {movie.name}
-        </Text>
-      ) : null}
-
-      {variant === "card" ? (
-        <>
-          <Text testID={`${testID}-date-badge`} className="text-xs text-text-secondary">
-            {dateBadgeText}
-          </Text>
-          <Text testID={`${testID}-overview`} className="mt-1 text-sm text-text-secondary">
-            {overviewText}
-          </Text>
-        </>
-      ) : null}
     </Card>
   );
 }

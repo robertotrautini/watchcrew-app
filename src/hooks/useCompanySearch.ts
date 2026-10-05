@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { searchCompany } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Studio mode debounce (M7 part 2). Not specified in the source doc (only
@@ -22,7 +23,7 @@ export function useCompanySearch(query: string) {
   const trimmedQuery = debouncedQuery.trim();
 
   return useQuery({
-    queryKey: ["companySearch", trimmedQuery],
+    queryKey: queryKeys.companySearch(trimmedQuery),
     queryFn: async () => {
       const { data, error } = await searchCompany(trimmedQuery);
       if (error) {

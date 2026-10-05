@@ -32,7 +32,11 @@ import type { WatchlistEntry } from "./watchlistTypes";
 export function getPaidEntries(entries: WatchlistEntry[]): WatchlistEntry[] {
   return entries
     .filter((entry) => entry.paid_at != null)
-    .sort((a, b) => new Date(b.paid_at as string).getTime() - new Date(a.paid_at as string).getTime());
+    .sort(
+      (a, b) =>
+        new Date(b.paid_at as string).getTime() -
+        new Date(a.paid_at as string).getTime(),
+    );
 }
 
 // ============================================================================
@@ -41,7 +45,9 @@ export function getPaidEntries(entries: WatchlistEntry[]): WatchlistEntry[] {
 
 /** Same "not really rated yet" threshold used project-wide (rating != null && rating > 0). */
 function hasAnyRealRating(entry: WatchlistEntry): boolean {
-  return entry.ratings.some((rating) => rating.rating != null && rating.rating > 0);
+  return entry.ratings.some(
+    (rating) => rating.rating != null && rating.rating > 0,
+  );
 }
 
 /**
@@ -49,8 +55,12 @@ function hasAnyRealRating(entry: WatchlistEntry): boolean {
  * group member (not "everyone has rated" -- confirmed legacy rule, see
  * module doc), and no payment logged yet.
  */
-export function getUnpaidDiaryEntries(entries: WatchlistEntry[]): WatchlistEntry[] {
-  return entries.filter((entry) => entry.paid_at == null && hasAnyRealRating(entry));
+export function getUnpaidDiaryEntries(
+  entries: WatchlistEntry[],
+): WatchlistEntry[] {
+  return entries.filter(
+    (entry) => entry.paid_at == null && hasAnyRealRating(entry),
+  );
 }
 
 // ============================================================================
@@ -81,14 +91,19 @@ export function getUnpaidDiaryEntries(entries: WatchlistEntry[]): WatchlistEntry
  * individual member's last-paid date for their own "vor X Tagen" hint
  * (`daysSincePayment`), not just the single suggested next-payer.
  */
-export function getLastPaidAtByMember(entries: WatchlistEntry[]): Map<string, string> {
+export function getLastPaidAtByMember(
+  entries: WatchlistEntry[],
+): Map<string, string> {
   const lastPaidByMember = new Map<string, string>();
   for (const entry of entries) {
     if (!entry.paid_at || !entry.paid_by_member_id) {
       continue;
     }
     const current = lastPaidByMember.get(entry.paid_by_member_id);
-    if (!current || new Date(entry.paid_at).getTime() > new Date(current).getTime()) {
+    if (
+      !current ||
+      new Date(entry.paid_at).getTime() > new Date(current).getTime()
+    ) {
       lastPaidByMember.set(entry.paid_by_member_id, entry.paid_at);
     }
   }
@@ -149,12 +164,18 @@ function toUtcDateOnly(iso: string): number {
  * most recent payment). Returns `null` when the member has never paid
  * (nothing to show).
  */
-export function daysSincePayment(lastPaidAt: string | null | undefined, now: Date): string | null {
+export function daysSincePayment(
+  lastPaidAt: string | null | undefined,
+  now: Date,
+): string | null {
   if (!lastPaidAt) {
     return null;
   }
 
-  const diffDays = Math.round((toUtcDateOnly(toLocalIsoDate(now)) - toUtcDateOnly(lastPaidAt)) / 86_400_000);
+  const diffDays = Math.round(
+    (toUtcDateOnly(toLocalIsoDate(now)) - toUtcDateOnly(lastPaidAt)) /
+      86_400_000,
+  );
 
   if (diffDays <= 0) {
     return "heute";
@@ -163,6 +184,30 @@ export function daysSincePayment(lastPaidAt: string | null | undefined, now: Dat
     return "gestern";
   }
   return `vor ${diffDays} Tagen`;
+}
+
+/**
+ * Explicit hint for the add-payment modal's payer chips: when this member last paid
+ * (excluding nothing: the modal only lists UNPAID movies, so every payment in `entries`
+ * is a previous one). `null` input -> "noch nie bezahlt". A payment dated in the future is
+ * shown as an absolute date (a relative "heute" would be wrong and confusing).
+ */
+export function lastPaidHint(
+  lastPaidAt: string | null | undefined,
+  now: Date,
+): string {
+  if (!lastPaidAt) {
+    return "noch nie bezahlt";
+  }
+  const diffDays = Math.round(
+    (toUtcDateOnly(toLocalIsoDate(now)) - toUtcDateOnly(lastPaidAt)) /
+      86_400_000,
+  );
+  if (diffDays < 0) {
+    const [year, month, day] = lastPaidAt.slice(0, 10).split("-");
+    return `zuletzt bezahlt: ${day}.${month}.${year}`;
+  }
+  return `zuletzt bezahlt: ${daysSincePayment(lastPaidAt, now)}`;
 }
 
 // ============================================================================
@@ -181,7 +226,14 @@ export function daysSincePayment(lastPaidAt: string | null | undefined, now: Dat
 
 import { resolveGroupTheme, type GroupThemeName } from "./groupTheme";
 
-const MEMBER_COLOR_THEME_NAMES: GroupThemeName[] = ["gold", "red", "blue", "green", "purple", "orange"];
+const MEMBER_COLOR_THEME_NAMES: GroupThemeName[] = [
+  "gold",
+  "red",
+  "blue",
+  "green",
+  "purple",
+  "orange",
+];
 
 const MEMBER_COLOR_PALETTE: string[] = MEMBER_COLOR_THEME_NAMES.map(
   (name) => resolveGroupTheme(name).colors.accent,
@@ -194,13 +246,18 @@ const MEMBER_COLOR_PALETTE: string[] = MEMBER_COLOR_THEME_NAMES.map(
  * Groups with more than 6 members wrap around the palette (modulo) rather
  * than crashing or running out of colors.
  */
-export function assignMemberColors(members: GroupMemberRow[]): Map<string, string> {
+export function assignMemberColors(
+  members: GroupMemberRow[],
+): Map<string, string> {
   const sorted = [...members].sort(
     (a, b) => new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime(),
   );
   const colors = new Map<string, string>();
   sorted.forEach((member, index) => {
-    colors.set(member.user_id, MEMBER_COLOR_PALETTE[index % MEMBER_COLOR_PALETTE.length]);
+    colors.set(
+      member.user_id,
+      MEMBER_COLOR_PALETTE[index % MEMBER_COLOR_PALETTE.length],
+    );
   });
   return colors;
 }

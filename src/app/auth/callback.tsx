@@ -1,10 +1,22 @@
 import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Text, TextInput } from "react-native";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+} from "react-native";
 
 import { Button } from "@/components/ui/Button";
-import { establishSessionFromTokens, exchangeAuthCode, updatePassword } from "@/lib/auth";
+import { Brand } from "@/components/ui/Brand";
+import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import {
+  establishSessionFromTokens,
+  exchangeAuthCode,
+  updatePassword,
+} from "@/lib/auth";
 import { parseAuthLink } from "@/lib/authDeepLink";
 import { MIN_PASSWORD_LENGTH } from "@/lib/passwordRules";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
@@ -13,7 +25,8 @@ import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 // without a link).
 const URL_WAIT_MS = 4000;
 
-const INVALID_LINK_MESSAGE = "Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.";
+const INVALID_LINK_MESSAGE =
+  "Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.";
 
 type Phase = "processing" | "recovery" | "error";
 
@@ -61,7 +74,10 @@ export default function AuthCallbackScreen() {
 
       let result: { error: unknown } | null = null;
       if (link.accessToken && link.refreshToken) {
-        result = await establishSessionFromTokens(link.accessToken, link.refreshToken);
+        result = await establishSessionFromTokens(
+          link.accessToken,
+          link.refreshToken,
+        );
       } else if (link.code) {
         result = await exchangeAuthCode(link.code);
       }
@@ -84,7 +100,9 @@ export default function AuthCallbackScreen() {
   async function handleSubmit() {
     setApiError(null);
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setValidationError(`Das Passwort muss mindestens ${MIN_PASSWORD_LENGTH} Zeichen lang sein.`);
+      setValidationError(
+        `Das Passwort muss mindestens ${MIN_PASSWORD_LENGTH} Zeichen lang sein.`,
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -107,7 +125,8 @@ export default function AuthCallbackScreen() {
     return (
       <KeyboardAvoidingView
         className="flex-1 items-center justify-center px-6"
-        testID="auth-callback-screen">
+        testID="auth-callback-screen"
+      >
         <ActivityIndicator testID="auth-callback-loading" />
       </KeyboardAvoidingView>
     );
@@ -116,22 +135,31 @@ export default function AuthCallbackScreen() {
   if (phase === "error") {
     return (
       <KeyboardAvoidingView
-        className="flex-1 items-center justify-center gap-4 px-6"
-        testID="auth-callback-screen">
-        <Text testID="auth-callback-error" className="text-center text-base text-danger">
-          {INVALID_LINK_MESSAGE}
-        </Text>
-        <Button
-          label="Neuen Link anfordern"
-          onPress={() => router.replace("/(auth)/forgot-password")}
-          testID="auth-callback-forgot-password-button"
-        />
-        <Button
-          variant="secondary"
-          label="Zum Login"
-          onPress={() => router.replace("/(auth)/login")}
-          testID="auth-callback-login-button"
-        />
+        className="flex-1 justify-center px-6"
+        testID="auth-callback-screen"
+      >
+        <Brand />
+        <Glass variant="strong" className="gap-4 p-5">
+          <Text
+            testID="auth-callback-error"
+            className="text-center text-base text-danger"
+          >
+            {INVALID_LINK_MESSAGE}
+          </Text>
+          <Button
+            label="Neuen Link anfordern"
+            icon="send"
+            onPress={() => router.replace("/(auth)/forgot-password")}
+            testID="auth-callback-forgot-password-button"
+          />
+          <Button
+            variant="secondary"
+            label="Zum Login"
+            icon="login"
+            onPress={() => router.replace("/(auth)/login")}
+            testID="auth-callback-login-button"
+          />
+        </Glass>
       </KeyboardAvoidingView>
     );
   }
@@ -139,46 +167,59 @@ export default function AuthCallbackScreen() {
   return (
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center gap-4 px-6"
-      testID="auth-callback-screen">
-      <Text className="mb-2 font-display text-3xl text-text-primary">Neues Passwort setzen</Text>
-      <TextInput
-        testID="auth-callback-password-input"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-        placeholderTextColor="#888888"
-        className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-      />
-      <TextInput
-        testID="auth-callback-confirm-input"
-        value={confirmPassword}
-        onChangeText={setConfirmPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        placeholder="Passwort wiederholen"
-        placeholderTextColor="#888888"
-        className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-      />
-      {validationError ? (
-        <Text testID="auth-callback-validation-error" className="text-sm text-danger">
-          {validationError}
+      className="flex-1 justify-center px-6"
+      testID="auth-callback-screen"
+    >
+      <Brand />
+      <Glass variant="strong" className="gap-4 p-5">
+        <Text className="font-display text-2xl text-text-primary">
+          Neues Passwort setzen
         </Text>
-      ) : null}
-      {apiError ? (
-        <Text testID="auth-callback-api-error" className="text-sm text-danger">
-          {`Passwort konnte nicht geändert werden: ${apiError}`}
-        </Text>
-      ) : null}
-      <Button
-        label="Passwort speichern"
-        onPress={handleSubmit}
-        loading={loading}
-        disabled={loading}
-        testID="auth-callback-submit-button"
-      />
+        <TextInput
+          testID="auth-callback-password-input"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
+          placeholderTextColor="#888888"
+          className={GLASS_INPUT_CLASSNAME}
+        />
+        <TextInput
+          testID="auth-callback-confirm-input"
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="Passwort wiederholen"
+          placeholderTextColor="#888888"
+          className={GLASS_INPUT_CLASSNAME}
+        />
+        {validationError ? (
+          <Text
+            testID="auth-callback-validation-error"
+            className="text-sm text-danger"
+          >
+            {validationError}
+          </Text>
+        ) : null}
+        {apiError ? (
+          <Text
+            testID="auth-callback-api-error"
+            className="text-sm text-danger"
+          >
+            {`Passwort konnte nicht geändert werden: ${apiError}`}
+          </Text>
+        ) : null}
+        <Button
+          label="Passwort speichern"
+          icon="save"
+          onPress={handleSubmit}
+          loading={loading}
+          disabled={loading}
+          testID="auth-callback-submit-button"
+        />
+      </Glass>
     </KeyboardAvoidingView>
   );
 }

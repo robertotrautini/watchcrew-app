@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { loadStreamingRows, rowsToProvidersMap } from "@/lib/streamingAvailability";
 import type { TmdbMovieProviders } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Providers (DE) for the given movies, from the shared 24h cache
@@ -25,7 +26,7 @@ function entriesToMap(entries: unknown): Map<number, TmdbMovieProviders> {
 export function useMyStreamingProviders(tmdbIds: number[], enabled: boolean) {
   const sortedIds = [...new Set(tmdbIds)].sort((a, b) => a - b);
   return useQuery({
-    queryKey: ["streamingProviders", sortedIds],
+    queryKey: queryKeys.streamingProviders(sortedIds),
     queryFn: async (): Promise<ProviderEntries> => {
       const { data, error } = await loadStreamingRows(sortedIds, sortedIds);
       if (error) {

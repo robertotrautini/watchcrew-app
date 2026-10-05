@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Pressable, Text, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  type NativeSyntheticEvent,
+  type TextLayoutEventData,
+} from "react-native";
 
 import { shouldShowMoreToggle } from "@/lib/movieDetailLogic";
 
@@ -21,7 +27,9 @@ export interface MovieDetailDescriptionProps {
   overview: string | null;
 }
 
-export function MovieDetailDescription({ overview }: MovieDetailDescriptionProps) {
+export function MovieDetailDescription({
+  overview,
+}: MovieDetailDescriptionProps) {
   const [measuredLineCount, setMeasuredLineCount] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
@@ -29,15 +37,23 @@ export function MovieDetailDescription({ overview }: MovieDetailDescriptionProps
     return null;
   }
 
-  const showToggle = shouldShowMoreToggle(measuredLineCount, MAX_COLLAPSED_LINES);
+  const showToggle = shouldShowMoreToggle(
+    measuredLineCount,
+    MAX_COLLAPSED_LINES,
+  );
 
-  function handleMeasureLayout(event: NativeSyntheticEvent<TextLayoutEventData>) {
+  function handleMeasureLayout(
+    event: NativeSyntheticEvent<TextLayoutEventData>,
+  ) {
     setMeasuredLineCount(event.nativeEvent.lines.length);
   }
 
   return (
     <>
-      <View testID="movie-detail-description-measure-wrapper" className="absolute h-0 w-full overflow-hidden">
+      <View
+        testID="movie-detail-description-measure-wrapper"
+        className="absolute h-0 w-full overflow-hidden"
+      >
         <Text
           testID="movie-detail-description-measure"
           className={`opacity-0 ${TEXT_CLASSNAME}`}
@@ -56,8 +72,15 @@ export function MovieDetailDescription({ overview }: MovieDetailDescriptionProps
       </Text>
 
       {showToggle ? (
-        <Pressable testID="movie-detail-description-toggle" onPress={() => setExpanded((prev) => !prev)}>
-          <Text className="text-accent">{expanded ? "Weniger anzeigen" : "Mehr anzeigen"}</Text>
+        <Pressable
+          testID="movie-detail-description-toggle"
+          accessibilityRole="button"
+          className="min-h-touch-comfortable justify-center"
+          onPress={() => setExpanded((prev) => !prev)}
+        >
+          <Text className="text-accent">
+            {expanded ? "Weniger anzeigen" : "Mehr anzeigen"}
+          </Text>
         </Pressable>
       ) : null}
     </>

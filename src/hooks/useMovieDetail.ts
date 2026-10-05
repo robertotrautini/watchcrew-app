@@ -14,6 +14,7 @@ import type {
   TmdbMovieProviders,
   TmdbVideo,
 } from "@/lib/movieDetailTypes";
+import { queryKeys } from "@/lib/queryKeys";
 
 // Re-exported so consumers (the M6 part 2a screen-UI layer) can pull both
 // the hook and its data types from this one module, same as
@@ -57,7 +58,7 @@ export interface MovieDetailData {
  */
 export function useMovieDetail(tmdbId: number | undefined): UseQueryResult<MovieDetailData> {
   return useQuery({
-    queryKey: ["movieDetail", tmdbId],
+    queryKey: queryKeys.movieDetail(tmdbId),
     queryFn: async (): Promise<MovieDetailData> => {
       const id = tmdbId as number;
 

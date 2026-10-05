@@ -1,9 +1,13 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/ui/Icon";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
+import { GlassBlur } from "@/components/ui/GlassBlur";
+import { SheetHost } from "@/components/ui/Sheet";
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
 import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
 import { MovieDetailDescription } from "@/components/movie/MovieDetailDescription";
@@ -13,10 +17,14 @@ import { MovieDetailPosterTrailer } from "@/components/movie/MovieDetailPosterTr
 import { MovieDetailProviders } from "@/components/movie/MovieDetailProviders";
 import { MovieDetailRatingsSection } from "@/components/movie/MovieDetailRatingsSection";
 import { MovieDetailTitleRow } from "@/components/movie/MovieDetailTitleRow";
-import { RatingDialog, type RatingDialogMode } from "@/components/movie/RatingDialog";
+import {
+  RatingDialog,
+  type RatingDialogMode,
+} from "@/components/movie/RatingDialog";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
+import { useSafeBack } from "@/hooks/useSafeBack";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { resolveDetailEntryContext } from "@/lib/movieDetailEntryContext";
 import { useMovieDetail } from "@/hooks/useMovieDetail";
@@ -32,8 +40,12 @@ import {
   pickRuntime,
   type GetVisibleActionsContext,
 } from "@/lib/movieDetailLogic";
-import { navigateToActorFilmography, navigateToDirectorFilmography } from "@/lib/movieDetailNavigation";
+import {
+  navigateToActorFilmography,
+  navigateToDirectorFilmography,
+} from "@/lib/movieDetailNavigation";
 import type { Movie } from "@/lib/watchlistTypes";
+import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 
 /**
  * Movie-Detail-Overlay route (M6 part 2a) — the final integration point that
@@ -59,6 +71,7 @@ import type { Movie } from "@/lib/watchlistTypes";
  *     is treated as "no movieJson" and never crashes the screen.
  */
 export default function MovieDetailScreen() {
+  const parallaxScroll = useParallaxScroll();
   const params = useLocalSearchParams<{
     tmdbId: string;
     groupId?: string;
@@ -67,13 +80,16 @@ export default function MovieDetailScreen() {
     movieJson?: string;
   }>();
   const router = useRouter();
+  const goBack = useSafeBack();
 
   const rawTmdbId = params.tmdbId;
   const tmdbId = Number(rawTmdbId);
   // `Number("")` is 0 (finite), so an empty/missing segment must be rejected
   // explicitly rather than relying on `Number.isFinite` alone.
   const isValidTmdbId =
-    typeof rawTmdbId === "string" && rawTmdbId.trim() !== "" && Number.isFinite(tmdbId);
+    typeof rawTmdbId === "string" &&
+    rawTmdbId.trim() !== "" &&
+    Number.isFinite(tmdbId);
 
   const routeGroupId = params.groupId;
   const routeHasGroupContext = Boolean(routeGroupId && params.source);
@@ -92,16 +108,21 @@ export default function MovieDetailScreen() {
   const groupWatchlistQuery = useGroupWatchlist(
     routeHasGroupContext ? routeGroupId : activeGroupId,
   );
-  const { groupId, source, watchlistEntryId, hasGroupContext } = resolveDetailEntryContext({
-    routeGroupId,
-    routeSource: params.source,
-    routeWatchlistEntryId: params.watchlistEntryId,
-    tmdbId,
-    activeGroupId,
-    currentUserId,
-    activeGroupEntries: routeHasGroupContext ? undefined : groupWatchlistQuery.data?.entries,
-  });
-  const groupMembersQuery = useGroupMembers(hasGroupContext ? groupId : undefined);
+  const { groupId, source, watchlistEntryId, hasGroupContext } =
+    resolveDetailEntryContext({
+      routeGroupId,
+      routeSource: params.source,
+      routeWatchlistEntryId: params.watchlistEntryId,
+      tmdbId,
+      activeGroupId,
+      currentUserId,
+      activeGroupEntries: routeHasGroupContext
+        ? undefined
+        : groupWatchlistQuery.data?.entries,
+    });
+  const groupMembersQuery = useGroupMembers(
+    hasGroupContext ? groupId : undefined,
+  );
 
   const watchlistEntry = groupWatchlistQuery.data?.entries.find(
     (entry) => entry.id === watchlistEntryId,
@@ -151,9 +172,14 @@ export default function MovieDetailScreen() {
   // from a search result, which carries only `tmdbId`). "Film" stays the
   // last-resort placeholder while neither has resolved.
   const title = storedMovie?.name ?? liveDetails?.title ?? "Film";
-  const posterUrl = buildTmdbImageUrl(storedMovie?.poster ?? liveDetails?.posterPath ?? null, "w780");
+  const posterUrl = buildTmdbImageUrl(
+    storedMovie?.poster ?? liveDetails?.posterPath ?? null,
+    "w780",
+  );
   const overview = storedMovie?.overview ?? liveDetails?.overview ?? null;
-  const runtimeLabel = formatRuntime(pickRuntime(storedMovie?.runtime ?? null, liveDetails?.runtime ?? null));
+  const runtimeLabel = formatRuntime(
+    pickRuntime(storedMovie?.runtime ?? null, liveDetails?.runtime ?? null),
+  );
   // Per-group override (watchlist_entries.release_date_override) wins over every
   // TMDB-derived date, including the German cinema/digital date.
   const releaseDateOverride = watchlistEntry?.release_date_override ?? null;
@@ -164,10 +190,16 @@ export default function MovieDetailScreen() {
           movieDetailQuery.data?.germanReleaseDate ?? null,
           storedMovie?.release_date ?? liveDetails?.releaseDate ?? null,
         );
-  const genres = pickGenres(liveDetails?.genres ?? null, storedMovie?.movie_genres ?? null);
-  const voteAverage = liveDetails?.vote_average ?? storedMovie?.vote_average ?? null;
+  const genres = pickGenres(
+    liveDetails?.genres ?? null,
+    storedMovie?.movie_genres ?? null,
+  );
+  const voteAverage =
+    liveDetails?.vote_average ?? storedMovie?.vote_average ?? null;
 
-  const currentUserRating = ratings.find((rating) => rating.member_id === currentUserId);
+  const currentUserRating = ratings.find(
+    (rating) => rating.member_id === currentUserId,
+  );
   const showHeart = currentUserRating?.liked === true;
   const liked = currentUserRating?.liked === true;
 
@@ -192,8 +224,10 @@ export default function MovieDetailScreen() {
 
   // Two NEW decision points not pre-specified anywhere upstream — flagged
   // explicitly in the hand-off report for user confirmation.
-  const isReleased = releaseInfo != null && new Date(releaseInfo.date).getTime() <= Date.now();
-  const isOnStreaming = (movieDetailQuery.data?.providers?.flatrate.length ?? 0) > 0;
+  const isReleased =
+    releaseInfo != null && new Date(releaseInfo.date).getTime() <= Date.now();
+  const isOnStreaming =
+    (movieDetailQuery.data?.providers?.flatrate.length ?? 0) > 0;
 
   const hasCollection = liveDetails?.belongs_to_collection != null;
   const collectionId = liveDetails?.belongs_to_collection?.id;
@@ -230,10 +264,15 @@ export default function MovieDetailScreen() {
   // and the dialog falls back to sensible "nothing set yet" defaults below
   // -- correct for a freshly-created entry either way.
   const ratingDialogEntry = ratingDialogTarget
-    ? groupWatchlistQuery.data?.entries.find((entry) => entry.id === ratingDialogTarget.watchlistEntryId)
+    ? groupWatchlistQuery.data?.entries.find(
+        (entry) => entry.id === ratingDialogTarget.watchlistEntryId,
+      )
     : undefined;
 
-  function handleOpenRatingDialog(entryId: string, mode: "watchlist" | "diary") {
+  function handleOpenRatingDialog(
+    entryId: string,
+    mode: "watchlist" | "diary",
+  ) {
     if (!groupId) {
       return;
     }
@@ -245,22 +284,35 @@ export default function MovieDetailScreen() {
     if (!activeGroupId) {
       return;
     }
-    setRatingDialogTarget({ mode: "direct", watchlistEntryId: entryId, groupId: activeGroupId });
+    setRatingDialogTarget({
+      mode: "direct",
+      watchlistEntryId: entryId,
+      groupId: activeGroupId,
+    });
     setRatingDialogVisible(true);
   }
 
   if (!isValidTmdbId) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-4" testID="movie-detail-invalid">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center px-4"
+        testID="movie-detail-invalid"
+      >
         <Stack.Screen options={{ headerShown: false }} />
         <Text className="text-center text-text-primary">Ungültiger Film</Text>
         <Pressable
           testID="movie-detail-back-button"
           accessibilityRole="button"
-          onPress={() => router.back()}
-          className="mt-4 h-touch-min items-center justify-center px-4"
+          onPress={goBack}
+          accessibilityLabel="Zurück"
+          className="mt-4 h-touch-comfortable min-w-touch-comfortable items-center justify-center px-4"
         >
-          <Ionicons name={router.canGoBack() ? "arrow-back" : "close"} size={22} color="#8b8b8b" />
+          <Icon
+            name={router.canGoBack() ? "back" : "close"}
+            size="M"
+            color="#8b8b8b"
+          />
         </Pressable>
       </SafeAreaView>
     );
@@ -275,107 +327,139 @@ export default function MovieDetailScreen() {
     // otherwise sit partially under it. `bottom` is handled separately, on
     // the absolutely-positioned action bar below (its own home-indicator
     // inset, not this outer container's).
-    <SafeAreaView edges={["top"]} className="flex-1" testID="movie-detail-screen">
-      <Stack.Screen options={{ headerShown: false }} />
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1"
+      testID="movie-detail-screen"
+    >
+      <SheetHost>
+        <Stack.Screen options={{ headerShown: false }} />
 
-      <ScrollView contentContainerClassName="pb-24">
-        <View className="flex-row items-center px-4 py-3">
-          <Pressable
-            testID="movie-detail-back-button"
-            accessibilityRole="button"
-            onPress={() => router.back()}
-            className="h-touch-min w-touch-min items-center justify-center"
+        {/* Inner flex-1 box = inside the SafeAreaView's top padding, so the absolute back button sits below the status bar. */}
+        <View className="flex-1">
+          <ScrollView
+            {...parallaxScroll}
+            contentContainerClassName={
+              actions.length > 4 ? "pb-60 pt-14" : "pb-40 pt-14"
+            }
           >
-            <Ionicons
-              name={router.canGoBack() ? "arrow-back" : "close"}
-              size={24}
-              color="#8b8b8b"
+            <MovieDetailPosterTrailer
+              posterUrl={posterUrl}
+              title={title}
+              isLoadingDetail={movieDetailQuery.isLoading}
+              trailer={movieDetailQuery.data?.trailer ?? null}
             />
-          </Pressable>
+
+            <View className="gap-3 px-4 pt-3">
+              <MovieDetailTitleRow
+                title={title}
+                voteAverage={voteAverage}
+                showHeart={showHeart}
+                liked={liked}
+                onToggleLike={handleToggleLike}
+                isTogglingLike={toggleLikeMutation.isPending}
+              />
+
+              <MovieDetailMetaRow
+                runtimeLabel={runtimeLabel}
+                releaseInfo={
+                  releaseInfo
+                    ? {
+                        ...releaseInfo,
+                        date: formatDateForInput(releaseInfo.date),
+                      }
+                    : null
+                }
+              />
+
+              <MovieDetailGenreTags genres={genres} />
+
+              {source === "diary" ? (
+                <MovieDetailRatingsSection
+                  ratings={ratings}
+                  displayNameById={displayNameById}
+                  starColor={starColor}
+                />
+              ) : null}
+
+              <MovieDetailCastRow
+                director={movieDetailQuery.data?.credits?.director ?? null}
+                cast={movieDetailQuery.data?.credits?.cast ?? []}
+                onDirectorPress={(personId) =>
+                  navigateToDirectorFilmography(router, personId)
+                }
+                onCastMemberPress={(personId) =>
+                  navigateToActorFilmography(router, personId)
+                }
+              />
+
+              <MovieDetailDescription overview={overview} />
+
+              <MovieDetailProviders
+                providers={movieDetailQuery.data?.providers ?? null}
+              />
+            </View>
+          </ScrollView>
+
+          {/* Fixed (not inside the ScrollView): stays inside the top safe-area inset and never scrolls away. */}
+          <View className="absolute left-4 top-2 z-10" pointerEvents="box-none">
+            <Button
+              testID="movie-detail-back-button"
+              variant="secondary"
+              size="sm"
+              iconOnly
+              onPress={goBack}
+            >
+              <Icon
+                name={router.canGoBack() ? "back" : "close"}
+                size="M"
+                color={BUTTON_ICON_COLORS.secondary}
+              />
+            </Button>
+          </View>
         </View>
 
-        <MovieDetailPosterTrailer
-          posterUrl={posterUrl}
-          title={title}
-          isLoadingDetail={movieDetailQuery.isLoading}
-          trailer={movieDetailQuery.data?.trailer ?? null}
-        />
-
-        <View className="gap-3 px-4 pt-4">
-          <MovieDetailTitleRow
-            title={title}
-            voteAverage={voteAverage}
-            showHeart={showHeart}
-            liked={liked}
-            onToggleLike={handleToggleLike}
-            isTogglingLike={toggleLikeMutation.isPending}
-          />
-
-          <MovieDetailMetaRow
-            runtimeLabel={runtimeLabel}
-            releaseInfo={releaseInfo ? { ...releaseInfo, date: formatDateForInput(releaseInfo.date) } : null}
-          />
-
-          <MovieDetailGenreTags genres={genres} />
-
-          {source === "diary" ? (
-            <MovieDetailRatingsSection
-              ratings={ratings}
-              displayNameById={displayNameById}
-              starColor={starColor}
+        <GlassBlur
+          className={`absolute bottom-0 left-0 right-0 ${GLASS_BAR_CLASSNAME}`}
+          fallbackClassName="bg-bg-sheet"
+          blurClassName="bg-bg-sheet-blur"
+        >
+          <SafeAreaView edges={["bottom"]} testID="movie-detail-action-bar">
+            <MovieDetailActionsBar
+              actions={actions}
+              router={router}
+              tmdbId={tmdbId}
+              groupId={groupId}
+              watchlistEntryId={watchlistEntryId}
+              activeGroupId={activeGroupId}
+              currentUserId={currentUserId}
+              collectionId={collectionId}
+              source={source}
+              releaseDate={releaseInfo?.date ?? null}
+              hasReleaseDateOverride={releaseDateOverride != null}
+              onOpenRatingDialog={handleOpenRatingDialog}
+              onDirectRateEntryCreated={handleDirectRateEntryCreated}
             />
-          ) : null}
+          </SafeAreaView>
+        </GlassBlur>
 
-          <MovieDetailCastRow
-            director={movieDetailQuery.data?.credits?.director ?? null}
-            cast={movieDetailQuery.data?.credits?.cast ?? []}
-            onDirectorPress={(personId) => navigateToDirectorFilmography(router, personId)}
-            onCastMemberPress={(personId) => navigateToActorFilmography(router, personId)}
-          />
-
-          <MovieDetailDescription overview={overview} />
-
-          <MovieDetailProviders providers={movieDetailQuery.data?.providers ?? null} />
-        </View>
-      </ScrollView>
-
-      <SafeAreaView
-        edges={["bottom"]}
-        className="absolute bottom-0 left-0 right-0 border-t border-border-subtle bg-bg-primary"
-        testID="movie-detail-action-bar"
-      >
-        <MovieDetailActionsBar
-          actions={actions}
-          router={router}
-          tmdbId={tmdbId}
-          groupId={groupId}
-          watchlistEntryId={watchlistEntryId}
-          activeGroupId={activeGroupId}
-          currentUserId={currentUserId}
-          collectionId={collectionId}
-          releaseDate={releaseInfo?.date ?? null}
-          hasReleaseDateOverride={releaseDateOverride != null}
-          onOpenRatingDialog={handleOpenRatingDialog}
-          onDirectRateEntryCreated={handleDirectRateEntryCreated}
+        <RatingDialog
+          visible={ratingDialogVisible}
+          onClose={() => setRatingDialogVisible(false)}
+          mode={ratingDialogTarget?.mode ?? "watchlist"}
+          groupId={ratingDialogTarget?.groupId ?? ""}
+          currentUserId={currentUserId ?? ""}
+          movieTitle={title}
+          movieReleaseDate={releaseInfo?.date ?? null}
+          watchlistEntryId={ratingDialogTarget?.watchlistEntryId ?? ""}
+          paidByMemberId={ratingDialogEntry?.paid_by_member_id ?? null}
+          paidAt={ratingDialogEntry?.paid_at ?? null}
+          ratings={ratingDialogEntry?.ratings ?? []}
+          groupMembers={groupMembersQuery.data ?? []}
+          displayNameById={displayNameById}
+          starColor={starColor}
         />
-      </SafeAreaView>
-
-      <RatingDialog
-        visible={ratingDialogVisible}
-        onClose={() => setRatingDialogVisible(false)}
-        mode={ratingDialogTarget?.mode ?? "watchlist"}
-        groupId={ratingDialogTarget?.groupId ?? ""}
-        currentUserId={currentUserId ?? ""}
-        movieTitle={title}
-        movieReleaseDate={releaseInfo?.date ?? null}
-        watchlistEntryId={ratingDialogTarget?.watchlistEntryId ?? ""}
-        paidByMemberId={ratingDialogEntry?.paid_by_member_id ?? null}
-        paidAt={ratingDialogEntry?.paid_at ?? null}
-        ratings={ratingDialogEntry?.ratings ?? []}
-        groupMembers={groupMembersQuery.data ?? []}
-        displayNameById={displayNameById}
-        starColor={starColor}
-      />
+      </SheetHost>
     </SafeAreaView>
   );
 }

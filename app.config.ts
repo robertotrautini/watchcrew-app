@@ -32,13 +32,12 @@ const config: ExpoConfig = {
   //     category: ["BROWSABLE", "DEFAULT"] }]
   //     (see https://docs.expo.dev/linking/android-app-links/)
   ios: {
-    icon: "./assets/expo.icon",
     bundleIdentifier: "com.watchcrew.app",
   },
   android: {
     package: "com.watchcrew.app",
     adaptiveIcon: {
-      backgroundColor: "#E6F4FE",
+      backgroundColor: "#0a0a0a",
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundImage: "./assets/images/android-icon-background.png",
       monochromeImage: "./assets/images/android-icon-monochrome.png",
@@ -54,9 +53,12 @@ const config: ExpoConfig = {
     [
       "expo-splash-screen",
       {
-        backgroundColor: "#208AEF",
+        // Brand splash (docs/style-guide.md "Brand-Assets"): black + legacy
+        // glyph. Native splash cannot render gradients; the gradient is in
+        // the in-app overlay (src/components/animated-icon.tsx).
+        backgroundColor: "#000000",
         image: "./assets/images/splash-icon.png",
-        imageWidth: 76,
+        imageWidth: 288,
       },
     ],
     // M7 consolidation: real native date-picker for the Rating-Dialog's

@@ -35,14 +35,25 @@ export default function StudioFilmographyScreen() {
   const hasValidParams = params.companyId != null && !Number.isNaN(companyId);
 
   const currentUserId = useCurrentUserId();
-  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
+  const { activeGroupId, groupsQuery: userGroupsQuery } =
+    useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
-  const studioFilmographyQuery = useStudioFilmography(hasValidParams ? companyId : undefined);
-  const { data, isLoading, isError, hasNextPage, isFetchingNextPage, fetchNextPage } =
-    studioFilmographyQuery;
+  const studioFilmographyQuery = useStudioFilmography(
+    hasValidParams ? companyId : undefined,
+  );
+  const {
+    data,
+    isLoading,
+    isError,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = studioFilmographyQuery;
 
-  const allResults: TmdbMovieLike[] = (data?.pages ?? []).flatMap((page) => page.results);
+  const allResults: TmdbMovieLike[] = (data?.pages ?? []).flatMap(
+    (page) => page.results,
+  );
 
   // De-duplicate by tmdbId across pages, keeping the first occurrence.
   const seenTmdbIds = new Set<number>();
@@ -59,13 +70,20 @@ export default function StudioFilmographyScreen() {
     title: part.title ?? part.name ?? "Unbekannt",
     posterPath: part.poster_path ?? null,
     releaseDate: part.release_date ?? null,
-    voteAverage: typeof part.vote_average === "number" ? part.vote_average : null,
+    voteAverage:
+      typeof part.vote_average === "number" ? part.vote_average : null,
   }));
 
   if (!hasValidParams) {
     return (
-      <View className="flex-1 items-center justify-center px-4" testID="studio-filmography-screen">
-        <Text testID="studio-filmography-screen-error" className="text-center text-danger">
+      <View
+        className="flex-1 items-center justify-center px-4"
+        testID="studio-filmography-screen"
+      >
+        <Text
+          testID="studio-filmography-screen-error"
+          className="text-center text-danger"
+        >
           Ungültige Studio-Referenz.
         </Text>
       </View>
@@ -74,7 +92,10 @@ export default function StudioFilmographyScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" testID="studio-filmography-screen">
+      <View
+        className="flex-1 items-center justify-center"
+        testID="studio-filmography-screen"
+      >
         <ActivityIndicator testID="studio-filmography-screen-loading" />
       </View>
     );
@@ -82,8 +103,14 @@ export default function StudioFilmographyScreen() {
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-4" testID="studio-filmography-screen">
-        <Text testID="studio-filmography-screen-error" className="text-center text-danger">
+      <View
+        className="flex-1 items-center justify-center px-4"
+        testID="studio-filmography-screen"
+      >
+        <Text
+          testID="studio-filmography-screen-error"
+          className="text-center text-danger"
+        >
           Die Studio-Filmografie konnte nicht geladen werden.
         </Text>
       </View>
@@ -102,7 +129,11 @@ export default function StudioFilmographyScreen() {
         }
         testID="studio-filmography-screen-grid"
         getBadge={(item) =>
-          getLibraryBadgeForTmdbId(watchlistQuery.data?.entries ?? [], item.tmdbId, currentUserId ?? "")
+          getLibraryBadgeForTmdbId(
+            watchlistQuery.data?.entries ?? [],
+            item.tmdbId,
+            currentUserId ?? "",
+          )
         }
         footer={
           hasNextPage ? (
@@ -110,6 +141,7 @@ export default function StudioFilmographyScreen() {
               <Button
                 testID="studio-filmography-screen-load-more-button"
                 label="Mehr laden"
+                icon="chevronDown"
                 onPress={() => fetchNextPage()}
                 loading={isFetchingNextPage}
                 disabled={isFetchingNextPage}

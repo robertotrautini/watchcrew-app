@@ -1,10 +1,11 @@
-import { Stack } from 'expo-router';
+import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 
-import { ActiveGroupThemeProvider } from '@/components/ActiveGroupThemeProvider';
-import { useChangelogStartupToast } from '@/hooks/useChangelogStartupToast';
-import { useCurrentUserId } from '@/hooks/useCurrentUserId';
-import { usePushNotificationRouting } from '@/hooks/usePushNotificationRouting';
-import { usePushRegistration } from '@/hooks/usePushRegistration';
+import { useGroupTheme } from "@/components/GroupThemeProvider";
+import { ActiveGroupThemeProvider } from "@/components/ActiveGroupThemeProvider";
+import { navThemeColors } from "@/lib/navTheme";
+import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { usePushNotificationRouting } from "@/hooks/usePushNotificationRouting";
+import { usePushRegistration } from "@/hooks/usePushRegistration";
 
 /**
  * Authenticated, in-a-group route group (M3 navigation shell). Wraps the
@@ -25,14 +26,26 @@ export default function AppLayout() {
   const userId = useCurrentUserId();
   usePushRegistration(userId);
   usePushNotificationRouting();
-  useChangelogStartupToast();
 
   return (
     <ActiveGroupThemeProvider>
+      <ThemedStack />
+    </ActiveGroupThemeProvider>
+  );
+}
+
+/** Stack inside the group theme: the navigation theme's `primary` follows the group accent. */
+function ThemedStack() {
+  const { colors } = useGroupTheme();
+  const navTheme = { ...DarkTheme, colors: { ...DarkTheme.colors, ...navThemeColors(colors.accent) } };
+  return (
+    <ThemeProvider value={navTheme}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(modals)" options={{ presentation: "modal", headerShown: false }} />
+        {/* Card (push) presentation, NOT "modal": a modal's first screen cannot be
+        swiped back on iOS and breaks the pop-one-level stack order. */}
+        <Stack.Screen name="(modals)" options={{ headerShown: false }} />
       </Stack>
-    </ActiveGroupThemeProvider>
+    </ThemeProvider>
   );
 }

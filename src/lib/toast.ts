@@ -15,7 +15,15 @@
  * near the app root (src/app/_layout.tsx).
  */
 
+/**
+ * Toast look: `success` = green (saved / added), `error` = red (failures),
+ * `info` = neutral accent (default, e.g. realtime hints, "coming soon").
+ * See docs/style-guide.md "Toasts".
+ */
+export type ToastVariant = "success" | "error" | "info";
+
 export interface ToastOptions {
+  variant?: ToastVariant;
   /** Overrides the host's default display duration (ms). */
   durationMs?: number;
   /** Makes the toast tappable; the host dismisses the toast after calling it. */
@@ -38,6 +46,22 @@ export function showToast(message: string, options?: ToastOptions): void {
 }
 
 /** Subscribes to toast messages; returns an unsubscribe function. */
+/** Green success toast (saved, added, ...). */
+export function showSuccessToast(
+  message: string,
+  options?: Omit<ToastOptions, "variant">,
+): void {
+  showToast(message, { ...options, variant: "success" });
+}
+
+/** Red error toast (failed actions, validation errors). */
+export function showErrorToast(
+  message: string,
+  options?: Omit<ToastOptions, "variant">,
+): void {
+  showToast(message, { ...options, variant: "error" });
+}
+
 export function subscribeToToasts(listener: ToastListener): () => void {
   listeners.push(listener);
   return () => {

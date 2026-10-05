@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { resetRating, savePayment, saveRating } from "@/lib/movieDetailMutations";
 import { buildRatingUpsertPayload, resolvePaymentDate } from "@/lib/ratingLogic";
+import { queryKeys } from "@/lib/queryKeys";
 
 // M7 part 2b: the Rating-Dialog's real save/reset mutations. Same
 // `useMutation` + throw-on-`error` + invalidate-`["watchlist", groupId]`
@@ -90,7 +91,7 @@ export function useSaveRating() {
       return ratingData;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
     },
   });
 }
@@ -120,7 +121,7 @@ export function useResetRating() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
     },
   });
 }

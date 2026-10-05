@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 /**
  * Onboarding route group (M3 navigation shell): shown to an authenticated

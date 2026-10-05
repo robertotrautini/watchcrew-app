@@ -37,7 +37,7 @@ export type RealtimeChangeKind =
  * Structural subset of `RealtimePostgresChangesPayload` this module actually
  * reads — kept as its own type (rather than importing the full Supabase
  * generic payload type everywhere) so the hand-built fixtures in
- * __tests__/realtimeSync.test.ts don't need to fake the full real payload
+ * __tests__/lib/realtimeSync.test.ts don't need to fake the full real payload
  * shape (channel/schema/table/commit_timestamp/errors/...).
  */
 export interface PostgresChangeLike {

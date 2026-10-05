@@ -1,13 +1,26 @@
 import { useRouter } from "expo-router";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { DiaryEntryCard } from "@/components/movie/DiaryEntryCard";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
-import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
-import { Button } from "@/components/ui/Button";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { Chip } from "@/components/ui/Chip";
+import { Button } from "@/components/ui/Button";
+import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
+import { Glass, GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { SortButton } from "@/components/ui/SortButton";
+import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { Sheet } from "@/components/ui/Sheet";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -25,18 +38,31 @@ import {
   memberDisplayLabel,
 } from "@/lib/diaryDisplay";
 import {
+  DIARY_SORT_SHORT_LABELS,
   DEFAULT_LIST_FILTERS,
   getNoResultsMessage,
+  hasActiveListFilters,
   listFiltersKey,
   toggleProviderCategory,
 } from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
-import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "@/lib/movieProviderFilter";
+import {
+  ALL_PROVIDER_CATEGORIES,
+  type ProviderCategory,
+} from "@/lib/movieProviderFilter";
 import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
-import { searchEntries, sortDiary, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
-import type { DiarySortOption, WatchlistEntry, YearFilterValue } from "@/lib/watchlistTypes";
-import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferencesStore";
+import {
+  searchEntries,
+  sortDiary,
+  splitWatchlistAndDiary,
+} from "@/lib/watchlistLogic";
+import type {
+  DiarySortOption,
+  WatchlistEntry,
+  YearFilterValue,
+} from "@/lib/watchlistTypes";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
  * The real Tagebuch (diary) screen content (M5 part 2). Full spec extracted
@@ -88,7 +114,7 @@ const SORT_OPTIONS: { value: DiarySortOption; label: string }[] = [
   { value: "my_streaming", label: "Meine Streaming-Dienste" },
   { value: "genre", label: "Nach Genre" },
   { value: "year", label: "Nach Jahr" },
-  { value: "liked", label: "Mag ich ♥" },
+  { value: "liked", label: "Mag ich" },
 ];
 
 const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
@@ -96,12 +122,6 @@ const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
   rent: "Leihen",
   buy: "Kaufen",
 };
-
-const VIEW_MODES: { value: DiaryViewMode; label: string }[] = [
-  { value: "cards", label: "Karten" },
-  { value: "grid", label: "Grid" },
-  { value: "list", label: "Liste" },
-];
 
 function sortOptionLabel(option: DiarySortOption): string {
   return SORT_OPTIONS.find((o) => o.value === option)?.label ?? option;
@@ -130,7 +150,8 @@ function deriveAvailableYears(
   const years = new Set<number>();
   let hasNoDate = false;
   for (const entry of entries) {
-    const ownSeenAt = entry.ratings.find((r) => r.member_id === currentUserId)?.seen_at ?? null;
+    const ownSeenAt =
+      entry.ratings.find((r) => r.member_id === currentUserId)?.seen_at ?? null;
     if (ownSeenAt == null) {
       hasNoDate = true;
     } else {
@@ -141,6 +162,7 @@ function deriveAvailableYears(
 }
 
 export default function TagebuchScreen() {
+  const parallaxScroll = useParallaxScroll();
   const router = useRouter();
   const userId = useCurrentUserId();
   // M9 part 2: real, persisted active-group resolution (replaces the former
@@ -168,10 +190,16 @@ export default function TagebuchScreen() {
   // Sort/genre/year/provider-category choices persist per group (MMKV, see
   // usePreferencesStore `listFilters`); the search text is session-local.
   const storedFilters = usePreferencesStore((s) =>
-    activeGroupId ? s.listFilters[listFiltersKey("diary", activeGroupId)] : undefined,
+    activeGroupId
+      ? s.listFilters[listFiltersKey("diary", activeGroupId)]
+      : undefined,
   );
   const setListFilters = usePreferencesStore((s) => s.setListFilters);
-  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const filterPanelOpen = usePreferencesStore((s) => s.filterPanelOpen.diary);
+  const setFilterPanelOpen = usePreferencesStore((s) => s.setFilterPanelOpen);
+  const myProviderIds = usePreferencesStore(
+    (s) => s.selectedStreamingProviderIds,
+  );
   const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
   const sortOption = (filters.sortOption ?? "my_diary") as DiarySortOption;
   const selectedGenreIds = filters.genreIds;
@@ -189,12 +217,19 @@ export default function TagebuchScreen() {
 
   const starColor = useGroupTheme().colors.starColor;
 
-  const rawEntries = useMemo(() => watchlistQuery.data?.entries ?? [], [watchlistQuery.data]);
+  const rawEntries = useMemo(
+    () => watchlistQuery.data?.entries ?? [],
+    [watchlistQuery.data],
+  );
 
   // Roster of "everyone in this group": real members (useGroupMembers) unioned
   // with rating authors (see deriveGroupMemberIds).
   const groupMemberIds = useMemo(
-    () => deriveGroupMemberIds(rawEntries, (groupMembersQuery.data ?? []).map((m) => m.user_id)),
+    () =>
+      deriveGroupMemberIds(
+        rawEntries,
+        (groupMembersQuery.data ?? []).map((m) => m.user_id),
+      ),
     [rawEntries, groupMembersQuery.data],
   );
 
@@ -251,8 +286,14 @@ export default function TagebuchScreen() {
     [sortedEntries, searchQuery],
   );
 
-  const availableGenreIds = useMemo(() => deriveAvailableGenreIds(diaryEntries), [diaryEntries]);
-  const genreNamesById = useMemo(() => deriveGenreNamesById(diaryEntries), [diaryEntries]);
+  const availableGenreIds = useMemo(
+    () => deriveAvailableGenreIds(diaryEntries),
+    [diaryEntries],
+  );
+  const genreNamesById = useMemo(
+    () => deriveGenreNamesById(diaryEntries),
+    [diaryEntries],
+  );
   const { years: availableYears, hasNoDate: hasNoDateYear } = useMemo(
     () => deriveAvailableYears(diaryEntries, userId ?? ""),
     [diaryEntries, userId],
@@ -261,8 +302,10 @@ export default function TagebuchScreen() {
   const isLoading =
     !userId ||
     groupsQuery.isLoading ||
-    (!!activeGroupId && (watchlistQuery.isLoading || groupMembersQuery.isLoading));
-  const isError = groupsQuery.isError || watchlistQuery.isError || groupMembersQuery.isError;
+    (!!activeGroupId &&
+      (watchlistQuery.isLoading || groupMembersQuery.isLoading));
+  const isError =
+    groupsQuery.isError || watchlistQuery.isError || groupMembersQuery.isError;
   const isDiaryEmpty = diaryEntries.length === 0;
   const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
 
@@ -297,12 +340,18 @@ export default function TagebuchScreen() {
 
   function seenDateLabel(entry: WatchlistEntry): string {
     const ownSeenAt = ownRating(entry)?.seen_at ?? null;
-    return ownSeenAt ? `Gesehen am ${formatSeenAtDate(ownSeenAt)}` : "Kein Datum";
+    return ownSeenAt
+      ? `Gesehen am ${formatSeenAtDate(ownSeenAt)}`
+      : "Kein Datum";
   }
 
   if (isLoading) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center" testID="tagebuch-screen">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center"
+        testID="tagebuch-screen"
+      >
         <ActivityIndicator testID="tagebuch-loading" />
       </SafeAreaView>
     );
@@ -310,7 +359,11 @@ export default function TagebuchScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView edges={["top"]} className="flex-1 items-center justify-center px-6" testID="tagebuch-screen">
+      <SafeAreaView
+        edges={["top"]}
+        className="flex-1 items-center justify-center px-6"
+        testID="tagebuch-screen"
+      >
         <Text testID="tagebuch-error" className="text-center text-text-primary">
           Fehler beim Laden des Tagebuchs.
         </Text>
@@ -323,155 +376,181 @@ export default function TagebuchScreen() {
     // Safe-Area"): same reasoning as tracker.tsx/watchlist.tsx.
     <SafeAreaView edges={["top"]} className="flex-1" testID="tagebuch-screen">
       <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
-      <View className="gap-3 px-4 pb-2 pt-3">
-        <TextInput
-          testID="tagebuch-search-input"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder="Suche im Tagebuch"
-          placeholderTextColor="#888888"
-          className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-        />
-
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row gap-2" testID="tagebuch-view-mode-toggle">
-            {VIEW_MODES.map((mode) => (
-              <Button
-                key={mode.value}
-                size="sm"
-                variant={diaryViewMode === mode.value ? "primary" : "secondary"}
-                label={mode.label}
-                testID={`tagebuch-view-mode-${mode.value}`}
-                accessibilityState={{ selected: diaryViewMode === mode.value }}
-                onPress={() => setDiaryViewMode(mode.value)}
-              />
-            ))}
-          </View>
-
-          <Pressable
+      <CollapsibleFilterPanel
+        testID="tagebuch-filter"
+        open={filterPanelOpen}
+        onToggle={() => setFilterPanelOpen("diary", !filterPanelOpen)}
+        hasActiveFilters={hasActiveListFilters(filters, "my_diary")}
+        search={
+          <TextInput
+            testID="tagebuch-search-input"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholder="Film suchen…"
+            placeholderTextColor="#888888"
+            className={GLASS_SEARCH_INPUT_CLASSNAME}
+          />
+        }
+      >
+        <View className="flex-row items-stretch gap-2">
+          <SortButton
             testID="tagebuch-sort-button"
-            accessibilityRole="button"
+            shortLabel={
+              DIARY_SORT_SHORT_LABELS[sortOption] ?? sortOptionLabel(sortOption)
+            }
+            fullLabel={sortOptionLabel(sortOption)}
             onPress={() => setSortSheetVisible(true)}
-            className="rounded-lg border border-border-subtle px-3 py-2"
-          >
-            <Text testID="tagebuch-sort-button-label" className="text-text-primary">
-              {sortOptionLabel(sortOption)}
-            </Text>
-          </Pressable>
+          />
+          <ViewModeToggle
+            testID="tagebuch-view-mode-toggle"
+            value={diaryViewMode}
+            onChange={setDiaryViewMode}
+            buttonTestID={(mode) => `tagebuch-view-mode-${mode}`}
+          />
         </View>
-
         {sortOption === "genre" ? (
-          <View testID="tagebuch-genre-pills" className="flex-row flex-wrap gap-2">
+          <View
+            testID="tagebuch-genre-pills"
+            className="flex-row flex-wrap gap-2"
+          >
             {availableGenreIds.map((genreId) => (
-              <Pressable
+              <Chip
                 key={genreId}
                 testID={`tagebuch-genre-pill-${genreId}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedGenreIds.includes(genreId) }}
+                active={selectedGenreIds.includes(genreId)}
                 onPress={() => toggleGenre(genreId)}
-                className="rounded-full border border-border-subtle px-3 py-1"
-              >
-                <Text className="text-text-primary">
-                  {genreDisplayLabel(genreId, genreNamesById.get(genreId))}
-                </Text>
-              </Pressable>
+                label={genreDisplayLabel(genreId, genreNamesById.get(genreId))}
+              />
             ))}
           </View>
         ) : null}
 
         {sortOption === "year" ? (
-          <View testID="tagebuch-year-pills" className="flex-row flex-wrap gap-2">
+          <View
+            testID="tagebuch-year-pills"
+            className="flex-row flex-wrap gap-2"
+          >
             {availableYears.map((year) => (
-              <Pressable
+              <Chip
                 key={year}
                 testID={`tagebuch-year-pill-${year}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedYear === year }}
+                active={selectedYear === year}
                 onPress={() => updateFilters({ year })}
-                className="rounded-full border border-border-subtle px-3 py-1"
-              >
-                <Text className="text-text-primary">{year}</Text>
-              </Pressable>
+                label={String(year)}
+              />
             ))}
             {hasNoDateYear ? (
-              <Pressable
+              <Chip
                 testID="tagebuch-year-pill-no_date"
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedYear === "no_date" }}
+                active={selectedYear === "no_date"}
                 onPress={() => updateFilters({ year: "no_date" })}
-                className="rounded-full border border-border-subtle px-3 py-1"
-              >
-                <Text className="text-text-primary">Kein Datum</Text>
-              </Pressable>
+                label="Kein Datum"
+              />
             ) : null}
           </View>
         ) : null}
 
         {sortOption === "my_streaming" ? (
-          <View testID="tagebuch-provider-categories" className="flex-row flex-wrap gap-2">
+          <View
+            testID="tagebuch-provider-categories"
+            className="flex-row flex-wrap gap-2"
+          >
             {ALL_PROVIDER_CATEGORIES.map((category) => (
-              <Pressable
+              <Chip
                 key={category}
                 testID={`tagebuch-provider-category-${category}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: providerCategories.includes(category) }}
+                active={providerCategories.includes(category)}
                 onPress={() =>
-                  updateFilters({ providerCategories: toggleProviderCategory(providerCategories, category) })
+                  updateFilters({
+                    providerCategories: toggleProviderCategory(
+                      providerCategories,
+                      category,
+                    ),
+                  })
                 }
-                className={`rounded-full border border-border-subtle px-3 py-1 ${
-                  providerCategories.includes(category) ? "bg-accent" : "bg-card"
-                }`}
-              >
-                <Text className="text-text-primary">{PROVIDER_CATEGORY_LABELS[category]}</Text>
-              </Pressable>
+                label={PROVIDER_CATEGORY_LABELS[category]}
+              />
             ))}
           </View>
         ) : null}
-      </View>
+      </CollapsibleFilterPanel>
 
       {isDiaryEmpty ? (
-        <View className="flex-1 items-center justify-center px-6" testID="tagebuch-empty">
-          <Text className="text-center text-text-secondary">Noch keine bewerteten Filme.</Text>
+        <View
+          className="flex-1 items-center justify-center px-6"
+          testID="tagebuch-empty"
+        >
+          <Text className="text-center text-text-secondary">
+            Noch keine bewerteten Filme.
+          </Text>
         </View>
       ) : hasNoResults ? (
-        <View className="flex-1 items-center justify-center px-6" testID="tagebuch-no-results">
-          <Text className="text-center text-text-secondary">{getNoResultsMessage(searchQuery)}</Text>
+        <View
+          className="flex-1 items-center justify-center px-6"
+          testID="tagebuch-no-results"
+        >
+          <Text className="text-center text-text-secondary">
+            {getNoResultsMessage(searchQuery)}
+          </Text>
         </View>
       ) : (
-        <ScrollView testID="tagebuch-entry-list" contentContainerClassName="gap-4 px-4 pb-8">
+        <ScrollView
+          {...parallaxScroll}
+          testID="tagebuch-entry-list"
+          contentContainerClassName="gap-3 px-4 pb-8 pt-3"
+        >
           {diaryViewMode === "grid" ? (
             <View className="flex-row flex-wrap gap-3">
               {visibleEntries.map((entry, index) => (
-                <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`} className="w-[30%]">
+                <FadeInItem
+ replayTab="tagebuch"
+                  key={entry.id}
+                  index={index}
+                  testID={`tagebuch-entry-${entry.id}`}
+                  className="w-[30%]"
+                >
                   <Pressable
                     testID={`tagebuch-entry-press-${entry.id}`}
                     accessibilityRole="button"
                     onPress={() => openEntry(entry)}
                   >
-                  <DiaryPosterTile
-                    posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-                    title={entry.movie.name}
-                    starColor={starColor}
-                    averageRating={computeAverageRating(entry)}
-                    liked={ownRating(entry)?.liked === true}
-                    tmdbScore={entry.movie.vote_average}
-                  />
-                  {showTitlesInGrid ? (
-                    <Text
-                      testID={`tagebuch-grid-title-${entry.id}`}
-                      className="mt-1 text-xs text-text-primary"
-                      numberOfLines={1}
+                    <DiaryPosterTile
+                      posterUrl={buildTmdbImageUrl(entry.movie.poster)}
+                      title={entry.movie.name}
+                      starColor={starColor}
+                      averageRating={computeAverageRating(entry)}
+                      liked={ownRating(entry)?.liked === true}
+                      tmdbScore={entry.movie.vote_average}
                     >
-                      {entry.movie.name}
-                    </Text>
-                  ) : null}
+                      {showTitlesInGrid ? (
+                        <Text
+                          testID={`tagebuch-grid-title-${entry.id}`}
+                          className="text-xs text-text-primary"
+                          numberOfLines={1}
+                        >
+                          {entry.movie.name}
+                        </Text>
+                      ) : null}
+                    </DiaryPosterTile>
                   </Pressable>
                 </FadeInItem>
               ))}
             </View>
           ) : diaryViewMode === "list" ? (
-            <View>
-              {visibleEntries.map((entry) => {
+            <Glass className="overflow-hidden">
+              <View className="flex-row gap-2 border-b border-glass-border px-3 py-2">
+                <Text className="flex-1 text-xs text-text-secondary">Film</Text>
+                <Text className="w-14 text-xs text-text-secondary">
+                  Gesehen
+                </Text>
+                <Text className="w-10 text-right text-xs text-text-secondary">
+                  Ø
+                </Text>
+                <Text className="w-10 text-right text-xs text-text-secondary">
+                  TMDB
+                </Text>
+              </View>
+              {visibleEntries.map((entry, entryIndex) => {
                 const ownSeenAt = ownRating(entry)?.seen_at ?? null;
                 const average = computeAverageRating(entry);
                 return (
@@ -480,60 +559,77 @@ export default function TagebuchScreen() {
                     testID={`tagebuch-entry-${entry.id}`}
                     accessibilityRole="button"
                     onPress={() => openEntry(entry)}
-                    className="flex-row items-center justify-between border-b border-border-subtle py-2"
+                    className={`flex-row items-center gap-2 px-3 py-3 ${
+                      entryIndex < visibleEntries.length - 1
+                        ? "border-b border-glass-border"
+                        : ""
+                    }`}
                   >
                     <Text
                       testID={`tagebuch-list-title-${entry.id}`}
-                      className="flex-1 text-text-primary"
+                      className="flex-1 font-display-bold text-accent-light"
                       numberOfLines={1}
                     >
                       {entry.movie.name}
                     </Text>
-                    <Text testID={`tagebuch-list-year-${entry.id}`} className="w-14 text-text-secondary">
+                    <Text
+                      testID={`tagebuch-list-year-${entry.id}`}
+                      className="w-14 text-sm text-text-secondary"
+                    >
                       {ownSeenAt ? getYearFromDate(ownSeenAt) : "–"}
                     </Text>
-                    <Text testID={`tagebuch-list-average-${entry.id}`} className="w-10 text-text-primary">
+                    <Text
+                      testID={`tagebuch-list-average-${entry.id}`}
+                      className="w-10 text-right text-sm font-semibold text-text-primary"
+                    >
                       {average != null ? average.toFixed(1) : "–"}
                     </Text>
-                    <Text testID={`tagebuch-list-tmdb-${entry.id}`} className="w-10 text-text-secondary">
-                      {entry.movie.vote_average != null ? entry.movie.vote_average.toFixed(1) : "–"}
+                    <Text
+                      testID={`tagebuch-list-tmdb-${entry.id}`}
+                      className="w-10 text-right text-sm text-text-secondary"
+                    >
+                      {entry.movie.vote_average != null
+                        ? entry.movie.vote_average.toFixed(1)
+                        : "–"}
                     </Text>
                   </Pressable>
                 );
               })}
-            </View>
+            </Glass>
           ) : (
             // "cards" (default)
             visibleEntries.map((entry, index) => (
-              <FadeInItem key={entry.id} index={index} testID={`tagebuch-entry-${entry.id}`}>
+              <FadeInItem
+ replayTab="tagebuch"
+                key={entry.id}
+                index={index}
+                testID={`tagebuch-entry-${entry.id}`}
+              >
                 <Pressable
                   testID={`tagebuch-entry-press-${entry.id}`}
                   accessibilityRole="button"
                   onPress={() => openEntry(entry)}
-                  className="gap-2"
                 >
-                <DiaryPosterTile
-                  posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-                  title={entry.movie.name}
-                  starColor={starColor}
-                  averageRating={computeAverageRating(entry)}
-                  liked={ownRating(entry)?.liked === true}
-                  tmdbScore={entry.movie.vote_average}
-                />
-                <Text className="text-lg font-semibold text-text-primary">{entry.movie.name}</Text>
-                <Text testID={`tagebuch-entry-seen-date-${entry.id}`} className="text-text-secondary">
-                  {seenDateLabel(entry)}
-                </Text>
-                <View>
-                  {groupMemberIds.map((memberId) => (
-                    <MemberRatingRow
-                      key={memberId}
-                      memberLabel={memberDisplayLabel(memberId, displayNameById.get(memberId))}
-                      rating={entry.ratings.find((r) => r.member_id === memberId)?.rating ?? null}
-                      starColor={starColor}
-                    />
-                  ))}
-                </View>
+                  <DiaryEntryCard
+                    posterUrl={buildTmdbImageUrl(entry.movie.poster)}
+                    title={entry.movie.name}
+                    seenLabel={seenDateLabel(entry)}
+                    seenLabelTestID={`tagebuch-entry-seen-date-${entry.id}`}
+                    starColor={starColor}
+                    averageRating={computeAverageRating(entry)}
+                    liked={ownRating(entry)?.liked === true}
+                    tmdbScore={entry.movie.vote_average}
+                    members={groupMemberIds.map((memberId) => ({
+                      id: memberId,
+                      label: memberDisplayLabel(
+                        memberId,
+                        displayNameById.get(memberId),
+                      ),
+                      rating:
+                        entry.ratings.find((r) => r.member_id === memberId)
+                          ?.rating ?? null,
+                    }))}
+                  />
                 </Pressable>
               </FadeInItem>
             ))
@@ -556,7 +652,15 @@ export default function TagebuchScreen() {
               onPress={() => selectSortOption(option.value)}
               className="py-3"
             >
-              <Text className="text-text-primary">{option.label}</Text>
+              <Text
+                className={
+                  sortOption === option.value
+                    ? "font-semibold text-accent"
+                    : "text-text-primary"
+                }
+              >
+                {option.label}
+              </Text>
             </Pressable>
           ))}
         </View>

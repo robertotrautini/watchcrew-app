@@ -5,6 +5,7 @@ import {
   subscribeToGroupPush,
   unsubscribeFromGroupPush,
 } from "@/lib/pushTokens";
+import { queryKeys } from "@/lib/queryKeys";
 
 // M10 (part): the per-group push opt-in surface for the Settings hub
 // (requirement 1 -- per-group, not global). Built here as this task's own
@@ -38,7 +39,7 @@ export function useGroupPushSubscription(
   userId: string | undefined,
 ): UseGroupPushSubscriptionResult {
   const queryClient = useQueryClient();
-  const queryKey = ["pushSubscription", groupId, userId];
+  const queryKey = queryKeys.pushSubscription.byGroupUser(groupId, userId);
 
   const query = useQuery({
     queryKey,

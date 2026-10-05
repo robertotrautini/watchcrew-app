@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { searchMovies } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 /** Film mode debounce (M7 part 2, per the task spec): 350ms. */
 export const MOVIE_SEARCH_DEBOUNCE_MS = 350;
@@ -15,7 +16,7 @@ export function useMovieSearch(query: string) {
   const trimmedQuery = debouncedQuery.trim();
 
   return useQuery({
-    queryKey: ["movieSearch", trimmedQuery],
+    queryKey: queryKeys.movieSearch(trimmedQuery),
     queryFn: async () => {
       const { data, error } = await searchMovies(trimmedQuery);
       if (error) {

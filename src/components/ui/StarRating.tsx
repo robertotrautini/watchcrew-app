@@ -1,6 +1,7 @@
 import { Pressable, View, type GestureResponderEvent } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon, type IconSize } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
+import { STAR_TOUCH_WIDTH } from "@/components/ui/touchTarget";
 
 /**
  * Business rules (docs/feature-inventory.md §4.5 "Star rating", verbatim):
@@ -31,20 +32,15 @@ const STAR_EMPTY_COLOR = "#575757";
 const LIKE_HEART_COLOR = "#e05c6e";
 
 /**
- * Touch-target sizing: a default-size star/heart glyph renders well under the
- * ~44-48px minimum recommended mobile touch target, so each star/heart is
- * wrapped in a fixed-size touchable box (via the project's existing
- * `touch-comfortable` NativeWind spacing token, tailwind.config.js — 48px,
- * the larger/safer end of the commonly-cited 44-48px range) and the glyph is
- * centered inside it, rather than sizing the glyph itself up to match (which
- * would look wrong visually). This numeric constant mirrors that token's
- * value and is used only for the half/full tap-position math below, not for
- * any styling (styling uses the `w-touch-comfortable h-touch-comfortable`
- * className, per project convention of className-only layout styling).
+ * Touch-target sizing (docs/style-guide.md "Touch-Targets"): each star/heart glyph sits centred
+ * in a fixed touch box of STAR_TOUCH_WIDTH (44, iOS minimum) x 48 (`h-touch-comfortable`) dp, so
+ * the glyph can stay visually small/tight. 44 wide so 5 stars + heart + reset fit a 360dp phone.
+ * `TOUCH_TARGET_PX` is used for the half/full tap-position math below; the box className uses
+ * the same value (`w-[44px]`).
  */
-const TOUCH_TARGET_PX = 48;
-const STAR_ICON_SIZE = 28;
-const HEART_ICON_SIZE = 26;
+const TOUCH_TARGET_PX = STAR_TOUCH_WIDTH;
+const STAR_ICON_SIZE: IconSize = "M";
+const HEART_ICON_SIZE: IconSize = "M";
 
 type StarState = "full" | "half" | "empty";
 
@@ -55,10 +51,10 @@ function getStarState(rating: number, starIndex: number): StarState {
   return "empty";
 }
 
-function starIconName(state: StarState): "star" | "star-half" | "star-outline" {
+function starIconRole(state: StarState): "star" | "starHalf" | "starEmpty" {
   if (state === "full") return "star";
-  if (state === "half") return "star-half";
-  return "star-outline";
+  if (state === "half") return "starHalf";
+  return "starEmpty";
 }
 
 export interface StarRatingProps {
@@ -72,9 +68,32 @@ export interface StarRatingProps {
   liked?: boolean;
   /** Provide to render the like-heart and make it tappable. Omit to hide the heart entirely. */
   onToggleLike?: () => void;
+  /** Glyph size token of the stars (default M); the heart uses the same. The touch box stays 48px. */
+  iconSize?: IconSize;
+  /** Read-only list rows: shrink the per-star box to 22px (instead of the 44x48 touch target). Use with a small `iconSize`. */
+  compactBox?: boolean;
+  /** Read-only rows with medium stars: 28px box (tight, balanced gap). Ignored when editable. */
+  denseBox?: boolean;
 }
 
-export function StarRating({ rating, starColor, onChange, liked, onToggleLike }: StarRatingProps) {
+export function StarRating({
+  rating,
+  starColor,
+  onChange,
+  liked,
+  onToggleLike,
+  iconSize,
+  compactBox,
+  denseBox,
+}: StarRatingProps) {
+  const editable = Boolean(onChange);
+  const boxClassName = compactBox
+    ? "h-[22px] w-[22px] items-center justify-center"
+    : denseBox && !editable
+      ? "h-7 w-7 items-center justify-center"
+      : `h-touch-comfortable w-[${STAR_TOUCH_WIDTH}px] items-center justify-center`;
+  const starSize = iconSize ?? STAR_ICON_SIZE;
+  const heartSize = iconSize ?? HEART_ICON_SIZE;
   const effectiveRating = rating ?? 0;
   const isEditable = Boolean(onChange);
   const showHeart = Boolean(onToggleLike);
@@ -104,7 +123,12 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
         const state = getStarState(effectiveRating, starIndex);
         const color = state === "empty" ? STAR_EMPTY_COLOR : starColor;
         const icon = (
-          <Ionicons testID="star-rating-icon" name={starIconName(state)} size={STAR_ICON_SIZE} color={color} />
+          <Icon
+            testID="star-rating-icon"
+            name={starIconRole(state)}
+            size={starSize}
+            color={color}
+          />
         );
 
         if (!isEditable) {
@@ -112,7 +136,7 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
             <View
               key={starIndex}
               testID={`star-rating-touch-${starIndex}`}
-              className="w-touch-comfortable h-touch-comfortable items-center justify-center"
+              className={boxClassName}
             >
               {icon}
             </View>
@@ -124,7 +148,10 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
             key={starIndex}
             testID={`star-rating-touch-${starIndex}`}
             accessibilityRole="adjustable"
-            className="w-touch-comfortable h-touch-comfortable items-center justify-center"
+            accessibilityLabel={
+              starIndex === 0 ? "1 Stern" : `${starIndex + 1} Sterne`
+            }
+            className={boxClassName}
             onPress={(event) => handleStarPress(starIndex, event)}
           >
             {icon}
@@ -136,13 +163,15 @@ export function StarRating({ rating, starColor, onChange, liked, onToggleLike }:
         <Pressable
           testID="star-rating-heart-touch"
           accessibilityRole="button"
-          className="w-touch-comfortable h-touch-comfortable items-center justify-center"
+          accessibilityLabel="Mag ich"
+          accessibilityState={{ checked: Boolean(liked) }}
+          className={`h-touch-comfortable w-[${STAR_TOUCH_WIDTH}px] items-center justify-center`}
           onPress={handleHeartPress}
         >
-          <Ionicons
+          <Icon
             testID="star-rating-heart-icon"
-            name={liked ? "heart" : "heart-outline"}
-            size={HEART_ICON_SIZE}
+            name={liked ? "heart" : "heartEmpty"}
+            size={heartSize}
             color={LIKE_HEART_COLOR}
           />
         </Pressable>

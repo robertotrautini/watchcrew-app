@@ -5,6 +5,7 @@ import { refreshReleaseDates } from "@/lib/tmdbProxy";
 import { getGroupWatchlistEntries } from "@/lib/watchlist";
 import { buildStreamingAvailabilityLookup, getEffectiveReleaseDate } from "@/lib/watchlistLogic";
 import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
+import { queryKeys } from "@/lib/queryKeys";
 
 export interface GroupWatchlistData {
   /** The group's full watchlist_entries set (joined with movie/genres/ratings) — NOT pre-split into Watchlist/Diary; see `splitWatchlistAndDiary`. */
@@ -56,7 +57,7 @@ async function refreshDatelessReleaseDates(datelessTmdbIds: number[]): Promise<b
  */
 export function useGroupWatchlist(groupId: string | undefined) {
   return useQuery({
-    queryKey: ["watchlist", groupId],
+    queryKey: queryKeys.watchlist.byGroup(groupId),
     queryFn: async (): Promise<CachedGroupWatchlistData> => {
       const { data: entries, error: entriesError } = await getGroupWatchlistEntries(
         groupId as string

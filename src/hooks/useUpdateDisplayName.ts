@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { updateOwnDisplayName } from "@/lib/profile";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Settings hub: saves the caller's display name. Same throw-on-`error`
@@ -19,12 +20,12 @@ export function useUpdateDisplayName() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ownProfile"] });
-      queryClient.invalidateQueries({ queryKey: ["groupDetails"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.ownProfile.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupDetails.all });
       // Tracker payer column, Tagebuch, rating dialog and payment modal build
       // their name maps from useGroupMembers.
-      queryClient.invalidateQueries({ queryKey: ["groupMembers"] });
-      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupMembers.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
     },
   });
 }

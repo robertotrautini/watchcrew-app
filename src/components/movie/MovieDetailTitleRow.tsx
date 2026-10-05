@@ -1,5 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/ui/Icon";
 import { Pressable, Text, View } from "react-native";
+
+import { TmdbBadge } from "@/components/ui/TmdbBadge";
 
 /**
  * Movie Detail Overlay (M6 part 2a): title + TMDB score badge + like-heart
@@ -33,15 +35,23 @@ export function MovieDetailTitleRow({
   isTogglingLike = false,
 }: MovieDetailTitleRowProps) {
   return (
-    <View testID="movie-detail-title-row" className="flex-row items-center gap-2">
-      <Text testID="movie-detail-title" className="flex-1 font-display-bold text-xl text-text-primary">
+    <View
+      testID="movie-detail-title-row"
+      className="flex-row flex-wrap items-center justify-center gap-2 px-2"
+    >
+      <Text
+        testID="movie-detail-title"
+        className="shrink text-center font-display-bold text-2xl text-accent-light"
+      >
         {title}
       </Text>
 
       {voteAverage != null ? (
-        <View testID="movie-detail-score-badge" className="rounded-full bg-card px-2 py-1">
-          <Text className="text-xs font-semibold text-text-primary">{voteAverage.toFixed(1)}</Text>
-        </View>
+        <TmdbBadge
+          testID="movie-detail-score-badge"
+          score={voteAverage}
+          className="rounded-sm bg-black/60 px-2 py-1"
+        />
       ) : null}
 
       {showHeart ? (
@@ -50,14 +60,16 @@ export function MovieDetailTitleRow({
           accessibilityRole="button"
           disabled={isTogglingLike}
           onPress={onToggleLike}
-          className={`h-touch-min w-touch-min items-center justify-center${
+          accessibilityLabel="Mag ich"
+          accessibilityState={{ checked: liked, disabled: isTogglingLike }}
+          className={`h-touch-comfortable w-touch-comfortable items-center justify-center${
             isTogglingLike ? " opacity-50" : ""
           }`}
         >
-          <Ionicons
+          <Icon
             testID="movie-detail-like-heart-icon"
-            name={liked ? "heart" : "heart-outline"}
-            size={24}
+            name={liked ? "heart" : "heartEmpty"}
+            size="M"
             color={LIKE_HEART_COLOR}
           />
         </Pressable>

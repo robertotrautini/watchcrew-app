@@ -15,9 +15,8 @@
  *   - accentLight   = accent mixed 40% toward white, per RGB channel
  *   - gradientStart = accent with HSL lightness +8 points
  *   - gradientEnd   = accent with HSL lightness -8 points
- *   - starColor     = accent (no distinct star color was specified for the
- *                     non-Gold themes, so it falls back to the theme's own
- *                     accent rather than inventing an unrelated hue)
+ *   - starColor     = fixed yellow (#FFD700) in ALL themes; stars never follow
+ *                     the theme accent
  * The Gold theme uses the exact spec values verbatim instead (its
  * accentLight/gradient/star values are NOT derivable from the above
  * formula — they were hand-picked in the source design).
@@ -165,18 +164,21 @@ function deriveNonGoldColors(accent: string): GroupThemeColors {
     accentLight: mixWithWhite(accent, 0.4),
     gradientStart: adjustLightness(accent, 8),
     gradientEnd: adjustLightness(accent, -8),
-    starColor: accent,
+    starColor: STAR_YELLOW,
   };
 }
 
 // --- theme table ---
+
+/** Stars are always this yellow, independent of the group theme (docs/style-guide.md). */
+export const STAR_YELLOW = "#FFD700";
 
 const GOLD_COLORS: GroupThemeColors = {
   accent: "#c8a44e",
   accentLight: "#e8d5a3",
   gradientStart: "#d4aa4f",
   gradientEnd: "#b8903e",
-  starColor: "#FFD700",
+  starColor: STAR_YELLOW,
 };
 
 const NON_GOLD_BASE_ACCENTS: Record<Exclude<GroupThemeName, "gold">, string> = {

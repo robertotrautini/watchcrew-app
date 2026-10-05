@@ -1,4 +1,6 @@
-import { Text, View } from "react-native";
+import { View } from "react-native";
+
+import { ChipTag } from "@/components/ui/Chip";
 
 /**
  * Movie Detail Overlay (M6 part 2a): the genre pill row shown under the
@@ -16,15 +18,16 @@ export function MovieDetailGenreTags({ genres }: MovieDetailGenreTagsProps) {
   }
 
   return (
-    <View testID="movie-detail-genre-tags" className="flex-row flex-wrap gap-2">
+    <View
+      testID="movie-detail-genre-tags"
+      className="flex-row flex-wrap justify-center gap-2"
+    >
       {genres.map((genre, index) => (
-        <View
+        <ChipTag
           key={`${genre}-${index}`}
           testID={`movie-detail-genre-tag-${index}`}
-          className="rounded-full bg-card px-3 py-1"
-        >
-          <Text className="text-xs text-text-secondary">{genre}</Text>
-        </View>
+          label={genre}
+        />
       ))}
     </View>
   );

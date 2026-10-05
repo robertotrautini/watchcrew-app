@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 /**
  * Unauthenticated route group (M3 navigation shell). Screen CONTENT (real

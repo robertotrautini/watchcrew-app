@@ -20,5 +20,27 @@ export function buildTrailerWebViewProps(videoKey: string) {
     allowsInlineMediaPlayback: true,
     allowsFullscreenVideo: true,
     mediaPlaybackRequiresUserAction: false,
+    injectedJavaScript: TRAILER_FULLSCREEN_BRIDGE_JS,
   };
 }
+
+/** Message the embed page posts when the player enters/leaves fullscreen. */
+export const TRAILER_FULLSCREEN_ENTER = "trailer-fullscreen:1";
+export const TRAILER_FULLSCREEN_EXIT = "trailer-fullscreen:0";
+
+/**
+ * Injected into the embed page: reports fullscreen changes of the standard
+ * YouTube player so the app can unlock landscape only while it is fullscreen
+ * (the app itself is portrait-locked).
+ */
+export const TRAILER_FULLSCREEN_BRIDGE_JS = `
+(function () {
+  function report() {
+    var fs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    window.ReactNativeWebView.postMessage(fs ? "${TRAILER_FULLSCREEN_ENTER}" : "${TRAILER_FULLSCREEN_EXIT}");
+  }
+  document.addEventListener("fullscreenchange", report);
+  document.addEventListener("webkitfullscreenchange", report);
+})();
+true;
+`;

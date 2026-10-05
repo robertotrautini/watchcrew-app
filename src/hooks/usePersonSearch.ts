@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { searchPerson } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 /** Regisseur/Besetzung mode debounce (M7 part 2, per the task spec): 250ms. */
 export const PERSON_SEARCH_DEBOUNCE_MS = 250;
@@ -19,7 +20,7 @@ export function usePersonSearch(query: string) {
   const trimmedQuery = debouncedQuery.trim();
 
   return useQuery({
-    queryKey: ["personSearch", trimmedQuery],
+    queryKey: queryKeys.personSearch(trimmedQuery),
     queryFn: async () => {
       const { data, error } = await searchPerson(trimmedQuery);
       if (error) {

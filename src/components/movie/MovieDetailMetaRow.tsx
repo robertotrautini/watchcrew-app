@@ -17,16 +17,28 @@ export interface MovieDetailMetaRowProps {
   releaseInfo: MovieDetailReleaseInfo | null;
 }
 
-export function MovieDetailMetaRow({ runtimeLabel, releaseInfo }: MovieDetailMetaRowProps) {
+export function MovieDetailMetaRow({
+  runtimeLabel,
+  releaseInfo,
+}: MovieDetailMetaRowProps) {
   return (
-    <View testID="movie-detail-meta-row" className="flex-row flex-wrap items-center gap-2">
+    <View
+      testID="movie-detail-meta-row"
+      className="flex-row flex-wrap items-center justify-center gap-2"
+    >
       {runtimeLabel != null ? (
-        <Text testID="movie-detail-runtime" className="text-sm text-text-secondary">
+        <Text
+          testID="movie-detail-runtime"
+          className="text-sm text-text-secondary"
+        >
           {runtimeLabel}
         </Text>
       ) : null}
       {releaseInfo != null ? (
-        <Text testID="movie-detail-release-date" className="text-sm text-text-secondary">
+        <Text
+          testID="movie-detail-release-date"
+          className="text-sm text-text-secondary"
+        >
           {`${releaseInfo.label} ${releaseInfo.date}`}
         </Text>
       ) : null}

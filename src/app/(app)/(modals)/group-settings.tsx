@@ -1,9 +1,25 @@
+import { EmptyState } from "@/components/ui/EmptyState";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, TextInput, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
+import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
+import {
+  ActivityIndicator,
+  Pressable,
+  Share,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { Icon } from "@/components/ui/Icon";
+import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 
-import { Button } from "@/components/ui/Button";
+import {
+  Button,
+  BUTTON_ICON_COLORS,
+  BUTTON_ICON_COLOR_DISABLED,
+} from "@/components/ui/Button";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupDetails, useGroupNames } from "@/hooks/useGroupDetails";
@@ -23,6 +39,11 @@ import {
   resolveGroupTheme,
   type GroupThemeName,
 } from "@/lib/groupTheme";
+import {
+  GLASS_EDGE,
+  GLASS_INSET_EDGE,
+  GLASS_TILE_CLASSNAME,
+} from "@/components/ui/Glass";
 
 /**
  * Group-Settings screen (M9 part 2) -- member list, rename, invite-link
@@ -70,9 +91,11 @@ const LEAVE_COPY_AS_MEMBER = "Möchtest du die Gruppe wirklich verlassen?";
 const ONBOARDING_ROUTE = "/(onboarding)/create-or-join-group";
 
 export default function GroupSettingsScreen() {
+  const parallaxScroll = useParallaxScroll();
   const router = useRouter();
   const currentUserId = useCurrentUserId();
-  const { activeGroupId, setActiveGroup, groupsQuery } = useActiveGroup(currentUserId);
+  const { activeGroupId, setActiveGroup, groupsQuery } =
+    useActiveGroup(currentUserId);
 
   const groupDetailsQuery = useGroupDetails(activeGroupId);
   const groupMembersQuery = useGroupMembers(activeGroupId);
@@ -98,7 +121,9 @@ export default function GroupSettingsScreen() {
   const leaveGroupMutation = useLeaveGroup();
 
   const [nameInput, setNameInput] = useState("");
-  const [removeTargetUserId, setRemoveTargetUserId] = useState<string | null>(null);
+  const [removeTargetUserId, setRemoveTargetUserId] = useState<string | null>(
+    null,
+  );
   const [leaveConfirmVisible, setLeaveConfirmVisible] = useState(false);
 
   // Keeps the editable name field in sync with the loaded/currently-active
@@ -120,7 +145,9 @@ export default function GroupSettingsScreen() {
     setLeaveConfirmVisible(false);
   }, [activeGroupId]);
 
-  const currentMembership = groupMembersQuery.data?.find((member) => member.user_id === currentUserId);
+  const currentMembership = groupMembersQuery.data?.find(
+    (member) => member.user_id === currentUserId,
+  );
   const isOwner = currentMembership?.role === "owner";
   const memberCount = groupMembersQuery.data?.length ?? 0;
   const isLastMember = memberCount === 1;
@@ -129,13 +156,22 @@ export default function GroupSettingsScreen() {
   const inviteEnabled = groupDetailsQuery.data?.invite_enabled ?? false;
   const inviteLink = inviteToken ? `${INVITE_LINK_SCHEME}${inviteToken}` : "";
 
-  const themeColors = resolveGroupTheme(groupDetailsQuery.data?.color_theme).colors;
+  const themeColors = resolveGroupTheme(
+    groupDetailsQuery.data?.color_theme,
+  ).colors;
 
-  const isLoading = groupsQuery.isLoading || groupDetailsQuery.isLoading || groupMembersQuery.isLoading;
-  const isError = groupsQuery.isError || groupDetailsQuery.isError || groupMembersQuery.isError;
+  const isLoading =
+    groupsQuery.isLoading ||
+    groupDetailsQuery.isLoading ||
+    groupMembersQuery.isLoading;
+  const isError =
+    groupsQuery.isError ||
+    groupDetailsQuery.isError ||
+    groupMembersQuery.isError;
 
   const currentTheme = groupDetailsQuery.data?.color_theme;
-  const selectedThemeName: GroupThemeName = resolveGroupTheme(currentTheme).name;
+  const selectedThemeName: GroupThemeName =
+    resolveGroupTheme(currentTheme).name;
 
   function handleThemeSelect(theme: GroupThemeName) {
     if (!activeGroupId || theme === selectedThemeName) {
@@ -143,6 +179,10 @@ export default function GroupSettingsScreen() {
     }
     setThemeMutation.mutate({ groupId: activeGroupId, theme });
   }
+
+  const nameChanged =
+    nameInput.trim().length > 0 &&
+    nameInput.trim() !== (groupDetailsQuery.data?.name ?? "");
 
   function handleRenameSave() {
     const trimmed = nameInput.trim();
@@ -170,7 +210,10 @@ export default function GroupSettingsScreen() {
     if (!activeGroupId) {
       return;
     }
-    setInviteEnabledMutation.mutate({ groupId: activeGroupId, enabled: !inviteEnabled });
+    setInviteEnabledMutation.mutate({
+      groupId: activeGroupId,
+      enabled: !inviteEnabled,
+    });
   }
 
   function handleConfirmRemoveMember(userId: string) {
@@ -208,7 +251,10 @@ export default function GroupSettingsScreen() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" testID="group-settings-screen">
+      <View
+        className="flex-1 items-center justify-center"
+        testID="group-settings-screen"
+      >
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
         <ActivityIndicator testID="group-settings-loading" />
       </View>
@@ -217,7 +263,10 @@ export default function GroupSettingsScreen() {
 
   if (isError) {
     return (
-      <View className="flex-1 items-center justify-center px-4" testID="group-settings-screen">
+      <View
+        className="flex-1 items-center justify-center px-4"
+        testID="group-settings-screen"
+      >
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
         <Text testID="group-settings-error" className="text-center text-danger">
           Die Gruppeneinstellungen konnten nicht geladen werden.
@@ -228,238 +277,334 @@ export default function GroupSettingsScreen() {
 
   if (!activeGroupId) {
     return (
-      <View className="flex-1 items-center justify-center px-4" testID="group-settings-screen">
+      <View
+        className="flex-1 items-center justify-center px-4"
+        testID="group-settings-screen"
+      >
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
-        <Text testID="group-settings-no-group" className="text-center text-text-primary">
-          Keine aktive Gruppe gefunden.
-        </Text>
+        <EmptyState
+          testID="group-settings-no-group"
+          icon="group"
+          title="Keine aktive Gruppe gefunden."
+        />
       </View>
     );
   }
 
   return (
-    <ScrollView
-      className="flex-1"
-      contentContainerClassName="gap-6 px-4 py-6"
-      testID="group-settings-screen">
-      <Stack.Screen options={{ title: "Gruppe verwalten" }} />
+    <View className="flex-1">
+      <KeyboardAwareScrollView
+        {...parallaxScroll}
+        className="flex-1"
+        contentContainerClassName="gap-6 px-4 py-6"
+        testID="group-settings-screen"
+      >
+        <Stack.Screen options={{ title: "Gruppe verwalten" }} />
 
-      <View className="flex-row items-center gap-3" testID="group-settings-header">
-        <Ionicons testID="group-settings-theme-swatch" name="ellipse" size={28} color={themeColors.accent} />
-        <Text testID="group-settings-name" className="font-display text-xl text-text-primary">
-          {groupDetailsQuery.data?.name}
-        </Text>
-      </View>
-
-      <View className="gap-2" testID="group-settings-switcher">
-        <Text className="text-text-secondary">Deine Gruppen</Text>
-        {(groupsQuery.data ?? []).map((membership) => {
-          const isActive = membership.group_id === activeGroupId;
-          return (
-            <Pressable
-              key={membership.group_id}
-              testID={`group-settings-switch-${membership.group_id}`}
-              accessibilityRole="button"
-              accessibilityState={{ selected: isActive }}
-              onPress={() => setActiveGroup(membership.group_id)}
-              className={`rounded-lg border border-border-subtle px-3 py-2 ${isActive ? "bg-accent" : "bg-card"}`}>
-              <Text className={isActive ? "text-bg-primary" : "text-text-primary"}>
-                {groupDisplayLabel(membership.group_id, groupNameById.get(membership.group_id))}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {isOwner ? (
-        <View className="gap-2" testID="group-settings-rename-section">
-          <Text className="text-text-secondary">Gruppenname</Text>
-          <TextInput
-            testID="group-settings-name-input"
-            value={nameInput}
-            onChangeText={setNameInput}
-            className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
+        <View
+          className="flex-row items-center gap-3"
+          testID="group-settings-header"
+        >
+          <Icon
+            testID="group-settings-theme-swatch"
+            name="swatch"
+            size="M"
+            color={themeColors.accent}
           />
-          {renameMutation.isError ? (
-            <Text testID="group-settings-rename-error" className="text-sm text-danger">
-              Umbenennen fehlgeschlagen: {(renameMutation.error as { message?: string })?.message}
-            </Text>
-          ) : null}
-          <Button
-            testID="group-settings-rename-save-button"
-            label="Speichern"
-            disabled={nameInput.trim().length === 0}
-            loading={renameMutation.isPending}
-            onPress={handleRenameSave}
-          />
-        </View>
-      ) : null}
-
-      {isOwner ? (
-        <View className="gap-2" testID="group-settings-theme-section">
-          <Text className="text-text-secondary">Farbthema</Text>
-          <View className="flex-row flex-wrap gap-3">
-            {GROUP_THEME_OPTIONS.map((themeName) => {
-              const { colors } = resolveGroupTheme(themeName);
-              const isSelected = selectedThemeName === themeName;
-
-              return (
-                <Pressable
-                  key={themeName}
-                  testID={`group-settings-theme-swatch-${themeName}`}
-                  accessibilityRole="button"
-                  accessibilityLabel={GROUP_THEME_LABELS[themeName]}
-                  accessibilityState={{ selected: isSelected, disabled: setThemeMutation.isPending }}
-                  disabled={setThemeMutation.isPending}
-                  onPress={() => handleThemeSelect(themeName)}
-                  className="h-touch-min w-touch-min items-center justify-center">
-                  <Ionicons name="ellipse" size={32} color={colors.accent} />
-                  {isSelected ? (
-                    <Ionicons
-                      testID={`group-settings-theme-selected-${themeName}`}
-                      name="checkmark-circle"
-                      size={16}
-                      color={themeColors.accent}
-                      className="absolute -right-1 -top-1"
-                    />
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-          {setThemeMutation.isError ? (
-            <Text testID="group-settings-theme-error" className="text-sm text-danger">
-              Farbthema konnte nicht geändert werden:{" "}
-              {(setThemeMutation.error as { message?: string })?.message}
-            </Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {isOwner ? (
-        <View className="gap-2" testID="group-settings-invite-section">
-          <Text className="text-text-secondary">Einladungslink</Text>
-          <Text testID="group-settings-invite-link" className="text-text-primary" selectable>
-            {inviteLink}
+          <Text
+            testID="group-settings-name"
+            className="font-display text-xl text-text-primary"
+          >
+            {groupDetailsQuery.data?.name}
           </Text>
-          <View className="flex-row gap-2">
-            <Button
-              testID="group-settings-invite-share-button"
-              label="Teilen"
-              variant="secondary"
-              className="flex-1"
-              onPress={handleShareInvite}
-            />
-            <Button
-              testID="group-settings-invite-regenerate-button"
-              label="Neu generieren"
-              variant="secondary"
-              className="flex-1"
-              loading={regenerateMutation.isPending}
-              onPress={handleRegenerateInvite}
-            />
-          </View>
-          <Pressable
-            testID="group-settings-invite-toggle"
-            accessibilityRole="switch"
-            accessibilityState={{ checked: inviteEnabled }}
-            onPress={handleToggleInviteEnabled}
-            className="rounded-lg border border-border-subtle px-3 py-2">
-            <Text className="text-text-primary">
-              {inviteEnabled ? "Einladungen aktiv" : "Einladungen deaktiviert"}
-            </Text>
-          </Pressable>
         </View>
-      ) : null}
 
-      <View className="gap-2" testID="group-settings-member-list">
-        <Text className="text-text-secondary">Mitglieder</Text>
-        {(groupMembersQuery.data ?? []).map((member) => {
-          const isSelf = member.user_id === currentUserId;
-          const isRemoving = removeTargetUserId === member.user_id;
-          return (
+        <View className="gap-2" testID="group-settings-switcher">
+          <Text className="font-display text-lg text-accent-light">
+            Deine Gruppen
+          </Text>
+          {(groupsQuery.data ?? []).map((membership) => {
+            const isActive = membership.group_id === activeGroupId;
+            return (
+              <Button
+                key={membership.group_id}
+                testID={`group-settings-switch-${membership.group_id}`}
+                variant={isActive ? "primary" : "secondary"}
+                size="sm"
+                accessibilityState={{ selected: isActive }}
+                onPress={() => setActiveGroup(membership.group_id)}
+                label={groupDisplayLabel(
+                  membership.group_id,
+                  groupNameById.get(membership.group_id),
+                )}
+              />
+            );
+          })}
+        </View>
+
+        {isOwner ? (
+          <View className="gap-2" testID="group-settings-rename-section">
+            <Text className="font-display text-lg text-accent-light">
+              Gruppenname
+            </Text>
             <View
-              key={member.user_id}
-              testID={`group-settings-member-${member.user_id}`}
-              className="gap-2 rounded-lg border border-border-subtle bg-card p-3">
-              <View className="flex-row items-center justify-between">
-                <Text className="text-text-primary">
-                  {memberDisplayLabel(member.user_id, member.profiles?.display_name)}
-                </Text>
-                <Text testID={`group-settings-member-role-${member.user_id}`} className="text-text-secondary">
-                  {member.role === "owner" ? "Owner" : "Mitglied"}
-                </Text>
-              </View>
-
-              {isOwner && !isSelf ? (
-                isRemoving ? (
-                  <View testID={`group-settings-member-${member.user_id}-remove-confirm`} className="gap-2">
-                    <Text className="text-text-primary">Mitglied wirklich entfernen?</Text>
-                    <View className="flex-row gap-2">
-                      <Button
-                        testID={`group-settings-member-${member.user_id}-remove-cancel-button`}
-                        label="Abbrechen"
-                        variant="secondary"
-                        className="flex-1"
-                        onPress={() => setRemoveTargetUserId(null)}
-                      />
-                      <Button
-                        testID={`group-settings-member-${member.user_id}-remove-confirm-button`}
-                        label="Entfernen"
-                        variant="danger"
-                        className="flex-1"
-                        loading={removeMemberMutation.isPending}
-                        onPress={() => handleConfirmRemoveMember(member.user_id)}
-                      />
-                    </View>
-                  </View>
-                ) : (
-                  <Button
-                    testID={`group-settings-member-${member.user_id}-remove-button`}
-                    label="Entfernen"
-                    variant="danger"
-                    onPress={() => setRemoveTargetUserId(member.user_id)}
-                  />
-                )
-              ) : null}
+              testID="group-settings-rename-row"
+              className="flex-row items-center gap-3"
+            >
+              <TextInput
+                testID="group-settings-name-input"
+                value={nameInput}
+                onChangeText={setNameInput}
+                className={`flex-1 rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+              />
+              <Button
+                testID="group-settings-rename-save-button"
+                variant="primary"
+                iconOnly
+                accessibilityLabel="Gruppenname speichern"
+                accessibilityRole="button"
+                disabled={!nameChanged}
+                loading={renameMutation.isPending}
+                onPress={handleRenameSave}
+              >
+                <Icon
+                  name="save"
+                  size="M"
+                  color={
+                    nameChanged
+                      ? BUTTON_ICON_COLORS.primary
+                      : BUTTON_ICON_COLOR_DISABLED
+                  }
+                />
+              </Button>
             </View>
-          );
-        })}
-      </View>
+            {renameMutation.isError ? (
+              <Text
+                testID="group-settings-rename-error"
+                className="text-sm text-danger"
+              >
+                Umbenennen fehlgeschlagen:{" "}
+                {(renameMutation.error as { message?: string })?.message}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
-      <View className="gap-2" testID="group-settings-leave-section">
-        {leaveConfirmVisible ? (
-          <View testID="group-settings-leave-confirm" className="gap-2">
-            <Text testID="group-settings-leave-confirm-copy" className="text-text-primary">
-              {isLastMember ? LEAVE_COPY_LAST_MEMBER : isOwner ? LEAVE_COPY_AS_OWNER : LEAVE_COPY_AS_MEMBER}
+        {isOwner ? (
+          <View className="gap-2" testID="group-settings-theme-section">
+            <Text className="font-display text-lg text-accent-light">
+              Farbthema
+            </Text>
+            <View className="flex-row flex-wrap gap-3">
+              {GROUP_THEME_OPTIONS.map((themeName) => {
+                const { colors } = resolveGroupTheme(themeName);
+                const isSelected = selectedThemeName === themeName;
+
+                return (
+                  <Pressable
+                    key={themeName}
+                    testID={`group-settings-theme-swatch-${themeName}`}
+                    accessibilityRole="button"
+                    accessibilityLabel={GROUP_THEME_LABELS[themeName]}
+                    accessibilityState={{
+                      selected: isSelected,
+                      disabled: setThemeMutation.isPending,
+                    }}
+                    disabled={setThemeMutation.isPending}
+                    onPress={() => handleThemeSelect(themeName)}
+                    className="h-touch-comfortable w-touch-comfortable items-center justify-center"
+                  >
+                    <Icon name="swatch" size="L" color={colors.accent} />
+                    {isSelected ? (
+                      <Icon
+                        testID={`group-settings-theme-selected-${themeName}`}
+                        name="selected"
+                        size="S"
+                        color={themeColors.accent}
+                        className="absolute -right-1 -top-1"
+                      />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+            {setThemeMutation.isError ? (
+              <Text
+                testID="group-settings-theme-error"
+                className="text-sm text-danger"
+              >
+                Farbthema konnte nicht geändert werden:{" "}
+                {(setThemeMutation.error as { message?: string })?.message}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {isOwner ? (
+          <View className="gap-2" testID="group-settings-invite-section">
+            <Text className="font-display text-lg text-accent-light">
+              Einladungslink
+            </Text>
+            <Text
+              testID="group-settings-invite-link"
+              className="text-text-primary"
+              selectable
+            >
+              {inviteLink}
             </Text>
             <View className="flex-row gap-2">
               <Button
-                testID="group-settings-leave-cancel-button"
-                label="Abbrechen"
+                testID="group-settings-invite-share-button"
+                label="Teilen"
+                icon="share"
                 variant="secondary"
                 className="flex-1"
-                onPress={() => setLeaveConfirmVisible(false)}
+                onPress={handleShareInvite}
               />
               <Button
-                testID="group-settings-leave-confirm-button"
-                label="Verlassen"
-                variant="danger"
+                testID="group-settings-invite-regenerate-button"
+                label="Neu generieren"
+                icon="regenerate"
+                variant="secondary"
                 className="flex-1"
-                loading={leaveGroupMutation.isPending}
-                onPress={handleConfirmLeave}
+                loading={regenerateMutation.isPending}
+                onPress={handleRegenerateInvite}
+              />
+            </View>
+            <View className={GLASS_TILE_CLASSNAME}>
+              <SettingsToggleRow
+                testID="group-settings-invite-toggle"
+                checked={inviteEnabled}
+                onPress={handleToggleInviteEnabled}
+                label={
+                  inviteEnabled
+                    ? "Einladungen aktiv"
+                    : "Einladungen deaktiviert"
+                }
               />
             </View>
           </View>
-        ) : (
-          <Button
-            testID="group-settings-leave-button"
-            label="Gruppe verlassen"
-            variant="danger"
-            onPress={() => setLeaveConfirmVisible(true)}
-          />
-        )}
-      </View>
-    </ScrollView>
+        ) : null}
+
+        <View className="gap-2" testID="group-settings-member-list">
+          <Text className="font-display text-lg text-accent-light">
+            Mitglieder
+          </Text>
+          {(groupMembersQuery.data ?? []).map((member) => {
+            const isSelf = member.user_id === currentUserId;
+            const isRemoving = removeTargetUserId === member.user_id;
+            return (
+              <View
+                key={member.user_id}
+                testID={`group-settings-member-${member.user_id}`}
+                className={`gap-2 ${GLASS_TILE_CLASSNAME} p-3`}
+              >
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-text-primary">
+                    {memberDisplayLabel(
+                      member.user_id,
+                      member.profiles?.display_name,
+                    )}
+                  </Text>
+                  <Text
+                    testID={`group-settings-member-role-${member.user_id}`}
+                    className="text-text-secondary"
+                  >
+                    {member.role === "owner" ? "Owner" : "Mitglied"}
+                  </Text>
+                </View>
+
+                {isOwner && !isSelf ? (
+                  isRemoving ? (
+                    <View
+                      testID={`group-settings-member-${member.user_id}-remove-confirm`}
+                      className="gap-2"
+                    >
+                      <Text className="text-text-primary">
+                        Mitglied wirklich entfernen?
+                      </Text>
+                      <View className="flex-row gap-2">
+                        <Button
+                          testID={`group-settings-member-${member.user_id}-remove-cancel-button`}
+                          label="Abbrechen"
+                          icon="close"
+                          variant="secondary"
+                          className="flex-1"
+                          onPress={() => setRemoveTargetUserId(null)}
+                        />
+                        <Button
+                          testID={`group-settings-member-${member.user_id}-remove-confirm-button`}
+                          label="Entfernen"
+                          icon="removeMember"
+                          variant="danger"
+                          className="flex-1"
+                          loading={removeMemberMutation.isPending}
+                          onPress={() =>
+                            handleConfirmRemoveMember(member.user_id)
+                          }
+                        />
+                      </View>
+                    </View>
+                  ) : (
+                    <Button
+                      testID={`group-settings-member-${member.user_id}-remove-button`}
+                      label="Entfernen"
+                      icon="removeMember"
+                      variant="danger"
+                      onPress={() => setRemoveTargetUserId(member.user_id)}
+                    />
+                  )
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+
+        <View className="gap-2" testID="group-settings-leave-section">
+          {leaveConfirmVisible ? (
+            <View testID="group-settings-leave-confirm" className="gap-2">
+              <Text
+                testID="group-settings-leave-confirm-copy"
+                className="text-text-primary"
+              >
+                {isLastMember
+                  ? LEAVE_COPY_LAST_MEMBER
+                  : isOwner
+                    ? LEAVE_COPY_AS_OWNER
+                    : LEAVE_COPY_AS_MEMBER}
+              </Text>
+              <View className="flex-row gap-2">
+                <Button
+                  testID="group-settings-leave-cancel-button"
+                  label="Abbrechen"
+                  icon="close"
+                  variant="secondary"
+                  className="flex-1"
+                  onPress={() => setLeaveConfirmVisible(false)}
+                />
+                <Button
+                  testID="group-settings-leave-confirm-button"
+                  label="Verlassen"
+                  icon="leave"
+                  variant="danger"
+                  className="flex-1"
+                  loading={leaveGroupMutation.isPending}
+                  onPress={handleConfirmLeave}
+                />
+              </View>
+            </View>
+          ) : (
+            <Button
+              testID="group-settings-leave-button"
+              label="Gruppe verlassen"
+              icon="leave"
+              variant="danger"
+              onPress={() => setLeaveConfirmVisible(true)}
+            />
+          )}
+        </View>
+      </KeyboardAwareScrollView>
+      <SettingsBackBar />
+    </View>
   );
 }

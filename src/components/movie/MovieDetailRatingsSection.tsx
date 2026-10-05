@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/ui/Icon";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
@@ -34,13 +34,17 @@ export function MovieDetailRatingsSection({
     <View testID="movie-detail-ratings-section">
       <Pressable
         testID="movie-detail-ratings-toggle"
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
         onPress={() => setExpanded((prev) => !prev)}
-        className="flex-row items-center justify-between py-2"
+        className="min-h-touch-comfortable flex-row items-center justify-between"
       >
-        <Text className="text-base font-semibold text-text-primary">Bewertungen</Text>
-        <Ionicons
-          name={expanded ? "chevron-up" : "chevron-down"}
-          size={20}
+        <Text className="text-base font-semibold text-text-primary">
+          Bewertungen
+        </Text>
+        <Icon
+          name={expanded ? "chevronUp" : "chevronDown"}
+          size="M"
           color={starColor}
         />
       </Pressable>
@@ -50,7 +54,10 @@ export function MovieDetailRatingsSection({
           {ratings.map((rating) => (
             <MemberRatingRow
               key={rating.id}
-              memberLabel={memberDisplayLabel(rating.member_id, displayNameById.get(rating.member_id))}
+              memberLabel={memberDisplayLabel(
+                rating.member_id,
+                displayNameById.get(rating.member_id),
+              )}
               rating={rating.rating}
               starColor={starColor}
             />

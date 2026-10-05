@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
-import { type ListFilters, type ListFiltersTab, DEFAULT_LIST_FILTERS, listFiltersKey } from "@/lib/listFilters";
+import {
+  type ListFilters,
+  type ListFiltersTab,
+  DEFAULT_LIST_FILTERS,
+  listFiltersKey,
+} from "@/lib/listFilters";
 import { mmkvStorage } from "@/lib/mmkvStorage";
 
 // Re-exported for existing importers; defined in src/lib/listFilters.ts.
@@ -29,6 +34,9 @@ export type WatchlistViewMode = "cards" | "grid" | "list";
  * shared/global-not-per-group convention as `WatchlistViewMode` above.
  */
 export type DiaryViewMode = "cards" | "grid" | "list";
+
+/** Tabs with a collapsible filter panel (Watchlist, Tagebuch). */
+export type FilterPanelTab = "watchlist" | "diary";
 
 interface PreferencesState {
   lastActiveTab: LastActiveTab;
@@ -73,15 +81,6 @@ interface PreferencesState {
   showTitlesInGrid: boolean;
   setShowTitlesInGrid: (value: boolean) => void;
   /**
-   * M10 Settings hub: the last changelog version the user has actually
-   * opened the Changelog screen for (`src/app/(app)/(modals)/settings/changelog.tsx`).
-   * `null` means the user has never opened it. Compared against the
-   * hardcoded `CURRENT_CHANGELOG_VERSION` constant to decide whether to
-   * surface a "Neue Funktionen verfügbar" hint on the Settings hub.
-   */
-  lastSeenChangelogVersion: string | null;
-  setLastSeenChangelogVersion: (version: string) => void;
-  /**
    * Per-device feature flag "Tracker aktiv" (Darstellung screen, inventory
    * 4.12). Default ON. When OFF the Tracker tab and the payment section in
    * the rating dialog are hidden; Watchlist becomes the landing tab.
@@ -90,7 +89,14 @@ interface PreferencesState {
   setTrackerEnabled: (value: boolean) => void;
   /** Persisted sort/filter choices, keyed `${tab}:${groupId}`. Read via `?? DEFAULT_LIST_FILTERS`. */
   listFilters: Record<string, ListFilters>;
-  setListFilters: (tab: ListFiltersTab, groupId: string, patch: Partial<ListFilters>) => void;
+  setListFilters: (
+    tab: ListFiltersTab,
+    groupId: string,
+    patch: Partial<ListFilters>,
+  ) => void;
+  /** Collapsible filter panel open/closed per tab (default closed, per-device). */
+  filterPanelOpen: Record<FilterPanelTab, boolean>;
+  setFilterPanelOpen: (tab: FilterPanelTab, open: boolean) => void;
 }
 
 export const usePreferencesStore = create<PreferencesState>()(
@@ -105,13 +111,17 @@ export const usePreferencesStore = create<PreferencesState>()(
       activeGroupId: null,
       setActiveGroupId: (groupId) => set({ activeGroupId: groupId }),
       selectedStreamingProviderIds: [],
-      setSelectedStreamingProviderIds: (ids) => set({ selectedStreamingProviderIds: ids }),
+      setSelectedStreamingProviderIds: (ids) =>
+        set({ selectedStreamingProviderIds: ids }),
       showTitlesInGrid: true,
       setShowTitlesInGrid: (value) => set({ showTitlesInGrid: value }),
-      lastSeenChangelogVersion: null,
-      setLastSeenChangelogVersion: (version) => set({ lastSeenChangelogVersion: version }),
       trackerEnabled: true,
       setTrackerEnabled: (value) => set({ trackerEnabled: value }),
+      filterPanelOpen: { watchlist: false, diary: false },
+      setFilterPanelOpen: (tab, open) =>
+        set((state) => ({
+          filterPanelOpen: { ...state.filterPanelOpen, [tab]: open },
+        })),
       listFilters: {},
       setListFilters: (tab, groupId, patch) =>
         set((state) => {
@@ -119,7 +129,11 @@ export const usePreferencesStore = create<PreferencesState>()(
           return {
             listFilters: {
               ...state.listFilters,
-              [key]: { ...DEFAULT_LIST_FILTERS, ...state.listFilters[key], ...patch },
+              [key]: {
+                ...DEFAULT_LIST_FILTERS,
+                ...state.listFilters[key],
+                ...patch,
+              },
             },
           };
         }),

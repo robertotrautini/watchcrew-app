@@ -1,10 +1,19 @@
-import { useState } from "react";
-import { Alert, View } from "react-native";
+import { Fragment, useState } from "react";
+import { showToast } from "@/lib/toast";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Icon, type IconRole } from "@/components/ui/Icon";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
-import { Button } from "@/components/ui/Button";
+import {
+  Button,
+  DANGER_ICON_COLOR,
+  DANGER_PRESSED_CLASSNAME,
+  DANGER_SURFACE_CLASSNAME,
+  DANGER_TEXT_CLASSNAME,
+} from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
+import { GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
 import { Sheet } from "@/components/ui/Sheet";
 import {
   useAddToWatchlist,
@@ -13,7 +22,10 @@ import {
 } from "@/hooks/useMovieDetailMutations";
 import type { ActionButtonId } from "@/lib/movieDetailLogic";
 import { formatDateForInput } from "@/lib/ratingLogic";
-import { navigateToCollection, navigateToSimilarMovies } from "@/lib/movieDetailNavigation";
+import {
+  navigateToCollection,
+  navigateToSimilarMovies,
+} from "@/lib/movieDetailNavigation";
 
 // M6 part 2a: the Movie-Detail-Overlay's bottom fixed action-buttons bar.
 // Owns the delete-confirmation Sheet and the mutation wiring for
@@ -46,12 +58,17 @@ export interface MovieDetailActionsBarProps {
   activeGroupId?: string;
   currentUserId?: string;
   collectionId?: number;
-  /** Effective release date (ISO) of this group's entry, shown/preselected in the "erscheinungsdatum" sheet. */
+  /** Which screen opened the detail; "watchlist" makes "Bearbeiten" open the entry edit sheet. */
+  source?: "watchlist" | "diary";
+  /** Effective release date (ISO) of this group's entry, shown/preselected in the edit sheet. */
   releaseDate?: string | null;
   /** True when the entry carries its own per-group date (enables the reset-to-TMDB-date button). */
   hasReleaseDateOverride?: boolean;
   /** "bewerten" (watchlist context) / "bearbeiten" (diary context) -- see the module comment above. */
-  onOpenRatingDialog?: (watchlistEntryId: string, mode: "watchlist" | "diary") => void;
+  onOpenRatingDialog?: (
+    watchlistEntryId: string,
+    mode: "watchlist" | "diary",
+  ) => void;
   /** "direkt_bewerten": called once the add-to-watchlist mutation succeeds, with the newly-created entry's id. */
   onDirectRateEntryCreated?: (watchlistEntryId: string) => void;
 }
@@ -64,13 +81,17 @@ export interface MovieDetailActionsBarProps {
 const ACTION_LABELS: Record<ActionButtonId, string> = {
   bewerten: "Bewerten",
   bearbeiten: "Bearbeiten",
-  erscheinungsdatum: "Erscheinungsdatum bearbeiten",
   aehnliche: "Ähnliche Filme",
   loeschen: "Löschen",
   filmreihe: "Filmreihe",
   zur_watchlist: "Zur Watchlist",
   direkt_bewerten: "Direkt bewerten",
 };
+
+// 5 actions -> clean 3+2 grid (centered second row); otherwise one equal-width row.
+const GRID_THRESHOLD = 4;
+const GRID_FIRST_ROW_SIZE = 3;
+const GRID_BUTTON_WIDTH = "w-[31%]";
 
 /**
  * Add-to-watchlist failure alert copy. Interim, undocumented-elsewhere
@@ -80,12 +101,76 @@ const ACTION_LABELS: Record<ActionButtonId, string> = {
  * Edge Function action resolves it before `addToWatchlist`'s DB insert is
  * ever attempted — see src/lib/movieDetailMutations.ts).
  */
-const GENERIC_ADD_TO_WATCHLIST_ERROR_TITLE = "Fehler";
 const GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE =
   "Der Film konnte nicht zur Watchlist hinzugefügt werden. Bitte versuche es erneut.";
 
 function handleAddToWatchlistError(): void {
-  Alert.alert(GENERIC_ADD_TO_WATCHLIST_ERROR_TITLE, GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE);
+  showToast(GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE, { variant: "error" });
+}
+
+/** Legacy-style glass icon buttons of the bottom bar (icon above label). */
+const ACTION_ICONS: Record<ActionButtonId, IconRole> = {
+  bewerten: "starEmpty",
+  bearbeiten: "edit",
+  aehnliche: "similar",
+  loeschen: "delete",
+  filmreihe: "filmSeries",
+  zur_watchlist: "bookmarkEmpty",
+  direkt_bewerten: "star",
+};
+
+const ACTION_ICON_COLOR = "#a8a8a8";
+
+interface ActionIconButtonProps {
+  id: ActionButtonId;
+  testID: string;
+  label: string;
+  widthClass: string;
+  danger?: boolean;
+  loading?: boolean;
+  onPress: () => void;
+}
+
+function ActionIconButton({
+  id,
+  testID,
+  label,
+  widthClass,
+  danger = false,
+  loading = false,
+  onPress,
+}: ActionIconButtonProps) {
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: loading, busy: loading }}
+      disabled={loading}
+      onPress={onPress}
+      className={`min-h-touch-comfortable ${widthClass} items-center justify-center gap-1 px-2 py-3 ${
+        danger
+          ? `rounded-xl ${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`
+          : GLASS_TILE_CLASSNAME
+      }${loading ? " opacity-50" : ""}`}
+    >
+      {loading ? (
+        <ActivityIndicator testID={`${testID}-loading-indicator`} />
+      ) : (
+        <Icon
+          name={ACTION_ICONS[id]}
+          size="M"
+          color={danger ? DANGER_ICON_COLOR : ACTION_ICON_COLOR}
+        />
+      )}
+      <Text
+        numberOfLines={1}
+        className={`text-center text-xs ${danger ? DANGER_TEXT_CLASSNAME : "text-text-secondary"}`}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
 }
 
 export function MovieDetailActionsBar({
@@ -97,13 +182,14 @@ export function MovieDetailActionsBar({
   activeGroupId,
   currentUserId,
   collectionId,
+  source,
   releaseDate = null,
   hasReleaseDateOverride = false,
   onOpenRatingDialog,
   onDirectRateEntryCreated,
 }: MovieDetailActionsBarProps) {
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
-  const [releaseDateSheetVisible, setReleaseDateSheetVisible] = useState(false);
+  const [editSheetVisible, setEditSheetVisible] = useState(false);
   const releaseDateMutation = useSetReleaseDateOverride();
 
   const deleteMutation = useDeleteWatchlistEntry();
@@ -141,8 +227,12 @@ export function MovieDetailActionsBar({
     if (!watchlistEntryId || !groupId) {
       return;
     }
-    releaseDateMutation.mutate({ watchlistEntryId, groupId, releaseDate: nextReleaseDate });
-    setReleaseDateSheetVisible(false);
+    releaseDateMutation.mutate({
+      watchlistEntryId,
+      groupId,
+      releaseDate: nextReleaseDate,
+    });
+    setEditSheetVisible(false);
   }
 
   function handleAddToWatchlist() {
@@ -168,17 +258,15 @@ export function MovieDetailActionsBar({
     );
   }
 
-  function renderAction(id: ActionButtonId) {
+  function renderAction(id: ActionButtonId, widthClass: string) {
     const testID = `movie-detail-action-${id}`;
-    const label = ACTION_LABELS[id];
+    const common = { testID, id, label: ACTION_LABELS[id], widthClass };
 
     switch (id) {
       case "aehnliche":
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             onPress={() => navigateToSimilarMovies(router, tmdbId)}
           />
         );
@@ -188,10 +276,8 @@ export function MovieDetailActionsBar({
         // somehow missing here, tapping the button silently does nothing
         // rather than navigating with an invalid id.
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             onPress={() => {
               if (collectionId != null) {
                 navigateToCollection(router, collectionId, tmdbId);
@@ -203,10 +289,8 @@ export function MovieDetailActionsBar({
         // Defensive no-op guard: same rationale as "filmreihe" above, for
         // a missing `watchlistEntryId`.
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             onPress={() => {
               if (watchlistEntryId) {
                 onOpenRatingDialog?.(watchlistEntryId, "watchlist");
@@ -215,60 +299,45 @@ export function MovieDetailActionsBar({
           />
         );
       case "bearbeiten":
-        // Defensive no-op guard: same rationale as "filmreihe" above, for
-        // a missing `watchlistEntryId`.
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             onPress={() => {
-              if (watchlistEntryId) {
-                onOpenRatingDialog?.(watchlistEntryId, "diary");
+              if (!watchlistEntryId) {
+                return;
               }
-            }}
-          />
-        );
-      case "erscheinungsdatum":
-        // Same defensive no-op guard as "bewerten" for a missing entry/group.
-        return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
-            onPress={() => {
-              if (watchlistEntryId && groupId) {
-                setReleaseDateSheetVisible(true);
+              // Watchlist entries are unrated: "Bearbeiten" edits the entry
+              // itself (release date only). Diary entries keep the rating dialog.
+              if (source === "watchlist") {
+                if (groupId) {
+                  setEditSheetVisible(true);
+                }
+                return;
               }
+              onOpenRatingDialog?.(watchlistEntryId, "diary");
             }}
           />
         );
       case "loeschen":
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
-            variant="danger"
+          <ActionIconButton
+            {...common}
+            danger
             onPress={() => setDeleteSheetVisible(true)}
           />
         );
       case "zur_watchlist":
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             loading={addToWatchlistMutation.isPending}
             onPress={handleAddToWatchlist}
           />
         );
       case "direkt_bewerten":
         return (
-          <Button
-            key={id}
-            testID={testID}
-            label={label}
+          <ActionIconButton
+            {...common}
             loading={addToWatchlistMutation.isPending}
             onPress={handleDirektBewerten}
           />
@@ -278,14 +347,53 @@ export function MovieDetailActionsBar({
     }
   }
 
+  const isGrid = actions.length > GRID_THRESHOLD;
+
   return (
     <>
-      <View className="flex-row flex-wrap gap-2 p-4">{actions.map(renderAction)}</View>
+      {isGrid ? (
+        <View
+          testID="movie-detail-actions-row"
+          className="gap-2 px-4 pb-2 pt-3"
+        >
+          <View
+            testID="movie-detail-actions-row-1"
+            className="flex-row justify-center gap-2"
+          >
+            {actions.slice(0, GRID_FIRST_ROW_SIZE).map((id) => (
+              <Fragment key={id}>
+                {renderAction(id, GRID_BUTTON_WIDTH)}
+              </Fragment>
+            ))}
+          </View>
+          <View
+            testID="movie-detail-actions-row-2"
+            className="flex-row justify-center gap-2"
+          >
+            {actions.slice(GRID_FIRST_ROW_SIZE).map((id) => (
+              <Fragment key={id}>
+                {renderAction(id, GRID_BUTTON_WIDTH)}
+              </Fragment>
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View
+          testID="movie-detail-actions-row"
+          className="flex-row gap-2 px-4 pb-2 pt-3"
+        >
+          {actions.map((id) => (
+            <Fragment key={id}>{renderAction(id, "min-w-0 flex-1")}</Fragment>
+          ))}
+        </View>
+      )}
       <Sheet
-        visible={releaseDateSheetVisible}
-        onClose={() => setReleaseDateSheetVisible(false)}
-        title="Erscheinungsdatum bearbeiten">
-        <View className="gap-3">
+        visible={editSheetVisible}
+        onClose={() => setEditSheetVisible(false)}
+        title="Eintrag bearbeiten"
+      >
+        <View testID="movie-detail-edit-sheet" className="gap-3">
+          <Text className="text-sm text-text-secondary">Erscheinungsdatum</Text>
           <DateField
             testID="movie-detail-release-date-field"
             valueIso={releaseDate}
@@ -297,6 +405,7 @@ export function MovieDetailActionsBar({
             <Button
               testID="movie-detail-release-date-reset"
               label="Auf TMDB-Datum zurücksetzen"
+              icon="reset"
               variant="secondary"
               onPress={() => saveReleaseDate(null)}
             />
@@ -306,11 +415,13 @@ export function MovieDetailActionsBar({
       <Sheet
         visible={deleteSheetVisible}
         onClose={() => setDeleteSheetVisible(false)}
-        title="Film löschen?">
+        title="Film löschen?"
+      >
         <View className="flex-row gap-2">
           <Button
             testID="movie-detail-delete-cancel-button"
             label="Abbrechen"
+            icon="close"
             variant="secondary"
             className="flex-1"
             onPress={() => setDeleteSheetVisible(false)}
@@ -318,6 +429,7 @@ export function MovieDetailActionsBar({
           <Button
             testID="movie-detail-delete-confirm-button"
             label="Löschen"
+            icon="delete"
             variant="danger"
             className="flex-1"
             loading={deleteMutation.isPending}

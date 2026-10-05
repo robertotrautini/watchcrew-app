@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getGroupMembers } from "@/lib/groups";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Wraps `getGroupMembers` (src/lib/groups.ts) in TanStack Query — mirrors
@@ -15,7 +16,7 @@ import { getGroupMembers } from "@/lib/groups";
  */
 export function useGroupMembers(groupId: string | undefined) {
   return useQuery({
-    queryKey: ["groupMembers", groupId],
+    queryKey: queryKeys.groupMembers.byGroup(groupId),
     queryFn: async () => {
       const { data, error } = await getGroupMembers(groupId as string);
       if (error) {

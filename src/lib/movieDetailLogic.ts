@@ -38,7 +38,10 @@ export function formatRuntime(minutes: number | null): string | null {
  * rather than falling back to `liveRuntime` — 0 is a real (if unusual)
  * stored value, not "missing".
  */
-export function pickRuntime(storedRuntime: number | null, liveRuntime: number | null): number | null {
+export function pickRuntime(
+  storedRuntime: number | null,
+  liveRuntime: number | null,
+): number | null {
   if (storedRuntime != null) {
     return storedRuntime;
   }
@@ -61,10 +64,13 @@ export function pickRuntime(storedRuntime: number | null, liveRuntime: number | 
  */
 export function pickPreferredReleaseDate(
   germanReleaseDate: GermanReleaseDate | null,
-  fallbackReleaseDate: string | null
+  fallbackReleaseDate: string | null,
 ): { label: string; date: string } | null {
   if (germanReleaseDate != null) {
-    return { label: germanReleaseDate.category, date: germanReleaseDate.release_date };
+    return {
+      label: germanReleaseDate.category,
+      date: germanReleaseDate.release_date,
+    };
   }
   if (fallbackReleaseDate != null) {
     return { label: "Erscheinungsdatum", date: fallbackReleaseDate };
@@ -76,7 +82,9 @@ export function pickPreferredReleaseDate(
 // Genres
 // ============================================================================
 
-function mapGenreLinksToNames(fallbackGenreLinks: MovieGenreLink[] | null | undefined): string[] {
+function mapGenreLinksToNames(
+  fallbackGenreLinks: MovieGenreLink[] | null | undefined,
+): string[] {
   return (fallbackGenreLinks ?? [])
     .map((link) => link.genres?.name)
     .filter((name): name is string => name != null);
@@ -91,7 +99,7 @@ function mapGenreLinksToNames(fallbackGenreLinks: MovieGenreLink[] | null | unde
  */
 export function pickGenres(
   liveGenres: string[] | null | undefined,
-  fallbackGenreLinks: MovieGenreLink[] | null | undefined
+  fallbackGenreLinks: MovieGenreLink[] | null | undefined,
 ): string[] {
   if (liveGenres != null) {
     return liveGenres;
@@ -104,7 +112,10 @@ export function pickGenres(
 // ============================================================================
 
 /** Show the "more" toggle only once the measured line count exceeds the allowed max. */
-export function shouldShowMoreToggle(measuredLineCount: number, maxLines: number): boolean {
+export function shouldShowMoreToggle(
+  measuredLineCount: number,
+  maxLines: number,
+): boolean {
   return measuredLineCount > maxLines;
 }
 
@@ -114,12 +125,14 @@ export function shouldShowMoreToggle(measuredLineCount: number, maxLines: number
 
 function countNonEmptySections(providers: TmdbMovieProviders): number {
   return [providers.flatrate, providers.rent, providers.buy].filter(
-    (section) => section.length > 0
+    (section) => section.length > 0,
   ).length;
 }
 
 function countTotalProviders(providers: TmdbMovieProviders): number {
-  return providers.flatrate.length + providers.rent.length + providers.buy.length;
+  return (
+    providers.flatrate.length + providers.rent.length + providers.buy.length
+  );
 }
 
 /**
@@ -129,11 +142,15 @@ function countTotalProviders(providers: TmdbMovieProviders): number {
  * independently OR'd (e.g. 2 sections with 1 item each show the toggle even
  * though the total is only 2).
  */
-export function shouldShowAllProvidersToggle(providers: TmdbMovieProviders | null): boolean {
+export function shouldShowAllProvidersToggle(
+  providers: TmdbMovieProviders | null,
+): boolean {
   if (providers == null) {
     return false;
   }
-  return countNonEmptySections(providers) > 1 || countTotalProviders(providers) > 3;
+  return (
+    countNonEmptySections(providers) > 1 || countTotalProviders(providers) > 3
+  );
 }
 
 // ============================================================================
@@ -143,7 +160,6 @@ export function shouldShowAllProvidersToggle(providers: TmdbMovieProviders | nul
 export type ActionButtonId =
   | "bewerten"
   | "bearbeiten"
-  | "erscheinungsdatum"
   | "aehnliche"
   | "loeschen"
   | "filmreihe"
@@ -158,26 +174,34 @@ export interface GetVisibleActionsContext {
   hasCollection: boolean;
 }
 
-function getVisibleActionsWithGroupContext(context: GetVisibleActionsContext): ActionButtonId[] {
+function getVisibleActionsWithGroupContext(
+  context: GetVisibleActionsContext,
+): ActionButtonId[] {
   const actions: ActionButtonId[] = [];
-  if (context.source === "watchlist" && (context.isReleased || context.isOnStreaming)) {
+  if (
+    context.source === "watchlist" &&
+    (context.isReleased || context.isOnStreaming)
+  ) {
     actions.push("bewerten");
   }
   actions.push("bearbeiten");
-  // Per-group release date edit: only for watchlist-only entries.
-  if (context.source === "watchlist") {
-    actions.push("erscheinungsdatum");
-  }
   actions.push("aehnliche");
-  actions.push("loeschen");
   if (context.hasCollection) {
     actions.push("filmreihe");
   }
+  // Destructive action is always last/rightmost (docs/style-guide.md "Aktionsreihen").
+  actions.push("loeschen");
   return actions;
 }
 
-function getVisibleActionsWithoutGroupContext(context: GetVisibleActionsContext): ActionButtonId[] {
-  const actions: ActionButtonId[] = ["zur_watchlist", "direkt_bewerten", "aehnliche"];
+function getVisibleActionsWithoutGroupContext(
+  context: GetVisibleActionsContext,
+): ActionButtonId[] {
+  const actions: ActionButtonId[] = [
+    "zur_watchlist",
+    "direkt_bewerten",
+    "aehnliche",
+  ];
   if (context.hasCollection) {
     actions.push("filmreihe");
   }
@@ -191,7 +215,9 @@ function getVisibleActionsWithoutGroupContext(context: GetVisibleActionsContext)
  * Watchlist/Diary) or without it (search/recommendation flow, where
  * `source`/`isReleased`/`isOnStreaming` are irrelevant and ignored).
  */
-export function getVisibleActions(context: GetVisibleActionsContext): ActionButtonId[] {
+export function getVisibleActions(
+  context: GetVisibleActionsContext,
+): ActionButtonId[] {
   if (context.hasGroupContext) {
     return getVisibleActionsWithGroupContext(context);
   }

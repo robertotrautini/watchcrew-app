@@ -1,9 +1,17 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, TextInput, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { Button } from "@/components/ui/Button";
+import { Brand } from "@/components/ui/Brand";
+import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
 import { signUpWithEmail } from "@/lib/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/passwordRules";
 import { openLegalUrl } from "@/lib/legalLinks";
@@ -11,10 +19,14 @@ import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const INPUT_CLASSNAME =
-  "rounded-lg border border-border-subtle bg-card px-3 py-3 text-base text-text-primary";
+const INPUT_CLASSNAME = GLASS_INPUT_CLASSNAME;
 
-function validate(displayName: string, email: string, password: string, confirmPassword: string): string | null {
+function validate(
+  displayName: string,
+  email: string,
+  password: string,
+  confirmPassword: string,
+): string | null {
   if (displayName.trim().length === 0) {
     return "Bitte gib einen Anzeigenamen ein.";
   }
@@ -46,8 +58,7 @@ export default function RegisterScreen() {
   // rendering below; `openLegalUrl` (src/lib/legalLinks.ts) handles the
   // "still a placeholder" gate identically to the Settings hub.
   const legalExtra = Constants.expoConfig?.extra as
-    | { privacyPolicyUrl?: string; termsOfServiceUrl?: string }
-    | undefined;
+    { privacyPolicyUrl?: string; termsOfServiceUrl?: string } | undefined;
   const privacyPolicyUrl = legalExtra?.privacyPolicyUrl;
   const termsOfServiceUrl = legalExtra?.termsOfServiceUrl;
 
@@ -75,7 +86,11 @@ export default function RegisterScreen() {
     setValidationError(null);
 
     setLoading(true);
-    const { error: signUpError } = await signUpWithEmail(email.trim(), password, displayName.trim());
+    const { error: signUpError } = await signUpWithEmail(
+      email.trim(),
+      password,
+      displayName.trim(),
+    );
     setLoading(false);
 
     if (signUpError) {
@@ -87,24 +102,28 @@ export default function RegisterScreen() {
 
   if (registered) {
     return (
-      <View
-        className="flex-1 items-center justify-center gap-4 px-6"
-        testID="register-screen">
-        <Text
-          className="text-center font-display text-2xl text-text-primary"
-          testID="register-success-heading">
-          Bestätige deine E-Mail
-        </Text>
-        <Text className="text-center text-base text-text-secondary">
-          Wir haben dir eine Bestätigungs-E-Mail an {email.trim()} geschickt. Bitte bestätige
-          deine E-Mail-Adresse, um dein Konto zu aktivieren und dich anzumelden.
-        </Text>
-        <Button
-          variant="primary"
-          label="Zurück zum Login"
-          onPress={goToLogin}
-          testID="register-back-to-login-button"
-        />
+      <View className="flex-1 justify-center px-6" testID="register-screen">
+        <Brand />
+        <Glass variant="strong" className="items-stretch gap-4 p-5">
+          <Text
+            className="text-center font-display text-2xl text-text-primary"
+            testID="register-success-heading"
+          >
+            Bestätige deine E-Mail
+          </Text>
+          <Text className="text-center text-base text-text-secondary">
+            Wir haben dir eine Bestätigungs-E-Mail an {email.trim()} geschickt.
+            Bitte bestätige deine E-Mail-Adresse, um dein Konto zu aktivieren
+            und dich anzumelden.
+          </Text>
+          <Button
+            variant="primary"
+            label="Zurück zum Login"
+            icon="back"
+            onPress={goToLogin}
+            testID="register-back-to-login-button"
+          />
+        </Glass>
       </View>
     );
   }
@@ -117,107 +136,125 @@ export default function RegisterScreen() {
     // the keyboard on a short-height device.
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
-      className="flex-1 justify-center gap-4 px-6"
-      testID="register-screen">
-      <Text className="mb-2 font-display text-3xl text-text-primary">Registrieren</Text>
-
-      <View className="gap-1">
-        <Text className="text-sm text-text-secondary">Anzeigename</Text>
-        <TextInput
-          testID="register-display-name-input"
-          value={displayName}
-          onChangeText={setDisplayName}
-          autoCapitalize="words"
-          placeholder="Wie sollen dich andere sehen?"
-          placeholderTextColor="#888888"
-          className={INPUT_CLASSNAME}
-        />
-      </View>
-
-      <View className="gap-1">
-        <Text className="text-sm text-text-secondary">E-Mail</Text>
-        <TextInput
-          testID="register-email-input"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholder="deine@email.de"
-          placeholderTextColor="#888888"
-          className={INPUT_CLASSNAME}
-        />
-      </View>
-
-      <View className="gap-1">
-        <Text className="text-sm text-text-secondary">Passwort</Text>
-        <TextInput
-          testID="register-password-input"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-          placeholderTextColor="#888888"
-          className={INPUT_CLASSNAME}
-        />
-      </View>
-
-      <View className="gap-1">
-        <Text className="text-sm text-text-secondary">Passwort bestätigen</Text>
-        <TextInput
-          testID="register-confirm-password-input"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-          placeholder="Passwort wiederholen"
-          placeholderTextColor="#888888"
-          className={INPUT_CLASSNAME}
-        />
-      </View>
-
-      {validationError ? (
-        <Text className="text-sm text-danger" testID="register-validation-error">
-          {validationError}
+      className="flex-1 justify-center px-6"
+      testID="register-screen"
+    >
+      <Brand />
+      <Glass variant="strong" className="gap-4 p-5">
+        <Text className="font-display text-2xl text-text-primary">
+          Registrieren
         </Text>
-      ) : null}
 
-      {submitError ? (
-        <Text className="text-sm text-danger" testID="register-submit-error">
-          {submitError}
-        </Text>
-      ) : null}
+        <View className="gap-1">
+          <Text className="text-sm text-text-secondary">Anzeigename</Text>
+          <TextInput
+            testID="register-display-name-input"
+            value={displayName}
+            onChangeText={setDisplayName}
+            autoCapitalize="words"
+            placeholder="Wie sollen dich andere sehen?"
+            placeholderTextColor="#888888"
+            className={INPUT_CLASSNAME}
+          />
+        </View>
 
-      <Button
-        variant="primary"
-        label="Konto erstellen"
-        onPress={handleSubmit}
-        loading={loading}
-        testID="register-submit-button"
-      />
+        <View className="gap-1">
+          <Text className="text-sm text-text-secondary">E-Mail</Text>
+          <TextInput
+            testID="register-email-input"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholder="deine@email.de"
+            placeholderTextColor="#888888"
+            className={INPUT_CLASSNAME}
+          />
+        </View>
 
-      <Text className="text-center text-xs text-text-secondary" testID="register-legal-notice">
-        Mit der Registrierung akzeptierst du unsere{" "}
+        <View className="gap-1">
+          <Text className="text-sm text-text-secondary">Passwort</Text>
+          <TextInput
+            testID="register-password-input"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
+            placeholderTextColor="#888888"
+            className={INPUT_CLASSNAME}
+          />
+        </View>
+
+        <View className="gap-1">
+          <Text className="text-sm text-text-secondary">
+            Passwort bestätigen
+          </Text>
+          <TextInput
+            testID="register-confirm-password-input"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            placeholder="Passwort wiederholen"
+            placeholderTextColor="#888888"
+            className={INPUT_CLASSNAME}
+          />
+        </View>
+
+        {validationError ? (
+          <Text
+            className="text-sm text-danger"
+            testID="register-validation-error"
+          >
+            {validationError}
+          </Text>
+        ) : null}
+
+        {submitError ? (
+          <Text className="text-sm text-danger" testID="register-submit-error">
+            {submitError}
+          </Text>
+        ) : null}
+
+        <Button
+          variant="primary"
+          label="Konto erstellen"
+          icon="register"
+          onPress={handleSubmit}
+          loading={loading}
+          testID="register-submit-button"
+        />
+
         <Text
-          className="text-xs text-accent underline"
-          testID="register-privacy-policy-link"
-          onPress={() => openLegalUrl(privacyPolicyUrl)}>
-          Datenschutzerklärung
-        </Text>{" "}
-        und{" "}
-        <Text
-          className="text-xs text-accent underline"
-          testID="register-terms-of-service-link"
-          onPress={() => openLegalUrl(termsOfServiceUrl)}>
-          Nutzungsbedingungen
+          className="text-center text-xs text-text-secondary"
+          testID="register-legal-notice"
+        >
+          Mit der Registrierung akzeptierst du unsere{" "}
+          <Text
+            className="text-xs text-accent underline"
+            testID="register-privacy-policy-link"
+            onPress={() => openLegalUrl(privacyPolicyUrl)}
+          >
+            Datenschutzerklärung
+          </Text>{" "}
+          und{" "}
+          <Text
+            className="text-xs text-accent underline"
+            testID="register-terms-of-service-link"
+            onPress={() => openLegalUrl(termsOfServiceUrl)}
+          >
+            Nutzungsbedingungen
+          </Text>
+          .
         </Text>
-        .
-      </Text>
 
-      <Button
-        variant="secondary"
-        label="Bereits ein Konto? Zum Login"
-        onPress={goToLogin}
-        testID="register-login-link"
-      />
+        <Button
+          variant="secondary"
+          label="Bereits ein Konto? Zum Login"
+          icon="login"
+          onPress={goToLogin}
+          testID="register-login-link"
+        />
+      </Glass>
     </KeyboardAvoidingView>
   );
 }

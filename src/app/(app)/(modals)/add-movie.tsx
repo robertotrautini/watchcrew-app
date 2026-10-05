@@ -1,8 +1,18 @@
 import { useRouter } from "expo-router";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { KeyboardInsetView } from "@/components/ui/KeyboardInsetView";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
+import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
 import { DateField } from "@/components/ui/DateField";
 import { formatDateForInput } from "@/lib/ratingLogic";
@@ -81,21 +91,26 @@ function dedupeByTmdbId(items: TmdbMovieLike[]): TmdbMovieLike[] {
 }
 
 export default function AddMovieScreen() {
+  const parallaxScroll = useParallaxScroll();
   const router = useRouter();
 
   const currentUserId = useCurrentUserId();
-  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
+  const { activeGroupId, groupsQuery: userGroupsQuery } =
+    useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const [mode, setMode] = useState<AddMovieMode>("film");
   const [query, setQuery] = useState("");
   const [selectedPersonId, setSelectedPersonId] = useState<number | null>(null);
-  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(null);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<number | null>(
+    null,
+  );
   const [streamingFilterActive, setStreamingFilterActive] = useState(false);
 
   const [pendingItem, setPendingItem] = useState<MovieGridItem | null>(null);
   const [manualDateInput, setManualDateInput] = useState("");
-  const [duplicateInfo, setDuplicateInfo] = useState<DuplicateRatingInfo | null>(null);
+  const [duplicateInfo, setDuplicateInfo] =
+    useState<DuplicateRatingInfo | null>(null);
 
   function handleSelectMode(nextMode: AddMovieMode) {
     setMode(nextMode);
@@ -106,11 +121,15 @@ export default function AddMovieScreen() {
 
   // --- Film mode ----------------------------------------------------------
   const movieSearchQuery = useMovieSearch(mode === "film" ? query : "");
-  const filmItemsRaw: MovieGridItem[] = (movieSearchQuery.data ?? []).map(mapSearchResultToGridItem);
+  const filmItemsRaw: MovieGridItem[] = (movieSearchQuery.data ?? []).map(
+    mapSearchResultToGridItem,
+  );
   // Inventory 2.5: the TV toggle filters the results to the user's own
   // streaming services (any category). Providers are only fetched while the
   // toggle is on.
-  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
+  const myProviderIds = usePreferencesStore(
+    (s) => s.selectedStreamingProviderIds,
+  );
   const { providersByTmdbId: filmProviders } = useMoviesProviders(
     streamingFilterActive ? filmItemsRaw.map((item) => item.tmdbId) : [],
   );
@@ -123,29 +142,38 @@ export default function AddMovieScreen() {
     mode === "regisseur" || mode === "besetzung" ? query : "",
   );
   const directorFilmographyQuery = useDirectorFilmography(
-    mode === "regisseur" ? selectedPersonId ?? undefined : undefined,
+    mode === "regisseur" ? (selectedPersonId ?? undefined) : undefined,
   );
   const actorFilmographyQuery = useActorFilmography(
-    mode === "besetzung" ? selectedPersonId ?? undefined : undefined,
+    mode === "besetzung" ? (selectedPersonId ?? undefined) : undefined,
   );
-  const personFilmographyQuery = mode === "regisseur" ? directorFilmographyQuery : actorFilmographyQuery;
-  const personItems: MovieGridItem[] = (personFilmographyQuery.data ?? []).map(mapMovieLikeToGridItem);
+  const personFilmographyQuery =
+    mode === "regisseur" ? directorFilmographyQuery : actorFilmographyQuery;
+  const personItems: MovieGridItem[] = (personFilmographyQuery.data ?? []).map(
+    mapMovieLikeToGridItem,
+  );
 
   // --- Studio mode ----------------------------------------------------------
   const companySearchQuery = useCompanySearch(mode === "studio" ? query : "");
   const studioFilmographyQuery = useStudioFilmography(
-    mode === "studio" ? selectedCompanyId ?? undefined : undefined,
+    mode === "studio" ? (selectedCompanyId ?? undefined) : undefined,
   );
-  const studioResultsRaw: TmdbMovieLike[] = (studioFilmographyQuery.data?.pages ?? []).flatMap(
-    (page) => page.results,
+  const studioResultsRaw: TmdbMovieLike[] = (
+    studioFilmographyQuery.data?.pages ?? []
+  ).flatMap((page) => page.results);
+  const studioItems: MovieGridItem[] = dedupeByTmdbId(studioResultsRaw).map(
+    mapMovieLikeToGridItem,
   );
-  const studioItems: MovieGridItem[] = dedupeByTmdbId(studioResultsRaw).map(mapMovieLikeToGridItem);
 
   // --- Shared: navigation + add-to-watchlist -------------------------------
   const addToWatchlistMutation = useAddToWatchlist();
 
   function getBadge(item: MovieGridItem) {
-    return getLibraryBadgeForTmdbId(watchlistQuery.data?.entries ?? [], item.tmdbId, currentUserId ?? "");
+    return getLibraryBadgeForTmdbId(
+      watchlistQuery.data?.entries ?? [],
+      item.tmdbId,
+      currentUserId ?? "",
+    );
   }
 
   function handlePressItem(item: MovieGridItem) {
@@ -197,7 +225,10 @@ export default function AddMovieScreen() {
   }
 
   function proceedPastManualDate(item: MovieGridItem) {
-    const duplicate = findDuplicateRatedEntry(watchlistQuery.data?.entries ?? [], item.tmdbId);
+    const duplicate = findDuplicateRatedEntry(
+      watchlistQuery.data?.entries ?? [],
+      item.tmdbId,
+    );
     if (duplicate) {
       setPendingItem(item);
       setDuplicateInfo(duplicate);
@@ -233,7 +264,10 @@ export default function AddMovieScreen() {
     }
   }
 
-  const manualDateSheetVisible = pendingItem != null && duplicateInfo == null && needsManualReleaseDate(pendingItem.releaseDate);
+  const manualDateSheetVisible =
+    pendingItem != null &&
+    duplicateInfo == null &&
+    needsManualReleaseDate(pendingItem.releaseDate);
   const duplicateSheetVisible = pendingItem != null && duplicateInfo != null;
 
   function renderPersonResults(
@@ -260,13 +294,13 @@ export default function AddMovieScreen() {
     }
     return (
       <View testID="add-movie-person-results">
-        {results.map((person) => (
+        {results.map((person, index) => (
           <Pressable
             key={person.id}
             testID={`add-movie-person-result-${person.id}`}
             accessibilityRole="button"
             onPress={() => setSelectedPersonId(person.id)}
-            className="border-b border-border-subtle py-3"
+            className={`py-3 ${index < results.length - 1 ? "border-b border-border-subtle" : ""}`}
           >
             <Text className="text-text-primary">{person.name}</Text>
           </Pressable>
@@ -299,13 +333,13 @@ export default function AddMovieScreen() {
     }
     return (
       <View testID="add-movie-company-results">
-        {results.map((company) => (
+        {results.map((company, index) => (
           <Pressable
             key={company.id}
             testID={`add-movie-company-result-${company.id}`}
             accessibilityRole="button"
             onPress={() => setSelectedCompanyId(company.id)}
-            className="border-b border-border-subtle py-3"
+            className={`py-3 ${index < results.length - 1 ? "border-b border-border-subtle" : ""}`}
           >
             <Text className="text-text-primary">{company.name}</Text>
           </Pressable>
@@ -315,21 +349,17 @@ export default function AddMovieScreen() {
   }
 
   return (
-    <View className="flex-1 px-4 pt-4" testID="add-movie-screen">
+    <KeyboardInsetView testID="add-movie-screen" className="px-4 pt-4">
       <View className="flex-row gap-2" testID="add-movie-mode-pills">
         {MODES.map((option) => (
-          <Pressable
+          <Chip
             key={option.key}
             testID={`add-movie-mode-${option.key}`}
-            accessibilityRole="button"
-            accessibilityState={{ selected: mode === option.key }}
+            active={mode === option.key}
+            className="flex-1"
             onPress={() => handleSelectMode(option.key)}
-            className={`rounded-full border border-border-subtle px-3 py-2 ${
-              mode === option.key ? "bg-accent" : "bg-card"
-            }`}
-          >
-            <Text className="text-sm text-text-primary">{option.label}</Text>
-          </Pressable>
+            label={option.label}
+          />
         ))}
       </View>
 
@@ -338,24 +368,21 @@ export default function AddMovieScreen() {
           <View className="flex-row items-center gap-2 pt-3">
             <TextInput
               testID="add-movie-film-search-input"
-              className="flex-1 rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
+              className="flex-1 rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
               placeholder="Filmtitel suchen…"
-              placeholderTextColor="#8b8b8b"
+              placeholderTextColor="#888888"
               value={query}
               onChangeText={setQuery}
             />
           </View>
-          <Pressable
+          <Chip
             testID="add-movie-streaming-filter-toggle"
-            accessibilityRole="button"
-            accessibilityState={{ selected: streamingFilterActive }}
+            active={streamingFilterActive}
+            className="mt-3 self-start"
             onPress={() => setStreamingFilterActive((current) => !current)}
-            className={`mt-3 self-start rounded-full border border-border-subtle px-3 py-1 ${
-              streamingFilterActive ? "bg-accent" : "bg-card"
-            }`}
-          >
-            <Text className="text-xs text-text-primary">Meine Streaming-Dienste (bald verfügbar)</Text>
-          </Pressable>
+            label="Meine Streaming-Dienste (bald verfügbar)"
+            textClassName="text-xs"
+          />
 
           <View className="mt-3 flex-1">
             {movieSearchQuery.isLoading ? (
@@ -370,8 +397,13 @@ export default function AddMovieScreen() {
                 onPressItem={handlePressItem}
                 onAddItem={handleAddItem}
                 getBadge={getBadge}
+                columns={4}
                 testID="add-movie-film-grid"
-                emptyMessage={query.trim().length === 0 ? "Suche nach einem Filmtitel." : "Keine Filme gefunden."}
+                emptyMessage={
+                  query.trim().length === 0
+                    ? "Suche nach einem Filmtitel."
+                    : "Keine Filme gefunden."
+                }
               />
             )}
           </View>
@@ -384,13 +416,21 @@ export default function AddMovieScreen() {
             <>
               <TextInput
                 testID="add-movie-person-search-input"
-                className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
-                placeholder={mode === "regisseur" ? "Regisseur suchen…" : "Schauspieler suchen…"}
-                placeholderTextColor="#8b8b8b"
+                className="rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
+                placeholder={
+                  mode === "regisseur"
+                    ? "Regisseur suchen…"
+                    : "Schauspieler suchen…"
+                }
+                placeholderTextColor="#888888"
                 value={query}
                 onChangeText={setQuery}
               />
-              <ScrollView className="mt-3">
+              <ScrollView
+                {...parallaxScroll}
+                className="mt-3"
+                keyboardShouldPersistTaps="handled"
+              >
                 {renderPersonResults(
                   personSearchQuery.data,
                   personSearchQuery.isLoading,
@@ -404,13 +444,17 @@ export default function AddMovieScreen() {
                 testID="add-movie-person-change-button"
                 variant="secondary"
                 label="Andere Person wählen"
+                icon="change"
                 onPress={() => setSelectedPersonId(null)}
               />
               <View className="mt-3 flex-1">
                 {personFilmographyQuery.isLoading ? (
                   <ActivityIndicator testID="add-movie-person-filmography-loading" />
                 ) : personFilmographyQuery.isError ? (
-                  <Text testID="add-movie-person-filmography-error" className="text-danger">
+                  <Text
+                    testID="add-movie-person-filmography-error"
+                    className="text-danger"
+                  >
                     Filmografie konnte nicht geladen werden.
                   </Text>
                 ) : (
@@ -419,6 +463,7 @@ export default function AddMovieScreen() {
                     onPressItem={handlePressItem}
                     onAddItem={handleAddItem}
                     getBadge={getBadge}
+                    columns={4}
                     testID="add-movie-person-grid"
                     emptyMessage="Keine Filme gefunden."
                   />
@@ -435,13 +480,17 @@ export default function AddMovieScreen() {
             <>
               <TextInput
                 testID="add-movie-company-search-input"
-                className="rounded-lg border border-border-subtle bg-card px-3 py-2 text-text-primary"
+                className="rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
                 placeholder="Studio suchen…"
-                placeholderTextColor="#8b8b8b"
+                placeholderTextColor="#888888"
                 value={query}
                 onChangeText={setQuery}
               />
-              <ScrollView className="mt-3">
+              <ScrollView
+                {...parallaxScroll}
+                className="mt-3"
+                keyboardShouldPersistTaps="handled"
+              >
                 {renderCompanyResults(
                   companySearchQuery.data,
                   companySearchQuery.isLoading,
@@ -455,6 +504,7 @@ export default function AddMovieScreen() {
                 testID="add-movie-company-change-button"
                 variant="secondary"
                 label="Anderes Studio wählen"
+                icon="change"
                 onPress={() => setSelectedCompanyId(null)}
               />
               <View className="mt-3 flex-1">
@@ -470,6 +520,7 @@ export default function AddMovieScreen() {
                     onPressItem={handlePressItem}
                     onAddItem={handleAddItem}
                     getBadge={getBadge}
+                    columns={4}
                     testID="add-movie-studio-grid"
                     emptyMessage="Keine Filme gefunden."
                     footer={
@@ -478,10 +529,13 @@ export default function AddMovieScreen() {
                           <Button
                             testID="add-movie-studio-load-more-button"
                             label="Mehr laden"
+                            icon="chevronDown"
                             variant="secondary"
                             loading={studioFilmographyQuery.isFetchingNextPage}
                             disabled={studioFilmographyQuery.isFetchingNextPage}
-                            onPress={() => studioFilmographyQuery.fetchNextPage()}
+                            onPress={() =>
+                              studioFilmographyQuery.fetchNextPage()
+                            }
                           />
                         </View>
                       ) : undefined
@@ -509,7 +563,8 @@ export default function AddMovieScreen() {
         title="Erscheinungsdatum fehlt"
       >
         <Text className="mb-3 text-text-primary">
-          Für "{pendingItem?.title}" ist kein Erscheinungsdatum bekannt. Bitte gib eins ein, um fortzufahren.
+          Für "{pendingItem?.title}" ist kein Erscheinungsdatum bekannt. Bitte
+          gib eins ein, um fortzufahren.
         </Text>
         <DateField
           testID="add-movie-manual-date-input"
@@ -522,12 +577,17 @@ export default function AddMovieScreen() {
         <Button
           testID="add-movie-manual-date-confirm-button"
           label="Weiter"
+          icon="next"
           disabled={manualDateInput.trim().length === 0}
           onPress={handleManualDateConfirm}
         />
       </Sheet>
 
-      <Sheet visible={duplicateSheetVisible} onClose={handleDuplicateCancel} title={DUPLICATE_SHEET_TITLE}>
+      <Sheet
+        visible={duplicateSheetVisible}
+        onClose={handleDuplicateCancel}
+        title={DUPLICATE_SHEET_TITLE}
+      >
         <Text className="mb-4 text-text-primary">
           {duplicateInfo ? duplicateSheetBody(duplicateInfo) : ""}
         </Text>
@@ -535,6 +595,7 @@ export default function AddMovieScreen() {
           <Button
             testID="add-movie-duplicate-cancel-button"
             label="Abbrechen"
+            icon="close"
             variant="secondary"
             className="flex-1"
             onPress={handleDuplicateCancel}
@@ -542,12 +603,13 @@ export default function AddMovieScreen() {
           <Button
             testID="add-movie-duplicate-confirm-button"
             label="Trotzdem hinzufügen"
+            icon="add"
             className="flex-1"
             loading={addToWatchlistMutation.isPending}
             onPress={handleDuplicateConfirm}
           />
         </View>
       </Sheet>
-    </View>
+    </KeyboardInsetView>
   );
 }

@@ -1,8 +1,56 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Pressable, Text } from "react-native";
+import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
 
+import { DANGER_ICON_COLOR } from "@/components/ui/Button";
 import { Glass } from "@/components/ui/Glass";
-import { subscribeToToasts, type ToastOptions } from "@/lib/toast";
+import { Icon, type IconRole } from "@/components/ui/Icon";
+import {
+  subscribeToToasts,
+  type ToastOptions,
+  type ToastVariant,
+} from "@/lib/toast";
+
+export const SUCCESS_ICON_COLOR = "#5fcf8a";
+const CLOSE_ICON_COLOR = "#e8e8e8";
+
+interface ToastVariantStyle {
+  surface: string;
+  tint: string | null;
+  text: string;
+  icon: IconRole | null;
+  iconColor: string | null;
+}
+
+/**
+ * Variant look (docs/style-guide.md "Toasts"): same flat glass surface + ONE 1px border for all;
+ * success = green, error = red (tinted fill 15% + coloured border 40% + coloured text/icon,
+ * analogous to the danger tokens), info = neutral accent border without tint/icon.
+ */
+export const TOAST_VARIANT_STYLES: Record<ToastVariant, ToastVariantStyle> = {
+  info: {
+    surface: "border-accent",
+    tint: null,
+    text: "text-text-primary",
+    icon: null,
+    iconColor: null,
+  },
+  success: {
+    surface: "border-success/40",
+    tint: "bg-success/15",
+    text: "text-success-text",
+    icon: "toastSuccess",
+    iconColor: SUCCESS_ICON_COLOR,
+  },
+  error: {
+    surface: "border-danger/40",
+    tint: "bg-danger/15",
+    text: "text-danger-text",
+    icon: "toastError",
+    iconColor: DANGER_ICON_COLOR,
+  },
+};
+
+const TOAST_TINT_STYLE = { ...StyleSheet.absoluteFill, borderRadius: 11 };
 
 /**
  * How long a toast stays visible before auto-dismissing. 4 seconds --
@@ -47,41 +95,49 @@ const TOAST_ENTRANCE_TRANSLATE_Y = 12;
  */
 export function ToastHost() {
   const [message, setMessage] = useState<string | null>(null);
+  const [variant, setVariant] = useState<ToastVariant>("info");
   const [onPress, setOnPress] = useState<(() => void) | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y)).current;
+  const translateY = useRef(
+    new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y),
+  ).current;
 
   useEffect(() => {
-    const unsubscribe = subscribeToToasts((nextMessage: string, options?: ToastOptions) => {
-      if (dismissTimer.current) {
-        clearTimeout(dismissTimer.current);
-      }
-      setMessage(nextMessage);
-      // Functional-updater form: a bare function value would be invoked by setState.
-      setOnPress(options?.onPress ? () => options.onPress as () => void : null);
-      // Restart the entrance animation from its initial values every time a
-      // toast is (re-)shown, including the "replaces an in-flight toast"
-      // case -- each new message gets its own fresh fade+slide-in.
-      opacity.setValue(0);
-      translateY.setValue(TOAST_ENTRANCE_TRANSLATE_Y);
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: TOAST_ENTRANCE_DURATION_MS,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: TOAST_ENTRANCE_DURATION_MS,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      dismissTimer.current = setTimeout(
-        () => setMessage(null),
-        options?.durationMs ?? TOAST_DURATION_MS,
-      );
-    });
+    const unsubscribe = subscribeToToasts(
+      (nextMessage: string, options?: ToastOptions) => {
+        if (dismissTimer.current) {
+          clearTimeout(dismissTimer.current);
+        }
+        setMessage(nextMessage);
+        setVariant(options?.variant ?? "info");
+        // Functional-updater form: a bare function value would be invoked by setState.
+        setOnPress(
+          options?.onPress ? () => options.onPress as () => void : null,
+        );
+        // Restart the entrance animation from its initial values every time a
+        // toast is (re-)shown, including the "replaces an in-flight toast"
+        // case -- each new message gets its own fresh fade+slide-in.
+        opacity.setValue(0);
+        translateY.setValue(TOAST_ENTRANCE_TRANSLATE_Y);
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 1,
+            duration: TOAST_ENTRANCE_DURATION_MS,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: 0,
+            duration: TOAST_ENTRANCE_DURATION_MS,
+            useNativeDriver: true,
+          }),
+        ]).start();
+        dismissTimer.current = setTimeout(
+          () => setMessage(null),
+          options?.durationMs ?? TOAST_DURATION_MS,
+        );
+      },
+    );
 
     return () => {
       unsubscribe();
@@ -95,36 +151,85 @@ export function ToastHost() {
     return null;
   }
 
+  const look = TOAST_VARIANT_STYLES[variant];
   const text = (
-    <Text testID="toast-message" className="text-center text-text-primary">
-      {message}
-    </Text>
+    <View className="min-w-0 flex-1 flex-row items-center justify-center gap-2">
+      {look.icon ? (
+        <Icon
+          testID="toast-icon"
+          name={look.icon}
+          size="M"
+          color={look.iconColor ?? undefined}
+        />
+      ) : null}
+      <Text
+        testID="toast-message"
+        className={`shrink text-center ${look.text}`}
+      >
+        {message}
+      </Text>
+    </View>
   );
 
   return (
     <Animated.View
       testID="toast-host"
+      accessibilityLiveRegion={variant === "error" ? "assertive" : "polite"}
       className="absolute bottom-24 left-4 right-4"
       style={{ opacity, transform: [{ translateY }] }}
     >
-      <Glass variant="strong" testID="toast-surface" className="border-accent px-4 py-3">
-        {onPress ? (
+      <Glass
+        variant="panel"
+        testID="toast-surface"
+        className={`rounded-xl px-4 py-3 ${look.surface}`}
+      >
+        {look.tint ? (
+          <View
+            testID="toast-tint"
+            pointerEvents="none"
+            style={TOAST_TINT_STYLE}
+            className={look.tint}
+          />
+        ) : null}
+        <View className="flex-row items-center">
+          {onPress ? (
+            <Pressable
+              testID="toast-press"
+              accessibilityRole="button"
+              className="min-w-0 flex-1"
+              onPress={() => {
+                if (dismissTimer.current) {
+                  clearTimeout(dismissTimer.current);
+                }
+                setMessage(null);
+                onPress();
+              }}
+            >
+              {text}
+            </Pressable>
+          ) : (
+            text
+          )}
+          {/* 48dp touch box; negative margins cancel the surface padding so the toast keeps its height. */}
           <Pressable
-            testID="toast-press"
+            testID="toast-close"
             accessibilityRole="button"
+            accessibilityLabel="Schließen"
+            className="-my-3 -mr-3 h-12 w-12 items-center justify-center"
             onPress={() => {
               if (dismissTimer.current) {
                 clearTimeout(dismissTimer.current);
               }
               setMessage(null);
-              onPress();
             }}
           >
-            {text}
+            <Icon
+              name="close"
+              size="M"
+              color={look.iconColor ?? CLOSE_ICON_COLOR}
+            />
           </Pressable>
-        ) : (
-          text
-        )}
+        </View>
       </Glass>
     </Animated.View>
   );

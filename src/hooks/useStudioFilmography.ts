@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { getStudioMovies, type TmdbStudioMoviesResponse } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 // Paginated via TanStack Query's `useInfiniteQuery` (chosen over manual page
 // state) — studio filmographies can be arbitrarily large (TMDB paginates
@@ -9,7 +10,7 @@ import { getStudioMovies, type TmdbStudioMoviesResponse } from "@/lib/tmdbProxy"
 // free instead of hand-rolling page-number state + refetch plumbing.
 export function useStudioFilmography(companyId: number | undefined) {
   return useInfiniteQuery({
-    queryKey: ["studioFilmography", companyId],
+    queryKey: queryKeys.studioFilmography(companyId),
     queryFn: async ({ pageParam }) => {
       const { data, error } = await getStudioMovies(companyId as number, pageParam);
       if (error) {

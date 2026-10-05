@@ -1,4 +1,7 @@
-import { ALL_PROVIDER_CATEGORIES, type ProviderCategory } from "./movieProviderFilter";
+import {
+  ALL_PROVIDER_CATEGORIES,
+  type ProviderCategory,
+} from "./movieProviderFilter";
 
 // Persisted per tab+group Watchlist/Tagebuch controls (see usePreferencesStore
 // `listFilters`) plus the small pure helpers the two tab screens share.
@@ -28,7 +31,7 @@ export function listFiltersKey(tab: ListFiltersTab, groupId: string): string {
 /** Inventory 2.2: the Flatrate/Leihen/Kaufen pills need at least one active. */
 export function toggleProviderCategory(
   active: ProviderCategory[],
-  category: ProviderCategory
+  category: ProviderCategory,
 ): ProviderCategory[] {
   const next = active.includes(category)
     ? active.filter((c) => c !== category)
@@ -46,3 +49,46 @@ export function getNoResultsMessage(searchQuery: string): string {
     ? `Keine Treffer für „${trimmed}“.`
     : "Keine Einträge für diese Auswahl.";
 }
+
+/**
+ * True when the collapsible filter panel hides any non-default choice (sort,
+ * Flatrate/Leihen/Kaufen categories; NOT the view mode) -> gold dot on the toggle.
+ */
+export function hasActiveListFilters(
+  filters: ListFilters,
+  defaultSort: string,
+): boolean {
+  const sortActive =
+    filters.sortOption != null && filters.sortOption !== defaultSort;
+  const providersActive =
+    filters.providerCategories.length !==
+      DEFAULT_LIST_FILTERS.providerCategories.length ||
+    filters.providerCategories.some(
+      (c) => !DEFAULT_LIST_FILTERS.providerCategories.includes(c),
+    );
+  return sortActive || providersActive;
+}
+
+/** Compact labels for the sort BUTTON only (the sort Sheet keeps the full labels). */
+export const WATCHLIST_SORT_SHORT_LABELS: Record<string, string> = {
+  added: "Hinzugefügt",
+  upcoming: "Kommt noch",
+  unrated: "Keine Bewertung",
+  has_ratings: "Mit Bewertung(en)",
+  tmdb_score: "TMDB Score",
+  my_streaming: "Streaming-Dienste",
+  genre: "Nach Genre",
+  year: "Nach Jahr",
+};
+
+export const DIARY_SORT_SHORT_LABELS: Record<string, string> = {
+  my_diary: "Mein Tagebuch",
+  all_rated: "Von allen bewertet",
+  missing: "Bewertung fehlt",
+  rating: "Beste Bewertung",
+  tmdb_score: "TMDB Score",
+  my_streaming: "Streaming-Dienste",
+  genre: "Nach Genre",
+  year: "Nach Jahr",
+  liked: "Mag ich",
+};

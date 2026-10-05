@@ -3,6 +3,7 @@ import { ActivityIndicator, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
+import { Brand } from "@/components/ui/Brand";
 import { Button } from "@/components/ui/Button";
 import { isInvalidInviteTokenError, joinWatchGroupByToken } from "@/lib/groups";
 import { extractInviteToken } from "@/lib/inviteToken";
@@ -10,8 +11,10 @@ import { queryClient } from "@/lib/queryClient";
 import { supabase } from "@/lib/supabase";
 import { usePendingInviteStore } from "@/stores/usePendingInviteStore";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
+import { queryKeys } from "@/lib/queryKeys";
 
-const INVALID_INVITE_TOKEN_MESSAGE = "Ungültiger oder deaktivierter Einladungscode.";
+const INVALID_INVITE_TOKEN_MESSAGE =
+  "Ungültiger oder deaktivierter Einladungscode.";
 
 /**
  * Deep-link target for `watchcrew://join/<invite_token>` (invite link built in
@@ -50,7 +53,8 @@ export default function JoinTokenScreen() {
         return;
       }
 
-      const { data: joined, error: joinError } = await joinWatchGroupByToken(token);
+      const { data: joined, error: joinError } =
+        await joinWatchGroupByToken(token);
       if (cancelled) return;
 
       if (joinError || !joined) {
@@ -63,7 +67,7 @@ export default function JoinTokenScreen() {
       }
 
       usePreferencesStore.getState().setActiveGroupId(joined.groupId);
-      await queryClient.invalidateQueries({ queryKey: ["userGroups"] });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
       router.replace("/");
     }
 
@@ -77,13 +81,20 @@ export default function JoinTokenScreen() {
     <SafeAreaView
       edges={["top", "bottom"]}
       className="flex-1 items-center justify-center gap-4 px-6"
-      testID="join-token-screen">
+      testID="join-token-screen"
+    >
+      <Brand />
       {error ? (
         <>
           <Text testID="join-token-error" className="text-center text-danger">
             {error}
           </Text>
-          <Button testID="join-token-continue" label="Weiter" onPress={() => router.replace("/")} />
+          <Button
+            testID="join-token-continue"
+            label="Weiter"
+            icon="next"
+            onPress={() => router.replace("/")}
+          />
         </>
       ) : (
         <ActivityIndicator testID="join-token-loading" />

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getUserGroups } from '@/lib/groups';
+import { queryKeys } from '@/lib/queryKeys';
 
 /**
  * Wraps `getUserGroups` (src/lib/groups.ts) in TanStack Query.
@@ -14,7 +15,7 @@ import { getUserGroups } from '@/lib/groups';
  */
 export function userGroupsQueryOptions(userId: string | undefined) {
   return {
-    queryKey: ['userGroups', userId],
+    queryKey: queryKeys.userGroups.byUser(userId),
     queryFn: async () => {
       const { data, error } = await getUserGroups(userId as string);
       if (error) {

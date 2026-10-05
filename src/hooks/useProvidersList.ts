@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getProvidersList } from "@/lib/tmdbProxy";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * M10 Settings hub ("Meine Streaming-Dienste" picker,
@@ -12,7 +13,7 @@ import { getProvidersList } from "@/lib/tmdbProxy";
  */
 export function useProvidersList() {
   return useQuery({
-    queryKey: ["providersList"],
+    queryKey: queryKeys.providersList,
     queryFn: async () => {
       const { data, error } = await getProvidersList();
       if (error) {

@@ -17,25 +17,73 @@ export interface MemberRatingRowProps {
   memberLabel: string;
   rating: number | null;
   starColor: string;
+  /** Legacy diary-card look: fixed-width name column, small stars, dim value. */
+  compact?: boolean;
+  /** Stars only (no number behind them), tight stars: used in the rating dialog. */
+  hideValue?: boolean;
 }
 
 function hasRealRating(rating: number | null): rating is number {
   return rating != null && rating > 0;
 }
 
-export function MemberRatingRow({ memberLabel, rating, starColor }: MemberRatingRowProps) {
+export function MemberRatingRow({
+  memberLabel,
+  rating,
+  starColor,
+  compact = false,
+  hideValue = false,
+}: MemberRatingRowProps) {
   const displayValue = hasRealRating(rating) ? rating.toFixed(1) : "–";
 
+  if (compact) {
+    return (
+      <View testID="member-rating-row" className="flex-row items-center py-0.5">
+        <Text
+          testID="member-rating-name"
+          numberOfLines={1}
+          className="w-16 pr-1 text-sm text-text-secondary"
+        >
+          {memberLabel}
+        </Text>
+        <StarRating
+          rating={rating}
+          starColor={starColor}
+          iconSize="S"
+          compactBox
+        />
+        <Text
+          testID="member-rating-value"
+          className="w-8 pl-1 text-right text-xs text-text-secondary"
+        >
+          {displayValue}
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View testID="member-rating-row" className="flex-row items-center justify-between py-1">
+    <View
+      testID="member-rating-row"
+      className="flex-row items-center justify-between py-1"
+    >
       <Text testID="member-rating-name" className="text-text-secondary">
         {memberLabel}
       </Text>
       <View className="flex-row items-center gap-2">
-        <StarRating rating={rating} starColor={starColor} />
-        <Text testID="member-rating-value" className="w-10 text-right text-text-primary">
-          {displayValue}
-        </Text>
+        <StarRating
+          rating={rating}
+          starColor={starColor}
+          denseBox={hideValue}
+        />
+        {hideValue ? null : (
+          <Text
+            testID="member-rating-value"
+            className="w-10 text-right text-text-primary"
+          >
+            {displayValue}
+          </Text>
+        )}
       </View>
     </View>
   );

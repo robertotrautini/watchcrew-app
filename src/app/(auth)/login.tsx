@@ -1,10 +1,18 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Text, TextInput } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useState } from "react";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  Text,
+  TextInput,
+} from "react-native";
+import { Link, useRouter } from "expo-router";
 
-import { Button } from '@/components/ui/Button';
-import { signInWithEmail } from '@/lib/auth';
-import { screenKeyboardAvoidingBehavior } from '@/lib/platformKeyboardAvoiding';
+import { Button } from "@/components/ui/Button";
+import { Brand } from "@/components/ui/Brand";
+import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { signInWithEmail } from "@/lib/auth";
+import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 // Basic (not RFC-perfect) email shape check — good enough to catch obvious
 // typos ("foo", "foo@") before spending a network round-trip, without
@@ -30,8 +38,8 @@ const EMAIL_SHAPE_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  */
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -42,12 +50,12 @@ export default function LoginScreen() {
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail || !EMAIL_SHAPE_REGEX.test(trimmedEmail)) {
-      setValidationError('Bitte gib eine gültige E-Mail-Adresse ein.');
+      setValidationError("Bitte gib eine gültige E-Mail-Adresse ein.");
       return;
     }
 
     if (!password) {
-      setValidationError('Bitte gib dein Passwort ein.');
+      setValidationError("Bitte gib dein Passwort ein.");
       return;
     }
 
@@ -63,7 +71,7 @@ export default function LoginScreen() {
       return;
     }
 
-    router.replace('/');
+    router.replace("/");
   }
 
   return (
@@ -80,69 +88,86 @@ export default function LoginScreen() {
     <KeyboardAvoidingView
       behavior={screenKeyboardAvoidingBehavior(Platform.OS)}
       className="flex-1 justify-center px-6"
-      testID="login-screen">
-      <Text className="mb-8 text-center font-display-bold text-3xl text-text-primary">
-        WatchCrew
-      </Text>
+      testID="login-screen"
+    >
+      <Brand />
+      <Glass variant="strong" className="gap-3 p-5">
+        <Text className="text-sm text-text-secondary">E-Mail</Text>
+        <TextInput
+          testID="login-email-input"
+          value={email}
+          onChangeText={setEmail}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          placeholder="du@beispiel.de"
+          placeholderTextColor="#888888"
+          className={GLASS_INPUT_CLASSNAME}
+        />
 
-      <Text className="mb-1 text-sm text-text-secondary">E-Mail</Text>
-      <TextInput
-        testID="login-email-input"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoComplete="email"
-        placeholder="du@beispiel.de"
-        placeholderTextColor="#888888"
-        className="mb-4 rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-      />
+        <Text className="text-sm text-text-secondary">Passwort</Text>
+        <TextInput
+          testID="login-password-input"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          autoCapitalize="none"
+          placeholder="••••••••"
+          placeholderTextColor="#888888"
+          className={GLASS_INPUT_CLASSNAME}
+        />
 
-      <Text className="mb-1 text-sm text-text-secondary">Passwort</Text>
-      <TextInput
-        testID="login-password-input"
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        placeholder="••••••••"
-        placeholderTextColor="#888888"
-        className="mb-4 rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
-      />
+        {validationError ? (
+          <Text testID="login-validation-error" className="text-sm text-danger">
+            {validationError}
+          </Text>
+        ) : null}
 
-      {validationError ? (
-        <Text testID="login-validation-error" className="mb-4 text-sm text-danger">
-          {validationError}
-        </Text>
-      ) : null}
+        {apiError ? (
+          <Text testID="login-api-error" className="text-sm text-danger">
+            {`Anmeldung fehlgeschlagen: ${apiError}`}
+          </Text>
+        ) : null}
 
-      {apiError ? (
-        <Text testID="login-api-error" className="mb-4 text-sm text-danger">
-          {`Anmeldung fehlgeschlagen: ${apiError}`}
-        </Text>
-      ) : null}
+        <Button
+          label="Anmelden"
+          icon="login"
+          onPress={handleSubmit}
+          loading={loading}
+          disabled={loading}
+          testID="login-submit-button"
+        />
 
-      <Button
-        label="Anmelden"
-        onPress={handleSubmit}
-        loading={loading}
-        disabled={loading}
-        testID="login-submit-button"
-      />
+        <Link href="/(auth)/forgot-password" asChild>
+          <Pressable
+            testID="login-forgot-password-link"
+            accessibilityRole="link"
+            className="min-h-touch-comfortable items-center justify-center"
+          >
+            <Text
+              testID="login-forgot-password-link-text"
+              className="text-center text-base text-accent-light"
+            >
+              Passwort vergessen?
+            </Text>
+          </Pressable>
+        </Link>
 
-      <Link
-        href="/(auth)/forgot-password"
-        testID="login-forgot-password-link"
-        className="mt-4 text-center text-text-secondary">
-        Passwort vergessen?
-      </Link>
-
-      <Link
-        href="/(auth)/register"
-        testID="login-register-link"
-        className="mt-6 text-center text-text-secondary">
-        Noch kein Konto? Jetzt registrieren
-      </Link>
+        <Link href="/(auth)/register" asChild>
+          <Pressable
+            testID="login-register-link"
+            accessibilityRole="link"
+            className="min-h-touch-comfortable items-center justify-center"
+          >
+            <Text
+              testID="login-register-link-text"
+              className="text-center text-base text-accent-light"
+            >
+              Noch kein Konto? Jetzt registrieren
+            </Text>
+          </Pressable>
+        </Link>
+      </Glass>
     </KeyboardAvoidingView>
   );
 }

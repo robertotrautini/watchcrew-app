@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { Icon } from "@/components/ui/Icon";
 import { router } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
+import { Brand } from "@/components/ui/Brand";
 import { Card } from "@/components/ui/Card";
+import { GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
 import {
   DEFAULT_GROUP_THEME,
   GROUP_THEME_LABELS,
@@ -13,7 +15,11 @@ import {
   resolveGroupTheme,
   type GroupThemeName,
 } from "@/lib/groupTheme";
-import { createWatchGroup, isInvalidInviteTokenError, joinWatchGroupByToken } from "@/lib/groups";
+import {
+  createWatchGroup,
+  isInvalidInviteTokenError,
+  joinWatchGroupByToken,
+} from "@/lib/groups";
 import { homeRouteFor } from "@/lib/homeRoute";
 import { extractInviteToken } from "@/lib/inviteToken";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
@@ -49,7 +55,7 @@ import { usePreferencesStore } from "@/stores/usePreferencesStore";
  * variable fallback (tailwind.config.js: `var(--color-accent, #c8a44e)`) —
  * no extra code needed for those. The one place this screen needs a raw
  * hex color (not a className token) is the selected-swatch checkmark badge
- * below, an Ionicons `color` prop — same category of raw-hex-prop surface
+ * below, an Icon `color` prop — same category of raw-hex-prop surface
  * as the M3 tab bar shell's `tabBarActiveTintColor`. For that, this screen
  * resolves `resolveGroupTheme(undefined)` -> Gold/default explicitly, same
  * pattern as that tab bar shell task.
@@ -67,12 +73,14 @@ const PLACEHOLDER_TEXT_COLOR = "#888888";
 // one obviously-matching literal instead of two independently-typed route
 // strings.
 
-const INVALID_INVITE_TOKEN_MESSAGE = "Ungültiger oder deaktivierter Einladungscode.";
+const INVALID_INVITE_TOKEN_MESSAGE =
+  "Ungültiger oder deaktivierter Einladungscode.";
 
 export default function CreateOrJoinGroupScreen() {
   const [mode, setMode] = useState<ScreenMode>("select");
   const [groupName, setGroupName] = useState("");
-  const [selectedTheme, setSelectedTheme] = useState<GroupThemeName>(DEFAULT_GROUP_THEME);
+  const [selectedTheme, setSelectedTheme] =
+    useState<GroupThemeName>(DEFAULT_GROUP_THEME);
   const [groupCode, setGroupCode] = useState("");
 
   const [isCreating, setIsCreating] = useState(false);
@@ -149,23 +157,43 @@ export default function CreateOrJoinGroupScreen() {
     // Safe-Area"): standalone `headerShown: false` onboarding screen (no
     // tab bar below it either), so both top and bottom insets are this
     // screen's own responsibility.
-    <SafeAreaView edges={["top", "bottom"]} className="flex-1 px-6 py-8" testID="create-or-join-group-screen">
-      <Text className="mb-8 text-center font-display text-3xl text-text-primary">
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      className="flex-1 px-6 py-8"
+      testID="create-or-join-group-screen"
+    >
+      <Brand />
+      <Text className="mb-6 text-center font-display text-2xl text-text-primary">
         Willkommen bei WatchCrew
       </Text>
 
       {mode === "select" ? (
         <View testID="mode-select" className="gap-4">
-          <Card testID="option-create-group" className="p-4" onPress={() => setMode("create")}>
-            <Text className="mb-1 text-lg font-semibold text-text-primary">Gruppe erstellen</Text>
-            <Text className="text-text-secondary">
+          <Card
+            testID="option-create-group"
+            className="items-center gap-2 p-5"
+            onPress={() => setMode("create")}
+          >
+            <Icon name="addCircle" size="L" color={chromeAccent} />
+            <Text className="font-display text-xl text-text-primary">
+              Gruppe erstellen
+            </Text>
+            <Text className="text-center text-text-secondary">
               Starte eine neue Watch-Gruppe für dich und deine Crew.
             </Text>
           </Card>
-          <Card testID="option-join-group" className="p-4" onPress={() => setMode("join")}>
-            <Text className="mb-1 text-lg font-semibold text-text-primary">Gruppe beitreten</Text>
-            <Text className="text-text-secondary">
-              Tritt einer bestehenden Gruppe per Einladungscode oder Gruppen-ID bei.
+          <Card
+            testID="option-join-group"
+            className="items-center gap-2 p-5"
+            onPress={() => setMode("join")}
+          >
+            <Icon name="join" size="L" color={chromeAccent} />
+            <Text className="font-display text-xl text-text-primary">
+              Gruppe beitreten
+            </Text>
+            <Text className="text-center text-text-secondary">
+              Tritt einer bestehenden Gruppe per Einladungscode oder Gruppen-ID
+              bei.
             </Text>
           </Card>
         </View>
@@ -173,7 +201,9 @@ export default function CreateOrJoinGroupScreen() {
 
       {mode === "create" ? (
         <View testID="mode-create" className="gap-4">
-          <Text className="text-lg font-semibold text-text-primary">Gruppe erstellen</Text>
+          <Text className="font-display text-xl text-text-primary">
+            Gruppe erstellen
+          </Text>
 
           <TextInput
             testID="create-group-name-input"
@@ -181,7 +211,7 @@ export default function CreateOrJoinGroupScreen() {
             onChangeText={setGroupName}
             placeholder="Gruppenname"
             placeholderTextColor={PLACEHOLDER_TEXT_COLOR}
-            className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
+            className={GLASS_INPUT_CLASSNAME}
           />
 
           <Text className="text-text-secondary">Farbthema</Text>
@@ -198,18 +228,19 @@ export default function CreateOrJoinGroupScreen() {
                   accessibilityLabel={THEME_LABELS[themeName]}
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => setSelectedTheme(themeName)}
-                  className="h-touch-min w-touch-min items-center justify-center">
-                  <Ionicons
+                  className="h-touch-comfortable w-touch-comfortable items-center justify-center"
+                >
+                  <Icon
                     testID={`theme-swatch-icon-${themeName}`}
-                    name="ellipse"
-                    size={32}
+                    name="swatch"
+                    size="L"
                     color={colors.accent}
                   />
                   {isSelected ? (
-                    <Ionicons
+                    <Icon
                       testID={`theme-swatch-selected-${themeName}`}
-                      name="checkmark-circle"
-                      size={16}
+                      name="selected"
+                      size="S"
                       color={chromeAccent}
                       className="absolute -right-1 -top-1"
                     />
@@ -228,6 +259,7 @@ export default function CreateOrJoinGroupScreen() {
           <Button
             testID="create-group-submit"
             label="Gruppe erstellen"
+            icon="add"
             disabled={!isCreateValid || isCreating}
             loading={isCreating}
             onPress={handleCreateSubmit}
@@ -236,6 +268,7 @@ export default function CreateOrJoinGroupScreen() {
             testID="create-group-back"
             variant="secondary"
             label="Zurück"
+            icon="back"
             disabled={isCreating}
             onPress={goBackToSelect}
           />
@@ -244,7 +277,9 @@ export default function CreateOrJoinGroupScreen() {
 
       {mode === "join" ? (
         <View testID="mode-join" className="gap-4">
-          <Text className="text-lg font-semibold text-text-primary">Gruppe beitreten</Text>
+          <Text className="font-display text-xl text-text-primary">
+            Gruppe beitreten
+          </Text>
 
           <TextInput
             testID="join-group-code-input"
@@ -252,7 +287,7 @@ export default function CreateOrJoinGroupScreen() {
             onChangeText={setGroupCode}
             placeholder="Einladungscode / Gruppen-ID"
             placeholderTextColor={PLACEHOLDER_TEXT_COLOR}
-            className="rounded-lg border border-border-subtle bg-card px-4 py-3 text-text-primary"
+            className={GLASS_INPUT_CLASSNAME}
           />
 
           {joinError ? (
@@ -264,6 +299,7 @@ export default function CreateOrJoinGroupScreen() {
           <Button
             testID="join-group-submit"
             label="Gruppe beitreten"
+            icon="join"
             disabled={!isJoinValid || isJoining}
             loading={isJoining}
             onPress={handleJoinSubmit}
@@ -272,6 +308,7 @@ export default function CreateOrJoinGroupScreen() {
             testID="join-group-back"
             variant="secondary"
             label="Zurück"
+            icon="back"
             disabled={isJoining}
             onPress={goBackToSelect}
           />

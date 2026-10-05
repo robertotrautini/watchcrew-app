@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { deletePayment, savePayment } from "@/lib/movieDetailMutations";
 import { resolvePaymentDate } from "@/lib/ratingLogic";
+import { queryKeys } from "@/lib/queryKeys";
 
 // M8 (Bezahl-Tracker): TanStack Query mutations for the Tracker screen's own
 // payment-set/edit/delete flows. Same `useMutation` + throw-on-`error` +
@@ -62,7 +63,7 @@ export function useSetPayment() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
     },
   });
 }
@@ -89,7 +90,7 @@ export function useDeletePayment() {
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["watchlist", variables.groupId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
     },
   });
 }

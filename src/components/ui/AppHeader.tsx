@@ -1,11 +1,12 @@
-import { Ionicons } from "@expo/vector-icons";
+import { useGroupQuickSwitch } from "@/hooks/useGroupQuickSwitch";
+import { Icon } from "@/components/ui/Icon";
 import type { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { SettingsButton } from "@/components/ui/SettingsButton";
 
-/** Legacy accent-light (--accent-light); icon colour needs a raw hex. */
-const REEL_COLOR = "#e8d5a3";
+/** Header icon/wordmark/group name are always white (never the theme accent). */
+const HEADER_WHITE = "#ffffff";
 
 export interface AppHeaderProps {
   /** Screen name, shown small + letter-spaced under the wordmark (legacy "TRAUTMANN" slot). */
@@ -20,23 +21,36 @@ export interface AppHeaderProps {
 
 /**
  * Compact legacy-style app header shared by the three main tabs: reel icon +
- * "WATCHCREW" wordmark (Playfair, accent-light) centred between two hairlines,
+ * "WATCHCREW" wordmark (Playfair, always white) centred between two hairlines,
  * the screen title as small caps subtitle, round settings button on the right.
  * The top safe-area inset stays with the screen's own SafeAreaView.
 
  */
-export function AppHeader({ title, settingsTestID, actions, groupName }: AppHeaderProps) {
+export function AppHeader({
+  title,
+  settingsTestID,
+  actions,
+  groupName,
+}: AppHeaderProps) {
+  const { activeGroupName, switchToNext } = useGroupQuickSwitch();
+  const shownGroup = groupName ?? activeGroupName;
   return (
     <View testID="app-header">
       <View className="px-4 pt-2">
         <View className="items-center justify-center">
-          <View className="items-center">
-            <Ionicons name="film-outline" size={26} color={REEL_COLOR} />
+          <Pressable
+            testID="app-header-brand-button"
+            accessibilityRole="button"
+            accessibilityLabel={`Gruppe wechseln, aktuell: ${shownGroup ?? "keine"}`}
+            onPress={switchToNext}
+            className="min-h-touch-comfortable items-center"
+          >
+            <Icon testID="app-header-icon" name="film" size="M" color={HEADER_WHITE} />
             <View className="flex-row items-center gap-3">
               <View className="h-px w-8 bg-glass-border" />
               <Text
                 testID="app-header-wordmark"
-                className="font-display-bold text-xl tracking-widest text-accent-light"
+                className="font-display-bold text-xl tracking-widest text-white"
               >
                 WATCHCREW
               </Text>
@@ -48,18 +62,20 @@ export function AppHeader({ title, settingsTestID, actions, groupName }: AppHead
             >
               {title}
             </Text>
-            {groupName ? (
-              <Text testID="app-header-group" className="text-xs text-text-dim">
-                {groupName}
+            {shownGroup ? (
+              <Text testID="app-header-group" className="text-xs text-white">
+                {shownGroup}
               </Text>
             ) : null}
-          </View>
+          </Pressable>
           <View className="absolute right-0 top-0">
             <SettingsButton testID={settingsTestID} />
           </View>
         </View>
         {actions ? (
-          <View className="mt-2 flex-row items-center justify-end gap-2">{actions}</View>
+          <View className="mt-2 flex-row items-center justify-end gap-2">
+            {actions}
+          </View>
         ) : null}
       </View>
     </View>

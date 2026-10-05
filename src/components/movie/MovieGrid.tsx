@@ -1,9 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
+import { useGroupTheme } from "@/components/GroupThemeProvider";
+import { Icon } from "@/components/ui/Icon";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import type { ReactNode } from "react";
 import { FlatList, Pressable, Text, View } from "react-native";
 
+import { Chip } from "@/components/ui/Chip";
+import { Card } from "@/components/ui/Card";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Image } from "@/components/ui/Image";
+import { isGridPlaceholder, padToFullRows } from "@/lib/gridPadding";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
 /**
@@ -23,8 +28,7 @@ import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 // Fixed regardless of active group theme — same "fixed semantic icon color"
 // approach as DiaryPosterTile.tsx's LIKE_HEART_COLOR / StarRating.tsx.
 const WATCHED_EYE_COLOR = "#22c55e"; // green — "watched"
-const WATCHLIST_BOOKMARK_COLOR = "#f5b301"; // gold/amber — "on watchlist"
-const BADGE_ICON_SIZE = 14;
+// "on watchlist" bookmark follows the group theme accent (useGroupTheme in MovieGrid).
 // Neutral placeholder-icon color (matches the "#8b8b8b" placeholder text
 // color already used elsewhere, e.g. src/app/(app)/(tabs)/watchlist.tsx's
 // search input) — deliberately distinct from the two fixed semantic badge
@@ -78,9 +82,14 @@ export interface MovieGridProps<T extends MovieGridItem = MovieGridItem> {
    * using this component is unaffected.
    */
   onAddItem?: (item: T) => void;
+  /** Number of grid columns (default 3; the Add-Movie search uses 4 like the legacy app). */
+  columns?: number;
 }
 
-const STREAMING_FILTER_OPTIONS: Array<{ value: StreamingFilterValue; label: string }> = [
+const STREAMING_FILTER_OPTIONS: Array<{
+  value: StreamingFilterValue;
+  label: string;
+}> = [
   { value: "flatrate", label: "Flatrate" },
   { value: "rent", label: "Leihen" },
   { value: "buy", label: "Kaufen" },
@@ -100,46 +109,81 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   footer,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
   onAddItem,
+  columns = 3,
 }: MovieGridProps<T>) {
+  const parallaxScroll = useParallaxScroll();
+  const { colors: themeColors } = useGroupTheme();
   function renderTile(item: T) {
     const badge = getBadge ? getBadge(item) : null;
     const hasScore = typeof item.voteAverage === "number";
 
     return (
-      <Pressable
+      <Card
         testID={`${testID}-item-${item.tmdbId}`}
         accessibilityRole="button"
         onPress={() => onPressItem(item)}
+        className="overflow-hidden"
       >
-        <View className="relative">
+        <View
+          testID={`${testID}-item-${item.tmdbId}-poster-wrapper`}
+          className="relative w-full"
+        >
           {item.posterPath ? (
             <Image
               testID={`${testID}-item-${item.tmdbId}-poster`}
               source={{ uri: buildTmdbImageUrl(item.posterPath) as string }}
               accessibilityLabel={item.title}
-              className="aspect-[2/3] w-full rounded-lg bg-card"
+              className="aspect-[2/3] w-full bg-card"
               contentFit="cover"
             />
           ) : (
             <View
               testID={`${testID}-item-${item.tmdbId}-poster-placeholder`}
-              className="aspect-[2/3] w-full items-center justify-center rounded-lg bg-card"
+              className="aspect-[2/3] w-full items-center justify-center bg-black/40 px-1"
             >
-              <Ionicons name="film-outline" size={32} color={PLACEHOLDER_ICON_COLOR} />
+              <Icon name="film" size="L" color={PLACEHOLDER_ICON_COLOR} />
+              <Text
+                testID={`${testID}-item-${item.tmdbId}-placeholder-title`}
+                numberOfLines={3}
+                className="mt-1 text-center text-xs text-text-secondary"
+              >
+                {item.title}
+              </Text>
             </View>
           )}
 
           {badge != null ? (
             <View
               testID={`${testID}-badge-${item.tmdbId}`}
-              accessibilityLabel={badge === "watched" ? "Gesehen" : "Auf der Watchlist"}
-              className="absolute left-1 top-1 flex-row items-center gap-1 rounded-full bg-black/70 px-1.5 py-0.5"
+              accessibilityLabel={
+                badge === "watched" ? "Gesehen" : "Auf der Watchlist"
+              }
+              className="absolute left-1 top-1 flex-row items-center gap-1 rounded-sm bg-black/70 px-1.5 py-0.5"
             >
-              <Ionicons
-                name={badge === "watched" ? "eye" : "bookmark"}
-                size={BADGE_ICON_SIZE}
-                color={badge === "watched" ? WATCHED_EYE_COLOR : WATCHLIST_BOOKMARK_COLOR}
+              <Icon
+                testID={`${testID}-badge-icon-${item.tmdbId}`}
+                name={badge === "watched" ? "watched" : "bookmark"}
+                size="S"
+                color={
+                  badge === "watched"
+                    ? WATCHED_EYE_COLOR
+                    : themeColors.accent
+                }
               />
+            </View>
+          ) : null}
+
+          {hasScore ? (
+            <View
+              testID={`${testID}-score-${item.tmdbId}`}
+              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2 py-0.5"
+            >
+              <Text
+                testID={`${testID}-score-${item.tmdbId}-value`}
+                className="text-[10px] font-semibold text-white"
+              >
+                {formatScore(item.voteAverage as number)}
+              </Text>
             </View>
           ) : null}
 
@@ -149,29 +193,29 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
               accessibilityRole="button"
               accessibilityLabel="Zur Watchlist hinzufügen"
               onPress={() => onAddItem(item)}
-              className="absolute right-1 top-1 items-center justify-center rounded-full bg-black/70 p-1"
+              // 48x48 touch box in the tile corner; the dark 24dp circle stays the visible size
+              className="absolute right-0 top-0 h-12 w-12 items-center justify-center"
             >
-              <Ionicons name="add" size={BADGE_ICON_SIZE} color={ADD_BUTTON_ICON_COLOR} />
+              <View className="items-center justify-center rounded-full bg-black/70 p-1">
+                <Icon name="add" size="S" color={ADD_BUTTON_ICON_COLOR} />
+              </View>
             </Pressable>
-          ) : null}
-
-          {hasScore ? (
-            <View
-              testID={`${testID}-score-${item.tmdbId}`}
-              className="absolute bottom-1 right-1 flex-row items-center gap-0.5 rounded-full bg-black/70 px-1.5 py-0.5"
-            >
-              <Ionicons name="star" size={BADGE_ICON_SIZE} color={WATCHLIST_BOOKMARK_COLOR} />
-              <Text testID={`${testID}-score-${item.tmdbId}-value`} className="text-xs text-white">
-                {formatScore(item.voteAverage as number)}
-              </Text>
-            </View>
           ) : null}
         </View>
 
-        <Text testID={`${testID}-item-${item.tmdbId}-title`} numberOfLines={2} className="mt-1 text-text-primary">
-          {item.title}
-        </Text>
-      </Pressable>
+        <View
+          testID={`${testID}-item-${item.tmdbId}-info`}
+          className="px-1 py-1.5"
+        >
+          <Text
+            testID={`${testID}-item-${item.tmdbId}-title`}
+            numberOfLines={1}
+            className="text-center text-xs text-text-primary"
+          >
+            {item.title}
+          </Text>
+        </View>
+      </Card>
     );
   }
 
@@ -179,7 +223,9 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
     <View testID={testID} className="flex-1">
       {progressHeader != null ? (
         <View testID={`${testID}-progress-header`} className="mb-3 px-1">
-          <Text className="mb-1 text-sm text-text-primary">{progressHeader.label}</Text>
+          <Text className="mb-1 text-sm text-text-primary">
+            {progressHeader.label}
+          </Text>
           <View className="h-2 w-full overflow-hidden rounded-full bg-card">
             <View
               testID={`${testID}-progress-header-bar`}
@@ -201,47 +247,64 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
       ) : null}
 
       {streamingFilter != null ? (
-        <View testID={`${testID}-streaming-filter`} className="mb-3 flex-row gap-2 px-1">
+        <View
+          testID={`${testID}-streaming-filter`}
+          className="mb-3 flex-row gap-2 px-1"
+        >
           {STREAMING_FILTER_OPTIONS.map((option) => {
             const isActive = streamingFilter.active === option.value;
             return (
-              <Pressable
+              <Chip
                 key={option.value}
                 testID={`${testID}-filter-${option.value}`}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isActive }}
+                active={isActive}
                 onPress={() =>
                   streamingFilter.onChange(isActive ? null : option.value)
                 }
-                className={`rounded-full border border-border-subtle px-3 py-1 ${
-                  isActive ? "bg-accent" : "bg-card"
-                }`}
-              >
-                <Text className="text-xs text-text-primary">{option.label}</Text>
-              </Pressable>
+                label={option.label}
+              />
             );
           })}
         </View>
       ) : null}
 
       {items.length === 0 ? (
-        <Text testID={`${testID}-empty`} className="mt-8 text-center text-text-secondary">
-          {emptyMessage}
-        </Text>
+        <View className="mt-16 items-center gap-3">
+          <Icon name="film" size="L" color={PLACEHOLDER_ICON_COLOR} />
+          <Text
+            testID={`${testID}-empty`}
+            className="text-center text-base text-text-secondary"
+          >
+            {emptyMessage}
+          </Text>
+        </View>
       ) : (
         <FlatList
-          data={items}
-          keyExtractor={(item) => String(item.tmdbId)}
-          numColumns={3}
-          columnWrapperClassName="gap-3"
-          contentContainerClassName="gap-3"
-          renderItem={({ item, index }) => (
-            <FadeInItem index={index} className="flex-1">
-              {renderTile(item)}
-            </FadeInItem>
-          )}
+          {...parallaxScroll}
+          data={padToFullRows(items, columns)}
+          keyExtractor={(item) =>
+            isGridPlaceholder(item) ? item.key : String(item.tmdbId)
+          }
+          numColumns={columns}
+          key={columns}
+          columnWrapperClassName="gap-2"
+          contentContainerClassName="gap-2"
+          renderItem={({ item, index }) =>
+            isGridPlaceholder(item) ? (
+              <View
+                testID={`${testID}-placeholder-${index - items.length}`}
+                className="flex-1"
+              />
+            ) : (
+              <FadeInItem index={index} className="flex-1">
+                {renderTile(item)}
+              </FadeInItem>
+            )
+          }
           ListFooterComponent={
-            footer != null ? <View testID={`${testID}-footer`}>{footer}</View> : null
+            footer != null ? (
+              <View testID={`${testID}-footer`}>{footer}</View>
+            ) : null
           }
         />
       )}

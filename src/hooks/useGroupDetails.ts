@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { getWatchGroupDetails, getWatchGroupsByIds } from "@/lib/groups";
+import { queryKeys } from "@/lib/queryKeys";
 
 /**
  * Wraps `getWatchGroupDetails` (src/lib/groups.ts) in TanStack Query --
@@ -16,7 +17,7 @@ import { getWatchGroupDetails, getWatchGroupsByIds } from "@/lib/groups";
  */
 export function useGroupDetails(groupId: string | undefined) {
   return useQuery({
-    queryKey: ["groupDetails", groupId],
+    queryKey: queryKeys.groupDetails.byGroup(groupId),
     queryFn: async () => {
       const { data, error } = await getWatchGroupDetails(groupId as string);
       if (error) {
@@ -42,7 +43,7 @@ export function useGroupDetails(groupId: string | undefined) {
  */
 export function useGroupNames(groupIds: string[]) {
   return useQuery({
-    queryKey: ["groupNames", groupIds],
+    queryKey: queryKeys.groupNames.byIds(groupIds),
     queryFn: async () => {
       const { data, error } = await getWatchGroupsByIds(groupIds);
       if (error) {
