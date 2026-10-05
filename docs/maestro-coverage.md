@@ -16,7 +16,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Join-Token `join/[token]` | `deeplinks` | offline-deeplinks | `02-join-token-screen` | partial (Fake-Token; echtes Beitreten braucht 2. Account) |
 | Onboarding Auswahl/Erstellen/Beitreten `(onboarding)/create-or-join-group` | `onboarding-explore`, `create-test-group` | onboarding | `onboarding-explore/01..03` | not automatable (Test-Account hat Gruppe; Flows laufen nur bei gruppenlosem Account, sonst übersprungen) |
 | Tracker-Tab | `tracker-payment`, `tabs-tour` | tracker, navigation | `tracker-payment/01-tracker-before`, `06-tracker-with-payment`, `11-tracker-restored`, `tabs-tour/01-tab-tracker` | covered |
-| Watchlist-Tab | `watchlist-filter-sort`, `tabs-tour`, `watchlist-add-remove` | watchlist, navigation, add-movie | `watchlist-filter-sort/01..20`, `tabs-tour/02-tab-watchlist` | covered |
+| Watchlist-Tab | `watchlist-filter-sort`, `tabs-tour`, `watchlist-add-remove` | watchlist, navigation, add-movie | `watchlist-filter-sort/01..20`, `tabs-tour/02-tab-watchlist` | covered (Default-Sort "Hinzugefügt", Zustand per `subflows/watchlist-normalize.yaml` gesetzt) |
 | Tagebuch-Tab | `tagebuch-filter-sort`, `tabs-tour` | tagebuch, navigation | `tagebuch-filter-sort/01..21`, `tabs-tour/03-tab-tagebuch` | covered |
 | Tab-Bar (Wechsel, Akzentfarbe) | alle Flows, `group-settings-edit` (alle 6 Themes) | group-settings | `group-settings-edit/04..09` | covered |
 | Filmdetail `movie/[tmdbId]` (Tagebuch-Kontext) | `movie-detail-full` | movie-detail | `01-detail-top`..`09-detail-delete-confirm`, `13-back-on-tagebuch` | covered |

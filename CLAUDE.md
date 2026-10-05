@@ -65,3 +65,7 @@ User-set standing rule: after every app change, verify on the real device and sh
 6. Keep `docs/maestro-coverage.md` and `.maestro/areas.json` current whenever a screen or function is added/changed. Flows (with named screenshots) for new features are part of the feature: **definition of done**.
 
 Flow rules: flows must restore test state (name Robin, group "Maestro Test Gruppe", theme Gold, Netflix off, Watchlist sort "Meine Streaming-Dienste" + grid + panel closed, Tagebuch "Mein Tagebuch" + cards + panel closed, Tracker empty); never delete pre-existing data; destructive dialogs are screenshotted and cancelled; target by `testID` (add missing testIDs with tests, no visual change); never `clearState`.
+
+## Push notification on finish (standing rule)
+
+User-set standing rule 2026-10-05: at the end of EVERY finished task/turn (not only when a decision is needed) call the PushNotification tool (status "proactive") so the phone gets a push via Remote Control. Message < 200 chars, German, lead with result (e.g. "R4+R3 fertig, tsc/jest grün" or "Lauf fehlgeschlagen: ..."). `agentPushNotifEnabled`/`inputNeededNotifEnabled` in settings.json are already true, but the harness only pushes when Claude decides, so Claude must trigger it itself. A "not sent, terminal active" result is fine, don't retry. Details: `docs/working-process.md` item 6; memory `push_on_every_finish`.

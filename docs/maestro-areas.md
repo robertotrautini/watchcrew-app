@@ -48,6 +48,7 @@ design-system ist die repräsentative Stichprobe über alle Screen-Typen (Tabs, 
 ## Schnelle Flows: Bausteine
 
 - `subflows/ensure-app.yaml`: Flow-Start ohne Relaunch, wenn die Tab-Bar sichtbar ist; sonst 2x back, dann Kaltstart (`launch.yaml`).
+- `subflows/watchlist-normalize.yaml`: setzt Watchlist explizit auf Default-Sort "Hinzugefügt" + Panel zu (kein Verlass auf persistierten Zustand).
 - `subflows/go-tracker|watchlist|tagebuch.yaml`: Tab per Punkt-Tap (17 / 50 / 83 % x, 96 % y) + Screen-testID-Assertion.
 - Kein `waitForAnimationToEnd`: auf konkretes Zielelement warten (`assertVisible`, `assertNotVisible`, `extendedWaitUntil`).
 - Runner stellt System-Animationen aus und danach per trap wieder her.
