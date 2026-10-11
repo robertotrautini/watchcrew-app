@@ -44,6 +44,20 @@ jest.mock("@/hooks/useUpdateDisplayName", () => ({
   useUpdateDisplayName: () => ({ mutateAsync: mockMutateAsync, isPending: mockUpdateIsPending }),
 }));
 
+const mockSelectGroup = jest.fn();
+jest.mock("@/hooks/useGroupQuickSwitch", () => ({
+  useGroupQuickSwitch: () => ({
+    activeGroupId: "g1",
+    activeGroupName: "Eins",
+    groups: [
+      { id: "g1", name: "Eins" },
+      { id: "g2", name: "Zwei" },
+    ],
+    selectGroup: mockSelectGroup,
+    switchToNext: jest.fn(),
+  }),
+}));
+
 const mockSignOut = jest.fn();
 jest.mock("@/lib/auth", () => ({
   signOut: mockSignOut,
@@ -100,6 +114,16 @@ describe("SettingsScreen", () => {
     expect(getByTestId("settings-section-notifications")).toBeTruthy();
     expect(getByTestId("settings-section-group-settings")).toBeTruthy();
     expect(getByTestId("settings-section-delete-account")).toBeTruthy();
+  });
+
+  it("switches the active group via the dropdown next to the current user", async () => {
+    const SettingsScreen = loadSettingsScreen();
+    const { getByTestId } = await render(<SettingsScreen />);
+    const select = getByTestId("settings-active-group-select");
+    expect(select.props.accessibilityLabel).toBe("Aktuelle Gruppe");
+    await fireEvent.press(select);
+    await fireEvent.press(getByTestId("settings-active-group-select-option-g2"));
+    expect(mockSelectGroup).toHaveBeenCalledWith("g2");
   });
 
   it("navigates to each section's route on tap", async () => {
@@ -195,98 +219,133 @@ describe("SettingsScreen", () => {
     });
   });
 
-  it("shows the user's email and display name", async () => {
+  it("shows the user's email and display name as a row with label, value and edit button", async () => {
     const SettingsScreen = loadSettingsScreen();
 
-    const { getByTestId } = await render(<SettingsScreen />);
+    const { getByTestId, getByText } = await render(<SettingsScreen />);
 
     expect(getByTestId("settings-user-email").props.children).toBe("robin@example.com");
-    expect(getByTestId("settings-user-display-name").props.value).toBe("robin");
+    expect(getByText("Anzeigename")).toBeTruthy();
+    expect(getByTestId("settings-current-user").props.children).toBe("robin");
+    const edit = getByTestId("settings-display-name-edit-button");
+    expect(edit.props.className).toContain("rounded-full");
+    expect(edit.props.accessibilityLabel).toBe("Anzeigename bearbeiten");
+    expect(edit.props.accessibilityRole).toBe("button");
+    const row = getByTestId("settings-display-name-row");
+    expect(row.props.className).toContain("items-center");
+    expect(row.props.className).toContain("min-h-12");
+    expect(row.props.className).toContain("py-2");
+    expect(edit.props.className).not.toMatch(/\bm[tb]-/);
   });
 
-  describe("display name save button", () => {
-    it("is a round icon-only button on the same row as the input", async () => {
+  describe("display name sheet", () => {
+    async function openSheet() {
       const SettingsScreen = loadSettingsScreen();
-      const { getByTestId, queryByText } = await render(<SettingsScreen />);
+      const utils = await render(<SettingsScreen />);
+      await fireEvent.press(utils.getByTestId("settings-display-name-edit-button"));
+      return utils;
+    }
 
-      const save = getByTestId("settings-display-name-save");
-      expect(save.props.className).toContain("rounded-full");
-      expect(save.props.className).toContain("w-12");
-      expect(save.props.accessibilityLabel).toBe("Anzeigename speichern");
-      expect(save.props.accessibilityRole).toBe("button");
-      expect(queryByText("Speichern")).toBeNull();
-      const row = getByTestId("settings-display-name-row");
-      expect(row.props.className).toContain("flex-row");
-      expect(row.props.children.map((c: { props: { testID: string } }) => c.props.testID)).toEqual([
-        "settings-user-display-name",
-        "settings-display-name-save",
-      ]);
+    it("is closed initially and there is no inline input", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { queryByTestId } = await render(<SettingsScreen />);
+      expect(queryByTestId("settings-display-name-sheet")).toBeNull();
+      expect(queryByTestId("settings-display-name-input")).toBeNull();
+      expect(queryByTestId("settings-display-name-save")).toBeNull();
     });
 
-    it("is disabled while the name is unchanged and enabled after an edit", async () => {
-      const SettingsScreen = loadSettingsScreen();
-      const { getByTestId } = await render(<SettingsScreen />);
+    it("opens with the current name prefilled and Abbrechen / Speichern buttons", async () => {
+      const { getByTestId, getByText } = await openSheet();
+      expect(getByTestId("settings-display-name-sheet")).toBeTruthy();
+      expect(getByTestId("settings-display-name-input").props.value).toBe("robin");
+      expect(getByText("Abbrechen")).toBeTruthy();
+      expect(getByText("Speichern")).toBeTruthy();
+    });
 
-      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(true);
-      await fireEvent.changeText(getByTestId("settings-user-display-name"), "robin2");
-      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(false);
-      await fireEvent.changeText(getByTestId("settings-user-display-name"), "   ");
-      expect(getByTestId("settings-display-name-save").props.accessibilityState.disabled).toBe(true);
+    it("discards the draft on Abbrechen and reopens with the stored name", async () => {
+      const { getByTestId, queryByTestId } = await openSheet();
+      await fireEvent.changeText(getByTestId("settings-display-name-input"), "robin2");
+      await fireEvent.press(getByTestId("settings-display-name-cancel-button"));
+      expect(queryByTestId("settings-display-name-sheet")).toBeNull();
+      expect(mockMutateAsync).not.toHaveBeenCalled();
+      await fireEvent.press(getByTestId("settings-display-name-edit-button"));
+      expect(getByTestId("settings-display-name-input").props.value).toBe("robin");
+    });
+
+    it("disables Speichern while unchanged or blank", async () => {
+      const { getByTestId } = await openSheet();
+      const disabled = () => getByTestId("settings-display-name-confirm-button").props.accessibilityState.disabled;
+      expect(disabled()).toBe(true);
+      await fireEvent.changeText(getByTestId("settings-display-name-input"), "robin2");
+      expect(disabled()).toBe(false);
+      await fireEvent.changeText(getByTestId("settings-display-name-input"), "   ");
+      expect(disabled()).toBe(true);
     });
 
     it("shows a spinner while saving", async () => {
       mockUpdateIsPending = true;
-      const SettingsScreen = loadSettingsScreen();
-      const { getByTestId } = await render(<SettingsScreen />);
+      const { getByTestId } = await openSheet();
+      expect(getByTestId("settings-display-name-confirm-button-loading-indicator")).toBeTruthy();
+    });
 
-      expect(getByTestId("settings-display-name-save-loading-indicator")).toBeTruthy();
+    it("saves the trimmed name, shows a success toast and closes", async () => {
+      mockMutateAsync.mockResolvedValue(null);
+      const { getByTestId, queryByTestId } = await openSheet();
+      await act(async () => {
+        fireEvent.changeText(getByTestId("settings-display-name-input"), "  Robin T ");
+      });
+      await act(async () => {
+        fireEvent.press(getByTestId("settings-display-name-confirm-button"));
+      });
+      expect(mockMutateAsync).toHaveBeenCalledWith("Robin T");
+      expect(mockShowToast).toHaveBeenCalledWith("Anzeigename gespeichert", { variant: "success" });
+      expect(queryByTestId("settings-display-name-sheet")).toBeNull();
+    });
+
+    it("does not save a blank name", async () => {
+      const { getByTestId } = await openSheet();
+      await act(async () => {
+        fireEvent.changeText(getByTestId("settings-display-name-input"), "   ");
+      });
+      await act(async () => {
+        fireEvent.press(getByTestId("settings-display-name-confirm-button"));
+      });
+      expect(mockMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("shows an error toast and stays open when saving fails", async () => {
+      mockMutateAsync.mockRejectedValue(new Error("boom"));
+      const { getByTestId } = await openSheet();
+      await act(async () => {
+        fireEvent.changeText(getByTestId("settings-display-name-input"), "Neu");
+      });
+      await act(async () => {
+        fireEvent.press(getByTestId("settings-display-name-confirm-button"));
+      });
+      expect(getByTestId("settings-display-name-error")).toBeTruthy();
+      expect(getByTestId("settings-display-name-sheet")).toBeTruthy();
+      expect(mockShowToast).toHaveBeenCalledWith("Anzeigename konnte nicht gespeichert werden.", { variant: "error" });
     });
   });
 
-  it("saves an edited display name via the mutation and shows a toast", async () => {
-    mockMutateAsync.mockResolvedValue(null);
+  it("places Abmelden first and Konto löschen (danger) last at the page end, no 'Konto' section", async () => {
     const SettingsScreen = loadSettingsScreen();
-    const { getByTestId } = await render(<SettingsScreen />);
-
-    await act(async () => {
-      fireEvent.changeText(getByTestId("settings-user-display-name"), "  Robin T ");
-    });
-    await act(async () => {
-      fireEvent.press(getByTestId("settings-display-name-save"));
-    });
-
-    expect(mockMutateAsync).toHaveBeenCalledWith("Robin T");
-    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename gespeichert", { variant: "success" });
-  });
-
-  it("does not save an empty display name", async () => {
-    const SettingsScreen = loadSettingsScreen();
-    const { getByTestId } = await render(<SettingsScreen />);
-
-    await act(async () => {
-      fireEvent.changeText(getByTestId("settings-user-display-name"), "   ");
-    });
-    await act(async () => {
-      fireEvent.press(getByTestId("settings-display-name-save"));
-    });
-
-    expect(mockMutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("shows an error when saving fails", async () => {
-    mockMutateAsync.mockRejectedValue(new Error("boom"));
-    const SettingsScreen = loadSettingsScreen();
-    const { getByTestId } = await render(<SettingsScreen />);
-
-    await act(async () => {
-      fireEvent.changeText(getByTestId("settings-user-display-name"), "Neu");
-    });
-    await act(async () => {
-      fireEvent.press(getByTestId("settings-display-name-save"));
-    });
-
-    expect(getByTestId("settings-display-name-error")).toBeTruthy();
-    expect(mockShowToast).toHaveBeenCalledWith("Anzeigename konnte nicht gespeichert werden.", { variant: "error" });
+    const { getByTestId, queryByText } = await render(<SettingsScreen />);
+    expect(queryByText("Konto")).toBeNull();
+    const del = getByTestId("settings-section-delete-account");
+    expect(del.props.className).toContain("bg-danger/15");
+    const ids: string[] = [];
+    (function walk(node: any) {
+      if (!node) return;
+      const id = node.props?.testID;
+      if (id === "settings-sign-out-button" || id === "settings-section-delete-account" || id === "settings-app-version") ids.push(id);
+      (node.children ?? []).forEach((c: any) => typeof c !== "string" && walk(c));
+    })(require("@testing-library/react-native").screen.toJSON());
+    expect(ids).toEqual([
+      "settings-sign-out-button",
+      "settings-section-delete-account",
+      "settings-app-version",
+    ]);
   });
 
   it("shows the app version from expo-constants", async () => {
@@ -331,15 +390,17 @@ describe("SettingsScreen", () => {
     expect(queryByText(/ausgewählt/)).toBeNull();
   });
 
-  it("groups rows under Konto / Gruppe / App / Rechtliches headings with 'Aktueller Nutzer' on top", async () => {
+  it("groups rows under Gruppe / App / Rechtliches headings with 'Profil' on top", async () => {
     const SettingsScreen = loadSettingsScreen();
 
     const { getByText, getByTestId } = await render(<SettingsScreen />);
 
-    for (const heading of ["Konto", "Gruppe", "App", "Rechtliches", "Datenquellen", "Aktueller Nutzer"]) {
+    for (const heading of ["Gruppe", "App", "Rechtliches", "Datenquellen", "Profil"]) {
       expect(getByText(heading)).toBeTruthy();
     }
     expect(getByTestId("settings-current-user").props.children).toBe("robin");
+    expect(getByTestId("settings-current-user").props.className).not.toContain("text-accent");
+    expect(getByTestId("settings-current-user").props.className).not.toContain("text-xl");
     // Last row of a group has no separator below; later rows have one above.
     expect(getByTestId("settings-sections-item-0").props.className ?? "").not.toContain("border-t");
     expect(getByTestId("settings-sections-item-2").props.className).toContain("border-t");

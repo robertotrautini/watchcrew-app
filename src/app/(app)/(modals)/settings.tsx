@@ -15,7 +15,10 @@ import {
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { GLASS_INPUT_CLASSNAME, GLASS_INSET_EDGE } from "@/components/ui/Glass";
+import { Select } from "@/components/ui/Select";
+import { Sheet } from "@/components/ui/Sheet";
 import { SettingsRow } from "@/components/ui/SettingsRow";
+import { useGroupQuickSwitch } from "@/hooks/useGroupQuickSwitch";
 import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
@@ -28,9 +31,9 @@ import { showToast } from "@/lib/toast";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
- * Layout (grouped, legacy-inspired): "Aktueller Nutzer" header, then one glass
- * card per section (Konto, Gruppe, App, Rechtliches), the Datenquellen footer
- * with TMDB/Trakt logos and a full-width glass Abmelden button. The calm dark
+ * Layout (grouped, legacy-inspired): one glass
+ * card per section (Profil, Gruppe, App, Rechtliches), the Datenquellen footer
+ * with TMDB/Trakt logos and a full-width glass Abmelden button followed by the danger Konto löschen button. The calm dark
  * background comes from the (modals) layout (contentStyle), not from here.
  *
  * M10 — the real Settings hub, replacing the M9-part-2 interim "⚙️ Gruppe
@@ -94,28 +97,32 @@ export default function SettingsScreen() {
   const email = useCurrentUserEmail();
   const ownProfileQuery = useOwnProfile(currentUserId);
   const updateDisplayName = useUpdateDisplayName();
+  const { activeGroupId, groups, selectGroup } = useGroupQuickSwitch();
 
-  // `null` = untouched, show the stored name; string = user's edit in progress.
-  const [displayNameDraft, setDisplayNameDraft] = useState<string | null>(null);
+  const [displaySheetVisible, setDisplaySheetVisible] = useState(false);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [displayNameError, setDisplayNameError] = useState<string | null>(null);
-  const displayNameValue =
-    displayNameDraft ?? ownProfileQuery.data?.display_name ?? "";
 
   const storedDisplayName = ownProfileQuery.data?.display_name ?? "";
-  const displayNameTrimmed = displayNameValue.trim();
+  const displayNameTrimmed = displayNameDraft.trim();
   const displayNameChanged =
     displayNameTrimmed.length > 0 && displayNameTrimmed !== storedDisplayName;
 
+  function openDisplayNameSheet() {
+    setDisplayNameDraft(storedDisplayName);
+    setDisplayNameError(null);
+    setDisplaySheetVisible(true);
+  }
+
   async function handleSaveDisplayName() {
-    const trimmed = displayNameValue.trim();
-    if (trimmed.length === 0) {
+    if (displayNameTrimmed.length === 0) {
       setDisplayNameError("Bitte gib einen Anzeigenamen ein.");
       return;
     }
     setDisplayNameError(null);
     try {
-      await updateDisplayName.mutateAsync(trimmed);
-      setDisplayNameDraft(null);
+      await updateDisplayName.mutateAsync(displayNameTrimmed);
+      setDisplaySheetVisible(false);
       showToast("Anzeigename gespeichert", { variant: "success" });
     } catch {
       setDisplayNameError("Anzeigename konnte nicht gespeichert werden.");
@@ -187,69 +194,48 @@ export default function SettingsScreen() {
         {...parallaxScroll}
         contentContainerClassName="gap-5 px-4 pb-8 pt-4"
       >
-        <View testID="settings-account-info" className="px-1">
-          <Text className="text-xs uppercase tracking-widest text-text-secondary">
-            Aktueller Nutzer
-          </Text>
-          <Text
-            testID="settings-current-user"
-            className="font-title-bold text-xl text-accent-light"
-          >
-            {displayName}
-          </Text>
-          <Text
-            testID="settings-user-email"
-            className="text-sm text-text-secondary"
-          >
-            {email ?? ""}
-          </Text>
-        </View>
-
-        <SettingsGroup testID="settings-group-account" title="Konto">
+        <SettingsGroup testID="settings-account-info" title="Profil">
           <View
-            testID="settings-display-name-editor"
-            className="gap-2 px-4 py-3"
+            testID="settings-display-name-row"
+            className="min-h-12 flex-row items-center gap-3 px-4 py-2"
           >
-            <Text className="text-sm text-text-secondary">Anzeigename</Text>
-            <View
-              testID="settings-display-name-row"
-              className="flex-row items-center gap-3"
-            >
-              <TextInput
-                testID="settings-user-display-name"
-                value={displayNameValue}
-                onChangeText={setDisplayNameDraft}
-                autoCapitalize="words"
-                placeholder="Anzeigename"
-                placeholderTextColor="#888888"
-                className={`flex-1 ${GLASS_INPUT_CLASSNAME}`}
-              />
-              <IconButton
-                testID="settings-display-name-save"
-                icon="save"
-                variant="accent"
-                accessibilityLabel="Anzeigename speichern"
-                disabled={!displayNameChanged}
-                loading={updateDisplayName.isPending}
-                onPress={handleSaveDisplayName}
-              />
-            </View>
-            {displayNameError ? (
+            <View className="flex-1 gap-0.5">
+              <Text className="text-sm text-text-secondary">Anzeigename</Text>
               <Text
-                className="text-sm text-danger"
-                testID="settings-display-name-error"
+                testID="settings-current-user"
+                className="text-base text-text-primary"
               >
-                {displayNameError}
+                {displayName}
               </Text>
-            ) : null}
+            </View>
+            <IconButton
+              testID="settings-display-name-edit-button"
+              icon="edit"
+              variant="neutral"
+              size={44}
+              accessibilityLabel="Anzeigename bearbeiten"
+              onPress={openDisplayNameSheet}
+            />
           </View>
-          <SettingsRow
-            testID="settings-section-delete-account"
-            icon="delete"
-            label="Konto löschen"
-            danger
-            onPress={openDeleteDialog}
-          />
+          <View className="px-4 py-3">
+            <Text
+              testID="settings-user-email"
+              className="text-sm text-text-secondary"
+            >
+              {email ?? ""}
+            </Text>
+          </View>
+          <View testID="settings-active-group" className="gap-2 px-4 py-3">
+            <Text className="text-sm text-text-secondary">Aktuelle Gruppe</Text>
+            <Select
+              testID="settings-active-group-select"
+              accessibilityLabel="Aktuelle Gruppe"
+              placeholder="Keine Gruppe"
+              value={activeGroupId ?? null}
+              options={groups.map((g) => ({ value: g.id, label: g.name }))}
+              onChange={selectGroup}
+            />
+          </View>
         </SettingsGroup>
 
         <SettingsGroup testID="settings-group-group" title="Gruppe">
@@ -308,6 +294,15 @@ export default function SettingsScreen() {
           onPress={handleSignOut}
         />
 
+        <Button
+          testID="settings-section-delete-account"
+          variant="danger"
+          className="w-full"
+          label="Konto löschen"
+          icon="delete"
+          onPress={openDeleteDialog}
+        />
+
         <Text
           testID="settings-app-version"
           className="text-center text-xs text-text-secondary"
@@ -315,6 +310,52 @@ export default function SettingsScreen() {
           {`WatchCrew v${Constants.expoConfig?.version ?? "?"}`}
         </Text>
       </KeyboardAwareScrollView>
+
+      <Sheet
+        visible={displaySheetVisible}
+        onClose={() => setDisplaySheetVisible(false)}
+        title="Anzeigename bearbeiten"
+      >
+        <View testID="settings-display-name-sheet" className="gap-3">
+          <Text className="text-sm text-text-secondary">Anzeigename</Text>
+          <TextInput
+            testID="settings-display-name-input"
+            value={displayNameDraft}
+            onChangeText={setDisplayNameDraft}
+            autoCapitalize="words"
+            placeholder="Anzeigename"
+            placeholderTextColor="#888888"
+            className={GLASS_INPUT_CLASSNAME}
+          />
+          {displayNameError ? (
+            <Text
+              className="text-sm text-danger"
+              testID="settings-display-name-error"
+            >
+              {displayNameError}
+            </Text>
+          ) : null}
+          <View className="flex-row gap-3">
+            <Button
+              testID="settings-display-name-cancel-button"
+              label="Abbrechen"
+              icon="close"
+              variant="secondary"
+              className="flex-1"
+              onPress={() => setDisplaySheetVisible(false)}
+            />
+            <Button
+              testID="settings-display-name-confirm-button"
+              label="Speichern"
+              icon="save"
+              className="flex-1"
+              disabled={!displayNameChanged}
+              loading={updateDisplayName.isPending}
+              onPress={handleSaveDisplayName}
+            />
+          </View>
+        </View>
+      </Sheet>
 
       <ConfirmDialog
         visible={deleteDialogVisible}
