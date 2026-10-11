@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 260 64" width="260" height="64">
+  <path d="M10 8 H250 A8 8 0 0 1 258 16 V25 A7 7 0 0 0 258 39 V48 A8 8 0 0 1 250 56 H10 A8 8 0 0 1 2 48 V39 A7 7 0 0 0 2 25 V16 A8 8 0 0 1 10 8Z" stroke="currentColor" stroke-width="2.4"/>
+  <line x1="62" y1="13" x2="62" y2="51" stroke="currentColor" stroke-width="2" stroke-dasharray="3 3.5"/>
+  <polyline points="14,24 22,41 31,28 40,41 49,24" stroke="currentColor" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="78" y="38" font-family="Outfit, sans-serif" font-weight="700" font-size="27" fill="#f5f5f7" textLength="170" lengthAdjust="spacingAndGlyphs">WATCH<tspan fill="currentColor">CREW</tspan></text>
+  <text x="78" y="50" font-family="Outfit, sans-serif" font-weight="500" font-size="7.5" fill="#f5f5f7" fill-opacity="0.55" textLength="170" lengthAdjust="spacing">ADMIT ALL  ·  ONE ROW  ·  ONE CREW</text>
+</svg>

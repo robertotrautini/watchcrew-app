@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" width="64" height="64">
+  <!-- accent = currentColor, light = #f5f5f7, ink = #0a0a0c -->
+  <path fill="#f5f5f7" d="M5.76 35.69V23.8A4.92 4.92 0 0 1 15.6 23.8V35.69Q15.6 36.92 14.37 36.92H6.99Q5.76 36.92 5.76 35.69Z"/><rect fill="#f5f5f7" x="2.48" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="#f5f5f7" x="17.65" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="#f5f5f7" x="6.38" y="38.56" width="10.25" height="6.56" rx="2.87"/>
+  <path fill="currentColor" d="M26.26 35.69V23.8A4.92 4.92 0 0 1 36.1 23.8V35.69Q36.1 36.92 34.87 36.92H27.49Q26.26 36.92 26.26 35.69Z"/><rect fill="currentColor" x="22.98" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="currentColor" x="38.15" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="currentColor" x="26.88" y="38.56" width="10.25" height="6.56" rx="2.87"/>
+  <path fill="#f5f5f7" d="M46.76 35.69V23.8A4.92 4.92 0 0 1 56.6 23.8V35.69Q56.6 36.92 55.37 36.92H47.99Q46.76 36.92 46.76 35.69Z"/><rect fill="#f5f5f7" x="43.48" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="#f5f5f7" x="58.65" y="27.9" width="2.87" height="17.22" rx="1.43"/><rect fill="#f5f5f7" x="47.38" y="38.56" width="10.25" height="6.56" rx="2.87"/>
+</svg>

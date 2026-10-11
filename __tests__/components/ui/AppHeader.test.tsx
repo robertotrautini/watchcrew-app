@@ -1,7 +1,7 @@
 import { Text } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
-import { AppHeader } from "@/components/ui/AppHeader";
+import { AppHeader, APP_HEADER_BOTTOM_GAP_CLASSNAME } from "@/components/ui/AppHeader";
 
 const mockPush = jest.fn();
 jest.mock("expo-router", () => ({ useRouter: () => ({ push: mockPush }) }));
@@ -11,6 +11,12 @@ let mockActiveGroupName: string | null = null;
 jest.mock("@/hooks/useGroupQuickSwitch", () => ({
   useGroupQuickSwitch: () => ({
     activeGroupName: mockActiveGroupName,
+    activeGroupId: mockActiveGroupName ? "g1" : undefined,
+    groups: [
+      { id: "g1", name: mockActiveGroupName ?? "Eins" },
+      { id: "g2", name: "Zwei" },
+    ],
+    selectGroup: jest.fn(),
     switchToNext: mockSwitchToNext,
   }),
 }));
@@ -20,46 +26,50 @@ beforeEach(() => {
   mockActiveGroupName = null;
 });
 
-describe("group quick-switch brand button", () => {
-  it("press on the brand switches the group", async () => {
+describe("bottom gap", () => {
+  it("adds the shared bottom gap once on the header container", async () => {
+    const { getByTestId } = await render(<AppHeader title="T" settingsTestID="s" />);
+    expect(getByTestId("app-header").props.className).toContain(APP_HEADER_BOTTOM_GAP_CLASSNAME);
+  });
+});
+
+describe("group switching in the header", () => {
+  it("logo tap cycles to the next group", async () => {
     mockActiveGroupName = "Eins";
     const { getByTestId } = await render(<AppHeader title="T" settingsTestID="s" />);
     const button = getByTestId("app-header-brand-button");
     expect(button.props.accessibilityRole).toBe("button");
     expect(button.props.accessibilityLabel).toBe("Gruppe wechseln, aktuell: Eins");
-    expect(button.props.className).toContain("min-h-touch-comfortable");
     await fireEvent.press(button);
     expect(mockSwitchToNext).toHaveBeenCalledTimes(1);
   });
 
-  it("shows ONLY the group name in the subtitle slot (old view-name style), no separate group element", async () => {
+  it("group name is display only (dot + name, ellipsis, no tap target)", async () => {
     mockActiveGroupName = "Eins";
-    const { getByTestId, queryByTestId, queryByText } = await render(
-      <AppHeader title="Tracker" settingsTestID="s" />,
-    );
+    const { getByTestId } = await render(<AppHeader title="T" settingsTestID="s" />);
     const title = getByTestId("app-header-title");
     expect(title.props.children).toBe("Eins");
-    expect(title.props.className).toContain("text-xs uppercase tracking-widest text-text-secondary");
     expect(title.props.numberOfLines).toBe(1);
     expect(title.props.ellipsizeMode).toBe("tail");
-    expect(queryByTestId("app-header-group")).toBeNull();
-    expect(queryByText("Tracker")).toBeNull();
-    expect(getByTestId("app-header-spacer").props.className).toContain("h-4");
+    expect(title.props.className).toContain("font-title");
+    expect(getByTestId("app-header-group-dot")).toBeTruthy();
+    expect(getByTestId("app-header-group").props.onPress).toBeUndefined();
+    expect(getByTestId("app-header-group").props.accessibilityRole).toBeUndefined();
   });
 
   it("falls back to the screen title without a group", async () => {
     const { getByTestId } = await render(<AppHeader title="Tracker" settingsTestID="s" />);
     expect(getByTestId("app-header-title").props.children).toBe("Tracker");
-    expect(getByTestId("app-header-spacer")).toBeTruthy();
   });
 });
 
 describe("AppHeader", () => {
-  it("renders the wordmark and the group name (explicit prop wins)", async () => {
-    const { getByTestId } = await render(
+  it("renders the logo and the group name (explicit prop wins)", async () => {
+    const { getByTestId, getByLabelText } = await render(
       <AppHeader title="Watchlist" groupName="Filmabend" settingsTestID="s-btn" />,
     );
-    expect(getByTestId("app-header-wordmark").props.children).toBe("WATCHCREW");
+    expect(getByTestId("app-header-logo")).toBeTruthy();
+    expect(getByLabelText("WatchCrew")).toBeTruthy();
     expect(getByTestId("app-header-title").props.children).toBe("Filmabend");
   });
 

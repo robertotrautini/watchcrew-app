@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 260 64" width="260" height="64">
+  <!-- accent = currentColor, light = #f5f5f7, ink = #0a0a0c -->
+  <polyline points="8,18 21,46 34,26 47,46 60,18" stroke="currentColor" stroke-width="11" stroke-linejoin="bevel" stroke-linecap="butt"/>
+  <polyline points="8,18 21,46 34,26 47,46 60,18" stroke="#0a0a0c" stroke-width="3.2" stroke-linecap="round" stroke-dasharray="0.1 7.4" stroke-linejoin="round"/>
+  <text x="74" y="46" font-family="Outfit, sans-serif" font-weight="700" font-size="34" fill="#f5f5f7" textLength="178" lengthAdjust="spacingAndGlyphs">ATCH<tspan fill="currentColor">CREW</tspan></text>
+  <line x1="74" y1="56" x2="252" y2="56" stroke="currentColor" stroke-width="1.6" stroke-dasharray="0.1 5" stroke-linecap="round" opacity="0.7"/>
+</svg>

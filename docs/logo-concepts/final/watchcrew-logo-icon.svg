@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" width="64" height="64">
+  <!-- accent = currentColor, light = #f5f5f7 -->
+  <defs>
+  <linearGradient id="p3g" x1="10" y1="2" x2="54" y2="62" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".4"/></linearGradient>
+  <linearGradient id="p3e" x1="8" y1="2" x2="40" y2="40" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ </defs>
+  <rect x="1" y="1" width="62" height="62" rx="17" fill="currentColor"/>
+  <rect x="1" y="1" width="62" height="62" rx="17" fill="url(#p3g)"/>
+  <rect x="1.9" y="1.9" width="60.2" height="60.2" rx="16.2" fill="none" stroke="url(#p3e)" stroke-width="1.2"/>
+  <path fill="#f5f5f7" d="M49.14 29.23A3.2 3.2 0 0 1 49.14 34.77L25.83 48.23A3.2 3.2 0 0 1 21.03 45.46L21.03 18.54A3.2 3.2 0 0 1 25.83 15.77Z"/>
+  <path fill="none" stroke="currentColor" stroke-opacity=".55" stroke-width="1.4" stroke-linejoin="round" d="M41.43 32L27.28 40.17L27.28 23.83Z"/>
+  <circle cx="41.43" cy="32" r="2.9" fill="currentColor"/><circle cx="27.28" cy="40.17" r="2.9" fill="currentColor"/><circle cx="27.28" cy="23.83" r="2.9" fill="currentColor"/>
+</svg>

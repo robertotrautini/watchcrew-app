@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" width="64" height="64">
+  <polygon points="32,8 60,36 4,36" fill="currentColor" fill-opacity="0.32"/>
+  <rect x="4" y="34" width="56" height="4" rx="2" fill="currentColor"/>
+  <circle cx="32" cy="6" r="3.5" fill="#f5f5f7"/>
+  <circle cx="14" cy="47" r="5.5" fill="#f5f5f7"/><path d="M4 64 Q4 54 14 54 Q24 54 24 64Z" fill="#f5f5f7"/>
+  <circle cx="32" cy="45" r="6" fill="currentColor"/><path d="M21 64 Q21 52 32 52 Q43 52 43 64Z" fill="currentColor"/>
+  <circle cx="50" cy="47" r="5.5" fill="#f5f5f7"/><path d="M40 64 Q40 54 50 54 Q60 54 60 64Z" fill="#f5f5f7"/>
+</svg>

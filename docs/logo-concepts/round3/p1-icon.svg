@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" width="64" height="64">
+  <!-- accent = currentColor, light = #f5f5f7, ink = #0a0a0c -->
+  <defs>
+  <linearGradient id="p1a" x1="20" y1="0" x2="63" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor" stop-opacity=".5"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient>
+  <linearGradient id="p1b" x1="20" y1="0" x2="63" y2="0" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="currentColor" stop-opacity=".9"/><stop offset="1" stop-color="currentColor" stop-opacity=".12"/></linearGradient>
+ </defs>
+  <path fill="url(#p1a)" d="M23 32L63 6L63 58Z"/>
+  <path fill="url(#p1b)" d="M23 32L63 20L63 44Z"/>
+  <path fill="currentColor" d="M4.5 13.83Q1 11 1 15.5L1 48.5Q1 53 4.5 50.17L23.5 34.83Q27 32 23.5 29.17Z"/>
+  <path fill="#f5f5f7" d="M32.58 26A3.42 3.42 0 1 0 39.42 26A3.42 3.42 0 1 0 32.58 26ZM30.68 37.4Q30.68 30.94 36 30.94Q41.32 30.94 41.32 37.4Z"/><path fill="#f5f5f7" d="M43.58 26A3.42 3.42 0 1 0 50.42 26A3.42 3.42 0 1 0 43.58 26ZM41.68 37.4Q41.68 30.94 47 30.94Q52.32 30.94 52.32 37.4Z"/><path fill="#f5f5f7" d="M54.58 26A3.42 3.42 0 1 0 61.42 26A3.42 3.42 0 1 0 54.58 26ZM52.68 37.4Q52.68 30.94 58 30.94Q63.32 30.94 63.32 37.4Z"/>
+</svg>

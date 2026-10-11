@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 64 64" width="64" height="64">
+  <!-- accent = currentColor, light = #f5f5f7, ink = #0a0a0c -->
+  
+  <path fill="none" stroke="currentColor" stroke-opacity=".4" stroke-width="2.4" stroke-linejoin="round" d="M7.97 18.85Q5 17 5 20.5L5 43.5Q5 47 7.97 45.15L26.03 33.85Q29 32 26.03 30.15Z"/>
+  <path fill="currentColor" fill-opacity=".38" d="M17.31 15.25Q14 13 14 17L14 47Q14 51 17.31 48.75L38.69 34.25Q42 32 38.69 29.75Z"/>
+  <path fill="currentColor" fill-rule="evenodd" d="M28.97 10.36Q24 7 24 13L24 51Q24 57 28.97 53.64L56.03 35.36Q61 32 56.03 28.64ZM42.5 32A3.5 3.5 0 1 0 49.5 32A3.5 3.5 0 1 0 42.5 32ZM31.5 24.5A3.5 3.5 0 1 0 38.5 24.5A3.5 3.5 0 1 0 31.5 24.5ZM31.5 39.5A3.5 3.5 0 1 0 38.5 39.5A3.5 3.5 0 1 0 31.5 39.5Z"/>
+</svg>
