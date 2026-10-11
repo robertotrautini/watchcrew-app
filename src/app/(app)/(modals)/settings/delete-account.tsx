@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import * as Haptics from "expo-haptics";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
@@ -90,7 +91,7 @@ export default function SettingsDeleteAccountScreen() {
         >
           <View className="gap-3">
             <Text className="text-text-secondary">
-              Gib zur Bestätigung "{CONFIRMATION_PHRASE}" ein. Diese Aktion ist
+              Gib zur Bestätigung &quot;{CONFIRMATION_PHRASE}&quot; ein. Diese Aktion ist
               endgültig.
             </Text>
             <TextInput

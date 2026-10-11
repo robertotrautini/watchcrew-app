@@ -1,8 +1,10 @@
+import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
 import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { Icon } from "@/components/ui/Icon";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import type { ReactNode } from "react";
-import { FlatList, Pressable, Text, View } from "react-native";
+import { FlatList, Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Chip } from "@/components/ui/Chip";
 import { Card } from "@/components/ui/Card";
@@ -180,7 +182,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
             >
               <Text
                 testID={`${testID}-score-${item.tmdbId}-value`}
-                className="text-[10px] font-semibold text-white"
+                className="text-[10px] font-sans-semibold text-white"
               >
                 {formatScore(item.voteAverage as number)}
               </Text>
@@ -210,7 +212,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
           <Text
             testID={`${testID}-item-${item.tmdbId}-title`}
             numberOfLines={1}
-            className="text-center text-xs text-text-primary"
+            className={`text-center text-xs ${MOVIE_TITLE_TEXT}`}
           >
             {item.title}
           </Text>

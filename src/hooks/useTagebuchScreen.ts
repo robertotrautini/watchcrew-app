@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { useColumnSort } from "@/hooks/useColumnSort";
 import { useEntryFilters } from "@/hooks/useEntryFilters";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
@@ -14,7 +15,9 @@ import {
   deriveGenreNamesById,
   deriveGroupMemberIds,
 } from "@/lib/diaryDisplay";
+import { sortDiaryByColumn, type DiaryColumn } from "@/lib/columnSort";
 import { deriveSeenYears, getDistinctGenreIds } from "@/lib/entryFilters";
+import { DEFAULT_DIARY_SORT } from "@/lib/listFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
 import {
   searchEntries,
@@ -56,8 +59,10 @@ export function useTagebuchScreen() {
   const filters = useEntryFilters<DiarySortOption>(
     "diary",
     activeGroupId,
-    "my_diary",
+    DEFAULT_DIARY_SORT,
   );
+  // Header-cell sort (local, resets on blur); re-orders the panel result.
+  const { columnSort, toggleColumn } = useColumnSort<DiaryColumn>();
   const {
     sortOption,
     selectedGenreIds,
@@ -127,9 +132,15 @@ export function useTagebuchScreen() {
     providerCategories,
   ]);
 
-  const visibleEntries = useMemo(
+  const searchedEntries = useMemo(
     () => searchEntries(sortedEntries, filters.searchQuery),
     [sortedEntries, filters.searchQuery],
+  );
+
+  // Header-cell sort re-orders last (also over the fuzzy search relevance order).
+  const visibleEntries = useMemo(
+    () => (userId ? sortDiaryByColumn(searchedEntries, columnSort, userId) : []),
+    [searchedEntries, columnSort, userId],
   );
 
   const availableGenreIds = useMemo(
@@ -155,10 +166,6 @@ export function useTagebuchScreen() {
   const isDiaryEmpty = diaryEntries.length === 0;
   const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
 
-  function ownRating(entry: WatchlistEntry) {
-    return entry.ratings.find((r) => r.member_id === userId);
-  }
-
   function openEntry(entry: WatchlistEntry) {
     if (!activeGroupId) {
       return;
@@ -180,6 +187,8 @@ export function useTagebuchScreen() {
     groupMemberIds,
     displayNameById,
     visibleEntries,
+    columnSort,
+    toggleColumn,
     availableGenreIds,
     genreNamesById,
     availableYears,
@@ -188,7 +197,7 @@ export function useTagebuchScreen() {
     isError,
     isDiaryEmpty,
     hasNoResults,
-    ownRating,
+    userId,
     openEntry,
   };
 }

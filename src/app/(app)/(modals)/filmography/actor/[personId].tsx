@@ -1,5 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { useActorFilmography } from "@/hooks/useActorFilmography";
@@ -57,8 +59,8 @@ export default function ActorFilmographyScreen() {
 
   if (filmographyQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" testID="actor-filmography-screen">
-        <ActivityIndicator testID="actor-filmography-screen-loading" />
+      <View className="flex-1" testID="actor-filmography-screen">
+        <ListSkeleton testID="actor-filmography-screen-loading" />
       </View>
     );
   }

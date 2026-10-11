@@ -24,6 +24,13 @@ export const DEFAULT_LIST_FILTERS: ListFilters = {
   providerCategories: ["flatrate"],
 };
 
+/**
+ * Default Tagebuch sort when no choice is stored: average rating, best first
+ * (the "Beste Bewertung" option; was "my_diary" before). Explicitly stored
+ * choices, including "my_diary", keep working unchanged.
+ */
+export const DEFAULT_DIARY_SORT = "rating";
+
 export function listFiltersKey(tab: ListFiltersTab, groupId: string): string {
   return `${tab}:${groupId}`;
 }

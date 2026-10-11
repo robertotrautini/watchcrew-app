@@ -1,13 +1,8 @@
 import { useMemo, useState } from "react";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useParallaxScroll } from "@/components/parallaxContext";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { Image } from "@/components/ui/Image";
@@ -77,10 +72,10 @@ export default function SettingsStreamingServicesScreen() {
   if (providersQuery.isLoading) {
     return (
       <View
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="settings-streaming-screen"
       >
-        <ActivityIndicator testID="settings-streaming-loading" />
+        <ListSkeleton testID="settings-streaming-loading" />
       </View>
     );
   }

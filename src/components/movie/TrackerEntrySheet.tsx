@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
@@ -44,6 +45,7 @@ export function TrackerEntrySheet({
   const entryId = entry?.id ?? null;
   // Re-derive the draft each time a different entry is opened.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on entry change must stay effect-timed
     setPayerId(entry?.paid_by_member_id ?? null);
     setDateInput((entry?.paid_at ?? "").slice(0, 10));
     setConfirmingDelete(false);

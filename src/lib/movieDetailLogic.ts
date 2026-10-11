@@ -184,7 +184,12 @@ function getVisibleActionsWithGroupContext(
   ) {
     actions.push("bewerten");
   }
-  actions.push("bearbeiten");
+  // Watchlist entries have no "bearbeiten" button: their release date is
+  // edited by tapping the date line in the meta row (docs/interim-decisions.md,
+  // "Idee 1"). Diary (and source-less group context) keeps "bearbeiten".
+  if (context.source !== "watchlist") {
+    actions.push("bearbeiten");
+  }
   actions.push("aehnliche");
   if (context.hasCollection) {
     actions.push("filmreihe");

@@ -1,5 +1,7 @@
+import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { useEffect, useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { SMALL_PILL_HIT_SLOP } from "@/components/ui/touchTarget";
@@ -81,6 +83,7 @@ export function PaymentModal({
     if (!visible) {
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
     setSearchQuery("");
     setSelectedEntryId(null);
     setSelectedPayerId(computeNextPayer(groupMembers, entries));
@@ -162,9 +165,11 @@ export function PaymentModal({
                   }
                 >
                   <Text
-                    className={
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                    className={`${MOVIE_TITLE_FONT} ${
                       isSelected ? "text-bg-primary" : "text-text-primary"
-                    }
+                    }`}
                   >
                     {entry.movie.name}
                   </Text>

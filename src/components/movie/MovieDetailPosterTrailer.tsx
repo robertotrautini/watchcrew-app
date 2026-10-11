@@ -1,8 +1,10 @@
 import { Icon } from "@/components/ui/Icon";
 import { Image } from "@/components/ui/Image";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { Spinner } from "@/components/ui/Spinner";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 import {
@@ -116,6 +118,11 @@ export function MovieDetailPosterTrailer({
               className="h-full w-full bg-card"
               contentFit="cover"
             />
+          ) : isLoadingDetail ? (
+            <Skeleton
+              testID="movie-detail-poster-skeleton"
+              className="h-full w-full"
+            />
           ) : (
             <View
               testID="movie-detail-poster-placeholder"
@@ -125,11 +132,7 @@ export function MovieDetailPosterTrailer({
 
           {isLoadingDetail ? (
             <View className="absolute inset-0 items-center justify-center">
-              <ActivityIndicator
-                testID="movie-detail-poster-spinner"
-                size="large"
-                color={OVERLAY_ICON_COLOR}
-              />
+              <Spinner testID="movie-detail-poster-spinner" size="large" />
             </View>
           ) : showPlayButton ? (
             <Pressable

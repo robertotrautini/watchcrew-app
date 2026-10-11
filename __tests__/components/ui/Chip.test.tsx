@@ -12,7 +12,7 @@ describe("Chip", () => {
     expect(screen.getByTestId("c-tint").props.className).toContain("bg-accent-a15");
     expect(cls).not.toContain("rounded-full");
     expect(screen.getByText("Drama").props.className).toContain("text-accent-light");
-    expect(screen.getByText("Drama").props.className).toContain("font-medium");
+    expect(screen.getByText("Drama").props.className).toContain("font-sans-medium");
     expect(screen.getByTestId("c").props.accessibilityState).toMatchObject({ selected: false });
   });
 

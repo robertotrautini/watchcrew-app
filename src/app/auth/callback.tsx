@@ -1,13 +1,9 @@
 import * as Linking from "expo-linking";
+import { Spinner } from "@/components/ui/Spinner";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Text,
-  TextInput,
-} from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
@@ -127,7 +123,7 @@ export default function AuthCallbackScreen() {
         className="flex-1 items-center justify-center px-6"
         testID="auth-callback-screen"
       >
-        <ActivityIndicator testID="auth-callback-loading" />
+        <Spinner testID="auth-callback-loading" />
       </KeyboardAvoidingView>
     );
   }
@@ -172,7 +168,7 @@ export default function AuthCallbackScreen() {
     >
       <Brand />
       <Glass variant="strong" className="gap-4 p-5">
-        <Text className="font-display text-2xl text-text-primary">
+        <Text className="font-title text-2xl text-text-primary">
           Neues Passwort setzen
         </Text>
         <TextInput

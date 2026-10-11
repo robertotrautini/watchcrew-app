@@ -1,4 +1,5 @@
-import { TextInput, View } from "react-native";
+import { View } from "react-native";
+import { TextInput } from "@/components/ui/Text";
 
 import {
   GenrePills,
@@ -62,7 +63,7 @@ export function WatchlistFilterPanel({
         </Button>
       }
     >
-      <View className="flex-row items-stretch gap-2">
+      <View className="flex-row items-center gap-2">
         <SortButton
           testID="watchlist-sort-button"
           shortLabel={

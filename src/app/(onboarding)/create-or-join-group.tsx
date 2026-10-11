@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pressable, Text, TextInput, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { router } from "expo-router";
@@ -163,7 +164,7 @@ export default function CreateOrJoinGroupScreen() {
       testID="create-or-join-group-screen"
     >
       <Brand />
-      <Text className="mb-6 text-center font-display text-2xl text-text-primary">
+      <Text className="mb-6 text-center font-title text-2xl text-text-primary">
         Willkommen bei WatchCrew
       </Text>
 
@@ -175,7 +176,7 @@ export default function CreateOrJoinGroupScreen() {
             onPress={() => setMode("create")}
           >
             <Icon name="addCircle" size="L" color={chromeAccent} />
-            <Text className="font-display text-xl text-text-primary">
+            <Text className="font-title text-xl text-text-primary">
               Gruppe erstellen
             </Text>
             <Text className="text-center text-text-secondary">
@@ -188,7 +189,7 @@ export default function CreateOrJoinGroupScreen() {
             onPress={() => setMode("join")}
           >
             <Icon name="join" size="L" color={chromeAccent} />
-            <Text className="font-display text-xl text-text-primary">
+            <Text className="font-title text-xl text-text-primary">
               Gruppe beitreten
             </Text>
             <Text className="text-center text-text-secondary">
@@ -201,7 +202,7 @@ export default function CreateOrJoinGroupScreen() {
 
       {mode === "create" ? (
         <View testID="mode-create" className="gap-4">
-          <Text className="font-display text-xl text-text-primary">
+          <Text className="font-title text-xl text-text-primary">
             Gruppe erstellen
           </Text>
 
@@ -277,7 +278,7 @@ export default function CreateOrJoinGroupScreen() {
 
       {mode === "join" ? (
         <View testID="mode-join" className="gap-4">
-          <Text className="font-display text-xl text-text-primary">
+          <Text className="font-title text-xl text-text-primary">
             Gruppe beitreten
           </Text>
 

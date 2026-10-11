@@ -15,6 +15,12 @@ export const STAGGER_STEP_MS = 40;
 /** Stagger is capped after this many items so long lists finish quickly (max total delay 320 ms). */
 export const MAX_STAGGER_INDEX = 8;
 
+/**
+ * Items beyond this index are not animated (no mount fade, no tab-switch replay).
+ * Generous enough to cover everything visible on the first screen (3-column grid).
+ */
+export const FADE_MAX_INDEX = 29;
+
 export function computeStaggerDelayMs(index: number): number {
   const clampedIndex = Math.max(0, Math.min(index, MAX_STAGGER_INDEX));
   return clampedIndex * STAGGER_STEP_MS;
@@ -33,3 +39,8 @@ export function nextTabSwitchState(state: TabSwitchState, tab: string | null): T
   if (state.tab == null) return { tab, epoch: state.epoch };
   return { tab, epoch: state.epoch + 1 };
 }
+
+/** Skeleton placeholder pulse (src/components/ui/Skeleton.tsx): one half-cycle duration and opacity range. */
+export const SKELETON_PULSE_MS = 800;
+export const SKELETON_MIN_OPACITY = 0.5;
+export const SKELETON_MAX_OPACITY = 1;

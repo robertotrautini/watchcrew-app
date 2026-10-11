@@ -5,11 +5,11 @@ import { resolveGroupTheme } from "@/lib/groupTheme";
 
 const captured: { screenOptions?: Record<string, unknown> } = {};
 jest.mock("expo-router", () => {
-  const Stack = ({ children, screenOptions }: { children?: React.ReactNode; screenOptions?: Record<string, unknown> }) => {
+  const Stack = function Stack({ children, screenOptions }: { children?: React.ReactNode; screenOptions?: Record<string, unknown> }) {
     captured.screenOptions = screenOptions;
     return <>{children}</>;
   };
-  Stack.Screen = () => null;
+  Stack.Screen = function StackScreen() { return null; };
   return { Stack };
 });
 

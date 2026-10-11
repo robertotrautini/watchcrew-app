@@ -1,4 +1,5 @@
-import { TextInput, View } from "react-native";
+import { View } from "react-native";
+import { TextInput } from "@/components/ui/Text";
 
 import {
   GenrePills,
@@ -12,6 +13,7 @@ import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import type { useTagebuchScreen } from "@/hooks/useTagebuchScreen";
 import { sortOptionLabel } from "@/lib/entryFilters";
 import {
+  DEFAULT_DIARY_SORT,
   DIARY_SORT_SHORT_LABELS,
   hasActiveListFilters,
   toggleProviderCategory,
@@ -28,7 +30,7 @@ export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
       testID="tagebuch-filter"
       open={f.filterPanelOpen}
       onToggle={f.toggleFilterPanel}
-      hasActiveFilters={hasActiveListFilters(f.filters, "my_diary")}
+      hasActiveFilters={hasActiveListFilters(f.filters, DEFAULT_DIARY_SORT)}
       search={
         <TextInput
           testID="tagebuch-search-input"
@@ -40,7 +42,7 @@ export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
         />
       }
     >
-      <View className="flex-row items-stretch gap-2">
+      <View className="flex-row items-center gap-2">
         <SortButton
           testID="tagebuch-sort-button"
           shortLabel={

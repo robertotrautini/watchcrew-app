@@ -1,7 +1,8 @@
 import { Icon } from "@/components/ui/Icon";
 import { Image } from "@/components/ui/Image";
 import type { ReactNode } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Card } from "@/components/ui/Card";
 
@@ -61,7 +62,7 @@ export function DiaryPosterTile({
   children,
 }: DiaryPosterTileProps) {
   return (
-    <Card testID={testID} className="overflow-hidden">
+    <Card cheap testID={testID} className="overflow-hidden">
       <View testID="poster-card-poster-wrapper" className="relative w-full">
         {posterUrl ? (
           <Image
@@ -70,6 +71,7 @@ export function DiaryPosterTile({
             accessibilityLabel={title}
             className="aspect-[2/3] w-full bg-black/40"
             contentFit="cover"
+            cachePolicy="memory-disk"
           />
         ) : (
           <View
@@ -80,24 +82,10 @@ export function DiaryPosterTile({
           </View>
         )}
 
-        <View className="absolute right-1 top-1 flex-row items-center gap-1">
-          {liked ? (
-            <View
-              testID="poster-card-like-badge"
-              className="flex-row items-center rounded-sm bg-black/70 px-1.5 py-0.5"
-            >
-              <Icon
-                testID="poster-card-like-icon"
-                name="heart"
-                size="S"
-                color={LIKE_HEART_COLOR}
-              />
-            </View>
-          ) : null}
-
+        <View className="absolute right-1 top-1 items-end gap-1">
           <View
             testID="poster-card-average-badge"
-            className="flex-row items-center gap-0.5 rounded-sm bg-black/70 px-1.5 py-0.5"
+            className="flex-row items-center gap-0.5 rounded-sm bg-black/70 px-1 py-0.5"
           >
             <Icon name="star" size="S" color={starColor} />
             <Text
@@ -107,15 +95,29 @@ export function DiaryPosterTile({
               {averageRating != null ? formatOneDecimal(averageRating) : "–"}
             </Text>
           </View>
+
+          {liked ? (
+            <View
+              testID="poster-card-like-badge"
+              className="flex-row items-center rounded-sm bg-black/70 px-1 py-0.5"
+            >
+              <Icon
+                testID="poster-card-like-icon"
+                name="heart"
+                size="S"
+                color={LIKE_HEART_COLOR}
+              />
+            </View>
+          ) : null}
         </View>
 
         <View
           testID="poster-card-tmdb-badge"
-          className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2.5 py-1"
+          className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2 py-1"
         >
           <Text
             testID="poster-card-tmdb-value"
-            className="text-xs font-semibold text-white"
+            className="text-xs font-sans-semibold text-white"
           >
             {tmdbScore != null ? formatOneDecimal(tmdbScore) : "–"}
           </Text>

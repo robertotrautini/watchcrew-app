@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Text } from "react-native";
+import { Spinner } from "@/components/ui/Spinner";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 
@@ -97,7 +98,7 @@ export default function JoinTokenScreen() {
           />
         </>
       ) : (
-        <ActivityIndicator testID="join-token-loading" />
+        <Spinner testID="join-token-loading" />
       )}
     </SafeAreaView>
   );

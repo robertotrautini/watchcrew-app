@@ -10,7 +10,7 @@ jest.mock("expo-router", () => {
     mockStackProps.screenOptions = screenOptions;
     return <>{children}</>;
   };
-  Stack.Screen = (props: { name: string; options?: { title?: string; contentStyle?: { backgroundColor?: string } } }) => {
+  Stack.Screen = function StackScreen(props: { name: string; options?: { title?: string; contentStyle?: { backgroundColor?: string } } }) {
     mockScreens.push(props);
     return null;
   };

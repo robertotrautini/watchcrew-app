@@ -1,11 +1,8 @@
 import type { ReactNode } from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  type PressableProps,
-} from "react-native";
+import { Pressable, type PressableProps } from "react-native";
+import { Text } from "@/components/ui/Text";
 
+import { Spinner } from "@/components/ui/Spinner";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { hitSlopFor } from "@/components/ui/touchTarget";
 import { cn } from "@/lib/utils";
@@ -39,7 +36,7 @@ export interface ButtonProps extends Omit<
    */
   icon?: IconRole;
   disabled?: boolean;
-  /** Shows an ActivityIndicator in place of the label/children and disables interaction. */
+  /** Shows a Spinner in place of the label/children and disables interaction. */
   loading?: boolean;
   /**
    * Icon-only circular button: exact square (48px default / 44px sm / 36px xs), `rounded-full`,
@@ -184,7 +181,7 @@ export function Button({
 
   const labelClassName = cn(
     size === "xs" ? "text-sm" : "text-base",
-    variant === "primary" ? "font-semibold" : "font-medium",
+    variant === "primary" ? "font-sans-semibold" : "font-sans-medium",
     isMuted ? DISABLED_TEXT_CLASS : VARIANT_TEXT_CLASSES[variant],
     textClassName,
   );
@@ -208,9 +205,13 @@ export function Button({
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator
+        <Spinner
           testID={testID ? `${testID}-loading-indicator` : undefined}
-          color={BUTTON_ICON_COLORS[variant]}
+          color={
+            variant === "primary" || variant === "danger"
+              ? BUTTON_ICON_COLORS[variant]
+              : undefined
+          }
         />
       ) : (
         (children ?? (

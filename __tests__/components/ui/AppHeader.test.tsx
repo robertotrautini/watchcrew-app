@@ -32,22 +32,35 @@ describe("group quick-switch brand button", () => {
     expect(mockSwitchToNext).toHaveBeenCalledTimes(1);
   });
 
-  it("shows the active group name from the hook, white", async () => {
+  it("shows ONLY the group name in the subtitle slot (old view-name style), no separate group element", async () => {
     mockActiveGroupName = "Eins";
-    const { getByTestId } = await render(<AppHeader title="T" settingsTestID="s" />);
-    expect(getByTestId("app-header-group").props.children).toBe("Eins");
-    expect(getByTestId("app-header-group").props.className).toContain("text-white");
+    const { getByTestId, queryByTestId, queryByText } = await render(
+      <AppHeader title="Tracker" settingsTestID="s" />,
+    );
+    const title = getByTestId("app-header-title");
+    expect(title.props.children).toBe("Eins");
+    expect(title.props.className).toContain("text-xs uppercase tracking-widest text-text-secondary");
+    expect(title.props.numberOfLines).toBe(1);
+    expect(title.props.ellipsizeMode).toBe("tail");
+    expect(queryByTestId("app-header-group")).toBeNull();
+    expect(queryByText("Tracker")).toBeNull();
+    expect(getByTestId("app-header-spacer").props.className).toContain("h-4");
+  });
+
+  it("falls back to the screen title without a group", async () => {
+    const { getByTestId } = await render(<AppHeader title="Tracker" settingsTestID="s" />);
+    expect(getByTestId("app-header-title").props.children).toBe("Tracker");
+    expect(getByTestId("app-header-spacer")).toBeTruthy();
   });
 });
 
 describe("AppHeader", () => {
-  it("renders the wordmark, screen title and group name", async () => {
+  it("renders the wordmark and the group name (explicit prop wins)", async () => {
     const { getByTestId } = await render(
       <AppHeader title="Watchlist" groupName="Filmabend" settingsTestID="s-btn" />,
     );
     expect(getByTestId("app-header-wordmark").props.children).toBe("WATCHCREW");
-    expect(getByTestId("app-header-title").props.children).toBe("Watchlist");
-    expect(getByTestId("app-header-group").props.children).toBe("Filmabend");
+    expect(getByTestId("app-header-title").props.children).toBe("Filmabend");
   });
 
   it("settings button keeps its testID + label and opens the settings hub", async () => {

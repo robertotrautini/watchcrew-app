@@ -54,7 +54,6 @@ describe("highlight colour follows the group theme (red)", () => {
     expect(styleOf(getByTestId("app-header-icon"))).not.toContain(red.accentLight);
     expect(getByTestId("app-header-wordmark").props.className).toContain("text-white");
     expect(getByTestId("app-header-wordmark").props.className).not.toContain("accent");
-    expect(getByTestId("app-header-group").props.className).toContain("text-white");
   });
 
   it("SettingsRow chevron uses the theme accent (not gold)", async () => {

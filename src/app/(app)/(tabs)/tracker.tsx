@@ -1,13 +1,8 @@
 import { useMemo, useState } from "react";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useParallaxScroll } from "@/components/parallaxContext";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 
@@ -17,6 +12,7 @@ import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Glass, GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { TABLE_DATE_CELL, TABLE_TITLE_CELL } from "@/components/ui/GlassTable";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
@@ -109,11 +105,14 @@ export default function TrackerScreen() {
     return (
       <SafeAreaView
         edges={["top"]}
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="tracker-screen"
       >
-        <ActivityIndicator testID="tracker-loading" />
-        <Text className="mt-2 text-text-secondary">Tracker wird geladen…</Text>
+        <AppHeader
+          title="Tracker"
+          settingsTestID="tracker-group-settings-button"
+        />
+        <ListSkeleton testID="tracker-loading" />
       </SafeAreaView>
     );
   }
@@ -189,7 +188,7 @@ export default function TrackerScreen() {
           className="flex-1"
           contentContainerClassName="px-4 pb-3 pt-3"
         >
-          <Glass className="px-3 pb-1 pt-3">
+          <Glass cheap className="px-3 pb-1 pt-3">
             <View
               className="flex-row border-b border-glass-border pb-2"
               testID="tracker-table-header"
@@ -234,8 +233,9 @@ export default function TrackerScreen() {
                       className="flex-row items-center py-3"
                     >
                       <Text
-                        numberOfLines={2}
-                        className="flex-1 pr-2 text-text-primary"
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                        className={TABLE_TITLE_CELL}
                       >
                         {entry.movie.name}
                       </Text>
@@ -243,7 +243,7 @@ export default function TrackerScreen() {
                         testID={`tracker-row-${entry.id}-payer`}
                         numberOfLines={1}
                         ellipsizeMode="tail"
-                        className="w-24 pr-2 font-semibold text-text-secondary"
+                        className="w-24 pr-2 font-sans-semibold text-text-secondary"
                         // Inline style exception (same documented precedent as
                         // the payer chips below): per-member runtime hex colour.
                         style={payerColor ? { color: payerColor } : undefined}
@@ -253,7 +253,7 @@ export default function TrackerScreen() {
                       <Text
                         testID={`tracker-row-${entry.id}-date`}
                         numberOfLines={1}
-                        className="w-28 text-right text-text-secondary"
+                        className={TABLE_DATE_CELL}
                       >
                         {formatPlainDate(entry.paid_at)}
                       </Text>

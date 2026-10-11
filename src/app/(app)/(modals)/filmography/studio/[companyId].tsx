@@ -1,5 +1,7 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { Button } from "@/components/ui/Button";
@@ -93,10 +95,10 @@ export default function StudioFilmographyScreen() {
   if (isLoading) {
     return (
       <View
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="studio-filmography-screen"
       >
-        <ActivityIndicator testID="studio-filmography-screen-loading" />
+        <ListSkeleton testID="studio-filmography-screen-loading" />
       </View>
     );
   }

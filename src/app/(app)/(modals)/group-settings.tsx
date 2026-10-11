@@ -1,17 +1,12 @@
 import { EmptyState } from "@/components/ui/EmptyState";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
-import {
-  ActivityIndicator,
-  Pressable,
-  Share,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, Share, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 
@@ -136,11 +131,13 @@ export default function GroupSettingsScreen() {
   // from a second device, which this project doesn't need to handle yet.
   useEffect(() => {
     if (groupDetailsQuery.data?.name != null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- name sync from server value must stay effect-timed
       setNameInput(groupDetailsQuery.data.name);
     }
   }, [groupDetailsQuery.data?.name, activeGroupId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on group switch must stay effect-timed
     setRemoveTargetUserId(null);
     setLeaveConfirmVisible(false);
   }, [activeGroupId]);
@@ -252,11 +249,11 @@ export default function GroupSettingsScreen() {
   if (isLoading) {
     return (
       <View
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="group-settings-screen"
       >
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
-        <ActivityIndicator testID="group-settings-loading" />
+        <ListSkeleton testID="group-settings-loading" />
       </View>
     );
   }
@@ -313,14 +310,14 @@ export default function GroupSettingsScreen() {
           />
           <Text
             testID="group-settings-name"
-            className="font-display text-xl text-text-primary"
+            className="font-title text-xl text-text-primary"
           >
             {groupDetailsQuery.data?.name}
           </Text>
         </View>
 
         <View className="gap-2" testID="group-settings-switcher">
-          <Text className="font-display text-lg text-accent-light">
+          <Text className="font-title text-lg text-accent-light">
             Deine Gruppen
           </Text>
           {(groupsQuery.data ?? []).map((membership) => {
@@ -344,7 +341,7 @@ export default function GroupSettingsScreen() {
 
         {isOwner ? (
           <View className="gap-2" testID="group-settings-rename-section">
-            <Text className="font-display text-lg text-accent-light">
+            <Text className="font-title text-lg text-accent-light">
               Gruppenname
             </Text>
             <View
@@ -392,7 +389,7 @@ export default function GroupSettingsScreen() {
 
         {isOwner ? (
           <View className="gap-2" testID="group-settings-theme-section">
-            <Text className="font-display text-lg text-accent-light">
+            <Text className="font-title text-lg text-accent-light">
               Farbthema
             </Text>
             <View className="flex-row flex-wrap gap-3">
@@ -442,7 +439,7 @@ export default function GroupSettingsScreen() {
 
         {isOwner ? (
           <View className="gap-2" testID="group-settings-invite-section">
-            <Text className="font-display text-lg text-accent-light">
+            <Text className="font-title text-lg text-accent-light">
               Einladungslink
             </Text>
             <Text
@@ -487,7 +484,7 @@ export default function GroupSettingsScreen() {
         ) : null}
 
         <View className="gap-2" testID="group-settings-member-list">
-          <Text className="font-display text-lg text-accent-light">
+          <Text className="font-title text-lg text-accent-light">
             Mitglieder
           </Text>
           {(groupMembersQuery.data ?? []).map((member) => {

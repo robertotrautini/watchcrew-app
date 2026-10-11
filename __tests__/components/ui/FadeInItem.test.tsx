@@ -3,6 +3,7 @@ import { render } from "@testing-library/react-native";
 
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { computeStaggerDelayMs } from "@/lib/staggerAnimation";
+import { FADE_MAX_INDEX } from "@/lib/motion";
 
 describe("FadeInItem", () => {
   it("renders its children", async () => {
@@ -106,5 +107,28 @@ describe("FadeInItem tab replay + reduce motion", () => {
     );
     expect(timingSpy).not.toHaveBeenCalled();
     expect(getByTestId("f")).toBeTruthy();
+  });
+
+  it("items beyond FADE_MAX_INDEX: no mount fade, no tab-switch replay, content still rendered", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+    const ui = (epoch: number, tab: string) => (
+      <TabSwitchContext.Provider value={{ tab, epoch }}>
+        <FadeInItem index={FADE_MAX_INDEX + 1} replayTab="watchlist" testID="far">
+          <Text>far</Text>
+        </FadeInItem>
+      </TabSwitchContext.Provider>
+    );
+    const r = await render(ui(1, "watchlist"));
+    await r.rerender(ui(2, "tracker"));
+    await r.rerender(ui(3, "watchlist"));
+    expect(timingSpy).not.toHaveBeenCalled();
+    expect(r.getByTestId("far")).toBeTruthy();
+    expect(r.getByText("far")).toBeTruthy();
+  });
+
+  it("items up to FADE_MAX_INDEX still fade on mount", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+    await render(<FadeInItem index={FADE_MAX_INDEX}><Text>x</Text></FadeInItem>);
+    expect(timingSpy).toHaveBeenCalledTimes(1);
   });
 });

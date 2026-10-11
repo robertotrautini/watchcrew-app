@@ -33,13 +33,13 @@ export default function ModalsLayout() {
         gestureEnabled: true,
         fullScreenGestureEnabled: true,
         // Dark header matching the black body (not the nav theme's grey),
-        // accent-light Playfair title like the legacy headings; the screens do not
+        // accent-light Outfit title like the legacy headings; the screens do not
         // repeat the title in their body.
         headerStyle: { backgroundColor: "#0a0a0a" },
         headerShadowVisible: false,
         headerTintColor: colors.accentLight,
         headerTitleStyle: {
-          fontFamily: "PlayfairDisplay_700Bold",
+          fontFamily: "Outfit_700Bold",
           color: colors.accentLight,
         },
       }}

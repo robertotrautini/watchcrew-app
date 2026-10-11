@@ -1,12 +1,17 @@
 import "@/global.css";
 
 import {
-  PlayfairDisplay_400Regular,
-  PlayfairDisplay_400Regular_Italic,
-  PlayfairDisplay_700Bold,
-  PlayfairDisplay_700Bold_Italic,
+  DMSans_400Regular,
+  DMSans_400Regular_Italic,
+  DMSans_500Medium,
+  DMSans_600SemiBold,
+  DMSans_700Bold,
+} from "@expo-google-fonts/dm-sans";
+import {
+  Outfit_600SemiBold,
+  Outfit_700Bold,
   useFonts,
-} from "@expo-google-fonts/playfair-display";
+} from "@expo-google-fonts/outfit";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { DarkTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -60,16 +65,19 @@ SplashScreen.preventAutoHideAsync();
  */
 export default function RootLayout() {
   useQueryCacheLifecycle();
-  // Headings/brand font per docs/adr/0007-client-tech-stack.md — weights
-  // 400/700 + italic, matching the `font-display*` Tailwind tokens in
+  // Fonts (Outfit titles, DM Sans text, Outfit headlines/brand) per docs/adr/0007-client-tech-stack.md — weights
+  // matching the `font-title*`/`font-sans*` Tailwind tokens in
   // tailwind.config.js. The splash screen (prevented above) keeps covering
   // the app until these are ready, same as the existing AnimatedSplashOverlay
   // gate.
   const [fontsLoaded, fontError] = useFonts({
-    PlayfairDisplay_400Regular,
-    PlayfairDisplay_700Bold,
-    PlayfairDisplay_400Regular_Italic,
-    PlayfairDisplay_700Bold_Italic,
+    DMSans_400Regular,
+    DMSans_400Regular_Italic,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    Outfit_600SemiBold,
+    Outfit_700Bold,
   });
 
   if (!fontsLoaded && !fontError) {

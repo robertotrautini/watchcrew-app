@@ -1,4 +1,6 @@
-import { Text, View, type GestureResponderEvent } from "react-native";
+import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
+import { View, type GestureResponderEvent } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
 
@@ -103,19 +105,21 @@ export function WatchlistPosterCard({
     // Legacy list row: small poster left, gold serif title, date line,
     // 2-line synopsis, TMDB badge bottom-right.
     return (
-      <Card testID={testID} onPress={onPress} className="overflow-hidden">
+      <Card cheap testID={testID} onPress={onPress} className="overflow-hidden">
         <View
           testID={`${testID}-content`}
           className={`flex-row${dimClassName}`}
         >
           <View
             testID={`${testID}-poster-wrapper`}
-            className="w-24 self-stretch"
+            className="min-h-36 w-24 self-stretch bg-black/40"
           >
             <Image
               testID={`${testID}-poster`}
               source={posterUrl ? { uri: posterUrl } : undefined}
-              className="aspect-[2/3] w-24 bg-black/40"
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              className="absolute inset-0 h-full w-full"
             />
           </View>
 
@@ -123,8 +127,9 @@ export function WatchlistPosterCard({
             <View className="flex-row items-start justify-between gap-2">
               <Text
                 testID={`${testID}-title`}
-                numberOfLines={2}
-                className="flex-1 font-display-bold text-base text-accent-light"
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                className={`flex-1 text-base ${MOVIE_TITLE_TEXT}`}
               >
                 {movie.name}
               </Text>
@@ -148,7 +153,7 @@ export function WatchlistPosterCard({
             <Text
               testID={`${testID}-overview`}
               numberOfLines={2}
-              className={`mt-1 text-sm italic ${hasOverview ? "text-text-secondary" : "text-text-dim"}`}
+              className={`mt-1 text-sm font-sans-italic ${hasOverview ? "text-text-secondary" : "text-text-dim"}`}
             >
               {overviewText}
             </Text>
@@ -169,18 +174,19 @@ export function WatchlistPosterCard({
   // Edge-to-edge poster: the tile (Card, overflow-hidden) clips the poster's top
   // corners; the bottom edge is a straight cut above the info area.
   return (
-    <Card testID={testID} onPress={onPress} className="overflow-hidden">
+    <Card cheap testID={testID} onPress={onPress} className="overflow-hidden">
       <View testID={`${testID}-content`} className={dimClassName.trim()}>
         <View testID={`${testID}-poster-wrapper`} className="relative w-full">
           <Image
             testID={`${testID}-poster`}
             source={posterUrl ? { uri: posterUrl } : undefined}
             contentFit="cover"
+            cachePolicy="memory-disk"
             className="aspect-[2/3] w-full bg-black/40"
           />
 
           {showProgressBadge ? (
-            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-2 py-0.5">
+            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-1 py-0.5">
               <Text
                 testID={`${testID}-progress-badge`}
                 className="text-xs text-white"
@@ -189,7 +195,7 @@ export function WatchlistPosterCard({
               </Text>
             </View>
           ) : (
-            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-2 py-0.5">
+            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-1 py-0.5">
               <Text
                 testID={`${testID}-date-badge-overlay`}
                 className="text-xs text-white"
@@ -202,9 +208,9 @@ export function WatchlistPosterCard({
           {hasTmdbScore ? (
             <View
               testID={`${testID}-tmdb-badge`}
-              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2.5 py-1"
+              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2 py-1"
             >
-              <Text className="text-xs font-semibold text-white">
+              <Text className="text-xs font-sans-semibold text-white">
                 {formatTmdbScore(movie.vote_average as number)}
               </Text>
             </View>
@@ -215,7 +221,7 @@ export function WatchlistPosterCard({
           <View testID={`${testID}-info`} className="px-2 py-1.5">
             <Text
               testID={`${testID}-title`}
-              className="font-semibold text-text-primary"
+              className={MOVIE_TITLE_TEXT}
               numberOfLines={1}
             >
               {movie.name}

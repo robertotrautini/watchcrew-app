@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Animated, Pressable, StyleSheet, Text, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { DANGER_ICON_COLOR } from "@/components/ui/Button";
 import { Glass } from "@/components/ui/Glass";
@@ -98,10 +99,10 @@ export function ToastHost() {
   const [variant, setVariant] = useState<ToastVariant>("info");
   const [onPress, setOnPress] = useState<(() => void) | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const opacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(
-    new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y),
-  ).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [translateY] = useState(
+    () => new Animated.Value(TOAST_ENTRANCE_TRANSLATE_Y),
+  );
 
   useEffect(() => {
     const unsubscribe = subscribeToToasts(

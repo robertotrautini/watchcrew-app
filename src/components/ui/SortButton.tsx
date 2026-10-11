@@ -1,4 +1,5 @@
-import { Pressable, Text } from "react-native";
+import { Pressable } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { BUTTON_ICON_COLORS } from "@/components/ui/Button";
 import { Icon } from "@/components/ui/Icon";
@@ -23,7 +24,7 @@ export function SortButton({ testID, shortLabel, fullLabel, onPress }: SortButto
       className="min-h-touch-comfortable flex-1 flex-row items-center gap-2 rounded-lg border border-glass-border bg-white/10 px-3 active:bg-white/20"
     >
       <Icon name="sort" size="M" color={BUTTON_ICON_COLORS.secondary} />
-      <Text numberOfLines={1} className="flex-1 text-base font-medium text-text-primary">
+      <Text numberOfLines={1} className="flex-1 text-base font-sans-medium text-text-primary">
         {shortLabel}
       </Text>
       <Icon name="chevronDown" size="M" color={BUTTON_ICON_COLORS.secondary} />

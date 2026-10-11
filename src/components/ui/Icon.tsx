@@ -19,6 +19,8 @@ export const ICON_ROLES = {
   settings: "settings",
   options: "tune",
   sort: "sort",
+  sortAsc: "expand-less",
+  sortDesc: "expand-more",
   logout: "logout",
   join: "login",
   login: "login",
@@ -79,8 +81,8 @@ export const ICON_ROLES = {
 
 export type IconRole = keyof typeof ICON_ROLES;
 
-/** S: badges/inline (was 14-18), M: buttons/rows (was 20-28), L: posters/empty states (was 32-56). */
-export const ICON_SIZES = { S: 16, M: 24, L: 40 } as const;
+/** S: badges/inline (was 14-18), SM: table header icons, M: buttons/rows (was 20-28), L: posters/empty states (was 32-56). */
+export const ICON_SIZES = { XS: 14, S: 16, SM: 20, M: 24, L: 40 } as const;
 export type IconSize = keyof typeof ICON_SIZES;
 
 type IconProps = Omit<ComponentProps<typeof MaterialIcons>, "name" | "size"> & {

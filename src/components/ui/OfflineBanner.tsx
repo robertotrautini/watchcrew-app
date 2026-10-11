@@ -1,6 +1,6 @@
 import { onlineManager } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
-import { Text } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export const OFFLINE_BANNER_TEXT = "Offline – gespeicherte Daten werden angezeigt";

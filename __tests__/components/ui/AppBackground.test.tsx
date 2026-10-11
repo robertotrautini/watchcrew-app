@@ -2,7 +2,7 @@ import { render } from "@testing-library/react-native";
 import { Dimensions, StyleSheet } from "react-native";
 
 import { AppBackground } from "@/components/ui/AppBackground";
-import { BG_IMAGE_ASPECT, BG_IMAGE_OPACITY, backgroundLayout } from "@/lib/parallax";
+import { BG_IMAGE_ASPECT, backgroundLayout } from "@/lib/parallax";
 
 // Release-build regression: the backdrop must not depend on NativeWind
 // className resolution for its geometry (a zero-size image rendered as a flat
@@ -25,7 +25,7 @@ describe("AppBackground", () => {
     expect(transforms.some((t) => "translateY" in t)).toBe(false);
   });
 
-  it("renders the full-resolution image sharp (no blur), luminosity-dimmed", async () => {
+  it("renders the pre-composited (baked) full-resolution image sharp, no blend mode (perf)", async () => {
     const { getByTestId } = await render(<AppBackground />);
     const img = getByTestId("app-background-image");
     expect(img.props.contentFit ?? "cover").toBe("cover");
@@ -33,7 +33,8 @@ describe("AppBackground", () => {
     const style = StyleSheet.flatten(img.props.style);
     expect(style).toMatchObject({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 });
     const box = StyleSheet.flatten(getByTestId("app-background-parallax").props.style);
-    expect(box.opacity).toBeCloseTo(BG_IMAGE_OPACITY);
-    expect(box.mixBlendMode).toBe("luminosity");
+    // Dimming + greyscale are baked into cinema-bg-baked.jpg (scripts/generate-bg-assets.py).
+    expect(box.opacity).toBeUndefined();
+    expect(box.mixBlendMode).toBeUndefined();
   });
 });

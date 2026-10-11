@@ -586,4 +586,48 @@ describe("WatchlistScreen", () => {
     expect(getByText("Keine Treffer für „zzzzzz“.")).toBeTruthy();
     expect(queryByTestId("watchlist-empty")).toBeNull();
   });
+
+  describe("column-header sort (list mode)", () => {
+    const early = makeEntry({
+      id: "c1",
+      added_at: "2026-01-03T00:00:00Z",
+      movie: makeMovie({ id: "mc1", tmdb_id: 31, name: "Zebra", release_date: "2020-01-01" }),
+    });
+    const late = makeEntry({
+      id: "c2",
+      added_at: "2026-01-02T00:00:00Z",
+      movie: makeMovie({ id: "mc2", tmdb_id: 32, name: "Apfel", release_date: "2030-01-01" }),
+    });
+    const none = makeEntry({
+      id: "c3",
+      added_at: "2026-01-01T00:00:00Z",
+      movie: makeMovie({ id: "mc3", tmdb_id: 33, name: "Mango", release_date: null }),
+    });
+    const order = (nodes: { props: { testID?: string } }[]) =>
+      nodes.map((n) => n.props.testID?.replace("watchlist-list-row-", ""));
+
+    it("title and release columns cycle asc/desc/none; missing dates last; indicator shown", async () => {
+      setUpPreferencesStore("list");
+      setUpHappyPath([early, late, none]);
+      const WatchlistScreen = loadWatchlistScreen();
+      const { getAllByTestId, getByTestId, queryByTestId } = await render(<WatchlistScreen />);
+      const rows = () => order(getAllByTestId(/^watchlist-list-row-c/));
+      expect(rows()).toEqual(["c1", "c2", "c3"]); // panel sort: added desc
+
+      await fireEvent.press(getByTestId("watchlist-table-header-title"));
+      expect(rows()).toEqual(["c2", "c3", "c1"]);
+      expect(getByTestId("watchlist-table-header-title-sort-asc")).toBeTruthy();
+      await fireEvent.press(getByTestId("watchlist-table-header-title"));
+      expect(rows()).toEqual(["c1", "c3", "c2"]);
+      await fireEvent.press(getByTestId("watchlist-table-header-title"));
+      expect(rows()).toEqual(["c1", "c2", "c3"]);
+      expect(queryByTestId("watchlist-table-header-title-sort-desc")).toBeNull();
+
+      await fireEvent.press(getByTestId("watchlist-table-header-release"));
+      expect(rows()).toEqual(["c1", "c2", "c3"]);
+      await fireEvent.press(getByTestId("watchlist-table-header-release"));
+      expect(rows()).toEqual(["c2", "c1", "c3"]);
+      expect(getByTestId("watchlist-table-header-release").props.accessibilityState).toMatchObject({ selected: true });
+    });
+  });
 });

@@ -1,16 +1,13 @@
 import { useState } from "react";
-import {
-  Pressable,
-  Text,
-  View,
-  type NativeSyntheticEvent,
-  type TextLayoutEventData,
-} from "react-native";
+import { Pressable, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
+import { Text } from "@/components/ui/Text";
 
+import { SkeletonText } from "@/components/ui/Skeleton";
 import { shouldShowMoreToggle } from "@/lib/movieDetailLogic";
 
 const MAX_COLLAPSED_LINES = 3;
-const TEXT_CLASSNAME = "text-text-secondary";
+export const MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME = "text-text-secondary";
+const TEXT_CLASSNAME = MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME;
 
 /**
  * Movie overview text with a standard RN two-pass measurement "Mehr
@@ -25,13 +22,26 @@ const TEXT_CLASSNAME = "text-text-secondary";
  */
 export interface MovieDetailDescriptionProps {
   overview: string | null;
+  /** Live details still loading: three skeleton text lines while no overview is known. */
+  isLoading?: boolean;
 }
 
 export function MovieDetailDescription({
   overview,
+  isLoading = false,
 }: MovieDetailDescriptionProps) {
   const [measuredLineCount, setMeasuredLineCount] = useState(0);
   const [expanded, setExpanded] = useState(false);
+
+  if (overview == null && isLoading) {
+    return (
+      <SkeletonText
+        testID="movie-detail-description-skeleton"
+        textClassName={TEXT_CLASSNAME}
+        lines={MAX_COLLAPSED_LINES}
+      />
+    );
+  }
 
   if (overview == null) {
     return null;

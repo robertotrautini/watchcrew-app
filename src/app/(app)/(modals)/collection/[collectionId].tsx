@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { useCollection } from "@/hooks/useCollection";
@@ -70,8 +72,8 @@ export default function CollectionScreen() {
 
   if (collectionQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" testID="collection-screen">
-        <ActivityIndicator testID="collection-screen-loading" />
+      <View className="flex-1" testID="collection-screen">
+        <ListSkeleton testID="collection-screen-loading" />
       </View>
     );
   }
@@ -88,7 +90,7 @@ export default function CollectionScreen() {
 
   return (
     <View className="flex-1 px-4 pt-4" testID="collection-screen">
-      <Text className="mb-3 font-display text-xl text-text-primary">
+      <Text className="mb-3 font-title text-xl text-text-primary">
         {collectionQuery.data?.name ?? "Filmreihe"}
       </Text>
       <MovieGrid

@@ -1,6 +1,8 @@
 import { Icon } from "@/components/ui/Icon";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { Image } from "@/components/ui/Image";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
@@ -17,11 +19,21 @@ import type { TmdbCastMember, TmdbCrewMember } from "@/lib/movieDetailTypes";
  * standard RN pattern for "10 tappable names" — not mandated by the spec,
  * which left the exact layout open.
  */
+/** Shared (real content + skeleton) size/text tokens. */
+export const CAST_LABEL_CLASSNAME = "text-xs uppercase tracking-widest text-text-secondary";
+export const CAST_DIRECTOR_NAME_CLASSNAME = "text-base text-accent";
+export const CAST_DIRECTOR_BOX_CLASSNAME = "min-h-touch-comfortable justify-center";
+export const CAST_AVATAR_SIZE_CLASSNAME = "h-16 w-16";
+export const CAST_NAME_CLASSNAME = "mt-1 text-center text-xs text-accent";
+export const CAST_CHARACTER_CLASSNAME = "text-center text-[10px] text-text-secondary";
+
 export interface MovieDetailCastRowProps {
   director: TmdbCrewMember | null;
   cast: TmdbCastMember[];
   onDirectorPress: (personId: number) => void;
   onCastMemberPress: (personId: number) => void;
+  /** Credits still loading: skeleton director line / cast avatars where data is missing. */
+  isLoading?: boolean;
 }
 
 export function MovieDetailCastRow({
@@ -29,22 +41,67 @@ export function MovieDetailCastRow({
   cast,
   onDirectorPress,
   onCastMemberPress,
+  isLoading = false,
 }: MovieDetailCastRowProps) {
   return (
     <>
+      {!director && isLoading ? (
+        <View
+          testID="movie-detail-director-skeleton"
+          className="flex-row items-center gap-3 border-t border-accent-a30 pt-3"
+        >
+          <Text className={CAST_LABEL_CLASSNAME}>
+            Regie
+          </Text>
+          <View className={`${CAST_DIRECTOR_BOX_CLASSNAME} flex-1`}>
+            <SkeletonText
+              textClassName={CAST_DIRECTOR_NAME_CLASSNAME}
+              widthClassName="w-2/5"
+              className="w-full"
+            />
+          </View>
+        </View>
+      ) : null}
+
       {director ? (
         <View className="flex-row items-center gap-3 border-t border-accent-a30 pt-3">
-          <Text className="text-xs uppercase tracking-widest text-text-secondary">
+          <Text className={CAST_LABEL_CLASSNAME}>
             Regie
           </Text>
           <Pressable
             testID="movie-detail-director"
             accessibilityRole="button"
             onPress={() => onDirectorPress(director.id)}
-            className="min-h-touch-comfortable justify-center"
+            className={CAST_DIRECTOR_BOX_CLASSNAME}
           >
-            <Text className="text-base text-accent">{director.name}</Text>
+            <Text className={CAST_DIRECTOR_NAME_CLASSNAME}>{director.name}</Text>
           </Pressable>
+        </View>
+      ) : null}
+
+      {cast.length === 0 && isLoading ? (
+        <View
+          testID="movie-detail-cast-skeleton"
+          className="gap-2 border-y border-accent-a30 py-3"
+        >
+          <Text className={CAST_LABEL_CLASSNAME}>
+            Besetzung
+          </Text>
+          <View className="flex-row py-1">
+            {[0, 1, 2, 3, 4].map((index) => (
+              <View key={index} className="mr-3 w-20 items-center">
+                <Skeleton className={`${CAST_AVATAR_SIZE_CLASSNAME} rounded-full`} />
+                <SkeletonText
+                  textClassName={CAST_NAME_CLASSNAME}
+                  className="w-14"
+                />
+                <SkeletonText
+                  textClassName={CAST_CHARACTER_CLASSNAME}
+                  className="w-10"
+                />
+              </View>
+            ))}
+          </View>
         </View>
       ) : null}
 
@@ -53,7 +110,7 @@ export function MovieDetailCastRow({
           testID="movie-detail-cast-frame"
           className="gap-2 border-y border-accent-a30 py-3"
         >
-          <Text className="text-xs uppercase tracking-widest text-text-secondary">
+          <Text className={CAST_LABEL_CLASSNAME}>
             Besetzung
           </Text>
           <ScrollView
@@ -77,24 +134,24 @@ export function MovieDetailCastRow({
                     <Image
                       source={{ uri: photoUrl }}
                       accessibilityLabel={castMember.name}
-                      className="h-16 w-16 rounded-[32px] border-[1.5px] border-accent-a45 bg-card"
+                      className={`${CAST_AVATAR_SIZE_CLASSNAME} rounded-[32px] border-[1.5px] border-accent-a45 bg-card`}
                       contentFit="cover"
                     />
                   ) : (
-                    <View className="h-16 w-16 items-center justify-center rounded-full border-[1.5px] border-accent-a45 bg-card">
+                    <View className={`${CAST_AVATAR_SIZE_CLASSNAME} items-center justify-center rounded-full border-[1.5px] border-accent-a45 bg-card`}>
                       <Icon name="person" size="M" color="#888888" />
                     </View>
                   )}
                   <Text
                     numberOfLines={2}
-                    className="mt-1 text-center text-xs text-accent"
+                    className={CAST_NAME_CLASSNAME}
                   >
                     {castMember.name}
                   </Text>
                   {castMember.character ? (
                     <Text
                       numberOfLines={1}
-                      className="text-center text-[10px] text-text-secondary"
+                      className={CAST_CHARACTER_CLASSNAME}
                     >
                       {castMember.character}
                     </Text>

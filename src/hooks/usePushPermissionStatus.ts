@@ -23,6 +23,7 @@ export function usePushPermissionStatus(): PushPermissionStatus {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- async lookup; setState only runs after the await
     void refresh();
     const subscription = AppState.addEventListener("change", (next) => {
       if (next === "active") {

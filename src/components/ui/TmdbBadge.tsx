@@ -1,5 +1,6 @@
 import { Image } from "@/components/ui/Image";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 /**
  * Shared TMDB score badge: the real TMDB short logo (same asset the legacy
@@ -17,9 +18,13 @@ export interface TmdbBadgeProps {
   /** Overrides the score text testID (default `${testID}-value`). */
   valueTestID?: string;
   className?: string;
+  /** Logo only (table header). */
+  hideScore?: boolean;
+  /** Larger logo (sortable table header). */
+  largeLogo?: boolean;
 }
 
-export function TmdbBadge({ score, testID = "tmdb-badge", valueTestID, className = "" }: TmdbBadgeProps) {
+export function TmdbBadge({ score, testID = "tmdb-badge", valueTestID, className = "", hideScore = false, largeLogo = false }: TmdbBadgeProps) {
   const text = score != null ? score.toFixed(1) : "–";
   return (
     <View
@@ -28,10 +33,12 @@ export function TmdbBadge({ score, testID = "tmdb-badge", valueTestID, className
       accessibilityLabel={`TMDB Bewertung ${score != null ? text : "unbekannt"}`}
       className={`flex-row items-center gap-1.5 ${className}`.trim()}
     >
-      <Image testID={`${testID}-logo`} source={LOGO} contentFit="contain" className="h-3.5 w-8" />
-      <Text testID={valueTestID ?? `${testID}-value`} className="text-xs font-semibold text-white">
-        {text}
-      </Text>
+      <Image testID={`${testID}-logo`} source={LOGO} contentFit="contain" className={largeLogo ? "h-4 w-9" : "h-3.5 w-8"} />
+      {hideScore ? null : (
+        <Text testID={valueTestID ?? `${testID}-value`} className="text-xs font-sans-semibold text-white">
+          {text}
+        </Text>
+      )}
     </View>
   );
 }

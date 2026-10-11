@@ -3,6 +3,7 @@ import {
   BG_IMAGE_HEIGHT,
   BG_IMAGE_WIDTH,
   BG_PARALLAX_EDGE_INSET_DP,
+  BG_PARALLAX_TRAVEL_FRACTION,
   backgroundLayout,
   parallaxTranslateX,
   swipeTabProgress,
@@ -73,28 +74,30 @@ describe("tabPanFraction (evenly spread over N tabs)", () => {
   });
 });
 
-describe("parallaxTranslateX (edge inset)", () => {
+describe("parallaxTranslateX (centred, reduced travel)", () => {
   const slack = 926;
   const inset = BG_PARALLAX_EDGE_INSET_DP;
-  it("inset is 40 dp", () => {
-    expect(inset).toBe(40);
+  const travel = BG_PARALLAX_TRAVEL_FRACTION * (slack - 2 * inset);
+  it("travel fraction is 0.45 (was 1.0)", () => {
+    expect(BG_PARALLAX_TRAVEL_FRACTION).toBe(0.45);
   });
-  it("first tab: image left edge sits `inset` dp beyond the screen's left edge", () => {
-    expect(parallaxTranslateX(tabPanFraction(0, 3), slack)).toBeCloseTo(-inset);
-  });
-  it("last tab: image right edge sits `inset` dp beyond the screen's right edge", () => {
-    expect(parallaxTranslateX(tabPanFraction(2, 3), slack)).toBeCloseTo(-(slack - inset));
-  });
-  it("middle tab: still centred", () => {
+  it("middle tab: centred", () => {
     expect(parallaxTranslateX(tabPanFraction(1, 3), slack)).toBeCloseTo(-slack / 2);
   });
-  it.each([2, 3, 4])("N=%i: first -inset, last -(slack-inset), linear in between", (n) => {
-    expect(parallaxTranslateX(tabPanFraction(0, n), slack)).toBeCloseTo(-inset);
-    expect(parallaxTranslateX(tabPanFraction(n - 1, n), slack)).toBeCloseTo(-(slack - inset));
-    const step = (slack - 2 * inset) / (n - 1);
-    for (let i = 0; i < n; i++) expect(parallaxTranslateX(tabPanFraction(i, n), slack)).toBeCloseTo(-(inset + i * step));
+  it("first/last tab: equally far left/right of the centre", () => {
+    expect(parallaxTranslateX(0, slack)).toBeCloseTo(-slack / 2 + travel / 2);
+    expect(parallaxTranslateX(1, slack)).toBeCloseTo(-slack / 2 - travel / 2);
   });
-  it("small slack: inset is clamped to slack/2 (no inversion, centred)", () => {
+  it.each([2, 3, 4])("N=%i: linear in between and image always covers the screen", (n) => {
+    const step = travel / (n - 1);
+    for (let i = 0; i < n; i++) {
+      const x = parallaxTranslateX(tabPanFraction(i, n), slack);
+      expect(x).toBeCloseTo(-(slack / 2 - travel / 2 + i * step));
+      expect(x).toBeLessThanOrEqual(0);
+      expect(x).toBeGreaterThanOrEqual(-slack);
+    }
+  });
+  it("small slack: clamped and centred (no inversion)", () => {
     expect(parallaxTranslateX(0, 50)).toBeCloseTo(-25);
     expect(parallaxTranslateX(1, 50)).toBeCloseTo(-25);
     expect(parallaxTranslateX(0.5, 0)).toBeCloseTo(0);

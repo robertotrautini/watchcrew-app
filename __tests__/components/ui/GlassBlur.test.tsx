@@ -32,6 +32,30 @@ describe("GlassBlur with expo-blur available", () => {
   });
 });
 
+describe("GlassBlur cheap mode (lists)", () => {
+  it("renders a flat dark fill: no BlurView, no image, no tint layer", async () => {
+    const { GlassBlur } = require("@/components/ui/GlassBlur");
+    await render(
+      <GlassBlur testID="gb" cheap fallbackClassName="bg-bg-glass" blurClassName="bg-bg-card-blur">
+        <Text>inhalt</Text>
+      </GlassBlur>,
+    );
+    expect(screen.queryByTestId("glass-blur-view")).toBeNull();
+    expect(screen.queryByTestId("glass-blur-tint")).toBeNull();
+    const cls = screen.getByTestId("gb").props.className;
+    expect(cls).toContain("bg-bg-card-flat");
+    expect(cls).toContain("overflow-hidden");
+    expect(screen.getByText("inhalt")).toBeTruthy();
+  });
+
+  it("enabled={false} still wins and uses the plain fallback fill", async () => {
+    const { GlassBlur } = require("@/components/ui/GlassBlur");
+    await render(<GlassBlur testID="gb" cheap enabled={false} fallbackClassName="bg-bg-glass" />);
+    expect(screen.getByTestId("gb").props.className).toContain("bg-bg-glass");
+    expect(screen.getByTestId("gb").props.className).not.toContain("bg-bg-card-flat");
+  });
+});
+
 describe("GlassBlur with expo-blur native module missing", () => {
   it("falls back to the tinted translucent fill and keeps children", async () => {
     jest.resetModules();

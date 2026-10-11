@@ -1,9 +1,10 @@
-import { useContext, useEffect, useRef } from "react";
-import { Animated } from "react-native";
+import { useContext, useEffect, useRef, useState } from "react";
+import { Animated, View } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 
 import { TabSwitchContext } from "@/components/tabSwitchContext";
 import {
+  FADE_MAX_INDEX,
   computeStaggerDelayMs,
   ITEM_FADE_DURATION_MS,
   ITEM_FADE_EASING,
@@ -16,6 +17,9 @@ import {
  *   the active one (TabSwitchContext epoch bump) -- same duration, easing and
  *   per-index delay. Plain re-renders/refetches never replay.
  * - Reduce motion: no animation, item is shown at once.
+ * - Items with `index > FADE_MAX_INDEX` (beyond the first screen, or mounted
+ *   while scrolling a virtualized list) are plain views: no fade, no
+ *   TabSwitchContext subscription (no re-render and no animation on tab switch).
  */
 export interface FadeInItemProps {
   /** This item's position in the list -- feeds the stagger delay. */
@@ -27,10 +31,21 @@ export interface FadeInItemProps {
   replayTab?: string;
 }
 
-export function FadeInItem({ index, children, className, testID, replayTab }: FadeInItemProps) {
+export function FadeInItem(props: FadeInItemProps) {
+  if (props.index > FADE_MAX_INDEX) {
+    return (
+      <View testID={props.testID} className={props.className}>
+        {props.children}
+      </View>
+    );
+  }
+  return <FadingItem {...props} />;
+}
+
+function FadingItem({ index, children, className, testID, replayTab }: FadeInItemProps) {
   const reduceMotion = useReducedMotion();
   const { tab, epoch } = useContext(TabSwitchContext);
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
+  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
   const seenEpoch = useRef(epoch);
 
   function play() {

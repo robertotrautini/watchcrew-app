@@ -1,5 +1,6 @@
 import { Children, isValidElement, type ReactNode } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Glass } from "@/components/ui/Glass";
 import { cn } from "@/lib/utils";
@@ -21,7 +22,7 @@ export function SettingsGroup({ title, testID, children }: SettingsGroupProps) {
   const items = Children.toArray(children).filter(isValidElement);
   return (
     <View testID={testID} className="gap-2">
-      {title ? <Text className="px-1 font-display text-base text-accent-light">{title}</Text> : null}
+      {title ? <Text className="px-1 font-title text-base text-accent-light">{title}</Text> : null}
       <Glass>
         {items.map((item, index) => (
           <View

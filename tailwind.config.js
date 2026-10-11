@@ -36,6 +36,8 @@ module.exports = {
         "bg-tab-bar": "rgba(12,12,14,.96)",
         // Blurred variants (used on top of a real BlurView, see GlassBlur.tsx);
         // the opaque tokens above stay as the no-blur fallback.
+        // Flat dark list-item fill (GlassBlur `cheap`, no blur at all).
+        "bg-card-flat": "rgba(10,10,12,.95)",
         "bg-card-blur": "rgba(10,10,12,.62)",
         "bg-glass-strong-blur": "rgba(10,10,12,.72)",
         "bg-sheet-blur": "rgba(10,10,12,.76)",
@@ -79,9 +81,14 @@ module.exports = {
       fontFamily: {
         // Body text uses the system font stack — no entry needed here,
         // NativeWind/RN already default to the platform system font.
-        // Headings/brand use Playfair Display (see
-        // @expo-google-fonts/playfair-display loading in src/app/_layout.tsx).
-        display: ["PlayfairDisplay_400Regular", "serif"],
+        // Outfit: movie titles + headlines (see src/components/ui/movieTitle.ts)
+        sans: ["DMSans_400Regular", "sans-serif"],
+        "sans-medium": ["DMSans_500Medium", "sans-serif"],
+        "sans-semibold": ["DMSans_600SemiBold", "sans-serif"],
+        "sans-bold": ["DMSans_700Bold", "sans-serif"],
+        "sans-italic": ["DMSans_400Regular_Italic", "sans-serif"],
+        title: ["Outfit_600SemiBold", "sans-serif"],
+        "title-bold": ["Outfit_700Bold", "sans-serif"],
         "display-bold": ["PlayfairDisplay_700Bold", "serif"],
         "display-italic": ["PlayfairDisplay_400Regular_Italic", "serif"],
         "display-bold-italic": ["PlayfairDisplay_700Bold_Italic", "serif"],

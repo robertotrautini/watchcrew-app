@@ -1,183 +1,404 @@
-import { useParallaxScroll } from "@/components/parallaxContext";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
+import { memo } from "react";
+import { FlatList, Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
-import { DiaryEntryCard } from "@/components/movie/DiaryEntryCard";
+import {
+  DiaryEntryCard,
+  LIKE_HEART_COLOR,
+} from "@/components/movie/DiaryEntryCard";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
+import { useParallaxScroll } from "@/components/parallaxContext";
 import { FadeInItem } from "@/components/ui/FadeInItem";
-import { Glass } from "@/components/ui/Glass";
-import type { useTagebuchScreen } from "@/hooks/useTagebuchScreen";
-import { formatPlainDate, getYearFromDate } from "@/lib/dateFormat";
+import {
+  GlassTableHeader,
+  GlassTableHeaderCell,
+  GlassTableRow,
+  GlassTableHeaderIconCell,
+  TABLE_ICON_CELL,
+  TABLE_SCORE_CELL,
+  TABLE_SCORE_STRONG_CELL,
+  TABLE_TITLE_CELL,
+} from "@/components/ui/GlassTable";
+import { Icon } from "@/components/ui/Icon";
+import { TmdbBadge } from "@/components/ui/TmdbBadge";
+import type { ColumnSortState, DiaryColumn } from "@/lib/columnSort";
+import { isGridPlaceholder, padToFullRows, type GridPlaceholder } from "@/lib/gridPadding";
+import { formatPlainDate } from "@/lib/dateFormat";
 import { computeAverageRating, memberDisplayLabel } from "@/lib/diaryDisplay";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
+import type { DiaryViewMode } from "@/stores/usePreferencesStore";
 
-type Screen = ReturnType<typeof useTagebuchScreen>;
-
-function GridView({ screen }: { screen: Screen }) {
-  return (
-    <View className="flex-row flex-wrap gap-3">
-      {screen.visibleEntries.map((entry, index) => (
-        <FadeInItem
-          replayTab="tagebuch"
-          key={entry.id}
-          index={index}
-          testID={`tagebuch-entry-${entry.id}`}
-          className="w-[30%]"
-        >
-          <Pressable
-            testID={`tagebuch-entry-press-${entry.id}`}
-            accessibilityRole="button"
-            onPress={() => screen.openEntry(entry)}
-          >
-            <DiaryPosterTile
-              posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-              title={entry.movie.name}
-              starColor={screen.starColor}
-              averageRating={computeAverageRating(entry)}
-              liked={screen.ownRating(entry)?.liked === true}
-              tmdbScore={entry.movie.vote_average}
-            >
-              {screen.showTitlesInGrid ? (
-                <Text
-                  testID={`tagebuch-grid-title-${entry.id}`}
-                  className="text-xs text-text-primary"
-                  numberOfLines={1}
-                >
-                  {entry.movie.name}
-                </Text>
-              ) : null}
-            </DiaryPosterTile>
-          </Pressable>
-        </FadeInItem>
-      ))}
-    </View>
-  );
+/**
+ * Virtualized Tagebuch list (FlatList): only the rows near the viewport are
+ * mounted. Rows are memoized components that get primitive/stable props (no
+ * `screen` object), so a re-render of the screen hook (typing, filter panel,
+ * query status) does not re-render every row.
+ */
+export interface TagebuchEntryListProps {
+  entries: WatchlistEntry[];
+  mode: DiaryViewMode;
+  /** Current user id (own rating / seen date / like). */
+  userId: string | undefined;
+  starColor: string;
+  showTitlesInGrid: boolean;
+  groupMemberIds: string[];
+  displayNameById: Map<string, string>;
+  onOpenEntry: (entry: WatchlistEntry) => void;
+  /** Active header-cell sort (list mode only); `null` = none. */
+  columnSort: ColumnSortState<DiaryColumn> | null;
+  onSortColumn: (column: DiaryColumn) => void;
 }
 
-function ListView({ screen }: { screen: Screen }) {
-  const entries = screen.visibleEntries;
+const GRID_COLUMNS = 4;
+
+/**
+ * Virtualization tuning shared by all modes (counts are rows, not items).
+ * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
+ * too heavy. Cards/rows use the cheap glass (no BlurView per item), which is
+ * what makes a wider window affordable; clipping stays off (blanks on Android).
+ * See docs/performance-scroll-analysis.md "Nachtrag 2".
+ */
+const VIRTUALIZATION = {
+  windowSize: 9,
+  maxToRenderPerBatch: 6,
+  updateCellsBatchingPeriod: 30,
+  removeClippedSubviews: false,
+} as const;
+
+function keyOf(entry: WatchlistEntry): string {
+  return entry.id;
+}
+
+function keyOfGridItem(item: WatchlistEntry | GridPlaceholder): string {
+  return isGridPlaceholder(item) ? item.key : item.id;
+}
+
+/** Invisible cell completing the last grid row so tiles keep 1/3 width. */
+const GRID_PLACEHOLDER = <View className="flex-1" />;
+
+/** Row gap of the 4-column grid, equal to the column gap (gap-2). */
+function GridSeparator() {
+  return <View className="h-2" />;
+}
+
+function ItemSeparator() {
+  return <View className="h-3" />;
+}
+
+function findOwnRating(entry: WatchlistEntry, userId: string | undefined) {
+  return entry.ratings.find((r) => r.member_id === userId);
+}
+
+interface RowBaseProps {
+  entry: WatchlistEntry;
+  index: number;
+  userId: string | undefined;
+  onOpenEntry: (entry: WatchlistEntry) => void;
+}
+
+const GridRow = memo(function GridRow({
+  entry,
+  index,
+  userId,
+  starColor,
+  showTitlesInGrid,
+  onOpenEntry,
+}: RowBaseProps & { starColor: string; showTitlesInGrid: boolean }) {
   return (
-    <Glass className="overflow-hidden">
-      <View className="flex-row gap-2 border-b border-glass-border px-3 py-2">
-        <Text className="flex-1 text-xs text-text-secondary">Film</Text>
-        <Text className="w-14 text-xs text-text-secondary">Gesehen</Text>
-        <Text className="w-10 text-right text-xs text-text-secondary">Ø</Text>
-        <Text className="w-10 text-right text-xs text-text-secondary">TMDB</Text>
-      </View>
-      {entries.map((entry, entryIndex) => {
-        const ownSeenAt = screen.ownRating(entry)?.seen_at ?? null;
-        const average = computeAverageRating(entry);
-        return (
-          <Pressable
-            key={entry.id}
-            testID={`tagebuch-entry-${entry.id}`}
-            accessibilityRole="button"
-            onPress={() => screen.openEntry(entry)}
-            className={`flex-row items-center gap-2 px-3 py-3 ${
-              entryIndex < entries.length - 1
-                ? "border-b border-glass-border"
-                : ""
-            }`}
-          >
+    <FadeInItem
+      replayTab="tagebuch"
+      index={index}
+      testID={`tagebuch-entry-${entry.id}`}
+      className="flex-1"
+    >
+      <Pressable
+        testID={`tagebuch-entry-press-${entry.id}`}
+        accessibilityRole="button"
+        onPress={() => onOpenEntry(entry)}
+      >
+        <DiaryPosterTile
+          posterUrl={buildTmdbImageUrl(entry.movie.poster)}
+          title={entry.movie.name}
+          starColor={starColor}
+          averageRating={computeAverageRating(entry)}
+          liked={findOwnRating(entry, userId)?.liked === true}
+          tmdbScore={entry.movie.vote_average}
+        >
+          {showTitlesInGrid ? (
             <Text
-              testID={`tagebuch-list-title-${entry.id}`}
-              className="flex-1 font-display-bold text-accent-light"
+              testID={`tagebuch-grid-title-${entry.id}`}
+              className={`text-xs ${MOVIE_TITLE_TEXT}`}
               numberOfLines={1}
             >
               {entry.movie.name}
             </Text>
-            <Text
-              testID={`tagebuch-list-year-${entry.id}`}
-              className="w-14 text-sm text-text-secondary"
-            >
-              {ownSeenAt ? getYearFromDate(ownSeenAt) : "–"}
-            </Text>
-            <Text
-              testID={`tagebuch-list-average-${entry.id}`}
-              className="w-10 text-right text-sm font-semibold text-text-primary"
-            >
-              {average != null ? average.toFixed(1) : "–"}
-            </Text>
-            <Text
-              testID={`tagebuch-list-tmdb-${entry.id}`}
-              className="w-10 text-right text-sm text-text-secondary"
-            >
-              {entry.movie.vote_average != null
-                ? entry.movie.vote_average.toFixed(1)
-                : "–"}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </Glass>
+          ) : null}
+        </DiaryPosterTile>
+      </Pressable>
+    </FadeInItem>
+  );
+});
+
+function ListHeader({
+  starColor,
+  columnSort,
+  onSortColumn,
+}: {
+  starColor: string;
+  columnSort: ColumnSortState<DiaryColumn> | null;
+  onSortColumn: (column: DiaryColumn) => void;
+}) {
+  const stateOf = (column: DiaryColumn) =>
+    columnSort?.column === column ? columnSort.direction : null;
+  return (
+    <GlassTableHeader testID="tagebuch-table-header">
+      <GlassTableHeaderCell
+        testID="tagebuch-table-header-title"
+        className="flex-1"
+        accessibilityLabel="Film"
+        sortState={stateOf("title")}
+        onPress={() => onSortColumn("title")}
+      >
+        Film
+      </GlassTableHeaderCell>
+      <GlassTableHeaderIconCell
+        testID="tagebuch-table-header-like"
+        label="Favorit"
+        className={TABLE_ICON_CELL}
+        sortState={stateOf("liked")}
+        onPress={() => onSortColumn("liked")}
+      >
+        <Icon name="heart" size="SM" color={LIKE_HEART_COLOR} />
+      </GlassTableHeaderIconCell>
+      <GlassTableHeaderIconCell
+        testID="tagebuch-table-header-average"
+        label="Durchschnitt"
+        className={TABLE_SCORE_STRONG_CELL}
+        sortState={stateOf("average")}
+        onPress={() => onSortColumn("average")}
+      >
+        <Icon name="star" size="SM" color={starColor} />
+      </GlassTableHeaderIconCell>
+      <GlassTableHeaderIconCell
+        testID="tagebuch-table-header-tmdb"
+        label="TMDB"
+        className={TABLE_SCORE_CELL}
+        sortState={stateOf("tmdb")}
+        onPress={() => onSortColumn("tmdb")}
+      >
+        <TmdbBadge
+          testID="tagebuch-table-header-tmdb-logo"
+          score={null}
+          hideScore
+          largeLogo
+        />
+      </GlassTableHeaderIconCell>
+    </GlassTableHeader>
   );
 }
 
-function seenDateLabel(screen: Screen, entry: WatchlistEntry): string {
-  const ownSeenAt = screen.ownRating(entry)?.seen_at ?? null;
-  return ownSeenAt
-    ? `Gesehen am ${formatPlainDate(ownSeenAt, "Kein Datum")}`
-    : "Kein Datum";
-}
-
-function CardsView({ screen }: { screen: Screen }) {
+const ListRow = memo(function ListRow({
+  entry,
+  isLast,
+  userId,
+  onOpenEntry,
+}: Omit<RowBaseProps, "index"> & { isLast: boolean }) {
+  const liked = findOwnRating(entry, userId)?.liked === true;
+  const average = computeAverageRating(entry);
   return (
-    <>
-      {screen.visibleEntries.map((entry, index) => (
-        <FadeInItem
-          replayTab="tagebuch"
-          key={entry.id}
-          index={index}
-          testID={`tagebuch-entry-${entry.id}`}
-        >
-          <Pressable
-            testID={`tagebuch-entry-press-${entry.id}`}
-            accessibilityRole="button"
-            onPress={() => screen.openEntry(entry)}
-          >
-            <DiaryEntryCard
-              posterUrl={buildTmdbImageUrl(entry.movie.poster)}
-              title={entry.movie.name}
-              seenLabel={seenDateLabel(screen, entry)}
-              seenLabelTestID={`tagebuch-entry-seen-date-${entry.id}`}
-              starColor={screen.starColor}
-              averageRating={computeAverageRating(entry)}
-              liked={screen.ownRating(entry)?.liked === true}
-              tmdbScore={entry.movie.vote_average}
-              members={screen.groupMemberIds.map((memberId) => ({
-                id: memberId,
-                label: memberDisplayLabel(
-                  memberId,
-                  screen.displayNameById.get(memberId),
-                ),
-                rating:
-                  entry.ratings.find((r) => r.member_id === memberId)?.rating ??
-                  null,
-              }))}
-            />
-          </Pressable>
-        </FadeInItem>
-      ))}
-    </>
-  );
-}
-
-export function TagebuchEntryList({ screen }: { screen: Screen }) {
-  const parallaxScroll = useParallaxScroll();
-  const mode = screen.diaryViewMode;
-  return (
-    <ScrollView
-      {...parallaxScroll}
-      testID="tagebuch-entry-list"
-      contentContainerClassName="gap-3 px-4 pb-8 pt-3"
+    <GlassTableRow
+      testID={`tagebuch-entry-${entry.id}`}
+      isLast={isLast}
+      onPress={() => onOpenEntry(entry)}
     >
-      {mode === "grid" ? (
-        <GridView screen={screen} />
-      ) : mode === "list" ? (
-        <ListView screen={screen} />
-      ) : (
-        <CardsView screen={screen} />
+      <Text
+        testID={`tagebuch-list-title-${entry.id}`}
+        numberOfLines={1}
+        ellipsizeMode="tail"
+        className={TABLE_TITLE_CELL}
+      >
+        {entry.movie.name}
+      </Text>
+      <View className={TABLE_ICON_CELL}>
+        {liked ? (
+          <Icon
+            testID={`tagebuch-list-like-${entry.id}`}
+            name="heart"
+            size="S"
+            color={LIKE_HEART_COLOR}
+          />
+        ) : null}
+      </View>
+      <Text
+        testID={`tagebuch-list-average-${entry.id}`}
+        className={TABLE_SCORE_STRONG_CELL}
+      >
+        {average != null ? average.toFixed(1) : "–"}
+      </Text>
+      <Text
+        testID={`tagebuch-list-tmdb-${entry.id}`}
+        className={TABLE_SCORE_CELL}
+      >
+        {entry.movie.vote_average != null
+          ? entry.movie.vote_average.toFixed(1)
+          : "–"}
+      </Text>
+    </GlassTableRow>
+  );
+});
+
+const CardRow = memo(function CardRow({
+  entry,
+  index,
+  userId,
+  starColor,
+  groupMemberIds,
+  displayNameById,
+  onOpenEntry,
+}: RowBaseProps & {
+  starColor: string;
+  groupMemberIds: string[];
+  displayNameById: Map<string, string>;
+}) {
+  const own = findOwnRating(entry, userId);
+  const seenLabel = own?.seen_at
+    ? `Gesehen am ${formatPlainDate(own.seen_at, "Kein Datum")}`
+    : "Kein Datum";
+  return (
+    <FadeInItem
+      replayTab="tagebuch"
+      index={index}
+      testID={`tagebuch-entry-${entry.id}`}
+    >
+      <Pressable
+        testID={`tagebuch-entry-press-${entry.id}`}
+        accessibilityRole="button"
+        onPress={() => onOpenEntry(entry)}
+      >
+        <DiaryEntryCard
+          posterUrl={buildTmdbImageUrl(entry.movie.poster)}
+          title={entry.movie.name}
+          seenLabel={seenLabel}
+          seenLabelTestID={`tagebuch-entry-seen-date-${entry.id}`}
+          starColor={starColor}
+          averageRating={computeAverageRating(entry)}
+          liked={own?.liked === true}
+          tmdbScore={entry.movie.vote_average}
+          members={groupMemberIds.map((memberId) => ({
+            id: memberId,
+            label: memberDisplayLabel(memberId, displayNameById.get(memberId)),
+            rating:
+              entry.ratings.find((r) => r.member_id === memberId)?.rating ??
+              null,
+          }))}
+        />
+      </Pressable>
+    </FadeInItem>
+  );
+});
+
+export function TagebuchEntryList({
+  entries,
+  mode,
+  userId,
+  starColor,
+  showTitlesInGrid,
+  groupMemberIds,
+  displayNameById,
+  onOpenEntry,
+  columnSort,
+  onSortColumn,
+}: TagebuchEntryListProps) {
+  // Empty today (see parallaxContext); kept so any future scroll handler is
+  // spread onto the list unchanged (must stay a UI-thread worklet handler).
+  const parallaxScroll = useParallaxScroll();
+
+  if (mode === "grid") {
+    return (
+      <FlatList
+        {...parallaxScroll}
+        key="grid"
+        testID="tagebuch-entry-list"
+        data={padToFullRows(entries, GRID_COLUMNS)}
+        keyExtractor={keyOfGridItem}
+        numColumns={GRID_COLUMNS}
+        columnWrapperClassName="gap-2"
+        ItemSeparatorComponent={GridSeparator}
+        contentContainerClassName="px-4 pb-8 pt-3"
+        initialNumToRender={12}
+        {...VIRTUALIZATION}
+        renderItem={({ item, index }) =>
+          isGridPlaceholder(item) ? (
+            GRID_PLACEHOLDER
+          ) : (
+            <GridRow
+              entry={item}
+              index={index}
+              userId={userId}
+              starColor={starColor}
+              showTitlesInGrid={showTitlesInGrid}
+              onOpenEntry={onOpenEntry}
+            />
+          )
+        }
+      />
+    );
+  }
+
+  if (mode === "list") {
+    return (
+      <FlatList
+        {...parallaxScroll}
+        key="list"
+        testID="tagebuch-entry-list"
+        data={entries}
+        keyExtractor={keyOf}
+        ListHeaderComponent={
+          <ListHeader
+            starColor={starColor}
+            columnSort={columnSort}
+            onSortColumn={onSortColumn}
+          />
+        }
+        contentContainerClassName="px-4 pb-8 pt-3"
+        initialNumToRender={20}
+        {...VIRTUALIZATION}
+        renderItem={({ item, index }) => (
+          <ListRow
+            entry={item}
+            isLast={index === entries.length - 1}
+            userId={userId}
+            onOpenEntry={onOpenEntry}
+          />
+        )}
+      />
+    );
+  }
+
+  return (
+    <FlatList
+      {...parallaxScroll}
+      key="cards"
+      testID="tagebuch-entry-list"
+      data={entries}
+      keyExtractor={keyOf}
+      ItemSeparatorComponent={ItemSeparator}
+      contentContainerClassName="px-4 pb-8 pt-3"
+      initialNumToRender={8}
+      {...VIRTUALIZATION}
+      renderItem={({ item, index }) => (
+        <CardRow
+          entry={item}
+          index={index}
+          userId={userId}
+          starColor={starColor}
+          groupMemberIds={groupMemberIds}
+          displayNameById={displayNameById}
+          onOpenEntry={onOpenEntry}
+        />
       )}
-    </ScrollView>
+    />
   );
 }

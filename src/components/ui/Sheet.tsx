@@ -8,19 +8,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  Animated,
-  BackHandler,
-  Dimensions,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Animated, BackHandler, Dimensions, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -66,7 +55,7 @@ const SheetHostContext = createContext<SheetHostApi | null>(null);
  */
 export function SheetHost({ children }: { children?: ReactNode }) {
   const [nodes, setNodes] = useState<Record<string, ReactNode>>({});
-  const api = useRef<SheetHostApi>({
+  const [api] = useState<SheetHostApi>(() => ({
     set: (id, node) =>
       setNodes((prev) => {
         if (node == null) {
@@ -77,7 +66,7 @@ export function SheetHost({ children }: { children?: ReactNode }) {
         }
         return { ...prev, [id]: node };
       }),
-  }).current;
+  }));
   return (
     <SheetHostContext.Provider value={api}>
       {children}
@@ -124,7 +113,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
   // The overlay is hosted inside the calling screen, which may end above the
   // window bottom (tab bar): lift only by the part of the keyboard that really
   // overlaps the overlay (overlay bottom edge vs. keyboard top edge).
-  const slide = useRef(new Animated.Value(0)).current;
+  const [slide] = useState(() => new Animated.Value(0));
   const overlayRef = useRef<View>(null);
   const [overlayBottom, setOverlayBottom] = useState(windowHeight);
   useEffect(() => {
@@ -212,7 +201,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
               >
                 {title ? (
                   <View className="flex-row items-center justify-between border-b border-glass-border px-4 py-3">
-                    <Text className="font-display text-lg text-text-primary">
+                    <Text className="font-title text-lg text-text-primary">
                       {title}
                     </Text>
                     <Button

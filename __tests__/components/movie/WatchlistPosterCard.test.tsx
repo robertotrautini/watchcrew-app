@@ -29,6 +29,24 @@ function lookup(entries: Array<[number, boolean]> = []): StreamingAvailabilityLo
 
 describe("WatchlistPosterCard", () => {
   describe("card variant", () => {
+    it("ellipsizes title to 1 line with Outfit, accent", async () => {
+      const { getByTestId } = await render(
+        <WatchlistPosterCard
+          variant="card"
+          movie={makeMovie()}
+          streamingAvailability={lookup()}
+          ratedCount={0}
+          totalMembers={3}
+          now={NOW}
+        />,
+      );
+      const title = getByTestId("watchlist-poster-card-title");
+      expect(title.props.numberOfLines).toBe(1);
+      expect(title.props.ellipsizeMode).toBe("tail");
+      expect(title.props.className).toContain("font-title");
+      expect(title.props.className).toContain("text-accent-light");
+    });
+
     it("renders title, date badge, overview and TMDB score", async () => {
       const { getByTestId } = await render(
         <WatchlistPosterCard

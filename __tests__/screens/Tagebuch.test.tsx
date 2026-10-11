@@ -417,6 +417,27 @@ describe("TagebuchScreen", () => {
     });
   });
 
+  it("virtualizes the list: only a window of a long diary is mounted, in every view mode", async () => {
+    const many = Array.from({ length: 120 }, (_, i) =>
+      makeEntry({
+        id: `v${i}`,
+        movie: makeMovie({ tmdb_id: 1000 + i, name: `Film ${i}` }),
+        ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-01-10" })],
+      }),
+    );
+    for (const mode of ["cards", "grid", "list"] as const) {
+      loadPreferencesStore().setState({ diaryViewMode: mode });
+      mockHappyPath(many);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId, queryByTestId, unmount } = await render(<TagebuchScreen />);
+      expect(getByTestId("tagebuch-entry-list")).toBeTruthy();
+      expect(getByTestId("tagebuch-entry-v0")).toBeTruthy();
+      expect(queryByTestId("tagebuch-entry-v119")).toBeNull();
+      expect(getAllByTestId(/^tagebuch-entry-v\d+$/).length).toBeLessThan(60);
+      await unmount();
+    }
+  });
+
   it("list mode: separator only between rows, none after the last", async () => {
     loadPreferencesStore().setState({ diaryViewMode: "list" });
     const a = makeEntry({
@@ -497,6 +518,11 @@ describe("TagebuchScreen", () => {
 
       await fireEvent.press(getByTestId("tagebuch-view-mode-list"));
       expect(getByTestId(`tagebuch-list-title-${entry.id}`).props.children).toBe("Alpha");
+      expect(getByTestId("tagebuch-table-header-like").props.accessibilityLabel).toBe("Favorit");
+      expect(getByTestId("tagebuch-table-header-average").props.accessibilityLabel).toBe("Durchschnitt");
+      expect(getByTestId("tagebuch-table-header-tmdb").props.accessibilityLabel).toBe("TMDB");
+      expect(queryAllByTestId(`tagebuch-list-year-${entry.id}`)).toHaveLength(0);
+      expect(queryAllByTestId(`tagebuch-list-like-${entry.id}`)).toHaveLength(0);
     });
 
     it("persists the selected view mode via usePreferencesStore", async () => {
@@ -808,6 +834,135 @@ describe("TagebuchScreen", () => {
       expect(getByTestId("tagebuch-no-results")).toBeTruthy();
       expect(getByText("Keine Treffer für „zzzzzz“.")).toBeTruthy();
       expect(queryByTestId("tagebuch-empty")).toBeNull();
+    });
+  });
+
+  describe("default sort and column-header sort", () => {
+    const low = makeEntry({
+      id: "d-low",
+      movie: makeMovie({ tmdb_id: 21, name: "Beta", vote_average: 5 }),
+      ratings: [makeRating({ member_id: "u1", rating: 2, seen_at: "2026-03-01" })],
+    });
+    const high = makeEntry({
+      id: "d-high",
+      movie: makeMovie({ tmdb_id: 22, name: "Alpha", vote_average: 8 }),
+      ratings: [makeRating({ member_id: "u1", rating: 5, seen_at: "2026-01-01" })],
+    });
+    const mid = makeEntry({
+      id: "d-mid",
+      movie: makeMovie({ tmdb_id: 23, name: "Gamma", vote_average: null }),
+      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-02-01", liked: true })],
+    });
+    const order = (nodes: { props: { testID?: string } }[]) =>
+      nodes.map((n) => n.props.testID);
+
+    it("defaults to average rating descending (not 'Mein Tagebuch'), stored 'my_diary' still works", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([low, high, mid]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId, unmount } = await render(<TagebuchScreen />);
+      expect(order(getAllByTestId(/^tagebuch-entry-d-/))).toEqual([
+        "tagebuch-entry-d-high",
+        "tagebuch-entry-d-mid",
+        "tagebuch-entry-d-low",
+      ]);
+      expect(getByTestId("tagebuch-sort-button")).toBeTruthy();
+      await unmount();
+
+      loadPreferencesStore().setState({
+        listFilters: { "diary:g1": { sortOption: "my_diary", genreIds: [], year: null, providerCategories: ["flatrate"] } },
+      });
+      const second = await render(<TagebuchScreen />);
+      // my_diary: by own seen_at desc
+      expect(order(second.getAllByTestId(/^tagebuch-entry-d-/))).toEqual([
+        "tagebuch-entry-d-low",
+        "tagebuch-entry-d-mid",
+        "tagebuch-entry-d-high",
+      ]);
+    });
+
+    it("header tap cycles asc -> desc -> panel sort, with indicator and a11y state", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([low, high, mid]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+      const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
+      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
+      expect(getByTestId("tagebuch-table-header-title-sort-asc")).toBeTruthy();
+      expect(getByTestId("tagebuch-table-header-title").props.accessibilityState).toMatchObject({ selected: true });
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
+      expect(rows()).toEqual(["tagebuch-entry-d-mid", "tagebuch-entry-d-low", "tagebuch-entry-d-high"]);
+      expect(getByTestId("tagebuch-table-header-title-sort-desc")).toBeTruthy();
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
+      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
+      expect(queryByTestId("tagebuch-table-header-title-sort-asc")).toBeNull();
+      expect(queryByTestId("tagebuch-table-header-title-sort-desc")).toBeNull();
+    });
+
+    it("TMDB / heart / average columns sort; null TMDB stays last", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([low, high, mid]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId } = await render(<TagebuchScreen />);
+      const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-tmdb"));
+      expect(rows()).toEqual(["tagebuch-entry-d-low", "tagebuch-entry-d-high", "tagebuch-entry-d-mid"]);
+      await fireEvent.press(getByTestId("tagebuch-table-header-tmdb"));
+      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-like"));
+      await fireEvent.press(getByTestId("tagebuch-table-header-like"));
+      expect(rows()[0]).toBe("tagebuch-entry-d-mid");
+
+      await fireEvent.press(getByTestId("tagebuch-table-header-average"));
+      await fireEvent.press(getByTestId("tagebuch-table-header-average"));
+      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
+    });
+
+    it("column sort is not persisted and resets when the screen goes away", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([low, high, mid]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const first = await render(<TagebuchScreen />);
+      await fireEvent.press(first.getByTestId("tagebuch-table-header-title"));
+      expect(loadPreferencesStore().getState().listFilters).toEqual({});
+      await first.unmount();
+
+      const second = await render(<TagebuchScreen />);
+      expect(second.queryByTestId("tagebuch-table-header-title-sort-asc")).toBeNull();
+    });
+  });
+
+  describe("grid layout", () => {
+    it("tiles fill equal cells (flex-1, no fixed width), constant gap, symmetric padding, last row padded", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "grid" });
+      const entries = [1, 2, 3, 4, 5].map((n) =>
+        makeEntry({
+          id: `gr${n}`,
+          movie: makeMovie({ tmdb_id: 50 + n, name: `G${n}` }),
+          ratings: [makeRating({ member_id: "u1", rating: 3 })],
+        }),
+      );
+      mockHappyPath(entries);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId } = await render(<TagebuchScreen />);
+
+      const tiles = getAllByTestId(/^tagebuch-entry-gr\d$/);
+      expect(tiles).toHaveLength(5);
+      for (const tile of tiles) {
+        expect(tile.props.className).toContain("flex-1");
+        expect(tile.props.className).not.toMatch(/w-\[/);
+      }
+      const list = getByTestId("tagebuch-entry-list");
+      expect(list.props.columnWrapperClassName).toBe("gap-2");
+      expect(list.props.contentContainerClassName).toContain("px-4");
+      // 5 entries + 3 invisible placeholders = 2 full rows of 4
+      expect(list.props.data).toHaveLength(8);
     });
   });
 });

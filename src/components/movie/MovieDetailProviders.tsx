@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { Image } from "@/components/ui/Image";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { shouldShowAllProvidersToggle } from "@/lib/movieDetailLogic";
@@ -10,6 +12,11 @@ import type {
 } from "@/lib/movieDetailTypes";
 
 const PREVIEW_COUNT = 3;
+
+/** Shared (real content + skeleton) tokens. */
+export const PROVIDER_HEADER_CLASSNAME = "text-sm font-sans-semibold text-text-primary";
+export const PROVIDER_LOGO_CLASSNAME = "h-6 w-6";
+export const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
 
 /**
  * Renders each provider's name, with its small TMDB logo (w92) in front when
@@ -24,6 +31,8 @@ const PREVIEW_COUNT = 3;
  */
 export interface MovieDetailProvidersProps {
   providers: TmdbMovieProviders | null;
+  /** Live details still loading: header + logo/name skeleton row. */
+  isLoading?: boolean;
 }
 
 interface FlatProvider extends TmdbProviderRef {
@@ -56,8 +65,29 @@ function groupBySection(
   return grouped;
 }
 
-export function MovieDetailProviders({ providers }: MovieDetailProvidersProps) {
+export function MovieDetailProviders({
+  providers,
+  isLoading = false,
+}: MovieDetailProvidersProps) {
   const [expanded, setExpanded] = useState(false);
+
+  if (providers == null && isLoading) {
+    return (
+      <View testID="movie-detail-providers-skeleton" className="gap-2">
+        <View className="gap-2 py-1">
+          <SkeletonText textClassName={PROVIDER_HEADER_CLASSNAME} className="w-20" />
+          <View className="flex-row flex-wrap gap-x-3 gap-y-2">
+            {[0, 1].map((index) => (
+              <View key={index} className="flex-row items-center gap-1.5">
+                <Skeleton className={`${PROVIDER_LOGO_CLASSNAME} rounded-md`} />
+                <SkeletonText textClassName={PROVIDER_NAME_CLASSNAME} className="w-20" />
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
 
   if (providers == null) {
     return null;
@@ -91,7 +121,7 @@ export function MovieDetailProviders({ providers }: MovieDetailProvidersProps) {
         }
         return (
           <View key={section} className="gap-2 py-1">
-            <Text className="text-sm font-semibold text-text-primary">
+            <Text className={PROVIDER_HEADER_CLASSNAME}>
               {SECTION_LABELS[section]}
             </Text>
             <View className="flex-row flex-wrap gap-x-3 gap-y-2">
@@ -107,12 +137,12 @@ export function MovieDetailProviders({ providers }: MovieDetailProvidersProps) {
                         uri: buildTmdbImageUrl(item.logo_path, "w92") as string,
                       }}
                       contentFit="cover"
-                      className="h-6 w-6 rounded-md"
+                      className={`${PROVIDER_LOGO_CLASSNAME} rounded-md`}
                     />
                   ) : null}
                   <Text
                     testID={`movie-detail-provider-${globalIndexByProviderId.get(item.provider_id)}`}
-                    className="text-text-secondary"
+                    className={PROVIDER_NAME_CLASSNAME}
                   >
                     {item.provider_name}
                   </Text>

@@ -8,7 +8,6 @@ import Animated, {
 
 import { useParallaxValues } from "@/components/parallaxContext";
 import {
-  BG_IMAGE_OPACITY,
   backgroundLayout,
   parallaxTranslateX,
   tabPanFraction,
@@ -16,15 +15,17 @@ import {
 
 /**
  * App-wide legacy backdrop: the ORIGINAL legacy photo (assets/images/
- * cinema-bg.jpg, 1920x1280 colour, not re-encoded) behind everything, rendered
- * ONCE in the root layout; screens have transparent backgrounds. Legacy look
- * (greyscale + dim) comes from a luminosity blend at BG_IMAGE_OPACITY over the
- * dark app background, so the pixels themselves stay untouched and sharp.
+ * cinema-bg.jpg, 1920x1280 colour, kept untouched as the source) behind
+ * everything, rendered ONCE in the root layout; screens have transparent
+ * backgrounds. Legacy look (greyscale + dim = luminosity blend at 0.6 over
+ * #0a0a0a) is PRE-COMPOSITED into assets/images/cinema-bg-baked.jpg
+ * (scripts/generate-bg-assets.py, same resolution, sharp): no runtime
+ * mixBlendMode / opacity layer (offscreen layer + blend on every frame).
  *
  * Framing: photo height = 100% of the screen height (no zoom, no vertical
  * overscan, no vertical parallax). Horizontal parallax only: first tab =
- * translateX -BG_PARALLAX_EDGE_INSET_DP, last tab = -(slack - inset), evenly
- * interpolated, middle centred; the position follows the swipe live (tabProgress is
+ * translateX = centre + travel/2, last = centre - travel/2 (BG_PARALLAX_TRAVEL_FRACTION
+ * of the full travel, see parallax.ts), evenly interpolated, middle centred; the position follows the swipe live (tabProgress is
  * written by TabSwipeView / the route sync on the UI thread). Reduce-motion:
  * centred, static.
  *
@@ -67,15 +68,13 @@ export function AppBackground() {
             top: layout.top,
             width: layout.boxWidth,
             height: layout.boxHeight,
-            opacity: BG_IMAGE_OPACITY,
-            mixBlendMode: "luminosity",
           },
           animatedStyle,
         ]}
       >
         <Image
           testID="app-background-image"
-          source={require("../../../assets/images/cinema-bg.jpg")}
+          source={require("../../../assets/images/cinema-bg-baked.jpg")}
           contentFit="cover"
           style={StyleSheet.absoluteFill}
           accessible={false}

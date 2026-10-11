@@ -1,6 +1,9 @@
+import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { Icon } from "@/components/ui/Icon";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
+import { SkeletonText } from "@/components/ui/Skeleton";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
 
 /**
@@ -13,6 +16,9 @@ import { TmdbBadge } from "@/components/ui/TmdbBadge";
  * Fixed heart color, same spec value as StarRating.tsx's LIKE_HEART_COLOR —
  * never swapped by the active group theme.
  */
+/** Title text classes (real title and its skeleton share them). */
+export const MOVIE_DETAIL_TITLE_TEXT_CLASSNAME = `text-2xl ${MOVIE_TITLE_FONT}`;
+
 const LIKE_HEART_COLOR = "#e05c6e";
 
 export interface MovieDetailTitleRowProps {
@@ -24,6 +30,8 @@ export interface MovieDetailTitleRowProps {
   liked: boolean;
   onToggleLike: () => void;
   isTogglingLike?: boolean;
+  /** No title known yet (no stored movie, live details pending): skeleton bar instead of the title. */
+  isLoading?: boolean;
 }
 
 export function MovieDetailTitleRow({
@@ -33,18 +41,28 @@ export function MovieDetailTitleRow({
   liked,
   onToggleLike,
   isTogglingLike = false,
+  isLoading = false,
 }: MovieDetailTitleRowProps) {
   return (
     <View
       testID="movie-detail-title-row"
       className="flex-row flex-wrap items-center justify-center gap-2 px-2"
     >
-      <Text
-        testID="movie-detail-title"
-        className="shrink text-center font-display-bold text-2xl text-accent-light"
-      >
-        {title}
-      </Text>
+      {isLoading ? (
+        <SkeletonText
+          testID="movie-detail-title-skeleton"
+          textClassName={MOVIE_DETAIL_TITLE_TEXT_CLASSNAME}
+          widthClassName="w-56"
+          className="w-56"
+        />
+      ) : (
+        <Text
+          testID="movie-detail-title"
+          className={`shrink text-center ${MOVIE_DETAIL_TITLE_TEXT_CLASSNAME} text-accent-light`}
+        >
+          {title}
+        </Text>
+      )}
 
       {voteAverage != null ? (
         <TmdbBadge

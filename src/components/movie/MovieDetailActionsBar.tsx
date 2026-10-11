@@ -1,6 +1,8 @@
 import { Fragment, useState } from "react";
 import { showToast } from "@/lib/toast";
-import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import { Spinner } from "@/components/ui/Spinner";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -12,16 +14,13 @@ import {
   DANGER_SURFACE_CLASSNAME,
   DANGER_TEXT_CLASSNAME,
 } from "@/components/ui/Button";
-import { DateField } from "@/components/ui/DateField";
 import { GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
 import { Sheet } from "@/components/ui/Sheet";
 import {
   useAddToWatchlist,
   useDeleteWatchlistEntry,
-  useSetReleaseDateOverride,
 } from "@/hooks/useMovieDetailMutations";
 import type { ActionButtonId } from "@/lib/movieDetailLogic";
-import { formatDateForInput } from "@/lib/ratingLogic";
 import {
   navigateToCollection,
   navigateToSimilarMovies,
@@ -58,12 +57,6 @@ export interface MovieDetailActionsBarProps {
   activeGroupId?: string;
   currentUserId?: string;
   collectionId?: number;
-  /** Which screen opened the detail; "watchlist" makes "Bearbeiten" open the entry edit sheet. */
-  source?: "watchlist" | "diary";
-  /** Effective release date (ISO) of this group's entry, shown/preselected in the edit sheet. */
-  releaseDate?: string | null;
-  /** True when the entry carries its own per-group date (enables the reset-to-TMDB-date button). */
-  hasReleaseDateOverride?: boolean;
   /** "bewerten" (watchlist context) / "bearbeiten" (diary context) -- see the module comment above. */
   onOpenRatingDialog?: (
     watchlistEntryId: string,
@@ -155,7 +148,7 @@ function ActionIconButton({
       }${loading ? " opacity-50" : ""}`}
     >
       {loading ? (
-        <ActivityIndicator testID={`${testID}-loading-indicator`} />
+        <Spinner testID={`${testID}-loading-indicator`} />
       ) : (
         <Icon
           name={ACTION_ICONS[id]}
@@ -182,15 +175,10 @@ export function MovieDetailActionsBar({
   activeGroupId,
   currentUserId,
   collectionId,
-  source,
-  releaseDate = null,
-  hasReleaseDateOverride = false,
   onOpenRatingDialog,
   onDirectRateEntryCreated,
 }: MovieDetailActionsBarProps) {
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
-  const [editSheetVisible, setEditSheetVisible] = useState(false);
-  const releaseDateMutation = useSetReleaseDateOverride();
 
   const deleteMutation = useDeleteWatchlistEntry();
   // Shared between "zur_watchlist" and "direkt_bewerten": both buttons call
@@ -221,18 +209,6 @@ export function MovieDetailActionsBar({
         },
       },
     );
-  }
-
-  function saveReleaseDate(nextReleaseDate: string | null) {
-    if (!watchlistEntryId || !groupId) {
-      return;
-    }
-    releaseDateMutation.mutate({
-      watchlistEntryId,
-      groupId,
-      releaseDate: nextReleaseDate,
-    });
-    setEditSheetVisible(false);
   }
 
   function handleAddToWatchlist() {
@@ -306,14 +282,8 @@ export function MovieDetailActionsBar({
               if (!watchlistEntryId) {
                 return;
               }
-              // Watchlist entries are unrated: "Bearbeiten" edits the entry
-              // itself (release date only). Diary entries keep the rating dialog.
-              if (source === "watchlist") {
-                if (groupId) {
-                  setEditSheetVisible(true);
-                }
-                return;
-              }
+              // Diary only: watchlist entries edit their release date via the
+              // meta row's date line instead (no "bearbeiten" button there).
               onOpenRatingDialog?.(watchlistEntryId, "diary");
             }}
           />
@@ -387,31 +357,6 @@ export function MovieDetailActionsBar({
           ))}
         </View>
       )}
-      <Sheet
-        visible={editSheetVisible}
-        onClose={() => setEditSheetVisible(false)}
-        title="Eintrag bearbeiten"
-      >
-        <View testID="movie-detail-edit-sheet" className="gap-3">
-          <Text className="text-sm text-text-secondary">Erscheinungsdatum</Text>
-          <DateField
-            testID="movie-detail-release-date-field"
-            valueIso={releaseDate}
-            displayText={formatDateForInput(releaseDate)}
-            placeholder="Datum wählen"
-            onChangeIso={saveReleaseDate}
-          />
-          {hasReleaseDateOverride ? (
-            <Button
-              testID="movie-detail-release-date-reset"
-              label="Auf TMDB-Datum zurücksetzen"
-              icon="reset"
-              variant="secondary"
-              onPress={() => saveReleaseDate(null)}
-            />
-          ) : null}
-        </View>
-      </Sheet>
       <Sheet
         visible={deleteSheetVisible}
         onClose={() => setDeleteSheetVisible(false)}

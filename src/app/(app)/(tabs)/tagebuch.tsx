@@ -1,4 +1,6 @@
-import { ActivityIndicator, Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
@@ -22,10 +24,11 @@ export default function TagebuchScreen() {
     return (
       <SafeAreaView
         edges={["top"]}
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="tagebuch-screen"
       >
-        <ActivityIndicator testID="tagebuch-loading" />
+        <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
+        <ListSkeleton testID="tagebuch-loading" />
       </SafeAreaView>
     );
   }
@@ -70,7 +73,18 @@ export default function TagebuchScreen() {
           </Text>
         </View>
       ) : (
-        <TagebuchEntryList screen={screen} />
+        <TagebuchEntryList
+          entries={screen.visibleEntries}
+          mode={screen.diaryViewMode}
+          userId={screen.userId}
+          starColor={screen.starColor}
+          showTitlesInGrid={screen.showTitlesInGrid}
+          groupMemberIds={screen.groupMemberIds}
+          displayNameById={screen.displayNameById}
+          onOpenEntry={screen.openEntry}
+          columnSort={screen.columnSort}
+          onSortColumn={screen.toggleColumn}
+        />
       )}
 
       <TagebuchSortSheet

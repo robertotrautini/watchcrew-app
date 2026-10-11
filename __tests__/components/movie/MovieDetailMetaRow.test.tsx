@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { MovieDetailMetaRow } from "@/components/movie/MovieDetailMetaRow";
 
@@ -44,5 +44,41 @@ describe("MovieDetailMetaRow", () => {
     expect(getByTestId("movie-detail-meta-row")).toBeTruthy();
     expect(queryByTestId("movie-detail-runtime")).toBeNull();
     expect(queryByTestId("movie-detail-release-date")).toBeNull();
+  });
+
+  it("keeps the release date a plain, non-pressable text without onEditReleaseDate", async () => {
+    const { queryByTestId } = await render(
+      <MovieDetailMetaRow runtimeLabel={null} releaseInfo={{ label: "Kino", date: "12.03.2024" }} />,
+    );
+    expect(queryByTestId("movie-detail-release-date-edit")).toBeNull();
+  });
+
+  it("makes the release date a tappable button with edit icon when onEditReleaseDate is given", async () => {
+    const onEdit = jest.fn();
+    const { getByTestId } = await render(
+      <MovieDetailMetaRow
+        runtimeLabel={null}
+        releaseInfo={{ label: "Kino", date: "12.03.2024" }}
+        onEditReleaseDate={onEdit}
+      />,
+    );
+    const edit = getByTestId("movie-detail-release-date-edit");
+    expect(edit.props.accessibilityRole).toBe("button");
+    expect(edit.props.accessibilityLabel).toBe("Erscheinungsdatum ändern");
+    expect(getByTestId("movie-detail-release-date").props.children).toBe("Kino 12.03.2024");
+    await fireEvent.press(edit);
+    expect(onEdit).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows a tappable 'Kein Datum' placeholder when there is no date but onEditReleaseDate is given", async () => {
+    const onEdit = jest.fn();
+    const { getByTestId } = await render(
+      <MovieDetailMetaRow runtimeLabel="2h" releaseInfo={null} onEditReleaseDate={onEdit} />,
+    );
+    const edit = getByTestId("movie-detail-release-date-edit");
+    expect(edit.props.accessibilityLabel).toBe("Erscheinungsdatum ändern");
+    expect(getByTestId("movie-detail-release-date").props.children).toBe("Kein Datum");
+    await fireEvent.press(edit);
+    expect(onEdit).toHaveBeenCalledTimes(1);
   });
 });

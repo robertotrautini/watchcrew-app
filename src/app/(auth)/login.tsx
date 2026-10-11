@@ -1,11 +1,6 @@
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { Link, useRouter } from "expo-router";
 
 import { Button } from "@/components/ui/Button";

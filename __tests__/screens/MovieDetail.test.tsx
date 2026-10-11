@@ -1,5 +1,5 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
-import { render } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 // M6 part 2a: minimal smoke test for the Movie-Detail-Overlay route file,
 // following the precedent set by __tests__/screens/Collection.test.tsx /
@@ -36,6 +36,7 @@ const mockUseMovieDetail = jest.fn();
 const mockUseToggleLike = jest.fn();
 const mockUseDeleteWatchlistEntry = jest.fn();
 const mockUseAddToWatchlist = jest.fn();
+const mockSetReleaseDateMutate = jest.fn();
 
 jest.mock("@/hooks/useCurrentUserId", () => require("../helpers/mockCurrentUser").currentUserIdModule());
 jest.mock("@/hooks/useActiveGroup", () => ({
@@ -59,7 +60,7 @@ jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useToggleLike: mockUseToggleLike,
   useDeleteWatchlistEntry: mockUseDeleteWatchlistEntry,
   useAddToWatchlist: mockUseAddToWatchlist,
-  useSetReleaseDateOverride: () => ({ mutate: jest.fn(), isPending: false }),
+  useSetReleaseDateOverride: () => ({ mutate: mockSetReleaseDateMutate, isPending: false }),
 }));
 
 // M7 consolidation (Item 2): this screen now renders the real `RatingDialog`
@@ -308,6 +309,17 @@ describe("MovieDetailScreen", () => {
       expect(queryByTestId("movie-detail-action-erscheinungsdatum")).toBeNull();
     });
 
+    it("no group context: the release date is not tappable", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockLiveDetails();
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, queryByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-release-date")).toBeTruthy();
+      expect(queryByTestId("movie-detail-release-date-edit")).toBeNull();
+    });
+
     it("formats an ISO-datetime release date as DD.MM.YYYY", async () => {
       mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
       mockLiveDetails();
@@ -465,14 +477,8 @@ describe("MovieDetailScreen", () => {
       expect(getByText("Bewertung bearbeiten")).toBeTruthy();
     });
 
-    it("'bearbeiten' (watchlist context) opens the entry edit sheet, not the rating dialog", async () => {
-      mockUseLocalSearchParams.mockReturnValue({
-        tmdbId: "42",
-        groupId: "group-1",
-        source: "watchlist",
-        watchlistEntryId: "entry-1",
-      });
-      mockUseGroupWatchlist.mockReturnValue({
+    function watchlistEntries() {
+      return {
         data: {
           entries: [
             {
@@ -500,16 +506,110 @@ describe("MovieDetailScreen", () => {
           ],
           streamingAvailability: new Map(),
         },
+      };
+    }
+
+    it("watchlist context: no 'bearbeiten' button; tapping the date opens the entry edit sheet, not the rating dialog", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "watchlist",
+        watchlistEntryId: "entry-1",
       });
+      mockUseGroupWatchlist.mockReturnValue(watchlistEntries());
 
       const MovieDetailScreen = loadMovieDetailScreen();
       const { getByTestId, getByText, queryByTestId } = await render(<MovieDetailScreen />);
 
-      await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
+      expect(queryByTestId("movie-detail-action-bearbeiten")).toBeNull();
+      expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
+
+      await fireEvent.press(getByTestId("movie-detail-release-date-edit"));
 
       expect(queryByTestId("rating-dialog")).toBeNull();
       expect(getByText("Eintrag bearbeiten")).toBeTruthy();
       expect(getByTestId("movie-detail-release-date-field")).toBeTruthy();
+    });
+
+    function undatedWatchlistEntries() {
+      const base = watchlistEntries();
+      base.data.entries[0].movie.release_date = null as unknown as string;
+      return base;
+    }
+
+    it("watchlist context without any date: shows 'Kein Datum' placeholder, tap opens the sheet, picking saves the date", async () => {
+      mockSetReleaseDateMutate.mockClear();
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "watchlist",
+        watchlistEntryId: "entry-1",
+      });
+      mockUseGroupWatchlist.mockReturnValue(undatedWatchlistEntries());
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, getByText } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-release-date").props.children).toBe("Kein Datum");
+      await fireEvent.press(getByTestId("movie-detail-release-date-edit"));
+      expect(getByText("Eintrag bearbeiten")).toBeTruthy();
+
+      await fireEvent.press(getByTestId("movie-detail-release-date-field"));
+      await fireEvent(
+        getByTestId("movie-detail-release-date-field-picker"),
+        "change",
+        { type: "set" },
+        new Date(2027, 2, 5),
+      );
+      expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
+        watchlistEntryId: "entry-1",
+        groupId: "group-1",
+        releaseDate: "2027-03-05",
+      });
+    });
+
+    it("diary context without any date: no date line and no 'Kein Datum'", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "diary",
+        watchlistEntryId: "entry-1",
+      });
+      mockUseGroupWatchlist.mockReturnValue(undatedWatchlistEntries());
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { queryByTestId, queryByText } = await render(<MovieDetailScreen />);
+
+      expect(queryByTestId("movie-detail-release-date")).toBeNull();
+      expect(queryByTestId("movie-detail-release-date-edit")).toBeNull();
+      expect(queryByText("Kein Datum")).toBeNull();
+    });
+
+    it("no group context without any date: nothing rendered", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
+      mockUseMovieDetail.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { queryByTestId, queryByText } = await render(<MovieDetailScreen />);
+
+      expect(queryByTestId("movie-detail-release-date")).toBeNull();
+      expect(queryByText("Kein Datum")).toBeNull();
+    });
+
+    it("diary context: the release date is not tappable", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "42",
+        groupId: "group-1",
+        source: "diary",
+        watchlistEntryId: "entry-1",
+      });
+      mockUseGroupWatchlist.mockReturnValue(watchlistEntries());
+
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, queryByTestId } = await render(<MovieDetailScreen />);
+
+      expect(getByTestId("movie-detail-release-date")).toBeTruthy();
+      expect(queryByTestId("movie-detail-release-date-edit")).toBeNull();
     });
   });
 });

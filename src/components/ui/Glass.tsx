@@ -6,8 +6,9 @@ import { cn } from "@/lib/utils";
 /**
  * Legacy "glassmorphism" surface: translucent dark fill + single flat 1px faint white
  * border + rounded corners. Large panels (toast, bars, tab bar) get real blur
- * via GlassBlur (expo-blur) with the tinted fill as fallback; cards/rows stay
- * plain tinted fills (performance). See docs/interim-decisions.md "Echter Blur". Shared by Card, Toast and similar surfaces.
+ * via GlassBlur (expo-blur) with the tinted fill as fallback; cards/rows in
+ * scrolling lists pass `cheap` (static pre-blurred image + tint, no live
+ * BlurView, see GlassBlur). See docs/interim-decisions.md "Echter Blur". Shared by Card, Toast and similar surfaces.
  */
 export type GlassVariant = "default" | "strong" | "panel";
 
@@ -65,6 +66,8 @@ export const GLASS_TAB_BAR_BLUR_STYLE = {
 export interface GlassProps extends ViewProps {
   onPress?: (event: GestureResponderEvent) => void;
   variant?: GlassVariant;
+  /** Pre-blurred static image instead of a live BlurView; use for items of scrolling lists. */
+  cheap?: boolean;
 }
 
 const GLASS_VARIANT_FILLS: Record<
@@ -76,10 +79,11 @@ const GLASS_VARIANT_FILLS: Record<
   panel: { fallback: GLASS_PANEL_FALLBACK_FILL, blur: GLASS_PANEL_BLUR_FILL },
 };
 
-export function Glass({ variant = "default", className, ...rest }: GlassProps) {
+export function Glass({ variant = "default", className, cheap, ...rest }: GlassProps) {
   {
     return (
       <GlassBlur
+        cheap={cheap}
         className={cn(GLASS_CLASSNAMES[variant], className)}
         fallbackClassName={GLASS_VARIANT_FILLS[variant].fallback}
         blurClassName={GLASS_VARIANT_FILLS[variant].blur}

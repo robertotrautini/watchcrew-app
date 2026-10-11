@@ -3,6 +3,7 @@ import { useMemo } from "react";
 
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
+import { useColumnSort } from "@/hooks/useColumnSort";
 import { useEntryFilters } from "@/hooks/useEntryFilters";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
@@ -10,6 +11,10 @@ import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import { deriveGenreNamesById } from "@/lib/diaryDisplay";
+import {
+  sortWatchlistByColumn,
+  type WatchlistColumn,
+} from "@/lib/columnSort";
 import { deriveReleaseYears, getDistinctGenreIds } from "@/lib/entryFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
 import {
@@ -60,6 +65,8 @@ export function useWatchlistScreen() {
     "added",
   );
   const { sortOption } = filters;
+  // Header-cell sort (local, resets on blur); re-orders the panel result.
+  const { columnSort, toggleColumn } = useColumnSort<WatchlistColumn>();
 
   const isLoading =
     userGroupsQuery.isLoading ||
@@ -131,8 +138,12 @@ export function useWatchlistScreen() {
   ]);
 
   const searchedEntries = useMemo(
-    () => searchEntries(sortedEntries, filters.searchQuery),
-    [sortedEntries, filters.searchQuery],
+    () =>
+      sortWatchlistByColumn(
+        searchEntries(sortedEntries, filters.searchQuery),
+        columnSort,
+      ),
+    [sortedEntries, filters.searchQuery, columnSort],
   );
 
   function openEntry(entry: WatchlistEntry) {
@@ -162,6 +173,8 @@ export function useWatchlistScreen() {
     yearPillValues,
     providersLoading: providersQuery.isLoading,
     searchedEntries,
+    columnSort,
+    toggleColumn,
     openEntry,
   };
 }

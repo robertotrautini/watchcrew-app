@@ -23,7 +23,7 @@ describe("Icon", () => {
   });
 
   it("defines the S/M/L size tokens", () => {
-    expect(ICON_SIZES).toEqual({ S: 16, M: 24, L: 40 });
+    expect(ICON_SIZES).toEqual({ XS: 14, S: 16, SM: 20, M: 24, L: 40 });
   });
 
   it("renders the role's glyph at the token size, default M", async () => {

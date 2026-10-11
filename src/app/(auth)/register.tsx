@@ -1,13 +1,8 @@
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
@@ -106,7 +101,7 @@ export default function RegisterScreen() {
         <Brand />
         <Glass variant="strong" className="items-stretch gap-4 p-5">
           <Text
-            className="text-center font-display text-2xl text-text-primary"
+            className="text-center font-title text-2xl text-text-primary"
             testID="register-success-heading"
           >
             Bestätige deine E-Mail
@@ -141,7 +136,7 @@ export default function RegisterScreen() {
     >
       <Brand />
       <Glass variant="strong" className="gap-4 p-5">
-        <Text className="font-display text-2xl text-text-primary">
+        <Text className="font-title text-2xl text-text-primary">
           Registrieren
         </Text>
 

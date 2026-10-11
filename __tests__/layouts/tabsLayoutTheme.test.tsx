@@ -7,7 +7,7 @@ jest.mock("expo-router/js-tabs", () => {
     mockTabsProps(props);
     return actualReact.createElement(actualReact.Fragment, null, props.children);
   };
-  Tabs.Screen = () => null;
+  Tabs.Screen = function TabsScreen() { return null; };
   return { Tabs };
 });
 // Gesture handler needs its native module; the swipe wrapper is covered by

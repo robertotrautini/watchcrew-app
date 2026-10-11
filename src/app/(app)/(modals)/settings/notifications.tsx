@@ -1,13 +1,8 @@
 import { useMemo } from "react";
+import { Spinner } from "@/components/ui/Spinner";
 import { useParallaxScroll } from "@/components/parallaxContext";
-import {
-  ActivityIndicator,
-  Linking,
-  Platform,
-  ScrollView,
-  Text,
-  View,
-} from "react-native";
+import { Linking, Platform, ScrollView, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
@@ -49,7 +44,7 @@ function GroupPushToggleRow({
 
   return isLoading ? (
     <View className="min-h-touch-comfortable items-center justify-center">
-      <ActivityIndicator testID={`settings-notifications-loading-${groupId}`} />
+      <Spinner testID={`settings-notifications-loading-${groupId}`} />
     </View>
   ) : (
     <SettingsToggleRow

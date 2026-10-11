@@ -12,7 +12,7 @@
 export const BG_IMAGE_WIDTH = 1920;
 export const BG_IMAGE_HEIGHT = 1280;
 export const BG_IMAGE_ASPECT = BG_IMAGE_WIDTH / BG_IMAGE_HEIGHT;
-/** Legacy look: colour photo, luminosity blend (= greyscale) over the dark app background at this opacity. */
+/** Legacy look: luminosity blend over the dark app background at this opacity; now baked into cinema-bg-baked.jpg (scripts/generate-bg-assets.py, keep both in sync). */
 export const BG_IMAGE_OPACITY = 0.6;
 export const TAB_PAN_DURATION_MS = 600;
 /**
@@ -21,6 +21,14 @@ export const TAB_PAN_DURATION_MS = 600;
  * visible and the motion is less extreme. ~140 physical px on a 3.5x phone.
  */
 export const BG_PARALLAX_EDGE_INSET_DP = 40;
+/**
+ * TUNE HERE: share of the former travel (slack - 2*inset, ~844 dp on a 411x890
+ * dp phone) the photo moves from first to last tab. Was 1.0 (full travel);
+ * now 0.45 (~380 dp). The photo stays centred: the middle tab sits at
+ * -slack/2 and the motion extends equally to both sides (+-travel/2), so the
+ * edges never become visible (|translateX| stays within [0, slack]).
+ */
+export const BG_PARALLAX_TRAVEL_FRACTION = 0.45;
 
 export interface BackgroundLayout {
   boxWidth: number;
@@ -61,11 +69,16 @@ export function tabPanFraction(index: number, count: number): number {
   return Math.min(Math.max(index / (count - 1), 0), 1);
 }
 
-/** Horizontal translate: fraction 0 = -inset, fraction 1 = -(slackX - inset), inset clamped to slackX/2. */
+/**
+ * Horizontal translate, centred: fraction 0.5 = -slackX/2; fraction 0 / 1 =
+ * centre -/+ travel/2 with travel = BG_PARALLAX_TRAVEL_FRACTION * (slackX - 2*inset),
+ * inset clamped to slackX/2. Always within [-slackX, 0] (image covers the screen).
+ */
 export function parallaxTranslateX(fraction: number, slackX: number): number {
   "worklet";
   const inset = Math.min(BG_PARALLAX_EDGE_INSET_DP, Math.max(slackX, 0) / 2);
-  return -(inset + fraction * (slackX - 2 * inset));
+  const travel = BG_PARALLAX_TRAVEL_FRACTION * (slackX - 2 * inset);
+  return -(slackX / 2 - travel / 2 + fraction * travel);
 }
 
 /** Fractional tab index while dragging: one screen width of drag = one tab, clamped to the tab range. */

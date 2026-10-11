@@ -92,15 +92,22 @@ describe("SortButton", () => {
 });
 
 describe("ViewModeToggle segments", () => {
-  it("each segment is a 48x48 touch box with label and selected state", async () => {
+  it("each segment is an identical 40x40 cell, hitSlop reaches 44x48, with label and selected state", async () => {
     const { getByTestId } = await render(
       <ViewModeToggle value="grid" onChange={jest.fn()} testID="vm" buttonTestID={(m) => `vm-${m}`} />,
     );
     for (const mode of ["cards", "grid", "list"]) {
       const seg = getByTestId(`vm-${mode}`);
-      expect(seg.props.className).toContain("h-12 w-12");
+      expect(seg.props.className).toContain("h-10 w-10");
+      expect(seg.props.hitSlop).toEqual({ top: 4, bottom: 4, left: 2, right: 2 });
       expect(seg.props.accessibilityLabel).toBeTruthy();
+      expect(getByTestId(`vm-${mode}-segment`).props.className).toContain("h-10 w-10");
     }
+    const pill = getByTestId("vm").props.className;
+    expect(pill).toContain("h-12");
+    expect(pill).toContain("gap-1");
+    expect(pill).toContain("p-[3px]");
+    expect(pill).toContain("items-center");
     expect(getByTestId("vm-grid").props.accessibilityState).toEqual({ selected: true });
     expect(getByTestId("vm-list").props.accessibilityState).toEqual({ selected: false });
   });

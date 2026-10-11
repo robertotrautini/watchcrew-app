@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
@@ -73,8 +75,8 @@ export default function SimilarMoviesScreen() {
 
   if (similarMoviesQuery.isLoading || userGroupsQuery.isLoading) {
     return (
-      <View className="flex-1 items-center justify-center" testID="similar-movies-screen">
-        <ActivityIndicator testID="similar-movies-screen-loading" />
+      <View className="flex-1" testID="similar-movies-screen">
+        <ListSkeleton testID="similar-movies-screen-loading" />
       </View>
     );
   }

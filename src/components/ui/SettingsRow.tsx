@@ -2,7 +2,8 @@ import { DANGER_ICON_COLOR, DANGER_PRESSED_CLASSNAME, DANGER_TEXT_CLASSNAME } fr
 import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import type { ReactNode } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { cn } from "@/lib/utils";
 

@@ -1,5 +1,6 @@
 import { Icon, type IconRole } from "@/components/ui/Icon";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { cn } from "@/lib/utils";
 

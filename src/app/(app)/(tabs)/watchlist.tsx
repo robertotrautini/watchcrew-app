@@ -1,5 +1,8 @@
 import { useRouter } from "expo-router";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { Spinner } from "@/components/ui/Spinner";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
@@ -24,13 +27,11 @@ export default function WatchlistScreen() {
     return (
       <SafeAreaView
         edges={["top"]}
-        className="flex-1 items-center justify-center"
+        className="flex-1"
         testID="watchlist-screen"
       >
-        <ActivityIndicator testID="watchlist-loading" />
-        <Text className="mt-2 text-text-secondary">
-          Watchlist wird geladen…
-        </Text>
+        <AppHeader title="Watchlist" settingsTestID="watchlist-settings-button" />
+        <ListSkeleton testID="watchlist-loading" />
       </SafeAreaView>
     );
   }
@@ -68,7 +69,7 @@ export default function WatchlistScreen() {
           className="flex-1 items-center justify-center px-8"
           testID="watchlist-providers-loading"
         >
-          <ActivityIndicator />
+          <Spinner />
           <Text className="mt-2 text-text-secondary">
             Streaming-Daten werden geladen…
           </Text>
@@ -102,6 +103,8 @@ export default function WatchlistScreen() {
           totalMembers={screen.totalMembers}
           showTitlesInGrid={screen.showTitlesInGrid}
           onOpenEntry={screen.openEntry}
+          columnSort={screen.columnSort}
+          onSortColumn={screen.toggleColumn}
         />
       )}
 

@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Sheet } from "@/components/ui/Sheet";
 import type { SortOptionItem } from "@/lib/entryFilters";
@@ -42,7 +43,7 @@ export function TagebuchSortSheet({
             <Text
               className={
                 sortOption === option.key
-                  ? "font-semibold text-accent"
+                  ? "font-sans-semibold text-accent"
                   : "text-text-primary"
               }
             >

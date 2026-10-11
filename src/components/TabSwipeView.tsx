@@ -31,10 +31,12 @@ export function TabSwipeView({ visibleTabs, children }: { visibleTabs: readonly 
 
   const snapBack = useCallback(() => {
     if (parallax) {
-      parallax.tabProgress.value = withTiming(startIndex, {
-        duration: TAB_PAN_DURATION_MS,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-      });
+      parallax.tabProgress.set(
+        withTiming(startIndex, {
+          duration: TAB_PAN_DURATION_MS,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+        }),
+      );
     }
   }, [parallax, startIndex]);
 
@@ -56,7 +58,7 @@ export function TabSwipeView({ visibleTabs, children }: { visibleTabs: readonly 
       .failOffsetY([-SWIPE_FAIL_OFFSET_Y, SWIPE_FAIL_OFFSET_Y])
       .onUpdate((e) => {
         "worklet";
-        if (progress) progress.value = swipeTabProgress(startIndex, e.translationX, width, count);
+        if (progress) progress.set(swipeTabProgress(startIndex, e.translationX, width, count));
       })
       .onEnd((e) => {
         "worklet";

@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Text, TextInput } from "react-native";
+import { KeyboardAvoidingView, Platform } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
@@ -55,7 +56,7 @@ export default function ForgotPasswordScreen() {
     >
       <Brand />
       <Glass variant="strong" className="gap-4 p-5">
-        <Text className="font-display text-2xl text-text-primary">
+        <Text className="font-title text-2xl text-text-primary">
           Passwort vergessen?
         </Text>
 

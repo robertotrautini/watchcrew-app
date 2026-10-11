@@ -21,12 +21,14 @@ export function useParallaxRouteSync(tabIndex: number | null, tabCount: number, 
   const ctx = useContext(ParallaxContext);
   useEffect(() => {
     if (!ctx) return;
-    ctx.tabCount.value = tabCount;
+    ctx.tabCount.set(tabCount);
     if (tabIndex != null) {
-      ctx.tabProgress.value = withTiming(tabIndex, {
-        duration: TAB_PAN_DURATION_MS,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-      });
+      ctx.tabProgress.set(
+        withTiming(tabIndex, {
+          duration: TAB_PAN_DURATION_MS,
+          easing: Easing.bezier(0.4, 0, 0.2, 1),
+        }),
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeKey, tabCount]);

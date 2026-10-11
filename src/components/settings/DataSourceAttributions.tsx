@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
 
@@ -36,7 +37,7 @@ export const ATTRIBUTIONS: AttributionEntry[] = [
 export function DataSourceAttributions() {
   return (
     <View testID="settings-attributions" className="gap-2">
-      <Text className="px-1 font-display text-base text-accent-light">Datenquellen</Text>
+      <Text className="px-1 font-title text-base text-accent-light">Datenquellen</Text>
       {ATTRIBUTIONS.map((entry) => (
         <Pressable
           key={entry.key}

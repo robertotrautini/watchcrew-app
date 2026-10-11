@@ -1,15 +1,10 @@
 import { useRouter } from "expo-router";
+import { ListSkeleton } from "@/components/ui/ListSkeleton";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { useState } from "react";
 import { KeyboardInsetView } from "@/components/ui/KeyboardInsetView";
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { Chip } from "@/components/ui/Chip";
@@ -276,7 +271,7 @@ export default function AddMovieScreen() {
     isError: boolean,
   ) {
     if (isLoading) {
-      return <ActivityIndicator testID="add-movie-person-loading" />;
+      return <ListSkeleton rows={3} testID="add-movie-person-loading" />;
     }
     if (isError) {
       return (
@@ -315,7 +310,7 @@ export default function AddMovieScreen() {
     isError: boolean,
   ) {
     if (isLoading) {
-      return <ActivityIndicator testID="add-movie-company-loading" />;
+      return <ListSkeleton rows={3} testID="add-movie-company-loading" />;
     }
     if (isError) {
       return (
@@ -386,7 +381,7 @@ export default function AddMovieScreen() {
 
           <View className="mt-3 flex-1">
             {movieSearchQuery.isLoading ? (
-              <ActivityIndicator testID="add-movie-film-loading" />
+              <ListSkeleton rows={3} testID="add-movie-film-loading" />
             ) : movieSearchQuery.isError ? (
               <Text testID="add-movie-film-error" className="text-danger">
                 Filmsuche fehlgeschlagen.
@@ -449,7 +444,7 @@ export default function AddMovieScreen() {
               />
               <View className="mt-3 flex-1">
                 {personFilmographyQuery.isLoading ? (
-                  <ActivityIndicator testID="add-movie-person-filmography-loading" />
+                  <ListSkeleton rows={3} testID="add-movie-person-filmography-loading" />
                 ) : personFilmographyQuery.isError ? (
                   <Text
                     testID="add-movie-person-filmography-error"
@@ -509,7 +504,7 @@ export default function AddMovieScreen() {
               />
               <View className="mt-3 flex-1">
                 {studioFilmographyQuery.isLoading ? (
-                  <ActivityIndicator testID="add-movie-studio-loading" />
+                  <ListSkeleton rows={3} testID="add-movie-studio-loading" />
                 ) : studioFilmographyQuery.isError ? (
                   <Text testID="add-movie-studio-error" className="text-danger">
                     Studio-Filmografie konnte nicht geladen werden.
@@ -563,7 +558,7 @@ export default function AddMovieScreen() {
         title="Erscheinungsdatum fehlt"
       >
         <Text className="mb-3 text-text-primary">
-          Für "{pendingItem?.title}" ist kein Erscheinungsdatum bekannt. Bitte
+          Für &quot;{pendingItem?.title}&quot; ist kein Erscheinungsdatum bekannt. Bitte
           gib eins ein, um fortzufahren.
         </Text>
         <DateField

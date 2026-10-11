@@ -2,7 +2,8 @@ import { Icon } from "@/components/ui/Icon";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
@@ -14,6 +15,7 @@ import { MovieDetailDescription } from "@/components/movie/MovieDetailDescriptio
 import { MovieDetailGenreTags } from "@/components/movie/MovieDetailGenreTags";
 import { MovieDetailMetaRow } from "@/components/movie/MovieDetailMetaRow";
 import { MovieDetailPosterTrailer } from "@/components/movie/MovieDetailPosterTrailer";
+import { MovieDetailReleaseDateSheet } from "@/components/movie/MovieDetailReleaseDateSheet";
 import { MovieDetailProviders } from "@/components/movie/MovieDetailProviders";
 import { MovieDetailRatingsSection } from "@/components/movie/MovieDetailRatingsSection";
 import { MovieDetailTitleRow } from "@/components/movie/MovieDetailTitleRow";
@@ -167,6 +169,11 @@ export default function MovieDetailScreen() {
 
   const toggleLikeMutation = useToggleLike();
 
+  // Structure first: header/poster/action bar render from whatever exists (stored
+  // movie / route JSON); only the parts still missing while the live query loads
+  // show skeleton placeholders.
+  const isDetailLoading = movieDetailQuery.isLoading;
+
   // Stored movie (DB row / instant-paint JSON) wins; the live TMDB `details`
   // payload fills in when the movie isn't stored yet (e.g. opened straight
   // from a search result, which carries only `tmdbId`). "Film" stays the
@@ -183,6 +190,13 @@ export default function MovieDetailScreen() {
   // Per-group override (watchlist_entries.release_date_override) wins over every
   // TMDB-derived date, including the German cinema/digital date.
   const releaseDateOverride = watchlistEntry?.release_date_override ?? null;
+  // Release-date line is tappable (-> edit sheet) only in watchlist + group context.
+  const [releaseDateSheetVisible, setReleaseDateSheetVisible] = useState(false);
+  const canEditReleaseDate =
+    hasGroupContext &&
+    source === "watchlist" &&
+    Boolean(groupId) &&
+    Boolean(watchlistEntryId);
   const releaseInfo =
     releaseDateOverride != null
       ? { label: "Erscheinungsdatum", date: releaseDateOverride }
@@ -224,8 +238,10 @@ export default function MovieDetailScreen() {
 
   // Two NEW decision points not pre-specified anywhere upstream — flagged
   // explicitly in the hand-off report for user confirmation.
+  // Captured once per mount (impure Date.now() must not run during render).
+  const [nowMs] = useState(() => Date.now());
   const isReleased =
-    releaseInfo != null && new Date(releaseInfo.date).getTime() <= Date.now();
+    releaseInfo != null && new Date(releaseInfo.date).getTime() <= nowMs;
   const isOnStreaming =
     (movieDetailQuery.data?.providers?.flatrate.length ?? 0) > 0;
 
@@ -358,6 +374,7 @@ export default function MovieDetailScreen() {
                 liked={liked}
                 onToggleLike={handleToggleLike}
                 isTogglingLike={toggleLikeMutation.isPending}
+                isLoading={isDetailLoading && !storedMovie && !liveDetails}
               />
 
               <MovieDetailMetaRow
@@ -370,9 +387,15 @@ export default function MovieDetailScreen() {
                       }
                     : null
                 }
+                isLoading={isDetailLoading}
+                onEditReleaseDate={
+                  canEditReleaseDate
+                    ? () => setReleaseDateSheetVisible(true)
+                    : undefined
+                }
               />
 
-              <MovieDetailGenreTags genres={genres} />
+              <MovieDetailGenreTags genres={genres} isLoading={isDetailLoading} />
 
               {source === "diary" ? (
                 <MovieDetailRatingsSection
@@ -383,6 +406,7 @@ export default function MovieDetailScreen() {
               ) : null}
 
               <MovieDetailCastRow
+                isLoading={isDetailLoading}
                 director={movieDetailQuery.data?.credits?.director ?? null}
                 cast={movieDetailQuery.data?.credits?.cast ?? []}
                 onDirectorPress={(personId) =>
@@ -393,9 +417,13 @@ export default function MovieDetailScreen() {
                 }
               />
 
-              <MovieDetailDescription overview={overview} />
+              <MovieDetailDescription
+                overview={overview}
+                isLoading={isDetailLoading}
+              />
 
               <MovieDetailProviders
+                isLoading={isDetailLoading}
                 providers={movieDetailQuery.data?.providers ?? null}
               />
             </View>
@@ -434,14 +462,20 @@ export default function MovieDetailScreen() {
               activeGroupId={activeGroupId}
               currentUserId={currentUserId}
               collectionId={collectionId}
-              source={source}
-              releaseDate={releaseInfo?.date ?? null}
-              hasReleaseDateOverride={releaseDateOverride != null}
               onOpenRatingDialog={handleOpenRatingDialog}
               onDirectRateEntryCreated={handleDirectRateEntryCreated}
             />
           </SafeAreaView>
         </GlassBlur>
+
+        <MovieDetailReleaseDateSheet
+          visible={releaseDateSheetVisible}
+          onClose={() => setReleaseDateSheetVisible(false)}
+          groupId={groupId}
+          watchlistEntryId={watchlistEntryId}
+          releaseDate={releaseInfo?.date ?? null}
+          hasReleaseDateOverride={releaseDateOverride != null}
+        />
 
         <RatingDialog
           visible={ratingDialogVisible}

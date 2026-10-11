@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
@@ -39,7 +40,7 @@ export function MovieDetailRatingsSection({
         onPress={() => setExpanded((prev) => !prev)}
         className="min-h-touch-comfortable flex-row items-center justify-between"
       >
-        <Text className="text-base font-semibold text-text-primary">
+        <Text className="text-base font-sans-semibold text-text-primary">
           Bewertungen
         </Text>
         <Icon

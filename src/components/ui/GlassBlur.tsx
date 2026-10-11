@@ -71,7 +71,18 @@ export interface GlassBlurProps extends ViewProps {
   onPress?: (event: GestureResponderEvent) => void;
   /** Set false to force the fallback (e.g. unsupported contexts). */
   enabled?: boolean;
+  /**
+   * Flat dark glass for items of scrolling lists: NO BlurView and no image.
+   * A strongly darkened near-opaque fill (`bg-bg-card-flat`, 95 %) so content
+   * stays readable on any background; border/rounding come from className.
+   * (A pre-blurred image per item was tried and rejected: it did not match
+   * the real photo behind the cards.)
+   */
+  cheap?: boolean;
 }
+
+/** Fill of `cheap` surfaces; token in tailwind.config.js. */
+export const GLASS_FLAT_FILL = "bg-bg-card-flat";
 
 export function GlassBlur({
   className,
@@ -80,13 +91,21 @@ export function GlassBlur({
   intensity = GLASS_BLUR_INTENSITY,
   tint = "dark",
   enabled = true,
+  cheap = false,
   children,
   onPress,
   ...rest
 }: GlassBlurProps) {
   const Root = (onPress ? Pressable : View) as typeof View;
   const rootProps = onPress ? { onPress, ...rest } : rest;
-  const BlurView = enabled ? BlurViewImpl : null;
+  const BlurView = enabled && !cheap ? BlurViewImpl : null;
+  if (cheap && enabled) {
+    return (
+      <Root className={cn("overflow-hidden", className, GLASS_FLAT_FILL)} {...rootProps}>
+        {children}
+      </Root>
+    );
+  }
   if (BlurView == null) {
     return (
       <Root className={cn(className, fallbackClassName)} {...rootProps}>

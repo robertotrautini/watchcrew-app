@@ -1,5 +1,7 @@
+import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
@@ -167,6 +169,7 @@ export function RatingDialog({
     if (!visible) {
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
     setRating(ownRating?.rating ?? null);
     setLiked(ownRating?.liked ?? false);
     setSeenAtMode(initialSeenAtMode(ownRating));
@@ -279,7 +282,7 @@ export function RatingDialog({
   return (
     <Sheet visible={visible} onClose={onClose} title={SHEET_TITLES[mode]}>
       <View testID="rating-dialog" className="gap-4">
-        <Text className="font-display-bold text-lg text-accent-light">
+        <Text className={`text-lg ${MOVIE_TITLE_FONT} text-accent-light`}>
           {movieTitle}
         </Text>
 

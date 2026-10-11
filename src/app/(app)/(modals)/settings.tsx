@@ -3,7 +3,8 @@ import { useParallaxScroll } from "@/components/parallaxContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Icon, type IconRole } from "@/components/ui/Icon";
-import { Text, TextInput, View } from "react-native";
+import { View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 
 import { DataSourceAttributions } from "@/components/settings/DataSourceAttributions";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
@@ -153,7 +154,7 @@ export default function SettingsScreen() {
           </Text>
           <Text
             testID="settings-current-user"
-            className="font-display-bold text-xl text-accent-light"
+            className="font-title-bold text-xl text-accent-light"
           >
             {displayName}
           </Text>
