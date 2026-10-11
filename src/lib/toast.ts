@@ -45,22 +45,6 @@ export function showToast(message: string, options?: ToastOptions): void {
 }
 
 /** Subscribes to toast messages; returns an unsubscribe function. */
-/** Green success toast (saved, added, ...). */
-export function showSuccessToast(
-  message: string,
-  options?: Omit<ToastOptions, "variant">,
-): void {
-  showToast(message, { ...options, variant: "success" });
-}
-
-/** Red error toast (failed actions, validation errors). */
-export function showErrorToast(
-  message: string,
-  options?: Omit<ToastOptions, "variant">,
-): void {
-  showToast(message, { ...options, variant: "error" });
-}
-
 export function subscribeToToasts(listener: ToastListener): () => void {
   listeners.push(listener);
   return () => {

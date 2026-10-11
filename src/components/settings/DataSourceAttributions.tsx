@@ -19,7 +19,7 @@ interface AttributionEntry {
   url: string;
 }
 
-export const ATTRIBUTIONS: AttributionEntry[] = [
+const ATTRIBUTIONS: AttributionEntry[] = [
   {
     key: "tmdb",
     logo: require("../../../assets/images/tmdb-logo.png"),

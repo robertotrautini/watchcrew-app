@@ -14,9 +14,9 @@ export type Point = readonly [number, number];
 export const LOGO_VIEWBOX = 64;
 export const LOGO_CENTER: Point = [32, 32];
 /** Side length of the (unrounded) play triangle. */
-export const TRIANGLE_SIDE = 38;
+const TRIANGLE_SIDE = 38;
 /** Dot constellation size relative to the triangle (scale about the centroid). */
-export const CONSTELLATION_SCALE = 0.43;
+const CONSTELLATION_SCALE = 0.43;
 export const DOT_RADIUS = 2.9;
 export const LINE_WIDTH = 1.4;
 export const BADGE_INSET = 1;

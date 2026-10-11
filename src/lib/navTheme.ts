@@ -1,3 +1,5 @@
+import { BG_PRIMARY_COLOR, TEXT_PRIMARY_COLOR } from "@/lib/colors";
+
 /**
  * Colour overrides for the React Navigation chrome (merged over `DarkTheme.colors`).
  * `primary` is the highlight accent, so it must follow the group theme: the root
@@ -7,8 +9,8 @@
 export function navThemeColors(accent: string) {
   return {
     background: "transparent",
-    card: "#0a0a0a",
-    text: "#e8e8e8",
+    card: BG_PRIMARY_COLOR,
+    text: TEXT_PRIMARY_COLOR,
     border: "rgba(255,255,255,0.08)",
     primary: accent,
   };

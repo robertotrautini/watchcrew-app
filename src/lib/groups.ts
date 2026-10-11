@@ -8,7 +8,7 @@ import { supabase } from "./supabase";
 // underlying Supabase `{ data, error }` result unchanged so callers branch
 // on `error` the same way they would with the raw supabase-js client.
 
-export interface WatchGroupMembershipRow {
+interface WatchGroupMembershipRow {
   group_id: string;
   user_id: string;
   role: "owner" | "member";
@@ -58,7 +58,7 @@ export interface GroupMemberRow extends WatchGroupMembershipRow {
 // reshaped into `{ groupId }` rather than returned bare, so callers get a
 // self-describing field name instead of an anonymous string.
 
-export interface WatchGroupIdResult {
+interface WatchGroupIdResult {
   groupId: string;
 }
 
@@ -85,7 +85,7 @@ export async function createWatchGroup(name: string, colorTheme: string) {
 // with `code` set to exactly the `errcode` the function raised with -- so
 // callers can reliably branch on this constant instead of pattern-matching
 // the (potentially locale-dependent) message text.
-export const INVALID_INVITE_TOKEN_ERROR_CODE = "WC003";
+const INVALID_INVITE_TOKEN_ERROR_CODE = "WC003";
 
 export function isInvalidInviteTokenError(error: { code?: string } | null | undefined): boolean {
   return error?.code === INVALID_INVITE_TOKEN_ERROR_CODE;
@@ -110,7 +110,7 @@ export async function joinWatchGroupByToken(token: string) {
 // client before this screen). Same never-throw `{ data, error }`
 // passthrough convention as every other function in this file.
 
-export interface WatchGroupRow {
+interface WatchGroupRow {
   id: string;
   name: string;
   color_theme: string;
@@ -188,7 +188,7 @@ export async function setInviteEnabled(groupId: string, enabled: boolean) {
 // plain UPDATE the same way.
 export const NOT_GROUP_OWNER_ERROR_CODE = "WC004";
 
-export interface RegenerateInviteTokenResult {
+interface RegenerateInviteTokenResult {
   inviteToken: string;
 }
 

@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import Constants from "expo-constants";
 import { useParallaxScroll } from "@/components/parallaxContext";
@@ -324,7 +325,7 @@ export default function SettingsScreen() {
             onChangeText={setDisplayNameDraft}
             autoCapitalize="words"
             placeholder="Anzeigename"
-            placeholderTextColor="#888888"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={GLASS_INPUT_CLASSNAME}
           />
           {displayNameError ? (

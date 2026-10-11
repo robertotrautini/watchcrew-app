@@ -24,7 +24,7 @@
 
 export type GroupThemeName = "gold" | "red" | "blue" | "green" | "purple" | "orange";
 
-export interface GroupThemeColors {
+interface GroupThemeColors {
   accent: string;
   accentLight: string;
   gradientStart: string;
@@ -63,7 +63,7 @@ export const GROUP_THEME_LABELS: Record<GroupThemeName, string> = {
   orange: "Orange",
 };
 
-export function isGroupThemeName(value: unknown): value is GroupThemeName {
+function isGroupThemeName(value: unknown): value is GroupThemeName {
   return typeof value === "string" && (KNOWN_THEME_NAMES as readonly string[]).includes(value);
 }
 
@@ -86,7 +86,7 @@ function rgbToHex([r, g, b]: [number, number, number]): string {
 }
 
 /** Mixes a hex color toward white by `ratio` (0..1) per RGB channel. */
-export function mixWithWhite(hex: string, ratio: number): string {
+function mixWithWhite(hex: string, ratio: number): string {
   const [r, g, b] = hexToRgb(hex);
   return rgbToHex([r + (255 - r) * ratio, g + (255 - g) * ratio, b + (255 - b) * ratio]);
 }
@@ -151,7 +151,7 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 }
 
 /** Adjusts a hex color's HSL lightness by `deltaPoints` (on a 0-100 scale), clamped. */
-export function adjustLightness(hex: string, deltaPoints: number): string {
+function adjustLightness(hex: string, deltaPoints: number): string {
   const [r, g, b] = hexToRgb(hex);
   const [h, s, l] = rgbToHsl(r, g, b);
   const newL = Math.max(0, Math.min(100, l + deltaPoints));
@@ -171,7 +171,7 @@ function deriveNonGoldColors(accent: string): GroupThemeColors {
 // --- theme table ---
 
 /** Stars are always this yellow, independent of the group theme (docs/style-guide.md). */
-export const STAR_YELLOW = "#FFD700";
+const STAR_YELLOW = "#FFD700";
 
 const GOLD_COLORS: GroupThemeColors = {
   accent: "#c8a44e",

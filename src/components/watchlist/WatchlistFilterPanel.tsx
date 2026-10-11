@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { TextInput } from "@/components/ui/Text";
 
@@ -31,7 +32,7 @@ export function WatchlistFilterPanel({
           testID="watchlist-search-input"
           className={GLASS_SEARCH_INPUT_CLASSNAME}
           placeholder="Film suchen…"
-          placeholderTextColor="#8b8b8b"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           value={f.searchQuery}
           onChangeText={f.setSearchQuery}
         />

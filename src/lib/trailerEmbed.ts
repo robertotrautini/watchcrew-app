@@ -33,7 +33,7 @@ export const TRAILER_FULLSCREEN_EXIT = "trailer-fullscreen:0";
  * YouTube player so the app can unlock landscape only while it is fullscreen
  * (the app itself is portrait-locked).
  */
-export const TRAILER_FULLSCREEN_BRIDGE_JS = `
+const TRAILER_FULLSCREEN_BRIDGE_JS = `
 (function () {
   function report() {
     var fs = !!(document.fullscreenElement || document.webkitFullscreenElement);

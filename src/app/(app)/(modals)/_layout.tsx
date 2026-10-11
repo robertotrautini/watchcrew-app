@@ -1,3 +1,4 @@
+import { BG_PRIMARY_COLOR } from "@/lib/colors";
 import { Stack } from "expo-router";
 
 import { useGroupTheme } from "@/components/GroupThemeProvider";
@@ -35,7 +36,7 @@ export default function ModalsLayout() {
         // Dark header matching the black body (not the nav theme's grey),
         // accent-light Outfit title like the legacy headings; the screens do not
         // repeat the title in their body.
-        headerStyle: { backgroundColor: "#0a0a0a" },
+        headerStyle: { backgroundColor: BG_PRIMARY_COLOR },
         headerShadowVisible: false,
         headerTintColor: colors.accentLight,
         headerTitleStyle: {

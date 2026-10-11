@@ -1,3 +1,5 @@
+import { EmptyState } from "@/components/ui/EmptyState";
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { useMemo, useState } from "react";
 import { LoadingArea } from "@/components/ui/LoadingArea";
@@ -158,7 +160,7 @@ export default function TrackerScreen() {
             testID="tracker-search-input"
             className={GLASS_SEARCH_INPUT_CLASSNAME}
             placeholder="Film suchen…"
-            placeholderTextColor="#8b8b8b"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
@@ -173,17 +175,11 @@ export default function TrackerScreen() {
       </View>
 
       {searchedEntries.length === 0 ? (
-        <View
-          className="flex-1 items-center justify-center px-8"
+        <EmptyState
           testID="tracker-empty"
-        >
-          <Text className="text-center text-text-primary">
-            Noch keine Zahlungen erfasst.
-          </Text>
-          <Text className="mt-1 text-center text-text-secondary">
-            Tippe auf den Geld-Button, um eine Zahlung zu erfassen.
-          </Text>
-        </View>
+          icon="tabTracker"
+          title="Noch keine Zahlungen"
+        />
       ) : (
         <ScrollView
           {...parallaxScroll}

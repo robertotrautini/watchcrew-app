@@ -9,7 +9,7 @@ import type { StreamingAvailabilityCacheRow } from "./watchlistTypes";
 // ids that are missing or older than the TTL -- at most 2 round trips for
 // any number of movies, 1 when everything is fresh.
 
-export const STREAMING_TTL_MS = 24 * 60 * 60 * 1000;
+const STREAMING_TTL_MS = 24 * 60 * 60 * 1000;
 
 export function findIdsNeedingProviders(
   tmdbIds: number[],

@@ -12,10 +12,10 @@ export const BACK_SWIPE_ZONE_FRACTION = 0.25;
 export const BACK_SWIPE_ACTIVE_OFFSET_X = 12;
 export const BACK_SWIPE_FAIL_OFFSET_Y = 20;
 /** Commit when dragged further than this fraction of the width... */
-export const BACK_SWIPE_COMMIT_FRACTION = 0.25;
+const BACK_SWIPE_COMMIT_FRACTION = 0.25;
 /** ...or released faster than this (px/s) after a minimum drag (dp). */
-export const BACK_SWIPE_COMMIT_VELOCITY = 550;
-export const BACK_SWIPE_FLING_MIN_DISTANCE = 24;
+const BACK_SWIPE_COMMIT_VELOCITY = 550;
+const BACK_SWIPE_FLING_MIN_DISTANCE = 24;
 
 export function backSwipeZoneWidth(windowWidth: number): number {
   return windowWidth * BACK_SWIPE_ZONE_FRACTION;

@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -148,7 +149,7 @@ export default function RegisterScreen() {
             onChangeText={setDisplayName}
             autoCapitalize="words"
             placeholder="Wie sollen dich andere sehen?"
-            placeholderTextColor="#888888"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={INPUT_CLASSNAME}
           />
         </View>
@@ -162,7 +163,7 @@ export default function RegisterScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             placeholder="deine@email.de"
-            placeholderTextColor="#888888"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={INPUT_CLASSNAME}
           />
         </View>
@@ -175,7 +176,7 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
             secureTextEntry
             placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-            placeholderTextColor="#888888"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={INPUT_CLASSNAME}
           />
         </View>
@@ -190,7 +191,7 @@ export default function RegisterScreen() {
             onChangeText={setConfirmPassword}
             secureTextEntry
             placeholder="Passwort wiederholen"
-            placeholderTextColor="#888888"
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={INPUT_CLASSNAME}
           />
         </View>

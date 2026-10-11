@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -67,7 +68,6 @@ type ScreenMode = "select" | "create" | "join";
 const THEME_OPTIONS = GROUP_THEME_OPTIONS;
 const THEME_LABELS = GROUP_THEME_LABELS;
 
-const PLACEHOLDER_TEXT_COLOR = "#888888";
 
 // Same target the root `useAuthGate`/index.tsx redirect uses for its
 // `'app'` gate state — kept as a constant here so both call sites read from
@@ -211,7 +211,7 @@ export default function CreateOrJoinGroupScreen() {
             value={groupName}
             onChangeText={setGroupName}
             placeholder="Gruppenname"
-            placeholderTextColor={PLACEHOLDER_TEXT_COLOR}
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={GLASS_INPUT_CLASSNAME}
           />
 
@@ -287,7 +287,7 @@ export default function CreateOrJoinGroupScreen() {
             value={groupCode}
             onChangeText={setGroupCode}
             placeholder="Einladungscode / Gruppen-ID"
-            placeholderTextColor={PLACEHOLDER_TEXT_COLOR}
+            placeholderTextColor={PLACEHOLDER_COLOR}
             className={GLASS_INPUT_CLASSNAME}
           />
 

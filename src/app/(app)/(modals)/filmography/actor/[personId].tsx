@@ -81,7 +81,7 @@ export default function ActorFilmographyScreen() {
         }
         progressHeader={progress}
         streamingFilter={null}
-        emptyMessage="Keine Filme gefunden."
+        emptyMessage="Keine Filme gefunden"
       />
     </View>
   );

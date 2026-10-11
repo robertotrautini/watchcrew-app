@@ -142,7 +142,7 @@ export default function SimilarMoviesScreen() {
         }
         progressHeader={null}
         streamingFilter={{ active: activeCategory, onChange: setActiveCategory }}
-        emptyMessage="Keine ähnlichen Filme gefunden."
+        emptyMessage="Keine ähnlichen Filme gefunden"
       />
     </View>
   );

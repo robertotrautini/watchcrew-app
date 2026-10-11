@@ -22,7 +22,7 @@ export const SWIPE_COMMIT_FRACTION = 0.18;
 /** ...or when released faster than this (px/s, in swipe direction). */
 export const SWIPE_COMMIT_VELOCITY = 550;
 /** Minimum drag (dp) for a velocity-based commit, filters accidental twitches. */
-export const SWIPE_FLING_MIN_DISTANCE = 24;
+const SWIPE_FLING_MIN_DISTANCE = 24;
 /** Horizontal movement (dp) before the pan activates / vertical movement (dp) that cancels it. */
 export const SWIPE_ACTIVE_OFFSET_X = 10;
 export const SWIPE_FAIL_OFFSET_Y = 15;

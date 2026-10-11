@@ -42,7 +42,7 @@ const NON_PERSISTED_ROOTS = new Set(["movieSearch", "personSearch", "companySear
  * primitives, arrays and plain objects. Map/Set/Date/class instances are
  * restored as `{}`/strings and would crash consumers after a restart.
  */
-export function isJsonSafe(value: unknown): boolean {
+function isJsonSafe(value: unknown): boolean {
   if (value === null || typeof value !== "object") return typeof value !== "function" && typeof value !== "symbol" && typeof value !== "bigint";
   if (Array.isArray(value)) return value.every(isJsonSafe);
   const proto = Object.getPrototypeOf(value);
@@ -61,7 +61,7 @@ export const persistDehydrateOptions: DehydrateOptions = {
 };
 
 /** Dedicated MMKV instance, separate from the preferences store. */
-export const queryCacheStorage: KeyValueStorage = createMMKV({ id: "watchcrew-query-cache" });
+const queryCacheStorage: KeyValueStorage = createMMKV({ id: "watchcrew-query-cache" });
 
 export function createMmkvPersister(
   storage: KeyValueStorage,

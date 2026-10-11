@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { DANGER_ICON_COLOR, DANGER_PRESSED_CLASSNAME, DANGER_TEXT_CLASSNAME } from "@/components/ui/Button";
 import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { Icon, type IconRole } from "@/components/ui/Icon";
@@ -8,7 +9,6 @@ import { Text } from "@/components/ui/Text";
 import { cn } from "@/lib/utils";
 
 /** Neutral icon grey as raw hex (icon `color` props can't use classNames); the chevron uses the theme accent. */
-const ICON_COLOR = "#888888";
 
 export interface SettingsRowProps {
   icon: IconRole;
@@ -52,7 +52,7 @@ export function SettingsRow({
         className,
       )}
     >
-      <Icon name={icon} size="M" color={danger ? DANGER_ICON_COLOR : ICON_COLOR} />
+      <Icon name={icon} size="M" color={danger ? DANGER_ICON_COLOR : PLACEHOLDER_COLOR} />
       <Text className={cn("flex-1 text-base", danger ? DANGER_TEXT_CLASSNAME : "text-text-primary")}>{label}</Text>
       {value ? <Text className="text-sm text-text-secondary">{value}</Text> : null}
       {right ? <View className="flex-row items-center gap-2">{right}</View> : null}

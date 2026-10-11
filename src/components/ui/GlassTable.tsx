@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  *
  * Cell classes below are the single source for column typography/widths.
  */
-export const TABLE_HEADER_TEXT = "text-sm text-text-secondary";
+const TABLE_HEADER_TEXT = "text-sm text-text-secondary";
 /** Title cell (flex column, two lines max); accent title like sheets/cards. */
 export const TABLE_TITLE_CELL = `flex-1 pr-2 ${MOVIE_TITLE_FONT} text-text-primary`;
 /** Date column (right aligned), identical to the Tracker "Datum" column. */

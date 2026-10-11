@@ -152,7 +152,7 @@ export default function StudioFilmographyScreen() {
             </View>
           ) : undefined
         }
-        emptyMessage="Keine Filme gefunden."
+        emptyMessage="Keine Filme gefunden"
       />
     </View>
   );

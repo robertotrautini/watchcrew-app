@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useRouter } from "expo-router";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { Spinner } from "@/components/ui/Spinner";
@@ -77,26 +78,17 @@ export default function WatchlistScreen() {
           </Text>
         </View>
       ) : noEntries && screen.baseWatchlistEntries.length > 0 ? (
-        <View
-          className="flex-1 items-center justify-center px-8"
+        <EmptyState
           testID="watchlist-no-results"
-        >
-          <Text className="text-center text-text-secondary">
-            {getNoResultsMessage(filters.searchQuery)}
-          </Text>
-        </View>
+          icon="filter"
+          title={getNoResultsMessage(filters.searchQuery)}
+        />
       ) : noEntries ? (
-        <View
-          className="flex-1 items-center justify-center px-8"
+        <EmptyState
           testID="watchlist-empty"
-        >
-          <Text className="text-center text-text-primary">
-            Deine Watchlist ist leer.
-          </Text>
-          <Text className="mt-1 text-center text-text-secondary">
-            Füge Filme hinzu, sobald ihr euch für welche entschieden habt.
-          </Text>
-        </View>
+          icon="bookmark"
+          title="Deine Watchlist ist leer"
+        />
       ) : (
         <View className={PANEL_LIST_OVERLAP_CLASSNAME + " flex-1"}>
           <WatchlistEntryList

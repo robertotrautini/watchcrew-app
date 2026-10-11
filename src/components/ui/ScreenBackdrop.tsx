@@ -38,7 +38,7 @@ export const DIM_BACKDROP_ROUTES: readonly string[] = [
 ];
 
 /** Root-stack routes outside the app shell (auth, onboarding, invite, reset callback) (flat backdrop). */
-export const ROOT_DIM_BACKDROP_ROUTES: readonly string[] = [
+const ROOT_DIM_BACKDROP_ROUTES: readonly string[] = [
   "(auth)",
   "(onboarding)",
   "auth/callback",

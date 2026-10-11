@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useMemo, useState } from "react";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
@@ -103,7 +104,7 @@ export default function SettingsStreamingServicesScreen() {
           testID="settings-streaming-search-input"
           className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
           placeholder="Suchen…"
-          placeholderTextColor="#8b8b8b"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />

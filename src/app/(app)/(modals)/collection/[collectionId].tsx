@@ -109,7 +109,7 @@ export default function CollectionScreen() {
         }
         progressHeader={null}
         streamingFilter={{ active: activeCategory, onChange: setActiveCategory }}
-        emptyMessage="Keine weiteren Teile gefunden."
+        emptyMessage="Keine weiteren Teile gefunden"
       />
     </View>
   );

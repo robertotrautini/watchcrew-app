@@ -315,7 +315,7 @@ export default function GroupSettingsScreen() {
         <EmptyState
           testID="group-settings-no-group"
           icon="group"
-          title="Keine aktive Gruppe gefunden."
+          title="Keine aktive Gruppe gefunden"
         />
       </View>
     );

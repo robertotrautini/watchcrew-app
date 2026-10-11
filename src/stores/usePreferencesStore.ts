@@ -24,7 +24,7 @@ export type { ListFilters, ListFiltersTab };
  * This is a genuine UI/client preference, not server data — it is safe to
  * persist to disk under this project's server-state-never-persisted rule.
  */
-export type LastActiveTab = "tracker" | "watchlist" | "tagebuch" | null;
+type LastActiveTab = "tracker" | "watchlist" | "tagebuch" | null;
 
 /**
  * The view mode the Watchlist tab is currently displayed in. This is a
@@ -43,7 +43,7 @@ export type DiaryViewMode = "cards" | "grid" | "list";
 export type GridColumns = 3 | 4;
 
 /** Tabs with a collapsible filter panel (Watchlist, Tagebuch). */
-export type FilterPanelTab = "watchlist" | "diary";
+type FilterPanelTab = "watchlist" | "diary";
 
 interface PreferencesState {
   lastActiveTab: LastActiveTab;

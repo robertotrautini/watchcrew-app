@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
@@ -62,7 +63,7 @@ export function CreateGroupSheet({
           value={name}
           onChangeText={setName}
           placeholder="Gruppenname"
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
         />
         <Text className="text-text-secondary">Farbthema</Text>

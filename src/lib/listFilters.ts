@@ -104,7 +104,7 @@ export function getNoResultsMessage(searchQuery: string): string {
   const trimmed = searchQuery.trim();
   return trimmed.length >= 2
     ? `Keine Treffer für „${trimmed}“.`
-    : "Keine Einträge für diese Auswahl.";
+    : "Keine Filme für diese Filter";
 }
 
 // ---------------------------------------------------------------------------

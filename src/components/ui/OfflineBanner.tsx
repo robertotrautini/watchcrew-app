@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export const OFFLINE_BANNER_TEXT = "Offline – gespeicherte Daten werden angezeigt";
+const OFFLINE_BANNER_TEXT = "Offline – gespeicherte Daten werden angezeigt";
 
 function subscribe(onChange: () => void) {
   return onlineManager.subscribe(onChange);

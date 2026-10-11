@@ -12,7 +12,7 @@ import {
 } from "./entrySelectors";
 import type { WatchlistEntry } from "./watchlistTypes";
 
-export type SortDirection = "asc" | "desc";
+type SortDirection = "asc" | "desc";
 
 export type DiarySortField =
   "average" | "own" | "likes" | "tmdb" | "title" | "seen_at";

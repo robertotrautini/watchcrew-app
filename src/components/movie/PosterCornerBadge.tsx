@@ -1,3 +1,4 @@
+import { LIKE_HEART_COLOR } from "@/lib/colors";
 import type { ReactElement } from "react";
 import { View } from "react-native";
 
@@ -16,11 +17,9 @@ import { Text } from "@/components/ui/Text";
  * there is nothing to show.
  */
 
-// Fixed regardless of theme.
-export const LIKE_HEART_COLOR = "#e05c6e";
-export const WATCHED_EYE_COLOR = "#22c55e";
+const WATCHED_EYE_COLOR = "#22c55e";
 
-export const POSTER_CORNER_BADGE_MAX_ELEMENTS = 2;
+const POSTER_CORNER_BADGE_MAX_ELEMENTS = 2;
 
 export interface PosterCornerBadgeProps {
   /** Current user liked this entry -> heart. */

@@ -27,9 +27,6 @@ export const GLASS_CLASSNAMES: Record<GlassVariant, string> = {
   panel: GLASS_EDGE,
 };
 
-/** Flat (square-cornered) row on a glass list/table card. */
-export const GLASS_ROW_CLASSNAME = "border-b border-glass-border bg-card";
-
 /** Shared rounded-row look (settings rows, action buttons). */
 export const GLASS_TILE_CLASSNAME = `rounded-xl ${GLASS_EDGE} bg-card`;
 
@@ -38,10 +35,6 @@ export const GLASS_BAR_CLASSNAME = "border-t border-glass-border";
 
 /** The one fill of every glass surface; token in tailwind.config.js. */
 export const GLASS_FLAT_FILL = "bg-bg-card-flat";
-
-/** Sheet surface (straight top edge, top border only). */
-export const GLASS_SHEET_CLASSNAME =
-  "border-t border-glass-border bg-bg-card-flat";
 
 /**
  * Tab bar needs raw style values (React Navigation `tabBarStyle`); keep them in
@@ -60,8 +53,6 @@ export const GLASS_TAB_BAR_STYLE = {
  * elevation / shadow* (Android elevation paints a square shadow).
  */
 export const PANEL_SHADOW_LAYERS = 12;
-/** Kept as alias: shadow extends this many dp below the panel. */
-export const PANEL_SHADOW_HEIGHT = PANEL_SHADOW_LAYERS;
 /** Resulting (compounded) darkness right below the panel edge; fades to 0. */
 export const PANEL_SHADOW_PEAK_OPACITY = 0.52;
 /** Panel wrapper must sit above the list so it covers the list's top edge. */

@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
@@ -90,7 +91,7 @@ export default function ForgotPasswordScreen() {
               autoCapitalize="none"
               autoComplete="email"
               placeholder="du@beispiel.de"
-              placeholderTextColor="#888888"
+              placeholderTextColor={PLACEHOLDER_COLOR}
               className={GLASS_INPUT_CLASSNAME}
             />
             {validationError ? (

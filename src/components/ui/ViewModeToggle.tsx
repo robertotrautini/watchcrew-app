@@ -1,7 +1,8 @@
+import { BG_PRIMARY_COLOR, TEXT_PRIMARY_COLOR } from "@/lib/colors";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 
-export type ViewMode = "cards" | "grid" | "list";
+type ViewMode = "cards" | "grid" | "list";
 
 const MODES: { key: ViewMode; label: string; icon: IconRole }[] = [
   { key: "cards", label: "Karten", icon: "viewCards" },
@@ -9,8 +10,8 @@ const MODES: { key: ViewMode; label: string; icon: IconRole }[] = [
   { key: "list", label: "Liste", icon: "viewList" },
 ];
 
-const ACTIVE_ICON_COLOR = "#0a0a0a";
-const INACTIVE_ICON_COLOR = "#e8e8e8";
+const ACTIVE_ICON_COLOR = BG_PRIMARY_COLOR;
+const INACTIVE_ICON_COLOR = TEXT_PRIMARY_COLOR;
 
 export interface ViewModeToggleProps {
   value: ViewMode;

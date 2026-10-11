@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -96,7 +97,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoComplete="email"
           placeholder="du@beispiel.de"
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={GLASS_INPUT_CLASSNAME}
         />
 
@@ -108,7 +109,7 @@ export default function LoginScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder="••••••••"
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={GLASS_INPUT_CLASSNAME}
         />
 

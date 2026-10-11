@@ -1,3 +1,4 @@
+import { LIKE_HEART_COLOR, STAR_EMPTY_COLOR } from "@/lib/colors";
 import { Pressable, View, type GestureResponderEvent } from "react-native";
 import { Icon, type IconSize } from "@/components/ui/Icon";
 import * as Haptics from "expo-haptics";
@@ -26,10 +27,7 @@ import { STAR_TOUCH_WIDTH } from "@/components/ui/touchTarget";
 const STAR_COUNT = 5;
 
 /** Fixed regardless of theme — the spec value for an un-filled star portion. */
-const STAR_EMPTY_COLOR = "#575757";
 
-/** Fixed regardless of theme — the spec value for the "Mag ich" like-heart. */
-const LIKE_HEART_COLOR = "#e05c6e";
 
 /**
  * Touch-target sizing (docs/style-guide.md "Touch-Targets"): each star/heart glyph sits centred

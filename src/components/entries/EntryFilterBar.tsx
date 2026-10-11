@@ -1,3 +1,4 @@
+import { BG_PRIMARY_COLOR } from "@/lib/colors";
 import type { ReactNode } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 
@@ -7,7 +8,7 @@ import { Text } from "@/components/ui/Text";
 import { filterChipLabel } from "@/lib/entryFilters";
 import type { EntryFilters, FilterKey } from "@/lib/listFilters";
 
-const CHIP_ICON_COLOR = "#0a0a0a";
+const CHIP_ICON_COLOR = BG_PRIMARY_COLOR;
 
 /**
  * Panel row 3: fixed "+ Filter" button (opens the flyout) at the left, the

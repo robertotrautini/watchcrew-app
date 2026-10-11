@@ -42,7 +42,7 @@ import type { StreamingAvailabilityLookup } from "../../lib/watchlistTypes";
 
 const OVERVIEW_FALLBACK = "Keine Beschreibung vorhanden";
 
-export type WatchlistPosterCardVariant = "card" | "grid";
+type WatchlistPosterCardVariant = "card" | "grid";
 
 export interface WatchlistPosterCardProps {
   variant: WatchlistPosterCardVariant;

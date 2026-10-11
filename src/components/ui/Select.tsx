@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useEffect, useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
@@ -178,7 +179,7 @@ export function Select({
   const showInput = open && searchable;
   // Field visible but not auto-focused: the field handles its own taps, it must not toggle.
   const manualFocus = showInput && !autoFocusSearch;
-  const chevronColor = "#8b8b8b";
+  const chevronColor = PLACEHOLDER_COLOR;
   const fieldClass = cn(
     `min-h-touch-comfortable flex-row items-center gap-2 rounded-lg ${GLASS_EDGE} ${GLASS_FLAT_FILL} px-4`,
     disabled && "opacity-50",

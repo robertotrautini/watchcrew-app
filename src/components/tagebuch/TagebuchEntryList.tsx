@@ -1,12 +1,10 @@
+import { LIKE_HEART_COLOR } from "@/lib/colors";
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
 import { memo, useMemo } from "react";
 import { FlatList, Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import {
-  DiaryEntryCard,
-  LIKE_HEART_COLOR,
-} from "@/components/movie/DiaryEntryCard";
+import { DiaryEntryCard } from "@/components/movie/DiaryEntryCard";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { FadeInItem } from "@/components/ui/FadeInItem";

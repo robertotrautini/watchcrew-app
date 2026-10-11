@@ -14,18 +14,18 @@ import { cn } from "@/lib/utils";
  * Tokens are exported so bespoke layouts (provider picker with a logo) can reuse
  * the exact same colours.
  */
-/** Chip height token (shared with skeleton chips). */
-export const CHIP_HEIGHT_CLASSNAME = "h-9";
-export const CHIP_BASE_CLASSNAME = `${CHIP_HEIGHT_CLASSNAME} flex-row items-center justify-center gap-2 rounded-lg border px-3`;
+/** Chip height token. */
+const CHIP_HEIGHT_CLASSNAME = "h-9";
+const CHIP_BASE_CLASSNAME = `${CHIP_HEIGHT_CLASSNAME} flex-row items-center justify-center gap-2 rounded-lg border px-3`;
 export const CHIP_INACTIVE_CLASSNAME = "border-accent-a55 bg-chip-base";
 export const CHIP_ACTIVE_CLASSNAME = "border-accent bg-accent";
 const CHIP_HIT_SLOP = hitSlopFor(48, 36);
-export const CHIP_TEXT_CLASSNAME = "text-sm";
-export const CHIP_INACTIVE_TEXT_CLASSNAME = "font-sans-medium text-accent-light";
-export const CHIP_ACTIVE_TEXT_CLASSNAME = "font-sans-semibold text-bg-primary";
+const CHIP_TEXT_CLASSNAME = "text-sm";
+const CHIP_INACTIVE_TEXT_CLASSNAME = "font-sans-medium text-accent-light";
+const CHIP_ACTIVE_TEXT_CLASSNAME = "font-sans-semibold text-bg-primary";
 
 /** Gold tint over the dark base (explicit style geometry: release builds ignore className-only absolute fills). */
-export const CHIP_TINT_CLASSNAME = "bg-accent-a15";
+const CHIP_TINT_CLASSNAME = "bg-accent-a15";
 const CHIP_TINT_STYLE = { ...StyleSheet.absoluteFill, borderRadius: 7 };
 
 function ChipTint({ testID }: { testID?: string }) {

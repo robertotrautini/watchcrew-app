@@ -5,11 +5,11 @@ import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { cn } from "@/lib/utils";
 
 /** Outer pill radius (token `rounded-lg`). */
-export const SEGMENTED_OUTER_RADIUS = 12;
+const SEGMENTED_OUTER_RADIUS = 12;
 /** Border (1) + padding (3) around the segments. */
 const SEGMENTED_INSET = 4;
 /** Inner radius = outer radius - inset, so the selection follows the pill's curve. */
-export const SEGMENTED_INNER_RADIUS = SEGMENTED_OUTER_RADIUS - SEGMENTED_INSET;
+const SEGMENTED_INNER_RADIUS = SEGMENTED_OUTER_RADIUS - SEGMENTED_INSET;
 
 const SEGMENT_HIT_SLOP = { top: 4, bottom: 4, left: 2, right: 2 };
 
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   segment: { borderRadius: SEGMENTED_INNER_RADIUS },
 });
 
-export interface SegmentedOption<K extends string | number> {
+interface SegmentedOption<K extends string | number> {
   key: K;
   testID: string;
   accessibilityLabel: string;

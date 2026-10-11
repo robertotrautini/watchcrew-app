@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import * as Linking from "expo-linking";
 import { Spinner } from "@/components/ui/Spinner";
 import { useRouter } from "expo-router";
@@ -178,7 +179,7 @@ export default function AuthCallbackScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={GLASS_INPUT_CLASSNAME}
         />
         <TextInput
@@ -188,7 +189,7 @@ export default function AuthCallbackScreen() {
           secureTextEntry
           autoCapitalize="none"
           placeholder="Passwort wiederholen"
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={GLASS_INPUT_CLASSNAME}
         />
         {validationError ? (

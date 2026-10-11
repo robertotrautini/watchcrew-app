@@ -15,7 +15,7 @@ import {
  */
 const FAMILY_CLASS = /(^|\s)font-(title|sans)/;
 
-export function withDefaultFont(className?: string): string {
+function withDefaultFont(className?: string): string {
   if (className != null && FAMILY_CLASS.test(className)) return className;
   return className ? `font-sans ${className}` : "font-sans";
 }

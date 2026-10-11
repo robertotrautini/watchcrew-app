@@ -1,3 +1,4 @@
+import { SUCCESS_TEXT_COLOR, TEXT_PRIMARY_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
@@ -12,8 +13,8 @@ import {
   type ToastVariant,
 } from "@/lib/toast";
 
-export const SUCCESS_ICON_COLOR = "#5fcf8a";
-const CLOSE_ICON_COLOR = "#e8e8e8";
+const SUCCESS_ICON_COLOR = SUCCESS_TEXT_COLOR;
+const CLOSE_ICON_COLOR = TEXT_PRIMARY_COLOR;
 
 interface ToastVariantStyle {
   surface: string;
@@ -28,7 +29,7 @@ interface ToastVariantStyle {
  * success = green, error = red (tinted fill 15% + coloured border 40% + coloured text/icon,
  * analogous to the danger tokens).
  */
-export const TOAST_VARIANT_STYLES: Record<ToastVariant, ToastVariantStyle> = {
+const TOAST_VARIANT_STYLES: Record<ToastVariant, ToastVariantStyle> = {
   success: {
     surface: "border-success/40",
     tint: "bg-success/15",

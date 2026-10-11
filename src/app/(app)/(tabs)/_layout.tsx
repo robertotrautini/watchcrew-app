@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { Redirect, useSegments } from "expo-router";
 import { Tabs } from "expo-router/js-tabs";
@@ -109,7 +110,7 @@ export default function TabsLayout() {
           screenOptions={{
             headerShown: false,
             tabBarActiveTintColor: groupColors.accent,
-            tabBarInactiveTintColor: "#888888",
+            tabBarInactiveTintColor: PLACEHOLDER_COLOR,
             // Legacy look: flat dark glass bar with hairline top
             // border; the gold top line over the active tab is TabBarButton.
             tabBarStyle: GLASS_TAB_BAR_STYLE,

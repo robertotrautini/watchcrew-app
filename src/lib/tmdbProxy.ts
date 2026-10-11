@@ -47,7 +47,7 @@ export interface TmdbStudioMoviesResponse {
   total_results: number;
 }
 
-export interface TraktMovieIds {
+interface TraktMovieIds {
   trakt?: number;
   slug?: string;
   imdb?: string;

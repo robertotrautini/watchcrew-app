@@ -1,3 +1,4 @@
+import { BG_PRIMARY_COLOR, TEXT_PRIMARY_COLOR } from "@/lib/colors";
 import { Platform, View } from "react-native";
 
 import { useGroupTheme } from "@/components/GroupThemeProvider";
@@ -12,9 +13,9 @@ export interface SwitchIndicatorProps {
 }
 
 /** Light handle colour (text-primary token) and off-state grey (text-secondary token) for the native switch. */
-const NATIVE_HANDLE_ON = "#e8e8e8";
+const NATIVE_HANDLE_ON = TEXT_PRIMARY_COLOR;
 const NATIVE_OUTLINE_OFF = "#a8a8a8";
-const NATIVE_TRACK_OFF = "#0a0a0a";
+const NATIVE_TRACK_OFF = BG_PRIMARY_COLOR;
 
 /**
  * Real Material 3 Compose switch (`@expo/ui` Jetpack Compose, already part of the installed
@@ -60,7 +61,7 @@ export function SwitchIndicator(props: SwitchIndicatorProps) {
   return <FallbackSwitch {...props} />;
 }
 
-export function FallbackSwitch({ checked, pressed = false, disabled = false, testID }: SwitchIndicatorProps) {
+function FallbackSwitch({ checked, pressed = false, disabled = false, testID }: SwitchIndicatorProps) {
   const { colors } = useGroupTheme();
   const handleSize = pressed ? "h-7 w-7" : checked ? "h-6 w-6" : "h-4 w-4";
   return (

@@ -1,3 +1,4 @@
+import { EmptyState } from "@/components/ui/EmptyState";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { LoadingArea } from "@/components/ui/LoadingArea";
@@ -70,23 +71,17 @@ export default function TagebuchScreen() {
           </Text>
         </View>
       ) : screen.isDiaryEmpty ? (
-        <View
-          className="flex-1 items-center justify-center px-6"
+        <EmptyState
           testID="tagebuch-empty"
-        >
-          <Text className="text-center text-text-secondary">
-            Noch keine bewerteten Filme.
-          </Text>
-        </View>
+          icon="tabDiary"
+          title="Noch keine bewerteten Filme"
+        />
       ) : screen.hasNoResults ? (
-        <View
-          className="flex-1 items-center justify-center px-6"
+        <EmptyState
           testID="tagebuch-no-results"
-        >
-          <Text className="text-center text-text-secondary">
-            {getNoResultsMessage(filters.searchQuery)}
-          </Text>
-        </View>
+          icon="filter"
+          title={getNoResultsMessage(filters.searchQuery)}
+        />
       ) : (
         <View className={PANEL_LIST_OVERLAP_CLASSNAME + " flex-1"}>
           <TagebuchEntryList

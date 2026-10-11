@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { TextInput } from "@/components/ui/Text";
 
 import { EntryFilterBar } from "@/components/entries/EntryFilterBar";
@@ -27,7 +28,7 @@ export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
           value={f.searchQuery}
           onChangeText={f.setSearchQuery}
           placeholder="Film suchen…"
-          placeholderTextColor="#888888"
+          placeholderTextColor={PLACEHOLDER_COLOR}
           className={GLASS_SEARCH_INPUT_CLASSNAME}
         />
       }

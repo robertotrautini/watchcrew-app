@@ -15,7 +15,7 @@ import type { StateStorage } from "zustand/middleware";
  * `createMMKV(configuration)` factory function instead, and the instance
  * method to remove a key is `remove(key)`, not `delete(key)`.
  */
-export const preferencesStorage = createMMKV({ id: "watchcrew-preferences" });
+const preferencesStorage = createMMKV({ id: "watchcrew-preferences" });
 
 /**
  * Adapts `preferencesStorage` to Zustand's `StateStorage` interface so it

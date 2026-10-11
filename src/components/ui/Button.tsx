@@ -1,3 +1,4 @@
+import { BG_PRIMARY_COLOR, DANGER_TEXT_COLOR, TEXT_PRIMARY_COLOR } from "@/lib/colors";
 import type { ReactNode } from "react";
 import { Pressable, type PressableProps } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -58,7 +59,7 @@ export interface ButtonProps extends Omit<
 export const DANGER_SURFACE_CLASSNAME = "bg-danger/15 border border-danger/30";
 export const DANGER_PRESSED_CLASSNAME = "active:bg-danger/25";
 export const DANGER_TEXT_CLASSNAME = "text-danger-text";
-export const DANGER_ICON_COLOR = "#e5675a";
+export const DANGER_ICON_COLOR = DANGER_TEXT_COLOR;
 
 /**
  * ONE button system for glass surfaces (docs/style-guide.md). Flat Material
@@ -119,16 +120,16 @@ const BUTTON_SIZE_PX: Record<ButtonSize, number> = {
  * Default hitSlop so every button reaches the 48dp touch target without changing its visuals:
  * icon-only buttons grow on both axes, text buttons only vertically (their width is content-driven).
  */
-export function buttonHitSlop(size: ButtonSize, iconOnly: boolean) {
+function buttonHitSlop(size: ButtonSize, iconOnly: boolean) {
   const px = BUTTON_SIZE_PX[size];
   return hitSlopFor(iconOnly ? px : 48, px);
 }
 
 /** Icon colour matching a variant (for Icon children). */
 export const BUTTON_ICON_COLORS: Record<ButtonVariant, string> = {
-  primary: "#0a0a0a",
-  secondary: "#e8e8e8",
-  ghost: "#e8e8e8",
+  primary: BG_PRIMARY_COLOR,
+  secondary: TEXT_PRIMARY_COLOR,
+  ghost: TEXT_PRIMARY_COLOR,
   danger: DANGER_ICON_COLOR,
 };
 export const BUTTON_ICON_COLOR_DISABLED = "rgba(255,255,255,0.35)";
