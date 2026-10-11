@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { DateField } from "@/components/ui/DateField";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Sheet } from "@/components/ui/Sheet";
 import { useDeletePayment, useSetPayment } from "@/hooks/useTrackerPayments";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
@@ -94,33 +95,14 @@ export function TrackerEntrySheet({
   }
 
   return (
-    <Sheet visible={entry != null} onClose={onClose} title={entry?.movie.name}>
-      {entry ? (
-        <View testID="tracker-entry-sheet" className="gap-4">
-          {confirmingDelete ? (
-            <View testID="tracker-entry-sheet-delete-confirm" className="gap-4">
-              <Text className="text-text-primary">Wirklich löschen?</Text>
-              <View className="flex-row gap-3">
-                <Button
-                  testID="tracker-entry-sheet-delete-cancel-button"
-                  label="Abbrechen"
-                  icon="close"
-                  variant="secondary"
-                  className="flex-1"
-                  onPress={() => setConfirmingDelete(false)}
-                />
-                <Button
-                  testID="tracker-entry-sheet-delete-confirm-button"
-                  label="Löschen"
-                  icon="delete"
-                  variant="danger"
-                  className="flex-1"
-                  loading={deletePaymentMutation.isPending}
-                  onPress={handleConfirmDelete}
-                />
-              </View>
-            </View>
-          ) : (
+    <>
+      <Sheet
+        visible={entry != null}
+        onClose={onClose}
+        title={entry?.movie.name}
+      >
+        {entry ? (
+          <View testID="tracker-entry-sheet" className="gap-4">
             <>
               <View
                 testID="tracker-entry-sheet-payer-section"
@@ -175,9 +157,18 @@ export function TrackerEntrySheet({
                 />
               </View>
             </>
-          )}
-        </View>
-      ) : null}
-    </Sheet>
+          </View>
+        ) : null}
+      </Sheet>
+      <ConfirmDialog
+        visible={confirmingDelete && entry != null}
+        testID="tracker-entry-sheet-delete"
+        title="Zahlung löschen?"
+        description={`Die Zahlung für „${entry?.movie.name ?? ""}“ wird entfernt. Der Film bleibt im Tagebuch.`}
+        loading={deletePaymentMutation.isPending}
+        onCancel={() => setConfirmingDelete(false)}
+        onConfirm={handleConfirmDelete}
+      />
+    </>
   );
 }

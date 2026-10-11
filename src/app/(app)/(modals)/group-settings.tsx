@@ -1,3 +1,5 @@
+import { IconButton } from "@/components/ui/IconButton";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
@@ -11,11 +13,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Select } from "@/components/ui/Select";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 
-import {
-  Button,
-  BUTTON_ICON_COLORS,
-  BUTTON_ICON_COLOR_DISABLED,
-} from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupDetails, useGroupNames } from "@/hooks/useGroupDetails";
@@ -53,12 +51,9 @@ import { GLASS_INSET_EDGE, GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
  *  - Invite-link "Neu generieren" goes through the `regenerate_invite_token`
  *    SECURITY DEFINER RPC (src/lib/groups.ts's `regenerateInviteToken`),
  *    not a plain client UPDATE with a client-generated uuid.
- *  - Confirmation pattern for both "Entfernen" (kick) and "Gruppe
- *    verlassen": INLINE confirmation (swap the button row for a "wirklich?"
- *    + Abbrechen/confirm row), matching the Tracker screen's M8
- *    "Wirklich löschen?" precedent -- not a `Sheet`, which this codebase
- *    reserves for pickers/dialogs with their own content, not plain
- *    yes/no confirmations.
+ *  - Confirmation pattern for "Entfernen" (kick), "Gruppe verlassen" and
+ *    "Neu generieren": the shared `ConfirmDialog` (docs/style-guide.md
+ *    "Destruktive Aktionen: immer ConfirmDialog").
  *  - Group switcher needs every one of the user's groups' real NAMEs (not
  *    just the active one's) -- `useUserGroups()` alone can't supply that
  *    (see `useGroupNames`'s own module comment), so this screen loads a
@@ -118,6 +113,8 @@ export default function GroupSettingsScreen() {
     null,
   );
   const [leaveConfirmVisible, setLeaveConfirmVisible] = useState(false);
+  const [regenerateConfirmVisible, setRegenerateConfirmVisible] =
+    useState(false);
 
   // Keeps the editable name field in sync with the loaded/currently-active
   // group's name -- re-syncs whenever the group SWITCHES or the server
@@ -138,12 +135,22 @@ export default function GroupSettingsScreen() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset on group switch must stay effect-timed
     setRemoveTargetUserId(null);
     setLeaveConfirmVisible(false);
+    setRegenerateConfirmVisible(false);
   }, [activeGroupId]);
 
   const currentMembership = groupMembersQuery.data?.find(
     (member) => member.user_id === currentUserId,
   );
   const isOwner = currentMembership?.role === "owner";
+  const removeTarget = groupMembersQuery.data?.find(
+    (member) => member.user_id === removeTargetUserId,
+  );
+  const removeTargetName = removeTarget
+    ? memberDisplayLabel(
+        removeTarget.user_id,
+        removeTarget.profiles?.display_name,
+      )
+    : "Das Mitglied";
   const memberCount = groupMembersQuery.data?.length ?? 0;
   const isLastMember = memberCount === 1;
 
@@ -194,11 +201,14 @@ export default function GroupSettingsScreen() {
     void Share.share({ message: inviteLink });
   }
 
-  function handleRegenerateInvite() {
+  function handleConfirmRegenerate() {
     if (!activeGroupId) {
       return;
     }
-    regenerateMutation.mutate({ groupId: activeGroupId });
+    regenerateMutation.mutate(
+      { groupId: activeGroupId },
+      { onSuccess: () => setRegenerateConfirmVisible(false) },
+    );
   }
 
   function handleToggleInviteEnabled() {
@@ -332,26 +342,15 @@ export default function GroupSettingsScreen() {
                 onChangeText={setNameInput}
                 className={`flex-1 rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
               />
-              <Button
+              <IconButton
                 testID="group-settings-rename-save-button"
-                variant="primary"
-                iconOnly
+                icon="save"
+                variant="accent"
                 accessibilityLabel="Gruppenname speichern"
-                accessibilityRole="button"
                 disabled={!nameChanged}
                 loading={renameMutation.isPending}
                 onPress={handleRenameSave}
-              >
-                <Icon
-                  name="save"
-                  size="M"
-                  color={
-                    nameChanged
-                      ? BUTTON_ICON_COLORS.primary
-                      : BUTTON_ICON_COLOR_DISABLED
-                  }
-                />
-              </Button>
+              />
             </View>
             {renameMutation.isError ? (
               <Text
@@ -443,7 +442,7 @@ export default function GroupSettingsScreen() {
                 variant="secondary"
                 className="flex-1"
                 loading={regenerateMutation.isPending}
-                onPress={handleRegenerateInvite}
+                onPress={() => setRegenerateConfirmVisible(true)}
               />
             </View>
             <View className={GLASS_TILE_CLASSNAME}>
@@ -467,7 +466,6 @@ export default function GroupSettingsScreen() {
           </Text>
           {(groupMembersQuery.data ?? []).map((member) => {
             const isSelf = member.user_id === currentUserId;
-            const isRemoving = removeTargetUserId === member.user_id;
             return (
               <View
                 key={member.user_id}
@@ -495,20 +493,14 @@ export default function GroupSettingsScreen() {
                       {member.role === "owner" ? "Owner" : "Mitglied"}
                     </Text>
                   </View>
-                  {isOwner && !isSelf && !isRemoving ? (
-                    <Button
+                  {isOwner && !isSelf ? (
+                    <IconButton
                       testID={`group-settings-member-${member.user_id}-remove-button`}
+                      icon="removeMember"
                       variant="danger"
-                      iconOnly
                       accessibilityLabel="Mitglied entfernen"
                       onPress={() => setRemoveTargetUserId(member.user_id)}
-                    >
-                      <Icon
-                        name="removeMember"
-                        size="M"
-                        color={BUTTON_ICON_COLORS.danger}
-                      />
-                    </Button>
+                    />
                   ) : isOwner ? (
                     <View
                       testID={`group-settings-member-${member.user_id}-remove-placeholder`}
@@ -516,87 +508,62 @@ export default function GroupSettingsScreen() {
                     />
                   ) : null}
                 </View>
-
-                {isOwner && !isSelf && isRemoving ? (
-                  <View
-                    testID={`group-settings-member-${member.user_id}-remove-confirm`}
-                    className="gap-2"
-                  >
-                    <Text className="text-text-primary">
-                      Mitglied wirklich entfernen?
-                    </Text>
-                    <View className="flex-row gap-2">
-                      <Button
-                        testID={`group-settings-member-${member.user_id}-remove-cancel-button`}
-                        label="Abbrechen"
-                        icon="close"
-                        variant="secondary"
-                        className="flex-1"
-                        onPress={() => setRemoveTargetUserId(null)}
-                      />
-                      <Button
-                        testID={`group-settings-member-${member.user_id}-remove-confirm-button`}
-                        label="Entfernen"
-                        icon="removeMember"
-                        variant="danger"
-                        className="flex-1"
-                        loading={removeMemberMutation.isPending}
-                        onPress={() =>
-                          handleConfirmRemoveMember(member.user_id)
-                        }
-                      />
-                    </View>
-                  </View>
-                ) : null}
               </View>
             );
           })}
         </View>
 
         <View className="gap-2" testID="group-settings-leave-section">
-          {leaveConfirmVisible ? (
-            <View testID="group-settings-leave-confirm" className="gap-2">
-              <Text
-                testID="group-settings-leave-confirm-copy"
-                className="text-text-primary"
-              >
-                {isLastMember
-                  ? LEAVE_COPY_LAST_MEMBER
-                  : isOwner
-                    ? LEAVE_COPY_AS_OWNER
-                    : LEAVE_COPY_AS_MEMBER}
-              </Text>
-              <View className="flex-row gap-2">
-                <Button
-                  testID="group-settings-leave-cancel-button"
-                  label="Abbrechen"
-                  icon="close"
-                  variant="secondary"
-                  className="flex-1"
-                  onPress={() => setLeaveConfirmVisible(false)}
-                />
-                <Button
-                  testID="group-settings-leave-confirm-button"
-                  label="Verlassen"
-                  icon="leave"
-                  variant="danger"
-                  className="flex-1"
-                  loading={leaveGroupMutation.isPending}
-                  onPress={handleConfirmLeave}
-                />
-              </View>
-            </View>
-          ) : (
-            <Button
-              testID="group-settings-leave-button"
-              label="Gruppe verlassen"
-              icon="leave"
-              variant="danger"
-              onPress={() => setLeaveConfirmVisible(true)}
-            />
-          )}
+          <Button
+            testID="group-settings-leave-button"
+            label="Gruppe verlassen"
+            icon="leave"
+            variant="danger"
+            onPress={() => setLeaveConfirmVisible(true)}
+          />
         </View>
       </KeyboardAwareScrollView>
+      <ConfirmDialog
+        visible={removeTargetUserId != null}
+        testID={`group-settings-member-${removeTargetUserId ?? "none"}-remove`}
+        title="Mitglied entfernen?"
+        description={`${removeTargetName} verliert den Zugriff auf die Gruppe. Bewertungen bleiben erhalten.`}
+        confirmLabel="Entfernen"
+        confirmIcon="removeMember"
+        loading={removeMemberMutation.isPending}
+        onCancel={() => setRemoveTargetUserId(null)}
+        onConfirm={() =>
+          removeTargetUserId && handleConfirmRemoveMember(removeTargetUserId)
+        }
+      />
+      <ConfirmDialog
+        visible={regenerateConfirmVisible}
+        testID="group-settings-invite-regenerate"
+        title="Einladungslink neu generieren?"
+        description="Der bisherige Einladungslink wird ungültig. Wer ihn noch hat, kann der Gruppe nicht mehr beitreten."
+        confirmLabel="Neu generieren"
+        confirmIcon="regenerate"
+        loading={regenerateMutation.isPending}
+        onCancel={() => setRegenerateConfirmVisible(false)}
+        onConfirm={handleConfirmRegenerate}
+      />
+      <ConfirmDialog
+        visible={leaveConfirmVisible}
+        testID="group-settings-leave"
+        title="Gruppe verlassen?"
+        description={
+          isLastMember
+            ? LEAVE_COPY_LAST_MEMBER
+            : isOwner
+              ? LEAVE_COPY_AS_OWNER
+              : LEAVE_COPY_AS_MEMBER
+        }
+        confirmLabel="Verlassen"
+        confirmIcon="leave"
+        loading={leaveGroupMutation.isPending}
+        onCancel={() => setLeaveConfirmVisible(false)}
+        onConfirm={handleConfirmLeave}
+      />
       <SettingsBackBar />
     </View>
   );

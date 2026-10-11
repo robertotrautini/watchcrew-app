@@ -371,7 +371,7 @@ describe("TrackerScreen", () => {
       expect(getByTestId("tracker-entry-sheet-actions").props.className).toContain("gap-3");
     });
 
-    it("Löschen shows a 'Wirklich löschen?' confirmation inside the flyout", async () => {
+    it("Löschen shows a 'Zahlung löschen?' ConfirmDialog", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId, getByText } = await render(<TrackerScreen />);
@@ -379,8 +379,8 @@ describe("TrackerScreen", () => {
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
       await fireEvent.press(getByTestId("tracker-entry-sheet-delete-button"));
 
-      expect(getByTestId("tracker-entry-sheet-delete-confirm")).toBeTruthy();
-      expect(getByText("Wirklich löschen?")).toBeTruthy();
+      expect(getByTestId("tracker-entry-sheet-delete-dialog")).toBeTruthy();
+      expect(getByText("Zahlung löschen?")).toBeTruthy();
       expect(mockDeletePaymentMutate).not.toHaveBeenCalled();
     });
 
@@ -414,7 +414,7 @@ describe("TrackerScreen", () => {
       await fireEvent.press(getByTestId("tracker-entry-sheet-delete-button"));
       await fireEvent.press(getByTestId("tracker-entry-sheet-delete-cancel-button"));
 
-      expect(queryByTestId("tracker-entry-sheet-delete-confirm")).toBeNull();
+      expect(queryByTestId("tracker-entry-sheet-delete-dialog")).toBeNull();
       expect(mockDeletePaymentMutate).not.toHaveBeenCalled();
       expect(getByTestId("tracker-entry-sheet-delete-button")).toBeTruthy();
     });

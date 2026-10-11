@@ -87,7 +87,7 @@ appId: com.watchcrew.app
     id: "tracker-entry-sheet-delete-button"
 - extendedWaitUntil:
     visible:
-      id: "tracker-entry-sheet-delete-confirm"
+      id: "tracker-entry-sheet-delete-dialog"
     timeout: 5000
 - takeScreenshot: 08-tracker-flyout-delete-confirm
 - tapOn:

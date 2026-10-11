@@ -1,6 +1,6 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Select, filterSelectOptions, selectListPlacement } from "@/components/ui/Select";
 
@@ -16,6 +16,18 @@ async function setup(props: Partial<React.ComponentProps<typeof Select>> = {}) {
     <Select testID="sel" options={OPTIONS} value={null} onChange={onChange} placeholder="Wählen" {...props} />,
   );
   return { onChange, ...utils };
+}
+
+/** Walks up from a node inside the Modal to the Modal element. */
+function findModal(node: { parent: unknown; props: Record<string, unknown> }) {
+  let cur: { parent: unknown; props: Record<string, unknown> } | null = node;
+  while (cur && cur.props.onRequestClose === undefined) {
+    cur = cur.parent as typeof cur;
+  }
+  if (!cur) {
+    throw new Error("Modal not found");
+  }
+  return cur;
 }
 
 describe("filterSelectOptions", () => {
@@ -41,19 +53,41 @@ describe("selectListPlacement", () => {
 });
 
 describe("Select", () => {
-  it("renders the list as an absolute overlay above siblings, plus an outside-tap backdrop", async () => {
+  it("renders field + list in a transparent Modal (own window), with outside-tap backdrop", async () => {
     const { getByTestId, queryByTestId } = await setup();
     expect(queryByTestId("sel-backdrop")).toBeNull();
     await fireEvent.press(getByTestId("sel"));
-    const list = StyleSheet.flatten(getByTestId("sel-list").props.style);
-    expect(list.position).toBe("absolute");
-    expect(list.top).toBe("100%");
-    expect(list.zIndex).toBeGreaterThan(0);
-    expect(list.elevation).toBeGreaterThan(0);
+    const modal = findModal(getByTestId("sel-backdrop"));
+    expect(modal.props.transparent).toBe(true);
+    expect(modal.props.statusBarTranslucent).toBe(true);
+    expect(getByTestId("sel-list")).toBeTruthy();
+    expect(getByTestId("sel-field").props.accessibilityState.expanded).toBe(true);
     expect(getByTestId("sel-scroll").props.nestedScrollEnabled).toBe(true);
     await fireEvent.press(getByTestId("sel-backdrop"));
     expect(queryByTestId("sel-list")).toBeNull();
     expect(queryByTestId("sel-backdrop")).toBeNull();
+  });
+
+  it("hardware back (Modal onRequestClose) closes the list", async () => {
+    const { getByTestId, queryByTestId } = await setup();
+    await fireEvent.press(getByTestId("sel"));
+    await act(async () => {
+      (findModal(getByTestId("sel-backdrop")).props.onRequestClose as () => void)();
+    });
+    expect(queryByTestId("sel-list")).toBeNull();
+  });
+
+  it("positions field and list at the measured trigger window rect (down)", async () => {
+    const spy = jest
+      .spyOn(View.prototype, "measureInWindow" as never)
+      .mockImplementation(((cb: (x: number, y: number, w: number, h: number) => void) => cb(20, 100, 300, 48)) as never);
+    const { getByTestId } = await setup();
+    await fireEvent.press(getByTestId("sel"));
+    const field = StyleSheet.flatten(getByTestId("sel-field").props.style);
+    const list = StyleSheet.flatten(getByTestId("sel-list").props.style);
+    expect(field).toMatchObject({ position: "absolute", left: 20, top: 100, width: 300, height: 48 });
+    expect(list).toMatchObject({ position: "absolute", left: 20, top: 152, width: 300 });
+    spy.mockRestore();
   });
 
   it("shows the placeholder and a closed list initially", async () => {

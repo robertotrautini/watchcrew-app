@@ -1,14 +1,13 @@
+import { IconButton } from "@/components/ui/IconButton";
 import { useMemo, useState } from "react";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Pressable, ScrollView, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Icon } from "@/components/ui/Icon";
 
 import { TrackerEntrySheet } from "@/components/movie/TrackerEntrySheet";
 import { PaymentModal } from "@/components/movie/PaymentModal";
-import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Glass, GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
@@ -158,15 +157,13 @@ export default function TrackerScreen() {
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
-        <Button
+        <IconButton
           testID="tracker-log-payment-button"
-          variant="primary"
-          iconOnly
+          icon="price"
+          variant="accent"
           accessibilityLabel="Zahlung erfassen"
           onPress={() => setPaymentModalVisible(true)}
-        >
-          <Icon name="price" size="M" color={BUTTON_ICON_COLORS.primary} />
-        </Button>
+        />
       </Glass>
 
       {searchedEntries.length === 0 ? (

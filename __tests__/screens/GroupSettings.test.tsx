@@ -413,8 +413,10 @@ describe("GroupSettingsScreen", () => {
       const { getByTestId } = await render(<GroupSettingsScreen />);
 
       await fireEvent.press(getByTestId("group-settings-invite-regenerate-button"));
+      expect(mockRegenerateMutate).not.toHaveBeenCalled();
+      await fireEvent.press(getByTestId("group-settings-invite-regenerate-confirm-button"));
 
-      expect(mockRegenerateMutate).toHaveBeenCalledWith({ groupId: "g1" });
+      expect(mockRegenerateMutate).toHaveBeenCalledWith({ groupId: "g1" }, expect.anything());
     });
 
     it("the toggle calls useSetInviteEnabled with the flipped value", async () => {
@@ -471,14 +473,14 @@ describe("GroupSettingsScreen", () => {
       expect(queryByTestId("group-settings-member-member-1-remove-button")).toBeNull();
     });
 
-    it("Entfernen shows an inline confirmation before actually removing the member", async () => {
+    it("Entfernen shows a ConfirmDialog before actually removing the member", async () => {
       setUpHappyPath({ currentUserId: "owner-1" });
       const GroupSettingsScreen = loadGroupSettingsScreen();
       const { getByTestId } = await render(<GroupSettingsScreen />);
 
       await fireEvent.press(getByTestId("group-settings-member-member-1-remove-button"));
 
-      expect(getByTestId("group-settings-member-member-1-remove-confirm")).toBeTruthy();
+      expect(getByTestId("group-settings-member-member-1-remove-dialog")).toBeTruthy();
       expect(mockRemoveMemberMutate).not.toHaveBeenCalled();
     });
 
@@ -504,7 +506,7 @@ describe("GroupSettingsScreen", () => {
       await fireEvent.press(getByTestId("group-settings-member-member-1-remove-button"));
       await fireEvent.press(getByTestId("group-settings-member-member-1-remove-cancel-button"));
 
-      expect(queryByTestId("group-settings-member-member-1-remove-confirm")).toBeNull();
+      expect(queryByTestId("group-settings-member-member-1-remove-dialog")).toBeNull();
       expect(mockRemoveMemberMutate).not.toHaveBeenCalled();
     });
   });
@@ -556,7 +558,7 @@ describe("GroupSettingsScreen", () => {
       await fireEvent.press(getByTestId("group-settings-leave-button"));
       await fireEvent.press(getByTestId("group-settings-leave-cancel-button"));
 
-      expect(queryByTestId("group-settings-leave-confirm")).toBeNull();
+      expect(queryByTestId("group-settings-leave-dialog")).toBeNull();
       expect(mockLeaveGroupMutate).not.toHaveBeenCalled();
     });
 
