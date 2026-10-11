@@ -33,6 +33,19 @@ describe("FadeInItem", () => {
     timingSpy.mockRestore();
   });
 
+  it("skipInitialFade mounts visible without starting the fade", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+
+    await render(
+      <FadeInItem index={1} skipInitialFade>
+        <Text>tile content</Text>
+      </FadeInItem>,
+    );
+
+    expect(timingSpy).not.toHaveBeenCalled();
+    timingSpy.mockRestore();
+  });
+
   it("forwards testID and className to the animated wrapper", async () => {
     const { getByTestId } = await render(
       <FadeInItem index={0} testID="fade-item" className="flex-1">
@@ -130,5 +143,43 @@ describe("FadeInItem tab replay + reduce motion", () => {
     const timingSpy = jest.spyOn(Animated, "timing");
     await render(<FadeInItem index={FADE_MAX_INDEX}><Text>x</Text></FadeInItem>);
     expect(timingSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("FadeInItem index freeze (re-sort)", () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  it("a changed index neither remounts nor replays the fade (near -> far and far -> near)", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+    let mounts = 0;
+    function Probe() {
+      const React = require("react");
+      React.useEffect(() => {
+        mounts += 1;
+      }, []);
+      return <Text>probe</Text>;
+    }
+    const ui = (index: number) => (
+      <FadeInItem index={index}>
+        <Probe />
+      </FadeInItem>
+    );
+    const r = await render(ui(2));
+    await r.rerender(ui(FADE_MAX_INDEX + 5));
+    await r.rerender(ui(0));
+    expect(mounts).toBe(1);
+    expect(timingSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("far item stays a plain view when its index later becomes small", async () => {
+    const timingSpy = jest.spyOn(Animated, "timing");
+    const ui = (index: number) => (
+      <FadeInItem index={index}>
+        <Text>x</Text>
+      </FadeInItem>
+    );
+    const r = await render(ui(FADE_MAX_INDEX + 1));
+    await r.rerender(ui(0));
+    expect(timingSpy).not.toHaveBeenCalled();
   });
 });

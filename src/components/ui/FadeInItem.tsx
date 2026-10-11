@@ -17,6 +17,7 @@ import {
  *   the active one (TabSwitchContext epoch bump) -- same duration, easing and
  *   per-index delay. Plain re-renders/refetches never replay.
  * - Reduce motion: no animation, item is shown at once.
+ * - The `index` is read once at mount; later changes (re-sort) are ignored.
  * - Items with `index > FADE_MAX_INDEX` (beyond the first screen, or mounted
  *   while scrolling a virtualized list) are plain views: no fade, no
  *   TabSwitchContext subscription (no re-render and no animation on tab switch).
@@ -29,23 +30,28 @@ export interface FadeInItemProps {
   testID?: string;
   /** Tab route name this list lives in; enables the replay on tab switch. */
   replayTab?: string;
+  /** Mount fully visible (no initial fade), e.g. after a sort-triggered list remount. Tab replay still works. */
+  skipInitialFade?: boolean;
 }
 
 export function FadeInItem(props: FadeInItemProps) {
-  if (props.index > FADE_MAX_INDEX) {
+  // Frozen at first mount: re-sorting changes `index` but must neither swap the
+  // component type (remount) nor replay the fade.
+  const [initialIndex] = useState(props.index);
+  if (initialIndex > FADE_MAX_INDEX) {
     return (
       <View testID={props.testID} className={props.className}>
         {props.children}
       </View>
     );
   }
-  return <FadingItem {...props} />;
+  return <FadingItem {...props} index={initialIndex} />;
 }
 
-function FadingItem({ index, children, className, testID, replayTab }: FadeInItemProps) {
+function FadingItem({ index, children, className, testID, replayTab, skipInitialFade }: FadeInItemProps) {
   const reduceMotion = useReducedMotion();
   const { tab, epoch } = useContext(TabSwitchContext);
-  const [opacity] = useState(() => new Animated.Value(reduceMotion ? 1 : 0));
+  const [opacity] = useState(() => new Animated.Value(reduceMotion || skipInitialFade ? 1 : 0));
   const seenEpoch = useRef(epoch);
 
   function play() {
@@ -60,7 +66,7 @@ function FadingItem({ index, children, className, testID, replayTab }: FadeInIte
   }
 
   useEffect(() => {
-    if (!reduceMotion) play();
+    if (!reduceMotion && !skipInitialFade) play();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
