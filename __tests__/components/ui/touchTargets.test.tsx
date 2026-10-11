@@ -13,7 +13,6 @@ jest.mock("expo-haptics", () => ({
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { Sheet } from "@/components/ui/Sheet";
-import { SortButton } from "@/components/ui/SortButton";
 import { StarRating } from "@/components/ui/StarRating";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { MIN_TOUCH_TARGET, MIN_TOUCH_TARGET_IOS, STAR_TOUCH_WIDTH } from "@/components/ui/touchTarget";
@@ -79,15 +78,6 @@ describe("Sheet close button", () => {
     const close = getByTestId("sheet-close-button");
     expect(close.props.className).toContain("h-12 w-12");
     expect(close.props.accessibilityLabel).toBeTruthy();
-  });
-});
-
-describe("SortButton", () => {
-  it("is at least 48dp high", async () => {
-    const { getByTestId } = await render(
-      <SortButton testID="s" shortLabel="A" fullLabel="Alpha" onPress={jest.fn()} />,
-    );
-    expect(getByTestId("s").props.className).toContain("min-h-touch-comfortable");
   });
 });
 

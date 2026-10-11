@@ -113,6 +113,13 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       ? Math.max(0, Math.round(overlayBottom - keyboardTop))
       : 0;
 
+  // Latest onClose without making the open effect depend on its identity
+  // (inline callbacks would otherwise restart the slide-in on every parent render).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
   useEffect(() => {
     if (!visible) return undefined;
     slide.setValue(0);
@@ -122,11 +129,11 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
       useNativeDriver: true,
     }).start();
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
-      onClose();
+      onCloseRef.current();
       return true;
     });
     return () => sub.remove();
-  }, [visible, onClose, slide]);
+  }, [visible, slide]);
 
   const host = useContext(SheetHostContext);
   const hostId = useId();

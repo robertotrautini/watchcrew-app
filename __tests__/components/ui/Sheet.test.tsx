@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { BackHandler, Text, View } from "react-native";
 import { fireEvent, render, within } from "@testing-library/react-native";
 
 // Host View passthrough so the `edges` prop is observable on the rendered tree.
@@ -196,5 +196,17 @@ describe("Sheet", () => {
     expect(getByText("hosted content")).toBeTruthy();
     expect(getByTestId("sheet-overlay")).toBeTruthy();
     expect(within(getByTestId("nested-parent")).queryByTestId("sheet-overlay")).toBeNull();
+  });
+});
+
+describe("Sheet onClose identity", () => {
+  it("does not restart the open animation / re-subscribe back handler when onClose changes identity", async () => {
+    const spy = jest.spyOn(BackHandler, "addEventListener");
+    spy.mockClear();
+    const { rerender } = await render(<Sheet visible onClose={() => {}} />);
+    const calls = spy.mock.calls.length;
+    await rerender(<Sheet visible onClose={() => {}} />);
+    expect(spy.mock.calls.length).toBe(calls);
+    spy.mockRestore();
   });
 });

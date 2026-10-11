@@ -96,8 +96,8 @@ onFlowComplete:
 - assertVisible:
     id: "tracker-screen"
 
-# --- watchlist: view modes, filter panel, sort sheet ---
-# Sort/panel state is set explicitly (app default "Hinzugefügt", panel closed),
+# --- watchlist: view modes, filter panel, filter flyout ---
+# Sort/filters/panel state is set explicitly (app default "Hinzugefügt", no filters, panel closed),
 # never read from persisted state, so all entries are listed.
 - runFlow: ../subflows/go-watchlist.yaml
 - runFlow: ../subflows/watchlist-normalize.yaml
@@ -105,7 +105,7 @@ onFlowComplete:
     file: ../subflows/shot.yaml
     env:
       NAME: 11-red-watchlist-grid
-# view-mode toggle lives inside the filter panel: open it, keep open until sort sheet is done
+# view-mode toggle lives inside the filter panel: open it, keep open until the flyout is done
 - tapOn:
     id: "watchlist-filter-toggle"
 - extendedWaitUntil:
@@ -131,15 +131,15 @@ onFlowComplete:
     env:
       NAME: 14-red-watchlist-filter-panel
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-filter-add"
 - extendedWaitUntil:
     visible:
-      id: "watchlist-sort-options"
+      id: "watchlist-filter-flyout"
     timeout: 5000
-- takeScreenshot: 15-red-watchlist-sort-sheet
+- takeScreenshot: 15-red-watchlist-filter-flyout
 - back
 - assertNotVisible:
-    id: "watchlist-sort-options"
+    id: "watchlist-filter-flyout"
 - tapOn:
     id: "watchlist-filter-toggle"
 - assertNotVisible:

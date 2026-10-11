@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { GLASS_EDGE, GLASS_FLAT_FILL } from "@/components/ui/Glass";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconRole } from "@/components/ui/Icon";
 import { Text, TextInput } from "@/components/ui/Text";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,8 @@ export interface SelectProps {
   /** Reports the open state so the parent can shield siblings (pointerEvents) while the list is open. */
   onOpenChange?: (open: boolean) => void;
   accessibilityLabel?: string;
+  /** Optional icon at the left of the trigger (not in the open overlay list). */
+  leadingIcon?: IconRole;
   className?: string;
 }
 
@@ -104,6 +106,7 @@ export function Select({
   disabled = false,
   onOpenChange,
   accessibilityLabel,
+  leadingIcon,
   className,
 }: SelectProps) {
   const [open, setOpen] = useState(false);
@@ -204,6 +207,7 @@ export function Select({
         onPress={toggle}
         className={fieldClass}
       >
+        {leadingIcon ? <Icon name={leadingIcon} size="M" color={chevronColor} /> : null}
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"
@@ -237,6 +241,7 @@ export function Select({
               className={fieldClass}
               style={[styles.overlayPart, fieldGeometry, measuredStyle]}
             >
+              {leadingIcon ? <Icon name={leadingIcon} size="M" color={chevronColor} /> : null}
               {showInput ? (
                 <TextInput
                   testID={`${testID}-search`}

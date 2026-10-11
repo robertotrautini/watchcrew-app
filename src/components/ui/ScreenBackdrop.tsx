@@ -34,7 +34,6 @@ export const DIM_BACKDROP_ROUTES: readonly string[] = [
   "settings/streaming-services",
   "settings/display",
   "settings/notifications",
-  "settings/delete-account",
   "group-settings",
 ];
 

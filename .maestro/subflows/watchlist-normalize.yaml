@@ -1,8 +1,10 @@
 appId: com.watchcrew.app
 ---
 # Normalises the Watchlist tab to the app default WITHOUT relying on persisted
-# state (MMKV filters/panel survive aborted runs): sort "Hinzugefügt" (added,
-# no streaming filter), panel CLOSED. Precondition: Watchlist tab visible.
+# state (MMKV sort/filters/panel survive aborted runs): sort "Hinzugefügt"
+# descending, NO filters (reset via the flyout), panel CLOSED. Precondition:
+# Watchlist tab visible. Sort and filters are independent states, so both are
+# reset explicitly.
 - runFlow:
     when:
       notVisible:
@@ -12,14 +14,35 @@ appId: com.watchcrew.app
           id: "watchlist-filter-toggle"
 - extendedWaitUntil:
     visible:
-      id: "watchlist-sort-button"
+      id: "watchlist-sort-field"
     timeout: 5000
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-field"
 - tapOn:
-    id: "watchlist-sort-option-added"
+    id: "watchlist-sort-field-option-added"
 - assertNotVisible:
-    id: "watchlist-sort-options"
+    id: "watchlist-sort-field-list"
+# direction: default is descending; flip only when currently ascending
+- runFlow:
+    when:
+      visible:
+        text: "Richtung: aufsteigend.*"
+    commands:
+      - tapOn:
+          id: "watchlist-sort-direction"
+# filters: reset the draft in the flyout and apply (= no filter)
+- tapOn:
+    id: "watchlist-filter-add"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-filter-flyout"
+    timeout: 5000
+- tapOn:
+    id: "watchlist-filter-reset"
+- tapOn:
+    id: "watchlist-filter-apply"
+- assertNotVisible:
+    id: "watchlist-filter-flyout"
 - tapOn:
     id: "watchlist-filter-toggle"
 - assertNotVisible:

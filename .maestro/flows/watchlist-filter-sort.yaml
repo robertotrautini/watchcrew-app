@@ -1,8 +1,12 @@
 appId: com.watchcrew.app
 ---
-# watchlist-filter-sort.yaml — Watchlist tab: search, collapsible filter panel,
-# every sort option, filter dot, all 3 view modes, genre/year/provider chips.
-# Restores: sort "Hinzugefügt" (app default), view mode grid, panel closed.
+# watchlist-filter-sort.yaml — Watchlist tab: search, collapsible filter panel
+# with the DECOUPLED rows (no labels; sort icon + field Select + direction button;
+# row 3: "+ Filter" + scrollable chips + view-mode toggle at the right; flyout with draft/Anwenden/Zurücksetzen),
+# combination filter + sort, table-header sort (same state as the panel),
+# filter dot, all 3 view modes.
+# Restores: sort "Hinzugefügt" descending, no filters, view mode grid, panel
+# closed (subflows/watchlist-normalize.yaml).
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-watchlist.yaml
 - extendedWaitUntil:
@@ -10,7 +14,7 @@ appId: com.watchcrew.app
       id: "watchlist-screen"
     timeout: 15000
 # Persisted sort/filters/panel state is NOT trusted: normalise to the app
-# default (sort "Hinzugefügt", panel closed) before the first shot.
+# default before the first shot.
 - runFlow: ../subflows/watchlist-normalize.yaml
 - takeScreenshot: 01-watchlist-default-closed
 
@@ -31,133 +35,183 @@ appId: com.watchcrew.app
 - eraseText
 - hideKeyboard
 
-# --- panel open ---
+# --- panel open: row 2 sort, row 3 filter + view mode ---
 - tapOn:
     id: "watchlist-filter-toggle"
 - assertVisible:
     id: "watchlist-filter-panel"
+- assertVisible:
+    id: "watchlist-sort-field"
+- assertVisible:
+    id: "watchlist-sort-direction"
+- assertVisible:
+    id: "watchlist-filter-add"
 - takeScreenshot: 04-watchlist-panel-open
 
-# --- every sort option ---
+# --- sort fields (Select) + direction; filters stay untouched ---
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-field"
 - assertVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 05-watchlist-sort-sheet
+    id: "watchlist-sort-field-list"
+- takeScreenshot: 05-watchlist-sort-field-select
 - tapOn:
-    id: "watchlist-sort-option-added"
+    id: "watchlist-sort-field-option-tmdb"
 - assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 06-watchlist-sort-added
+    id: "watchlist-sort-field-list"
+- takeScreenshot: 06-watchlist-sort-tmdb-desc
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-direction"
+- takeScreenshot: 07-watchlist-sort-tmdb-asc
 - tapOn:
-    id: "watchlist-sort-option-upcoming"
-- assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 07-watchlist-sort-upcoming
+    id: "watchlist-sort-field"
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-field-option-title"
+- takeScreenshot: 08-watchlist-sort-title-asc
 - tapOn:
-    id: "watchlist-sort-option-unrated"
-- assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 08-watchlist-sort-unrated
+    id: "watchlist-sort-field"
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-field-option-release"
+- takeScreenshot: 09-watchlist-sort-release
 - tapOn:
-    id: "watchlist-sort-option-has_ratings"
-- assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 09-watchlist-sort-has-ratings
+    id: "watchlist-sort-field"
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-sort-field-option-added"
+- takeScreenshot: 10-watchlist-sort-added
+
+# --- filter flyout: opens with all sections; nothing applies before Anwenden ---
 - tapOn:
-    id: "watchlist-sort-option-tmdb_score"
-- assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 10-watchlist-sort-tmdb-score
-- tapOn:
-    id: "watchlist-sort-button"
-- tapOn:
-    id: "watchlist-sort-option-genre"
-- assertNotVisible:
-    id: "watchlist-sort-options"
+    id: "watchlist-filter-add"
+- extendedWaitUntil:
+    visible:
+      id: "watchlist-filter-flyout"
+    timeout: 5000
 - assertVisible:
     id: "watchlist-genre-pills"
-- takeScreenshot: 11-watchlist-sort-genre-pills
+- assertVisible:
+    id: "watchlist-year-pills"
+- assertVisible:
+    id: "watchlist-streaming-mine"
+- assertVisible:
+    id: "watchlist-filter-liked"
+- takeScreenshot: 11-watchlist-flyout-open
 - tapOn:
     id: "watchlist-genre-pill-.*"
     index: 0
-- assertVisible:
-    id: "watchlist-genre-pills"
-- takeScreenshot: 12-watchlist-genre-pill-selected
+- takeScreenshot: 12-watchlist-flyout-genre-draft
 - tapOn:
-    id: "watchlist-sort-button"
-- tapOn:
-    id: "watchlist-sort-option-year"
+    id: "watchlist-filter-apply"
 - assertNotVisible:
-    id: "watchlist-sort-options"
+    id: "watchlist-filter-flyout"
 - assertVisible:
-    id: "watchlist-year-pills"
-- takeScreenshot: 13-watchlist-sort-year-pills
+    id: "watchlist-filter-chip-genre-.*"
+- assertVisible:
+    id: "watchlist-filter-active-dot"
+- takeScreenshot: 13-watchlist-genre-chip
+
+# --- combination: genre filter + tmdb sort (decoupled) ---
+- tapOn:
+    id: "watchlist-sort-field"
+- tapOn:
+    id: "watchlist-sort-field-option-tmdb"
+- assertVisible:
+    id: "watchlist-filter-chip-genre-.*"
+- takeScreenshot: 14-watchlist-genre-plus-tmdb-sort
+- tapOn:
+    id: "watchlist-filter-chip-genre-.*"
+- assertNotVisible:
+    id: "watchlist-filter-chip-genre-.*"
+- takeScreenshot: 15-watchlist-genre-chip-removed
+
+# --- year + rating-state filters in the flyout ---
+- tapOn:
+    id: "watchlist-filter-add"
 - tapOn:
     id: "watchlist-year-pill-.*"
     index: 0
+- tapOn:
+    id: "watchlist-filter-has_ratings"
+- takeScreenshot: 16-watchlist-flyout-year-has-ratings-draft
+- tapOn:
+    id: "watchlist-filter-apply"
 - assertVisible:
-    id: "watchlist-year-pills"
-- takeScreenshot: 14-watchlist-year-pill-selected
+    id: "watchlist-filter-chip-year"
+- assertVisible:
+    id: "watchlist-filter-chip-has_ratings"
+- takeScreenshot: 17-watchlist-year-has-ratings-chips
 - tapOn:
-    id: "watchlist-sort-button"
+    id: "watchlist-filter-add"
 - tapOn:
-    id: "watchlist-sort-option-my_streaming"
+    id: "watchlist-filter-upcoming"
+- tapOn:
+    id: "watchlist-filter-unrated"
+- tapOn:
+    id: "watchlist-filter-apply"
+- takeScreenshot: 18-watchlist-upcoming-unrated-chips
+
+# --- streaming filter (Meine Dienste + Flatrate/Leihen/Kaufen) ---
+- tapOn:
+    id: "watchlist-filter-add"
+- tapOn:
+    id: "watchlist-filter-reset"
+- tapOn:
+    id: "watchlist-streaming-mine"
+- assertVisible:
+    id: "watchlist-provider-categories"
+- takeScreenshot: 19-watchlist-flyout-streaming-draft
+- tapOn:
+    id: "watchlist-provider-category-rent"
+- tapOn:
+    id: "watchlist-provider-category-rent"
+- tapOn:
+    id: "watchlist-filter-apply"
+- assertVisible:
+    id: "watchlist-filter-chip-streaming"
+- takeScreenshot: 20-watchlist-streaming-chip
+
+# --- reset in the flyout clears all filters (apply) ---
+- tapOn:
+    id: "watchlist-filter-add"
+- tapOn:
+    id: "watchlist-filter-reset"
+- tapOn:
+    id: "watchlist-filter-apply"
 - assertNotVisible:
-    id: "watchlist-sort-options"
-- takeScreenshot: 15-watchlist-sort-my-streaming
+    id: "watchlist-filter-chip-streaming"
+- takeScreenshot: 21-watchlist-filters-reset
 
-# --- provider categories ---
-- runFlow:
-    when:
-      visible:
-        id: "watchlist-provider-categories"
-    commands:
-      - tapOn:
-          id: "watchlist-provider-category-rent"
-      - assertVisible:
-          id: "watchlist-provider-categories"
-      - takeScreenshot: 16-watchlist-provider-category-rent-toggled
-      - tapOn:
-          id: "watchlist-provider-category-rent"
-      - assertVisible:
-          id: "watchlist-provider-categories"
-
-# my_streaming + Flatrate chip can hide every film (e.g. only Hokum on the
-# list) -> no grid/list rendered. Back to "Hinzugefügt" (shows all entries)
-# before the view-mode checks.
-- tapOn:
-    id: "watchlist-sort-button"
-- tapOn:
-    id: "watchlist-sort-option-added"
-- assertNotVisible:
-    id: "watchlist-sort-options"
-
-# --- view modes ---
+# --- view modes (all share the same sort) ---
 - tapOn:
     id: "watchlist-view-mode-cards-button"
 - assertVisible:
     id: "watchlist-grid-or-cards"
-- takeScreenshot: 17-watchlist-view-cards
+- takeScreenshot: 22-watchlist-view-cards
 - tapOn:
     id: "watchlist-view-mode-list-button"
 - assertVisible:
     id: "watchlist-list"
-- takeScreenshot: 18-watchlist-view-list-filter-dot
+- takeScreenshot: 23-watchlist-view-list
+
+# --- table header sets the same sort (list mode): title asc, then desc, then default ---
+- tapOn:
+    id: "watchlist-table-header-title"
+- assertVisible:
+    id: "watchlist-table-header-title-sort-asc"
+- takeScreenshot: 24-watchlist-header-title-asc
+- tapOn:
+    id: "watchlist-table-header-title"
+- assertVisible:
+    id: "watchlist-table-header-title-sort-desc"
+- tapOn:
+    id: "watchlist-table-header-title"
+- assertNotVisible:
+    id: "watchlist-table-header-title-sort-desc"
+- takeScreenshot: 25-watchlist-header-back-to-default
 - tapOn:
     id: "watchlist-view-mode-grid-button"
 - assertVisible:
     id: "watchlist-grid-or-cards"
-- takeScreenshot: 19-watchlist-view-grid
+- takeScreenshot: 26-watchlist-view-grid
 
-# --- restore: sort back to default "Hinzugefügt", panel closed ---
+# --- restore: sort default, no filters, panel closed ---
 - runFlow: ../subflows/watchlist-normalize.yaml
-- takeScreenshot: 20-watchlist-restored-closed
+- takeScreenshot: 27-watchlist-restored-closed

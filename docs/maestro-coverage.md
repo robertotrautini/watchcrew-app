@@ -16,8 +16,8 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Join-Token `join/[token]` | `deeplinks` | offline-deeplinks | `02-join-token-screen` | partial (Fake-Token; echtes Beitreten braucht 2. Account) |
 | Onboarding Auswahl/Erstellen/Beitreten `(onboarding)/create-or-join-group` | `onboarding-explore`, `create-test-group` | onboarding | `onboarding-explore/01..03` | not automatable (Test-Account hat Gruppe; Flows laufen nur bei gruppenlosem Account, sonst übersprungen) |
 | Tracker-Tab | `tracker-payment`, `tabs-tour` | tracker, navigation | `tracker-payment/01-tracker-before`, `06-tracker-with-payment`, `11-tracker-restored`, `tabs-tour/01-tab-tracker` | covered |
-| Watchlist-Tab | `watchlist-filter-sort`, `tabs-tour`, `watchlist-add-remove` | watchlist, navigation, add-movie | `watchlist-filter-sort/01..20`, `tabs-tour/02-tab-watchlist` | covered (Default-Sort "Hinzugefügt", Zustand per `subflows/watchlist-normalize.yaml` gesetzt) |
-| Tagebuch-Tab | `tagebuch-filter-sort`, `tabs-tour` | tagebuch, navigation | `tagebuch-filter-sort/01..21`, `tabs-tour/03-tab-tagebuch` | covered (Restore-/Default-Sortierung ist jetzt "Beste Bewertung" statt "Mein Tagebuch"; Spaltenkopf-Sortierung in Liste noch ohne Flow, manuell zu pruefen) |
+| Watchlist-Tab | `watchlist-filter-sort`, `tabs-tour`, `watchlist-add-remove` | watchlist, navigation, add-movie | `watchlist-filter-sort/01..27`, `tabs-tour/02-tab-watchlist` | covered (Default-Sort "Hinzugefügt" absteigend, keine Filter, Zustand per `subflows/watchlist-normalize.yaml` gesetzt) |
+| Tagebuch-Tab | `tagebuch-filter-sort`, `tabs-tour` | tagebuch, navigation | `tagebuch-filter-sort/01..32`, `tabs-tour/03-tab-tagebuch` | covered (Restore-/Default: Scope "Gruppe" (global, bleibt beim Gruppenwechsel), Sortierung "Bewertung Ø" absteigend, keine Filter) |
 | Tab-Bar (Wechsel, Akzentfarbe) | alle Flows, `group-settings-edit` (alle 6 Themes) | group-settings | `group-settings-edit/04..09` | covered |
 | Filmdetail `movie/[tmdbId]` (Tagebuch-Kontext) | `movie-detail-full` | movie-detail | `01-detail-top`..`09-detail-delete-confirm`, `13-back-on-tagebuch` | covered |
 | Filmdetail (Watchlist-Kontext) | `watchlist-open-detail`, `rating-cycle`, `watchlist-add-remove` | watchlist, movie-detail, rating, add-movie | `watchlist-open-detail/01-watchlist-detail`, `rating-cycle/01-watchlist-detail-actions` | covered |
@@ -34,7 +34,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Settings: Streaming-Dienste | `settings-edit`, `tabs-tour` | settings, navigation | `settings-edit/11..14` | covered |
 | Settings: Darstellung | `settings-edit` | settings | `07..10` | covered |
 | Settings: Benachrichtigungen | `settings-edit` | settings | `15-notifications-screen` | partial (Screen ja, Toggle nein, s. unten) |
-| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-screen`, `06-delete-account-confirm-sheet` (ConfirmDialog) | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
+| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-dialog` (ConfirmDialog-Flyout in den Einstellungen) | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
 | Gruppen-Einstellungen `group-settings` | `group-settings-edit`, `tabs-tour` | group-settings, navigation | `group-settings-edit/01..16` | covered |
 | Highlight-Farbe (Theme Rot-Tour, Blau-Stichprobe, Gold-Restore) | `theme-tour` | theme, design-system | `theme-tour/00..24` | covered (Gold-Restore via `onFlowComplete`) |
 | Datenquellen/Attributions (im Settings-Hub) | `tabs-tour` | navigation | `04-settings-hub` | partial (Anzeige; Links öffnen externen Browser) |
@@ -62,19 +62,20 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Streaming-Filter-Toggle im Add-Movie | `add-movie-modes` | add-movie | `03-add-movie-streaming-filter-toggled` | covered |
 | Film bewerten (Sterne, Like, Speichern) | `rating-cycle` | rating | `02..05` | covered |
 | Bewertung bearbeiten | `rating-cycle`, `movie-detail-full` | rating, movie-detail | `rating-cycle/06..08`, `movie-detail-full/08` | covered |
-| Bewertung zurücksetzen (nur Entwurf; Speichern fragt per ConfirmDialog 'Bewertung wirklich löschen?', abgebrochen) | `rating-cycle` | rating | `09-edit-dialog-after-reset`, `09b-rating-delete-confirm` | partial (Bestätigung gezeigt, abgebrochen, destruktiv) |
+| Bewertung zurücksetzen (nur Entwurf; Speichern fragt per ConfirmDialog 'Bewertung wirklich löschen?', abgebrochen) | `rating-cycle` | rating | `09-edit-dialog-after-reset`, `09b-rating-delete-confirm` | partial (Bestätigung gezeigt, abgebrochen, destruktiv; ADR 0014: Bestätigen würde die Zeile in user_movie_ratings löschen = in ALLEN Gruppen ungesehen) |
 | "Direkt bewerten" | - | - | `watchlist-add-remove/03` (Button sichtbar) | partial (Button sichtbar, nicht ausgelöst, würde Film dauerhaft hinzufügen+bewerten) |
 | Film von Watchlist löschen (Bestätigung + echt, nur selbst angelegt) | `watchlist-add-remove` | watchlist, add-movie | `07-delete-confirm`, `08-watchlist-after-remove` | covered |
 | Film aus Tagebuch löschen | `movie-detail-full` | movie-detail | `09-detail-delete-confirm` | partial (Dialog gezeigt/abgebrochen, Löschen zerstört echte Daten) |
 | Watchlist-Eintrag bearbeiten (Tipp auf Datumszeile `movie-detail-release-date-edit` -> Erscheinungsdatum-Sheet) | `watchlist-add-remove` | watchlist, add-movie | `05b-watchlist-detail-date-edit`, `06-watchlist-entry-edit-sheet` | partial (Sheet gezeigt, nicht gespeichert) |
 | Watchlist-Eintrag ohne Datum: Platzhalter "Kein Datum" tippbar (`movie-detail-release-date`/`-edit`) | - | - | - | not automatable (braucht Watchlist-Film ohne bekanntes Datum, mit Seed-Daten nicht reproduzierbar; Jest-abgedeckt) |
 | Watchlist/Tagebuch Suche (Treffer, kein Treffer) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `02`, `03` | covered |
-| Filter-Panel auf/zu + Filter-Punkt | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `04`, `18`, `20/21` | covered |
-| Sortier-Flyout + jede Sortieroption (Watchlist 8, Tagebuch 9) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `05..15` / `05..16` | covered |
-| Genre-/Jahr-Chips | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `11..14` / `12..15` | covered |
-| Provider-Kategorien (Flatrate/Leihen/Kaufen) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `16` / `17` | covered |
-| Listenkopf-Sortierung (Tippen auf Spaltenkopf: auf/ab/aus, Pfeil) | - | watchlist, tagebuch | - | nicht automatisiert (Nutzer testet manuell) |
-| Ansichtsmodi Karten/Grid/Liste | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `17..19` / `18..20` | covered |
+| Filter-Panel auf/zu + Filter-Punkt | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `04`, `13`/`17`, `27`/`32` | covered |
+| Sortierzeile: Sortierfeld-Select + Richtungs-Button (Tagebuch: Bewertung Ø, Eigene Bewertung, Likes, TMDB, Titel, Gesehen am; Watchlist: Hinzugefügt, TMDB, Titel, Erscheinungsdatum) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `05..10` / `07..14` | covered |
+| Filter-Leiste: Chips mit x (entfernbar) + "+ Filter"-Flyout (Genre mehrfach, Jahr, Streaming Meine Dienste + Flatrate/Leihen/Kaufen, Mag ich, Bewertungsstand), Entwurf bis "Anwenden", "Zurücksetzen" | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `11..21` / `15..26` | covered |
+| Kombination Filter + Sortierung (z. B. Genre-Chip + TMDB-/Titel-Sortierung) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `14` / `18` | covered (Reihenfolge der Liste nur visuell; Logik Jest-abgedeckt) |
+| Tagebuch-Scope "Mein Tagebuch" bzw. "Gruppe" | `tagebuch-filter-sort` | tagebuch | `05`, `06` | covered (Scope-Umschaltung; "Mein Tagebuch" = alle Gruppen inkl. Filme ohne Gruppen-Eintrag: nur Jest, kein Flow mit Zweitgruppe/gruppenlosem Film, offen) |
+| Listenkopf-Sortierung (Tippen auf Spaltenkopf: auf/ab/Standard, Pfeil; gleicher Zustand wie die Sortierzeile) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `24`, `25` / `29`, `30` | covered |
+| Ansichtsmodi Karten/Grid/Liste | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `22,23,26` / `27,28,31` | covered |
 | Detail: Bewertungen auf/zuklappen, Beschreibung, Besetzung | `movie-detail-full` | movie-detail | `02..04`, `07` | covered |
 | Detail: Anbieter-Liste (Provider) | `movie-detail-full` | movie-detail | `05`, `06` | partial (nur wenn Film Anbieter hat, sonst bedingt übersprungen) |
 | Detail: Trailer abspielen | - | - | - | not automatable (WebView/YouTube, externer Inhalt) |
@@ -92,7 +93,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Einladungslink neu generieren | - | - | - | not automatable (zerstört den bisherigen Link irreversibel) |
 | Mitglied entfernen (Icon-Button rechts in einzeiliger Mitgliederzeile; Kopfblock Name/Farbe oben entfernt, oben steht 'Deine Gruppen') | - | - | `group-settings-edit/01`, `14` (Mitgliederliste) | not automatable (2. Mitglied nötig, destruktiv) |
 | Einladungslink neu generieren (ConfirmDialog `group-settings-invite-regenerate-*`, invalidiert alten Link) | - | - | - | not automatable (invalidiert echten Link, destruktiv) |
-| Gruppe verlassen | `group-settings-edit` | group-settings | `15-leave-confirm`, `16-leave-cancelled` | partial (Bestätigung gezeigt, abgebrochen, destruktiv) |
+| Gruppe verlassen | `group-settings-edit` | group-settings | `15-leave-confirm`, `16-leave-cancelled` | partial (Bestätigung gezeigt, abgebrochen, destruktiv; Owner-Text mit Nachfolger-Name) |
 | Gruppe wechseln (Select-Dropdown) | `group-settings-edit` (nur auf/zu) | group-settings | `01`, `01b-group-dropdown-open` | partial (Auswahl nicht automatisierbar, nur 1 Gruppe) |
 | Konto löschen | `settings-edit` | settings | `05`, `06` | partial (nie bestätigt, destruktiv) |
 | Offline-Banner / Offline-Cache | `offline-banner` | offline-deeplinks | `01..03` | covered (Flugmodus an/aus) |
@@ -116,3 +117,7 @@ Hinweis Flow-Technik: `scrollUntilVisible` stoppt bei teilweise verdecktem Eleme
 
 
 Hinweis Header (2026-10-10): `app-header-title` zeigt jetzt den Gruppennamen (Fallback Ansichtsname ohne Gruppe); `app-header-group` entfaellt (Platzhalter `app-header-spacer`). Kein Flow in `.maestro/flows` referenziert diese testIDs oder den Ansichtsnamen im Header; nicht per Maestro verifiziert.
+
+## ADR 0014 Phase 1+2 (Bewertungen pro Nutzer und Film)
+
+Keine neuen testIDs, bestehende Flows unverändert gültig (Bewertungen liegen jetzt in `user_movie_ratings`, Lesen per RPC `get_group_member_ratings`, Schreiben per Upsert/Delete). Noch NICHT automatisiert (braucht zweite Testgruppe, Entscheidung Robin): Neuer Flow `rating-shared-across-groups` (Film in zwei Gruppen, Bewertung in A setzen, in B prüfen) und Schritt "Entfernen + Wieder-Hinzufügen: Bewertung sofort da" in `watchlist-add-remove`. Bis dahin manuelle Handy-Prüfung (siehe docs/plan-user-movie-ratings.md, Phasenstand).

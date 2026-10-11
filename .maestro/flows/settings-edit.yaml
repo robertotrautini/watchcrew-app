@@ -49,29 +49,11 @@ appId: com.watchcrew.app
     id: "settings-section-delete-account"
 - extendedWaitUntil:
     visible:
-      id: "settings-delete-account-screen"
-    timeout: 10000
-- takeScreenshot: 05-delete-account-screen
-- tapOn:
-    id: "delete-account-open-button"
-- extendedWaitUntil:
-    visible:
       id: "delete-account-confirm-input"
     timeout: 10000
-- takeScreenshot: 06-delete-account-confirm-sheet
-- back
-- runFlow:
-    when:
-      visible:
-        id: "delete-account-confirm-input"
-    commands:
-      - back
-- runFlow:
-    when:
-      visible:
-        id: "settings-delete-account-screen"
-    commands:
-      - back
+- takeScreenshot: 05-delete-account-dialog
+- tapOn:
+    id: "delete-account-cancel-button"
 - extendedWaitUntil:
     visible:
       id: "settings-screen"

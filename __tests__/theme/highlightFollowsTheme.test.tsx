@@ -9,7 +9,6 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
 import { Chip, ChipTag } from "@/components/ui/Chip";
 import { SettingsRow } from "@/components/ui/SettingsRow";
-import { SortButton } from "@/components/ui/SortButton";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { MovieGrid, type MovieGridBadge } from "@/components/movie/MovieGrid";
 import { resolveGroupTheme } from "@/lib/groupTheme";
@@ -120,15 +119,6 @@ describe("class-token components resolve through theme variables (no static colo
       </GroupThemeProvider>,
     );
     expect(getByTestId("v-grid-segment").props.className).toContain("bg-accent");
-  });
-
-  it("SortButton has no static accent colour", async () => {
-    const { getByTestId } = await render(
-      <GroupThemeProvider themeName="red">
-        <SortButton testID="sb" shortLabel="a" fullLabel="b" onPress={() => {}} />
-      </GroupThemeProvider>,
-    );
-    expect(getByTestId("sb").props.className).not.toMatch(/yellow|amber|c8a44e/);
   });
 
   it("star colour is the fixed yellow in every theme (css + ts)", () => {

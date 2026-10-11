@@ -1,9 +1,12 @@
 appId: com.watchcrew.app
 ---
-# tagebuch-filter-sort.yaml — Tagebuch tab: search, filter panel, every sort
-# option, genre/year chips, view modes, open entry. Restores: sort "Mein
-# Tagebuch" -> NEU: "Beste Bewertung" (App-Default seit der Spaltenkopf-
-# Sortierung, Option `rating`), view mode cards, panel closed.
+# tagebuch-filter-sort.yaml — Tagebuch tab: search, scope switch (Mein Tagebuch |
+# Gruppe), the DECOUPLED panel rows (no labels; sort icon + field Select + direction
+# button; row 3: "+ Filter" + scrollable chips + view-mode toggle at the right; flyout with draft/Anwenden/
+# Zurücksetzen), combination filter + sort, table-header sort (same state as
+# the panel), view modes.
+# Restores: scope "Gruppe" (app default; the scope is one global setting), sort "Bewertung Ø" descending (app default),
+# no filters, view mode cards, panel closed.
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-tagebuch.yaml
 - extendedWaitUntil:
@@ -26,140 +29,251 @@ appId: com.watchcrew.app
     id: "tagebuch-search-input"
 - eraseText
 - hideKeyboard
+
+# --- normalise persisted state: scope, filters, sort (independent states) ---
 - tapOn:
-    id: "tagebuch-filter-toggle"
+    id: "tagebuch-scope-my_diary"
+- runFlow:
+    when:
+      notVisible:
+        id: "tagebuch-filter-panel"
+    commands:
+      - tapOn:
+          id: "tagebuch-filter-toggle"
 - assertVisible:
     id: "tagebuch-filter-panel"
-- takeScreenshot: 04-tagebuch-panel-open
 - tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 05-tagebuch-sort-sheet
+    id: "tagebuch-sort-field"
 - tapOn:
-    id: "tagebuch-sort-option-my_diary"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 06-tagebuch-sort-mein-tagebuch
-- tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-all_rated"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 07-tagebuch-sort-von-allen-bewertet
-- tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-missing"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 08-tagebuch-sort-fehlende-bewertungen
-- tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-rating"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 09-tagebuch-sort-beste-bewertung
-- tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-tmdb_score"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 10-tagebuch-sort-tmdb-score
-- tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-my_streaming"
-- assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 11-tagebuch-sort-my-streaming
+    id: "tagebuch-sort-field-option-average"
 - runFlow:
     when:
       visible:
-        id: "tagebuch-provider-categories"
+        text: "Richtung: aufsteigend.*"
     commands:
       - tapOn:
-          id: "tagebuch-provider-category-rent"
-      - assertVisible:
-          id: "tagebuch-provider-categories"
-      - takeScreenshot: 17-tagebuch-provider-category-rent-toggled
-      - tapOn:
-          id: "tagebuch-provider-category-rent"
-      - assertVisible:
-          id: "tagebuch-provider-categories"
+          id: "tagebuch-sort-direction"
 - tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
+    id: "tagebuch-filter-add"
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-filter-flyout"
+    timeout: 5000
 - tapOn:
-    id: "tagebuch-sort-option-genre"
+    id: "tagebuch-filter-reset"
+- tapOn:
+    id: "tagebuch-filter-apply"
 - assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 12-tagebuch-sort-genre
+    id: "tagebuch-filter-flyout"
+- assertVisible:
+    id: "tagebuch-sort-row"
+- assertVisible:
+    id: "tagebuch-filter-row"
+- takeScreenshot: 04-tagebuch-panel-open
+
+# --- scope switch: Gruppe shows movies any member rated; sort/filters stay ---
+- tapOn:
+    id: "tagebuch-scope-group"
+- takeScreenshot: 05-tagebuch-scope-gruppe
+- tapOn:
+    id: "tagebuch-scope-my_diary"
+- takeScreenshot: 06-tagebuch-scope-mein-tagebuch
+
+# --- sort fields (Select) + direction; filters stay untouched ---
+- tapOn:
+    id: "tagebuch-sort-field"
+- assertVisible:
+    id: "tagebuch-sort-field-list"
+- takeScreenshot: 07-tagebuch-sort-field-select
+- tapOn:
+    id: "tagebuch-sort-field-option-own"
+- assertNotVisible:
+    id: "tagebuch-sort-field-list"
+- takeScreenshot: 08-tagebuch-sort-eigene-bewertung
+- tapOn:
+    id: "tagebuch-sort-direction"
+- takeScreenshot: 09-tagebuch-sort-eigene-asc
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-likes"
+- takeScreenshot: 10-tagebuch-sort-likes
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-tmdb"
+- takeScreenshot: 11-tagebuch-sort-tmdb
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-title"
+- takeScreenshot: 12-tagebuch-sort-titel
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-seen_at"
+- takeScreenshot: 13-tagebuch-sort-gesehen-am
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-average"
+- runFlow:
+    when:
+      visible:
+        text: "Richtung: aufsteigend.*"
+    commands:
+      - tapOn:
+          id: "tagebuch-sort-direction"
+- takeScreenshot: 14-tagebuch-sort-average-desc
+
+# --- filter flyout: all sections, draft until Anwenden ---
+- tapOn:
+    id: "tagebuch-filter-add"
+- extendedWaitUntil:
+    visible:
+      id: "tagebuch-filter-flyout"
+    timeout: 5000
+- assertVisible:
+    id: "tagebuch-genre-pills"
+- assertVisible:
+    id: "tagebuch-year-pills"
+- assertVisible:
+    id: "tagebuch-streaming-mine"
+- assertVisible:
+    id: "tagebuch-filter-liked"
+- assertVisible:
+    id: "tagebuch-filter-all_rated"
+- assertVisible:
+    id: "tagebuch-filter-missing"
+- takeScreenshot: 15-tagebuch-flyout-open
 - tapOn:
     id: "tagebuch-genre-pill-.*"
     index: 0
-- assertVisible:
-    id: "tagebuch-genre-pills"
-- takeScreenshot: 13-tagebuch-genre-pill-selected
+- takeScreenshot: 16-tagebuch-flyout-genre-draft
 - tapOn:
-    id: "tagebuch-sort-button"
-- assertVisible:
-    id: "tagebuch-sort-sheet"
-- tapOn:
-    id: "tagebuch-sort-option-year"
+    id: "tagebuch-filter-apply"
 - assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 14-tagebuch-sort-year
+    id: "tagebuch-filter-flyout"
+- assertVisible:
+    id: "tagebuch-filter-chip-genre-.*"
+- assertVisible:
+    id: "tagebuch-filter-active-dot"
+- takeScreenshot: 17-tagebuch-genre-chip
+
+# --- combination: genre filter + title sort (decoupled) ---
+- tapOn:
+    id: "tagebuch-sort-field"
+- tapOn:
+    id: "tagebuch-sort-field-option-title"
+- assertVisible:
+    id: "tagebuch-filter-chip-genre-.*"
+- takeScreenshot: 18-tagebuch-genre-plus-title-sort
+- tapOn:
+    id: "tagebuch-filter-chip-genre-.*"
+- assertNotVisible:
+    id: "tagebuch-filter-chip-genre-.*"
+- takeScreenshot: 19-tagebuch-genre-chip-removed
+
+# --- year, liked, rating state in the flyout ---
+- tapOn:
+    id: "tagebuch-filter-add"
 - tapOn:
     id: "tagebuch-year-pill-.*"
     index: 0
+- tapOn:
+    id: "tagebuch-filter-liked"
+- tapOn:
+    id: "tagebuch-filter-all_rated"
+- takeScreenshot: 20-tagebuch-flyout-year-liked-allrated-draft
+- tapOn:
+    id: "tagebuch-filter-apply"
 - assertVisible:
-    id: "tagebuch-year-pills"
-- takeScreenshot: 15-tagebuch-year-pill-selected
-- tapOn:
-    id: "tagebuch-sort-button"
+    id: "tagebuch-filter-chip-year"
 - assertVisible:
-    id: "tagebuch-sort-sheet"
+    id: "tagebuch-filter-chip-liked"
+- assertVisible:
+    id: "tagebuch-filter-chip-all_rated"
+- takeScreenshot: 21-tagebuch-year-liked-allrated-chips
 - tapOn:
-    id: "tagebuch-sort-option-liked"
+    id: "tagebuch-filter-add"
+- tapOn:
+    id: "tagebuch-filter-missing"
+- tapOn:
+    id: "tagebuch-filter-apply"
+- assertVisible:
+    id: "tagebuch-filter-chip-missing"
 - assertNotVisible:
-    id: "tagebuch-sort-sheet"
-- takeScreenshot: 16-tagebuch-sort-liked
+    id: "tagebuch-filter-chip-all_rated"
+- takeScreenshot: 22-tagebuch-missing-chip
+
+# --- streaming filter (Meine Dienste + Flatrate/Leihen/Kaufen) ---
 - tapOn:
-    id: "tagebuch-sort-button"
+    id: "tagebuch-filter-add"
 - tapOn:
-    id: "tagebuch-sort-option-rating"
+    id: "tagebuch-filter-reset"
+- tapOn:
+    id: "tagebuch-streaming-mine"
+- assertVisible:
+    id: "tagebuch-provider-categories"
+- takeScreenshot: 23-tagebuch-flyout-streaming-draft
+- tapOn:
+    id: "tagebuch-provider-category-rent"
+- takeScreenshot: 24-tagebuch-flyout-streaming-rent-toggled
+- tapOn:
+    id: "tagebuch-provider-category-rent"
+- tapOn:
+    id: "tagebuch-filter-apply"
+- assertVisible:
+    id: "tagebuch-filter-chip-streaming"
+- takeScreenshot: 25-tagebuch-streaming-chip
+
+# --- reset in the flyout clears all filters (apply) ---
+- tapOn:
+    id: "tagebuch-filter-add"
+- tapOn:
+    id: "tagebuch-filter-reset"
+- tapOn:
+    id: "tagebuch-filter-apply"
 - assertNotVisible:
-    id: "tagebuch-sort-sheet"
+    id: "tagebuch-filter-chip-streaming"
+- takeScreenshot: 26-tagebuch-filters-reset
+
+# --- view modes (all share the same sort) ---
 - tapOn:
     id: "tagebuch-view-mode-grid"
 - assertVisible:
     id: "tagebuch-entry-press-.*"
-- takeScreenshot: 18-tagebuch-view-grid
+- takeScreenshot: 27-tagebuch-view-grid
 - tapOn:
     id: "tagebuch-view-mode-list"
 - assertVisible:
     id: "tagebuch-list-title-.*"
-- takeScreenshot: 19-tagebuch-view-list
+- takeScreenshot: 28-tagebuch-view-list
+
+# --- table header sets the same sort (list mode): title asc, desc, back to default ---
+- tapOn:
+    id: "tagebuch-table-header-title"
+- assertVisible:
+    id: "tagebuch-table-header-title-sort-asc"
+- takeScreenshot: 29-tagebuch-header-title-asc
+- tapOn:
+    id: "tagebuch-table-header-title"
+- assertVisible:
+    id: "tagebuch-table-header-title-sort-desc"
+- tapOn:
+    id: "tagebuch-table-header-title"
+- assertNotVisible:
+    id: "tagebuch-table-header-title-sort-desc"
+- assertVisible:
+    id: "tagebuch-table-header-average-sort-desc"
+- takeScreenshot: 30-tagebuch-header-back-to-default
 - tapOn:
     id: "tagebuch-view-mode-cards"
 - assertVisible:
     id: "tagebuch-entry-press-.*"
-- takeScreenshot: 20-tagebuch-view-cards
+- takeScreenshot: 31-tagebuch-view-cards
 - tapOn:
     id: "tagebuch-filter-toggle"
-- takeScreenshot: 21-tagebuch-restored-closed
+- tapOn:
+    id: "tagebuch-scope-group"
+- takeScreenshot: 32-tagebuch-restored-closed
