@@ -110,7 +110,7 @@ export function MovieDetailPosterTrailer({
             <Image
               testID="movie-detail-poster-image"
               source={{ uri: posterUrl }}
-              accessibilityLabel={title}
+              accessibilityLabel={title || "Filmdetail"}
               className="h-full w-full bg-card"
               contentFit="cover"
             />

@@ -144,13 +144,14 @@ describe("MovieDetailScreen", () => {
     mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
 
     const MovieDetailScreen = loadMovieDetailScreen();
-    const { getByTestId, getByText } = await render(<MovieDetailScreen />);
+    const { getByTestId, queryByTestId, queryByText } = await render(<MovieDetailScreen />);
 
     expect(getByTestId("movie-detail-screen")).toBeTruthy();
     expect(getByTestId("movie-detail-back-button")).toBeTruthy();
     expect(getByTestId("movie-detail-action-bar")).toBeTruthy();
-    // No storedMovie available -> falls back to the "Film" placeholder title.
-    expect(getByText("Film")).toBeTruthy();
+    // No storedMovie available and nothing loading -> no placeholder title text.
+    expect(queryByTestId("movie-detail-title")).toBeNull();
+    expect(queryByText("Film")).toBeNull();
   });
 
   it("renders the group ratings block in diary context only when other members exist", async () => {
@@ -305,7 +306,7 @@ describe("MovieDetailScreen", () => {
       });
     }
 
-    it("shows the live title instead of the 'Film' placeholder", async () => {
+    it("shows the live title", async () => {
       mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
       mockLiveDetails();
 
@@ -664,6 +665,44 @@ describe("MovieDetailScreen", () => {
 
       expect(getByTestId("movie-detail-release-date")).toBeTruthy();
       expect(queryByTestId("movie-detail-release-date-edit")).toBeNull();
+    });
+  });
+
+  describe("no placeholder title while loading", () => {
+    it("shows no title text while loading without a known title (only the central spinner)", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockUseMovieDetail.mockReturnValue({ data: undefined, isLoading: true });
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId, queryByTestId, queryByText } = await render(<MovieDetailScreen />);
+      expect(getByTestId("movie-detail-content-loading")).toBeTruthy();
+      expect(queryByTestId("movie-detail-title")).toBeNull();
+      expect(queryByTestId("movie-detail-title-row")).toBeNull();
+      expect(queryByText("Film")).toBeNull();
+    });
+
+    it("shows the title at once when movieJson is known", async () => {
+      mockUseLocalSearchParams.mockReturnValue({
+        tmdbId: "27205",
+        movieJson: encodeURIComponent(JSON.stringify({ id: "m1", tmdb_id: 27205, name: "Inception", poster: null, overview: null, runtime: null, release_date: null, vote_average: null, movie_genres: [] })),
+      });
+      mockUseMovieDetail.mockReturnValue({ data: undefined, isLoading: true });
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const { getByTestId } = await render(<MovieDetailScreen />);
+      expect(getByTestId("movie-detail-title").props.children).toBe("Inception");
+    });
+
+    it("shows the title once loading finished", async () => {
+      mockUseLocalSearchParams.mockReturnValue({ tmdbId: "27205" });
+      mockUseMovieDetail.mockReturnValue({ data: undefined, isLoading: true });
+      const MovieDetailScreen = loadMovieDetailScreen();
+      const view = await render(<MovieDetailScreen />);
+      expect(view.queryByTestId("movie-detail-title")).toBeNull();
+      mockUseMovieDetail.mockReturnValue({
+        isLoading: false,
+        data: { details: { id: 27205, title: "Inception", overview: null, posterPath: null, releaseDate: null, runtime: null, genres: [], belongs_to_collection: null, vote_average: null }, trailer: null, credits: null, germanReleaseDate: null, providers: null },
+      });
+      await view.rerender(<MovieDetailScreen />);
+      expect(view.getByTestId("movie-detail-title").props.children).toBe("Inception");
     });
   });
 

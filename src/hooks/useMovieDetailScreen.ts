@@ -147,9 +147,10 @@ export function useMovieDetailScreen() {
 
   // Stored movie (DB row / instant-paint JSON) wins; the live TMDB `details`
   // payload fills in when the movie isn't stored yet (e.g. opened straight
-  // from a search result, which carries only `tmdbId`). "Film" stays the
-  // last-resort placeholder while neither has resolved.
-  const title = storedMovie?.name ?? liveDetails?.title ?? "Film";
+  // from a search result, which carries only `tmdbId`). No
+  // placeholder text: while neither has resolved the title is empty and the
+  // title row renders nothing (only the central spinner shows).
+  const title = storedMovie?.name ?? liveDetails?.title ?? "";
   const posterUrl = buildTmdbImageUrl(
     storedMovie?.poster ?? liveDetails?.posterPath ?? null,
     "w780",

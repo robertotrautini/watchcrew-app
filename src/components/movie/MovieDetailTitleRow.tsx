@@ -13,6 +13,7 @@ export interface MovieDetailTitleRowProps {
 }
 
 export function MovieDetailTitleRow({ title }: MovieDetailTitleRowProps) {
+  if (!title) return null;
   return (
     <View testID="movie-detail-title-row" className="self-stretch">
       <Text

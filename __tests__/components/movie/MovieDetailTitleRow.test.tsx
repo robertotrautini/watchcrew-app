@@ -11,4 +11,9 @@ describe("MovieDetailTitleRow", () => {
     expect(title.props.className).toContain("text-accent-light");
     expect(getByTestId("movie-detail-title-row").props.className).not.toContain("justify-center");
   });
+
+  it("renders nothing for an empty title (no reserved height)", async () => {
+    const { queryByTestId } = await render(<MovieDetailTitleRow title="" />);
+    expect(queryByTestId("movie-detail-title-row")).toBeNull();
+  });
 });
