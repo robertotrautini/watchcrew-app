@@ -2607,3 +2607,9 @@ Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
 - Sortier-Anzeige: kleiner Chevron (14px) absolut unterhalb des Kopf-Icons (zentriert) bzw. in festem 14px-Slot rechts von "Film"; bei rechtsbuendigem "Erscheint" unter dem Textende (Slot rechts wuerde den Text gegen die Datumsspalte verschieben). Kopf-Icons 20px (Token `SM`), Spalten Herz/Ø `w-12`, TMDB `w-16`, Inhalt zentriert, Kopf und Zeilen teilen dieselben Konstanten; Kopfzelle `h-9`, Touchziel >= 44dp.
 
 **Folgen einer Aenderung:** Vergleichslogik in `src/lib/columnSort.ts`; Default in `DEFAULT_DIARY_SORT` (`src/lib/listFilters.ts`); Kopfzellen in `src/components/ui/GlassTable.tsx`.
+
+## Blur entfernt, nur flache Verdunklung (2026-10-11)
+
+- **Entscheidung (Nutzer):** Kein Blur mehr irgendwo. Alle Glas-Flaechen (Karten, Tabellen, Sheet, Tab-Bar, Toast, Detail-Leiste, Settings, Dialoge, `ScreenBackdrop`) nutzen die flache Fuellung `bg-bg-card-flat` (rgba(10,10,12,.95), `GLASS_FLAT_FILL` in `Glass.tsx`) + bestehende Border. Ersetzt die Eintraege "Echter Blur (expo-blur)" und alle spaeteren Blur-Tuning-Eintraege oben (historisch).
+- **Code:** `GlassBlur.tsx`, `ListSkeleton.tsx` (nur Alias auf `LoadingArea`), Jest-Mock `__mocks__/expo-blur.js` und Tokens `bg-*-blur` entfernt; Prop `cheap` entfaellt (Standard); `ScreenBackdrop` ohne Stufen; Dependency `expo-blur` deinstalliert.
+- **Nativ:** Das Modul bleibt im aktuellen Dev-Client-Binary ungenutzt; beim naechsten nativen Build verschwindet es.

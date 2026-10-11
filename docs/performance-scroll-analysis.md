@@ -156,3 +156,7 @@ Geraetetest des Nutzers: Performance mit `cheap` deutlich besser, aber das vorge
 - EIN BlurView ueber dem ganzen Listenbereich, Karten als "Fenster": braucht eine Maske (Karten ausschneiden). Dafuer gibt es in der Installation nichts (`@react-native-masked-view` waere neue Dependency, und Masken erzwingen Offscreen-Layer, der mit dem scrollenden Inhalt jedes Frame neu gerendert wird). Alternativ BlurView UNTER der Liste und Zwischenraeume abdecken: die Luecken zwischen Karten zeigen dann geblurrtes statt scharfes Foto (Look-Aenderung) und die Kartenflaechen muessten exakt transparent bleiben; dann ist es 1 Blur-Pass pro Frame (guenstig, ca. wie Tab-Bar), aber der Look ist "ganze Liste unscharf", nicht "Karten milchig".
 - Gebackene Alternative, die zum Foto passt: geblurrtes Foto im selben Koordinatensystem wie `AppBackground` (gleiche Groesse/Parallax) als EINE Ebene ueber dem scharfen Foto, nur im Listenbereich, Karten transparent mit leichtem Tint. Kosten: ein Bild (~wie das Hintergrundfoto), kein Blur-Pass. Nachteil wie oben: auch die Luecken zwischen Karten sind unscharf. Das waere der realistische Weg zu "Blur-Look", braucht aber eine Designentscheidung.
 - Fazit: pro-Karte-Echtblur bei 100+ Karten auf Android nicht sinnvoll; nur die Ein-Ebene-Variante ist billig.
+
+### Nachtrag 4: Blur komplett entfernt (2026-10-11)
+
+Alle Glas-Flaechen nutzen jetzt die flache Fuellung `bg-bg-card-flat` (95 %); `GlassBlur`, `cheap` und die Dependency `expo-blur` sind entfernt. Aeltere Abschnitte oben beschreiben den Zustand davor.

@@ -7,9 +7,7 @@ Kurzreferenz. Quelle der Wahrheit fuer Tokens: `tailwind.config.js`; Komponenten
 | Token | Wert | Zweck |
 |---|---|---|
 | `glass-border` | `rgba(255,255,255,.10)`, **1px** | EINE Border fuer alle Flaechen (Karten, Buttons, Inputs, Sheets, Leisten, Trenner) |
-| `bg-card` / `bg-bg-card-blur` | `.72` / `.62` | Karten-Fuellung (Glas): Fallback ohne Blur / Tint ueber dem Blur |
-| `bg-glass` / `bg-bg-glass-strong-blur` | `.78` / `.72` | dichtere Glas-Variante |
-| `bg-sheet` / `bg-bg-sheet-blur` | `.96` / `.76` | Flyouts, Tab-Bar, Toasts |
+| `bg-bg-card-flat` | `.95` | EINZIGE Glas-Fuellung aller Flaechen (Karten, Sheets, Tab-Bar, Toasts, Leisten, Dialoge, Settings, Backdrop). Konstante `GLASS_FLAT_FILL` in `Glass.tsx`. Kein Blur in der App. |
 | `accent` | Gruppenfarbe (Standard Gold `#c8a44e`) | Primary |
 | `danger` / `danger-text` | `#c0392b` / `#e5675a` | Danger-Fuellung bzw. Text und Icon |
 | `success` / `success-text` | `#2e9e5b` / `#5fcf8a` | Erfolg (gruen): Toast-Fuellung/Border bzw. Text und Icon |
@@ -17,9 +15,9 @@ Kurzreferenz. Quelle der Wahrheit fuer Tokens: `tailwind.config.js`; Komponenten
 ## Border-Regel
 
 - Flat Material: eine gleichmaessige 1px-Border `border border-glass-border`. Kein Highlight oben, keine dunkle Unterkante, kein Innen-/Aussenschatten (`shadow-card` entfernt), keine Doppel-Border (kein `border-t-*`/`border-b-*` Farbpaar).
-- Glas-Blur und Transluzenz bleiben (Inhaltstrennung), nur die Kante ist schlicht.
-- Listen-Items (Karten, Kacheln, Tabellenzeilen in scrollenden Listen: Tagebuch/Watchlist/Tracker-Tabelle) nutzen `cheap` (`GlassBlur`/`Glass`/`Card` Prop): flache dunkle Glas-Flaeche `bg-bg-card-flat` (rgba(10,10,12,.95)) + Border + Rundung, KEIN BlurView und kein Bild (Performance, docs/performance-scroll-analysis.md Nachtrag 3). Ein vorgeblurtes Bild pro Item wurde verworfen (passte nicht zum Foto dahinter). Echter BlurView nur fuer wenige grosse Flaechen (Tab-Bar, Sheet, Filterpanel, Toast, Detail-Leiste, Backdrop).
-- Glas-Schicht = BlurView (Intensitaet `GLASS_BLUR_INTENSITY` 100 = max. 25px Radius) + dunkler Tint (>= .6) + Border, immer HINTER dem Inhalt. Ausgegraute Eintraege ("Kommt noch") dimmen nur die Inhaltsschicht (`*-content`, `opacity-50`), nie die Glas-Flaeche.
+- Kein Blur, keine Transluzenz-Stufen: alle Glas-Flaechen nutzen dieselbe flache dunkle Fuellung, nur die Kante ist schlicht.
+- Alle Glas-Flaechen (Karten, Kacheln, Tabellenzeilen, Sheets, Tab-Bar, Toasts, Detail-Leiste, Settings-Gruppen, Backdrop) nutzen die flache dunkle Flaeche `bg-bg-card-flat` (rgba(10,10,12,.95), `GLASS_FLAT_FILL`) + Border + Rundung. KEIN BlurView (`expo-blur` entfernt), kein Bild. Die Varianten `default`/`strong`/`panel` von `Glass` unterscheiden sich nur noch in der Form.
+- Ausgegraute Eintraege ("Kommt noch") dimmen nur die Inhaltsschicht (`*-content`, `opacity-50`), nie die Glas-Flaeche.
 - Konstanten: `GLASS_EDGE` / `GLASS_INSET_EDGE` (identisch) in `Glass.tsx`; Tab-Bar `GLASS_TAB_BAR_STYLE` nutzt dieselbe Farbe (0.1 Alpha).
 - Primary hat `border-transparent` (gleiche Masse, keine sichtbare Kante).
 
@@ -37,7 +35,7 @@ Chips (`Chip.tsx`) bleiben die eigene Auswahl-Komponente (Filter/Modi/Tags), `So
 
 ## Button-Icons (Text + Icon ueberall)
 
-Jeder beschriftete Aktions-`Button` zeigt ein fuehrendes Icon: `<Button label="Speichern" icon="save" />` (`icon` = Rolle aus `Icon.tsx`; Farbe nach Variante, gedimmt bei `disabled`, Groesse M bzw. S bei `size="xs"`). Kein Hand-Bau aus `Icon` + `Text` als Children. Durchgesetzt von `__tests__/components/ui/buttonIcons.test.ts` (scannt `src`). Ausnahmen: Chips/Pillen/Segmente, Listenzeilen, Tabs, Textlinks (`Link`), `iconOnly`, Gruppen-Umschalter (`group-settings-switch-*`).
+Jeder beschriftete Aktions-`Button` zeigt ein fuehrendes Icon: `<Button label="Speichern" icon="save" />` (`icon` = Rolle aus `Icon.tsx`; Farbe nach Variante, gedimmt bei `disabled`, Groesse M bzw. S bei `size="xs"`). Kein Hand-Bau aus `Icon` + `Text` als Children. Durchgesetzt von `__tests__/components/ui/buttonIcons.test.ts` (scannt `src`). Ausnahmen: Chips/Pillen/Segmente, Listenzeilen, Tabs, Textlinks (`Link`), `iconOnly`.
 
 | Aktion | Rolle (Glyph) |
 |---|---|
@@ -66,13 +64,15 @@ Reihenfolge in Aktionsreihen bleibt: Loeschen zuletzt/rechts. Lange Labels brech
 ## Zahler-Hinweis (Tracker)
 
 - Bearbeiten-Flyout (`TrackerEntrySheet`): Zahler-Chips nur mit Namen, KEIN Hinweis (das Datum des Eintrags steht im Datumsfeld).
+- **Select** (`src/components/ui/Select.tsx`, Dropdown): Trigger-Feld `min-h-touch-comfortable rounded-lg` + `GLASS_EDGE` + flaches dunkles Fill (`GLASS_FLAT_FILL`, kein Blur), Chevron rechts (`chevronDown`/`chevronUp`), Platzhalter `text-text-secondary`. Aufklappbare Liste als Overlay: `position absolute` direkt unter dem Trigger (`top: 100%`, `zIndex`/`elevation` hoch, Wrapper `position relative` + beim Oeffnen `zIndex 50`), ueberdeckt den Seiteninhalt, das Layout verschiebt sich NICHT; kein Modal. Hoehe max 240 und scrollbar (`nestedScrollEnabled`), per `measureInWindow` + Tastaturhoehe auf den freien Platz begrenzt (min 96); ist unten wenig Platz (<160) und oben mehr, oeffnet sie nach oben (`selectListPlacement`). Tap ausserhalb schliesst (transparenter Backdrop-Pressable `<id>-backdrop` hinter dem Trigger, ueberdimensioniert bei overflow visible; wirkt innerhalb des umgebenden ScrollView). Eltern duerfen nicht per `overflow-hidden` clippen, Optionen 48dp hoch mit Trennlinie, gewaehlte Option `bg-accent` + `text-bg-primary`. Schliesst bei Auswahl oder erneutem Tap auf den Trigger. `searchable`: der Trigger wird beim Oeffnen zum Textfeld, Optionen filtern live (case-insensitive Teilstring), leer = `emptyText` ("Keine Treffer"). `disabled` = `opacity-50`. A11y: Trigger `combobox` (`expanded`), Option `menuitem` (`selected`). testIDs: `<id>`, `<id>-list`, `<id>-scroll`, `<id>-backdrop`, `<id>-option-<value>`, `<id>-search`, `<id>-empty`. Touch-Durchfall (Android): `zIndex` gilt nur unter Geschwistern, ein spaeterer Geschwister-Container (z. B. mit TextInput) liegt sonst ueber der Liste und erhaelt den Tap/Fokus. Regel: den Container des Select mit hohem `zIndex` (`z-50`) versehen UND per optionalem `onOpenChange(open)` die folgenden Bereiche waehrend offener Liste mit `pointerEvents="none"` sperren (Tap trifft nur Option/Backdrop, Input erst per eigenem Tap). Optionale Props: `autoFocusSearch={false}` (Suchfeld sichtbar, aber erst per eigenem Tap fokussiert; Chevron wird dann eigener Button `<id>-toggle`, Trigger toggelt nicht), `defaultOptions` (Liste bei leerer Suche, z. B. alle Filme nach zuletzt gesehen sortiert, nie abgeschnitten; Tippen filtert ALLE `options`), `SelectOption.hint` (kleine Zweitzeile in der Option, testID `<id>-option-<value>-hint`). Einsatz: Gruppenwahl (`group-settings-switch`), Film in `PaymentModal` (`payment-modal-movie-select`) (searchable, `autoFocusSearch={false}`, `defaultOptions` = ALLE unbezahlten Filme nach `seen_at` absteigend, ohne Begrenzung, Liste scrollt), 'Wer hat bezahlt?' (`payment-modal-payer-select`, Hint 'zuletzt bezahlt') und 'Bezahlt von' im `TrackerEntrySheet` (`tracker-entry-sheet-payer-select`); Platzhalter 'Person wählen' (ersetzt die Personen-Chips).
+- Sheet-Inhalt (`TrackerEntrySheet`, `PaymentModal`): Inhalt `gap-4`, Label+Feld-Sektionen `gap-2`, Aktionszeile `flex-row gap-3`, Loeschen immer ganz rechts.
 - "Zahlung erfassen" (`PaymentModal`): zweite Zeile je Chip, explizit beschriftet (`lastPaidHint`): "zuletzt bezahlt: heute | gestern | vor N Tagen", "noch nie bezahlt"; Zukunftsdatum als absolutes Datum. Hilft zu sehen, wer als naechstes dran ist.
 
 ## Danger-Regel (ein Look, alle Formen)
 
 Gemeinsame Tokens in `Button.tsx`: `DANGER_SURFACE_CLASSNAME` (`bg-danger/15 border border-danger/30`), `DANGER_PRESSED_CLASSNAME` (`active:bg-danger/25`), `DANGER_TEXT_CLASSNAME` (`text-danger-text`), `DANGER_ICON_COLOR` (`#e5675a`).
 
-- Button: `<Button variant="danger" />` (Gruppe verlassen, Mitglied entfernen, Konto loeschen, Bestaetigen im Loesch-Flyout).
+- Button: `<Button variant="danger" />` (Gruppe verlassen, Konto loeschen, Bestaetigen im Loesch-Flyout). Mitglied entfernen (Gruppenverwaltung): `iconOnly` danger-Button (`removeMember`, a11y 'Mitglied entfernen') ganz rechts in der einzeiligen Mitgliederzeile (Name | Rolle | Icon), Bestaetigung klappt darunter auf.
 - Listenzeile: `<SettingsRow danger />` (rote Tint-Zeile, roter Text, Icon und Chevron).
 - Icon-Button: `<Button variant="danger" iconOnly size="xs" />` (Bewertung zuruecksetzen im `RatingDialog`).
 - Aktions-Kachel: `ActionIconButton danger` in `MovieDetailActionsBar` (Danger-Flaeche statt Glas-Kachel).
@@ -92,13 +92,12 @@ Gemeinsame Tokens in `Button.tsx`: `DANGER_SURFACE_CLASSNAME` (`bg-danger/15 bor
 - Reduce-Motion (`useReducedMotion`): keine Animation, Eintraege sofort sichtbar.
 - Neue Werte nur in `motion.ts` aendern, nie pro Screen.
 
-## Laden (Skeleton + Spinner)
+## Laden (Spinner)
 
-- **Struktur zuerst:** Seiten zeigen ihr Gerüst sofort aus vorhandenen Daten (gecachte Zeile / Route-Params); nur was noch fehlt, ist ein Platzhalter, der beim Eintreffen der Daten ersetzt wird (keine Layout-Sprünge: Platzhalter haben die Form/Größe des Inhalts).
-- **Hoehe = Realhoehe:** `SkeletonText` bekommt die GLEICHEN Text-Klassen wie der echte Inhalt (`textClassName`, exportiert als Konstante der Komponente, z.B. `MOVIE_DETAIL_META_TEXT_CLASSNAME`) und rendert pro Zeile einen unsichtbaren Text mit diesen Klassen; Chips/Avatare/Logos nutzen dieselben Groessen-Token (`CHIP_HEIGHT_CLASSNAME`, `CAST_AVATAR_SIZE_CLASSNAME`, `PROVIDER_LOGO_CLASSNAME`). Nie Pixelhoehen separat festlegen; Schrift-/Groessenwechsel (Outfit/DM Sans) wirken so automatisch. Test: `__tests__/components/movie/MovieDetailSkeletons.test.tsx`.
-- **Skeleton** (`src/components/ui/Skeleton.tsx`: `Skeleton`, `SkeletonText`; `ListSkeleton.tsx` fuer Listen): massive, dezente Fuellung `bg-white/10` (weiss ~10 %), **kein Border**, `rounded-md` (Avatare/Chips `rounded-full`), Pulsieren 0,5 bis 1,0 Opacity (Reanimated, UI-Thread, Werte `SKELETON_*` in `src/lib/motion.ts`), Reduce-Motion = statisch. Form pro Inhalt: Cast = 5 Kreise + kurze Namens- und kuerzere Rollenzeile, Regie = Balken ~40 % neben dem Label, Beschreibung = 3 Zeilen (letzte 60 %), Genres = 3 Pillen, Laufzeit/Datum = 2 Balken, Anbieter = Reihe Quadrate. Technik: Geometrie + Farbe auf normalen Views (className greift immer), die Reanimated-Ebene animiert nur Opacity (StyleSheet-Geometrie, className auf Animated-Views kann im Release kollabieren). Nie dunkle Fuellung (`bg-card-flat` ist auf dunklem Hintergrund unsichtbar) und nie 1px-Border auf dem Block (zeigte nur gebrochene Kanten).
-- **Spinner** (`src/components/ui/Spinner.tsx`) nur wo ein Skeleton keinen Sinn ergibt (Buttons, winzige Inline-Bereiche, Trailer-Wartezustand). Immer Akzentfarbe des Gruppen-Themes (`useGroupTheme().colors.accent`); nie rohes `ActivityIndicator`. Einzige Ausnahme: `color` nur für Kontrast auf gefuellten Primary-/Danger-Buttons.
-- Detail-Screen testIDs: `movie-detail-*-skeleton` (title, poster, runtime, release-date, genre-skeleton-N, description, director, cast, providers). Listen: bestehende `*-loading`-testIDs liegen jetzt auf dem `ListSkeleton`.
+- **Kein Skeleton mehr.** Ladezustand = der Accent-`Spinner` (`src/components/ui/Spinner.tsx`, Akzentfarbe des Gruppen-Themes via `useGroupTheme().colors.accent`; nie rohes `ActivityIndicator`; `color` nur fuer Kontrast auf gefuellten Primary-/Danger-Buttons).
+- **Inhaltsbereiche:** `LoadingArea` (`src/components/ui/LoadingArea.tsx`) zentriert den Spinner im Bereich, Standard `min-h-48 w-full flex-1`, kompakt `className="min-h-32 w-full"` (Suchergebnisse in add-movie). Mindesthoehe verhindert Layout-Springen, kein Fullscreen-Overlay. `accessibilityLabel="Lädt"`; testID auf der Flaeche (`*-loading`), Spinner darin `*-loading-spinner`.
+- **Struktur zuerst:** Header/Poster/Action-Bar rendern sofort aus vorhandenen Daten. Film-Detail: Poster-Spinner (`movie-detail-poster-spinner`), Titel `movie-detail-title-loading` (klein, nur ohne bekannten Titel), Beschreibung `movie-detail-description-loading` (`min-h-24`); Meta, Genres, Besetzung, Anbieter erscheinen erst mit Daten.
+- Buttons/winzige Inline-Bereiche nutzen `Spinner` direkt.
 
 ## Navigation (Zurück)
 
@@ -111,9 +110,9 @@ Gemeinsame Tokens in `Button.tsx`: `DANGER_SURFACE_CLASSNAME` (`bg-danger/15 bor
 
 - NUR Tracker, Watchlist, Tagebuch zeigen das Foto (`AppBackground`) ungedimmt.
 - Foto: Original 1920x1280 (`assets/images/cinema-bg.jpg`, Quelle, nie veraendern) wird per `scripts/generate-bg-assets.py` zu `cinema-bg-baked.jpg` (gleiche Aufloesung) vorberechnet und angezeigt; 100 % Bildschirmhöhe, nur horizontaler Parallax, zentriert (mittlerer Tab = Bildmitte, Bewegung gleich weit nach links/rechts, live mit dem Wisch); Weg = `BG_PARALLAX_TRAVEL_FRACTION` (0.45, vorher 1.0 = voller Weg) x (Ueberstand - 2 x `BG_PARALLAX_EDGE_INSET_DP` 40 dp) in `src/lib/parallax.ts`; Dimmung (Graustufen, 0.6 ueber #0a0a0a) ist im gebackenen Asset, kein `mixBlendMode`/Opacity zur Laufzeit.
-- Alle anderen Screens bekommen ein Blur-Backdrop mit Dim-Stufe (`level`):
-  - `calm` (`bg-black/70`, Blur 90): Detail-artige Modal-Routen (Filmdetail = Referenzlook, Film hinzufuegen, Aehnliche, Filmreihe, Filmografien). `CALM_BACKDROP_ROUTES`.
-  - `dim` (`bg-black/80`, Blur 90): Einstellungen (Hub + Unterseiten), Gruppen-Einstellungen, Login/Registrierung/Passwort, Onboarding, Einladung, Auth-Callback. `DIM_BACKDROP_ROUTES`, `ROOT_DIM_BACKDROP_ROUTES`.
+- Alle anderen Screens bekommen ein flaches Backdrop (`GLASS_FLAT_FILL`, 95 %, kein Blur, keine Stufen):
+  - Detail-artige Modal-Routen (Filmdetail, Film hinzufuegen, Aehnliche, Filmreihe, Filmografien). `CALM_BACKDROP_ROUTES`.
+  - Einstellungen (Hub + Unterseiten), Gruppen-Einstellungen, Login/Registrierung/Passwort, Onboarding, Einladung, Auth-Callback. `DIM_BACKDROP_ROUTES`, `ROOT_DIM_BACKDROP_ROUTES`.
 - Anwendung per Navigator-`screenLayout` (`screenBackdropLayout` in `(modals)`, `rootBackdropLayout` im Root-Stack), nie per Screen-Hack. Neue Route = in die passende Liste eintragen.
 
 ## Toasts (`ToastHost`, `showToast(msg, { variant })`)
@@ -124,11 +123,10 @@ Gleiche Glas-Flaeche + EINE 1px-Border; die Variante faerbt Border (40%), Tint (
 |---|---|---|
 | `success` | gespeichert, hinzugefuegt, umbenannt, Farbthema geaendert, Zahlung gespeichert | gruen: `bg-success/15`, `border-success/40`, `text-success-text`, Icon check-circle |
 | `error` | jeder Fehlerpfad (Speichern fehlgeschlagen, Netzwerk, Validierung ausserhalb von Formularfeldern) | rot: `bg-danger/15`, `border-danger/40`, `text-danger-text`, Icon error, `accessibilityLiveRegion="assertive"` |
-| `info` (Standard) | neutrale Hinweise (Realtime, "Wird bald ergaenzt") | Accent-Border, keine Tint, kein Icon |
 
 Jeder Toast hat rechts einen Schliessen-Button (`toast-close`, Icon `close`, 48dp Touch-Box, `accessibilityLabel="Schließen"`), der ihn sofort ausblendet; Auto-Dismiss (4 s) bleibt. Der Trailer-Player im Filmdetail hat links oben ebenfalls ein X (`movie-detail-trailer-close-button`), das zum Poster zurueckkehrt.
 
-Regeln: Erfolg IMMER `{ variant: "success" }`, Fehler IMMER `{ variant: "error" }` (kein `Alert.alert` fuer Fehler). Helfer `showSuccessToast` / `showErrorToast` in `src/lib/toast.ts`. Varianten-Tabelle: `TOAST_VARIANT_STYLES` in `Toast.tsx`.
+Regeln: Nur zwei Varianten (kein neutraler Info-Toast; Hinweise ohne Erfolg/Fehler gibt es nicht). Standard ohne Angabe = `success`. Erfolg IMMER `{ variant: "success" }`, Fehler IMMER `{ variant: "error" }` (kein `Alert.alert` fuer Fehler). Helfer `showSuccessToast` / `showErrorToast` in `src/lib/toast.ts`. Varianten-Tabelle: `TOAST_VARIANT_STYLES` in `Toast.tsx`.
 
 ## Touch-Targets (Barrierefreiheit)
 
@@ -162,7 +160,7 @@ Mindestens 48dp (Android) bzw. 44pt (iOS) pro tippbarem Element; Konstanten und 
 
 ## Listenansicht = Tracker-Tabelle
 
-Die Listenansichten von Watchlist und Tagebuch sehen aus wie die Tracker-Tabelle: Glas-Karte (`px-3 pt-3`), Kopfzeile `text-sm text-text-secondary` mit Trennlinie, Zeilen `py-3` mit Trennlinie, Titel weiss in Outfit (`TABLE_TITLE_CELL` = `flex-1 pr-2 font-title text-text-primary`; wie Sheets/Karten; auch im Tracker; genau 1 Zeile mit Ellipsis), Datumsspalte `w-28` rechtsbuendig, Scores `w-10` rechtsbuendig, kein Poster. Gemeinsame Bausteine in `src/components/ui/GlassTable.tsx` (`GlassTableHeader`, `GlassTableRow`, `TABLE_*_CELL`); die virtualisierten Listen bauen die eine Karte aus Kopf-/Zeilen-Scheiben (`GlassBlur` im `cheap`-Modus, `bg-bg-card-flat`) zusammen.
+Die Listenansichten von Watchlist und Tagebuch sehen aus wie die Tracker-Tabelle: Glas-Karte (`px-3 pt-3`), Kopfzeile `text-sm text-text-secondary` mit Trennlinie, Zeilen `py-3` mit Trennlinie, Titel weiss in Outfit (`TABLE_TITLE_CELL` = `flex-1 pr-2 font-title text-text-primary`; wie Sheets/Karten; auch im Tracker; genau 1 Zeile mit Ellipsis), Datumsspalte `w-28` rechtsbuendig, Scores `w-10` rechtsbuendig, kein Poster. Gemeinsame Bausteine in `src/components/ui/GlassTable.tsx` (`GlassTableHeader`, `GlassTableRow`, `TABLE_*_CELL`); die virtualisierten Listen bauen die eine Karte aus Kopf-/Zeilen-Scheiben (`Glass`, `bg-bg-card-flat`) zusammen.
 
 Spalten: Tracker Film | Bezahlt von | Datum; Watchlist Film | Erscheint; Tagebuch Film | Herz (nur bei eigenem Like, `#e05c6e`) | Ø | TMDB. Tagebuch-Kopfzeile nutzt Icons statt Text (Herz, Stern in Sternfarbe, TMDB-Logo via `TmdbBadge hideScore`) mit `accessibilityLabel` "Favorit"/"Durchschnitt"/"TMDB".
 

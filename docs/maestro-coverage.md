@@ -51,8 +51,8 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Passwort-Reset (absenden / neues Passwort setzen) | - | - | - | not automatable (echte E-Mail, Token aus Mail) |
 | Gruppe erstellen | `create-test-group` | onboarding | `create-test-group/01..03` | not automatable wiederholt (einmalig, braucht gruppenlosen Account; schon ausgeführt) |
 | Gruppe beitreten (Code / Einladungslink) | `onboarding-explore`, `deeplinks` | onboarding, offline-deeplinks | `deeplinks/02-join-token-screen` | not automatable (2. Account/gültiger Token nötig) |
-| Zahlung erfassen (Sheet, Film wählen, Suche, speichern) | `tracker-payment` | tracker | `03..06` | covered |
-| Tracker-Zeile bearbeiten (Flyout, Speichern) | `tracker-payment` | tracker | `07`, `09`, `10` | covered |
+| Zahlung erfassen (Sheet, Film wählen: zuletzt gesehene ohne Tastatur, Suche, Bezahlt-von-Dropdown, speichern) | `tracker-payment` | tracker | `03..06`, `03b`, `05b` | covered |
+| Tracker-Zeile bearbeiten (Flyout, Bezahlt-von-Dropdown `tracker-entry-sheet-payer-select`, Speichern; Dropdown nur per Jest, im Flow unveraendert gespeichert) | `tracker-payment` | tracker | `07`, `09`, `10` | covered |
 | Tracker-Zahlung löschen (Bestätigung gezeigt/abgebrochen, dann echt, nur selbst angelegte Zahlung) | `tracker-payment` | tracker | `08`, `11` | covered |
 | Tracker-Suche | `tracker-payment` | tracker | `02-tracker-search-no-match` | covered |
 | Film hinzufügen (Suche, Quick-Add, Detail "Zur Watchlist") | `watchlist-add-remove`, `movie-detail` | watchlist, add-movie, movie-detail | `watchlist-add-remove/02..05` | covered |
@@ -90,9 +90,9 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Einladungslink anzeigen / teilen (System-Share-Sheet) | `group-settings-edit` | group-settings | `10`, `13` | covered |
 | Einladungen aktiv/deaktiviert | `group-settings-edit` | group-settings | `11`, `12` | covered |
 | Einladungslink neu generieren | - | - | - | not automatable (zerstört den bisherigen Link irreversibel) |
-| Mitglied entfernen | - | - | `group-settings-edit/14` (Mitgliederliste) | not automatable (2. Mitglied nötig, destruktiv) |
+| Mitglied entfernen (Icon-Button rechts in einzeiliger Mitgliederzeile; Kopfblock Name/Farbe oben entfernt, oben steht 'Deine Gruppen') | - | - | `group-settings-edit/01`, `14` (Mitgliederliste) | not automatable (2. Mitglied nötig, destruktiv) |
 | Gruppe verlassen | `group-settings-edit` | group-settings | `15-leave-confirm`, `16-leave-cancelled` | partial (Bestätigung gezeigt, abgebrochen, destruktiv) |
-| Gruppe wechseln (Switcher) | - | - | `group-settings-edit/01` | not automatable (nur 1 Gruppe) |
+| Gruppe wechseln (Select-Dropdown) | `group-settings-edit` (nur auf/zu) | group-settings | `01`, `01b-group-dropdown-open` | partial (Auswahl nicht automatisierbar, nur 1 Gruppe) |
 | Konto löschen | `settings-edit` | settings | `05`, `06` | partial (nie bestätigt, destruktiv) |
 | Offline-Banner / Offline-Cache | `offline-banner` | offline-deeplinks | `01..03` | covered (Flugmodus an/aus) |
 | Deep-Links (Studio, Join, Callback) | `deeplinks` | offline-deeplinks | `01..03` | covered |
