@@ -1,6 +1,6 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 import { Share } from "react-native";
 
 // --- Router mock (push/replace) + no-op Stack.Screen, same convention as
@@ -186,29 +186,35 @@ describe("GroupSettingsScreen", () => {
   });
 
   describe("header + switcher", () => {
-    it("shows the active group's name and theme swatch", async () => {
+    it("has no name/colour display header; switcher is the first section", async () => {
       setUpHappyPath();
       const GroupSettingsScreen = loadGroupSettingsScreen();
-      const { getByTestId } = await render(<GroupSettingsScreen />);
+      const { getByTestId, queryByTestId } = await render(<GroupSettingsScreen />);
 
-      expect(getByTestId("group-settings-name")).toHaveTextContent("Filmfreunde");
-      expect(getByTestId("group-settings-theme-swatch")).toBeTruthy();
+      expect(queryByTestId("group-settings-header")).toBeNull();
+      expect(queryByTestId("group-settings-name")).toBeNull();
+      expect(queryByTestId("group-settings-theme-swatch")).toBeNull();
+      expect(getByTestId("group-settings-switcher")).toBeTruthy();
+      expect(getByTestId("group-settings-name-input")).toBeTruthy();
     });
 
-    it("lists every one of the user's groups by real name, marking the active one selected", async () => {
+    it("shows the active group in a dropdown; options list every group by real name", async () => {
       setUpHappyPath();
       const GroupSettingsScreen = loadGroupSettingsScreen();
-      const { getByTestId } = await render(<GroupSettingsScreen />);
+      const { getByTestId, queryByTestId } = await render(<GroupSettingsScreen />);
 
-      expect(getByTestId("group-settings-switch-g1").props.accessibilityState.selected).toBe(true);
-      expect(getByTestId("group-settings-switch-g2").props.accessibilityState.selected).toBe(false);
+      expect(queryByTestId("group-settings-switch-list")).toBeNull();
+      await fireEvent.press(getByTestId("group-settings-switch"));
+      expect(getByTestId("group-settings-switch-option-g1").props.accessibilityState.selected).toBe(true);
+      expect(getByTestId("group-settings-switch-option-g2").props.accessibilityState.selected).toBe(false);
     });
 
     it("falls back to a placeholder label for a group whose name hasn't loaded yet", async () => {
       setUpHappyPath({ groupNames: [] });
       const GroupSettingsScreen = loadGroupSettingsScreen();
-      const { getByText } = await render(<GroupSettingsScreen />);
+      const { getByTestId, getByText } = await render(<GroupSettingsScreen />);
 
+      await fireEvent.press(getByTestId("group-settings-switch"));
       expect(getByText("Gruppe g2")).toBeTruthy();
     });
 
@@ -217,9 +223,22 @@ describe("GroupSettingsScreen", () => {
       const GroupSettingsScreen = loadGroupSettingsScreen();
       const { getByTestId } = await render(<GroupSettingsScreen />);
 
-      await fireEvent.press(getByTestId("group-settings-switch-g2"));
+      await fireEvent.press(getByTestId("group-settings-switch"));
+      await fireEvent.press(getByTestId("group-settings-switch-option-g2"));
 
       expect(mockSetActiveGroup).toHaveBeenCalledWith("g2");
+    });
+
+    it("shields the rename section from touches while the dropdown is open, releases it on close", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId } = await render(<GroupSettingsScreen />);
+
+      expect(getByTestId("group-settings-rename-section").props.pointerEvents).toBe("auto");
+      await fireEvent.press(getByTestId("group-settings-switch"));
+      expect(getByTestId("group-settings-rename-section").props.pointerEvents).toBe("none");
+      await fireEvent.press(getByTestId("group-settings-switch-option-g2"));
+      expect(getByTestId("group-settings-rename-section").props.pointerEvents).toBe("auto");
     });
   });
 
@@ -426,8 +445,21 @@ describe("GroupSettingsScreen", () => {
       const GroupSettingsScreen = loadGroupSettingsScreen();
       const { getByTestId, queryByTestId } = await render(<GroupSettingsScreen />);
 
-      expect(getByTestId("group-settings-member-member-1-remove-button")).toBeTruthy();
+      const removeButton = getByTestId("group-settings-member-member-1-remove-button");
+      expect(removeButton.props.accessibilityLabel).toBe("Mitglied entfernen");
       expect(queryByTestId("group-settings-member-owner-1-remove-button")).toBeNull();
+    });
+
+    it("keeps name+role inside a capsule and the remove button outside it, with a placeholder where no button exists", async () => {
+      setUpHappyPath({ currentUserId: "owner-1" });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId, queryByTestId } = await render(<GroupSettingsScreen />);
+
+      const capsule = getByTestId("group-settings-member-capsule-member-1");
+      expect(capsule).toContainElement(getByTestId("group-settings-member-role-member-1"));
+      expect(capsule).not.toContainElement(getByTestId("group-settings-member-member-1-remove-button"));
+      expect(queryByTestId("group-settings-member-member-1-remove-placeholder")).toBeNull();
+      expect(getByTestId("group-settings-member-owner-1-remove-placeholder")).toBeTruthy();
     });
 
     it("a non-owner member sees no Entfernen buttons at all", async () => {

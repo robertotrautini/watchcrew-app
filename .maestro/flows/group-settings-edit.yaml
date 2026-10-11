@@ -20,6 +20,21 @@ appId: com.watchcrew.app
     timeout: 10000
 - takeScreenshot: 01-group-settings-top
 
+# --- group dropdown: open, screenshot, close again without changing ---
+- tapOn:
+    id: "group-settings-switch"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-switch-list"
+    timeout: 5000
+- takeScreenshot: 01b-group-dropdown-open
+- tapOn:
+    id: "group-settings-switch"
+- extendedWaitUntil:
+    notVisible:
+      id: "group-settings-switch-list"
+    timeout: 5000
+
 # --- rename (restored) ---
 # Guard: only overwrite the name if it is the documented baseline.
 - assertVisible: "Maestro Test Gruppe"

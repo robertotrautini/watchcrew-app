@@ -1,5 +1,5 @@
 import { EmptyState } from "@/components/ui/EmptyState";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
@@ -8,6 +8,7 @@ import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView
 import { Pressable, Share, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
+import { Select } from "@/components/ui/Select";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 
 import {
@@ -34,11 +35,7 @@ import {
   resolveGroupTheme,
   type GroupThemeName,
 } from "@/lib/groupTheme";
-import {
-  GLASS_EDGE,
-  GLASS_INSET_EDGE,
-  GLASS_TILE_CLASSNAME,
-} from "@/components/ui/Glass";
+import { GLASS_INSET_EDGE, GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
 
 /**
  * Group-Settings screen (M9 part 2) -- member list, rename, invite-link
@@ -115,6 +112,7 @@ export default function GroupSettingsScreen() {
   const removeMemberMutation = useRemoveMember();
   const leaveGroupMutation = useLeaveGroup();
 
+  const [switchOpen, setSwitchOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [removeTargetUserId, setRemoveTargetUserId] = useState<string | null>(
     null,
@@ -248,12 +246,9 @@ export default function GroupSettingsScreen() {
 
   if (isLoading) {
     return (
-      <View
-        className="flex-1"
-        testID="group-settings-screen"
-      >
+      <View className="flex-1" testID="group-settings-screen">
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
-        <ListSkeleton testID="group-settings-loading" />
+        <LoadingArea testID="group-settings-loading" />
       </View>
     );
   }
@@ -298,49 +293,32 @@ export default function GroupSettingsScreen() {
       >
         <Stack.Screen options={{ title: "Gruppe verwalten" }} />
 
-        <View
-          className="flex-row items-center gap-3"
-          testID="group-settings-header"
-        >
-          <Icon
-            testID="group-settings-theme-swatch"
-            name="swatch"
-            size="M"
-            color={themeColors.accent}
-          />
-          <Text
-            testID="group-settings-name"
-            className="font-title text-xl text-text-primary"
-          >
-            {groupDetailsQuery.data?.name}
-          </Text>
-        </View>
-
-        <View className="gap-2" testID="group-settings-switcher">
+        <View className="z-50 gap-2" testID="group-settings-switcher">
           <Text className="font-title text-lg text-accent-light">
             Deine Gruppen
           </Text>
-          {(groupsQuery.data ?? []).map((membership) => {
-            const isActive = membership.group_id === activeGroupId;
-            return (
-              <Button
-                key={membership.group_id}
-                testID={`group-settings-switch-${membership.group_id}`}
-                variant={isActive ? "primary" : "secondary"}
-                size="sm"
-                accessibilityState={{ selected: isActive }}
-                onPress={() => setActiveGroup(membership.group_id)}
-                label={groupDisplayLabel(
-                  membership.group_id,
-                  groupNameById.get(membership.group_id),
-                )}
-              />
-            );
-          })}
+          <Select
+            testID="group-settings-switch"
+            accessibilityLabel="Gruppe wählen"
+            value={activeGroupId ?? null}
+            options={(groupsQuery.data ?? []).map((membership) => ({
+              value: membership.group_id,
+              label: groupDisplayLabel(
+                membership.group_id,
+                groupNameById.get(membership.group_id),
+              ),
+            }))}
+            onChange={setActiveGroup}
+            onOpenChange={setSwitchOpen}
+          />
         </View>
 
         {isOwner ? (
-          <View className="gap-2" testID="group-settings-rename-section">
+          <View
+            className="gap-2"
+            testID="group-settings-rename-section"
+            pointerEvents={switchOpen ? "none" : "auto"}
+          >
             <Text className="font-title text-lg text-accent-light">
               Gruppenname
             </Text>
@@ -494,63 +472,81 @@ export default function GroupSettingsScreen() {
               <View
                 key={member.user_id}
                 testID={`group-settings-member-${member.user_id}`}
-                className={`gap-2 ${GLASS_TILE_CLASSNAME} p-3`}
+                className="gap-2"
               >
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-text-primary">
-                    {memberDisplayLabel(
-                      member.user_id,
-                      member.profiles?.display_name,
-                    )}
-                  </Text>
-                  <Text
-                    testID={`group-settings-member-role-${member.user_id}`}
-                    className="text-text-secondary"
+                <View className="flex-row items-center gap-3">
+                  <View
+                    testID={`group-settings-member-capsule-${member.user_id}`}
+                    className={`flex-1 flex-row items-center gap-3 ${GLASS_TILE_CLASSNAME} px-3 py-3`}
                   >
-                    {member.role === "owner" ? "Owner" : "Mitglied"}
-                  </Text>
-                </View>
-
-                {isOwner && !isSelf ? (
-                  isRemoving ? (
-                    <View
-                      testID={`group-settings-member-${member.user_id}-remove-confirm`}
-                      className="gap-2"
+                    <Text
+                      className="flex-1 text-text-primary"
+                      numberOfLines={1}
                     >
-                      <Text className="text-text-primary">
-                        Mitglied wirklich entfernen?
-                      </Text>
-                      <View className="flex-row gap-2">
-                        <Button
-                          testID={`group-settings-member-${member.user_id}-remove-cancel-button`}
-                          label="Abbrechen"
-                          icon="close"
-                          variant="secondary"
-                          className="flex-1"
-                          onPress={() => setRemoveTargetUserId(null)}
-                        />
-                        <Button
-                          testID={`group-settings-member-${member.user_id}-remove-confirm-button`}
-                          label="Entfernen"
-                          icon="removeMember"
-                          variant="danger"
-                          className="flex-1"
-                          loading={removeMemberMutation.isPending}
-                          onPress={() =>
-                            handleConfirmRemoveMember(member.user_id)
-                          }
-                        />
-                      </View>
-                    </View>
-                  ) : (
+                      {memberDisplayLabel(
+                        member.user_id,
+                        member.profiles?.display_name,
+                      )}
+                    </Text>
+                    <Text
+                      testID={`group-settings-member-role-${member.user_id}`}
+                      className="text-text-secondary"
+                    >
+                      {member.role === "owner" ? "Owner" : "Mitglied"}
+                    </Text>
+                  </View>
+                  {isOwner && !isSelf && !isRemoving ? (
                     <Button
                       testID={`group-settings-member-${member.user_id}-remove-button`}
-                      label="Entfernen"
-                      icon="removeMember"
                       variant="danger"
+                      iconOnly
+                      accessibilityLabel="Mitglied entfernen"
                       onPress={() => setRemoveTargetUserId(member.user_id)}
+                    >
+                      <Icon
+                        name="removeMember"
+                        size="M"
+                        color={BUTTON_ICON_COLORS.danger}
+                      />
+                    </Button>
+                  ) : isOwner ? (
+                    <View
+                      testID={`group-settings-member-${member.user_id}-remove-placeholder`}
+                      className="h-12 w-12 shrink-0"
                     />
-                  )
+                  ) : null}
+                </View>
+
+                {isOwner && !isSelf && isRemoving ? (
+                  <View
+                    testID={`group-settings-member-${member.user_id}-remove-confirm`}
+                    className="gap-2"
+                  >
+                    <Text className="text-text-primary">
+                      Mitglied wirklich entfernen?
+                    </Text>
+                    <View className="flex-row gap-2">
+                      <Button
+                        testID={`group-settings-member-${member.user_id}-remove-cancel-button`}
+                        label="Abbrechen"
+                        icon="close"
+                        variant="secondary"
+                        className="flex-1"
+                        onPress={() => setRemoveTargetUserId(null)}
+                      />
+                      <Button
+                        testID={`group-settings-member-${member.user_id}-remove-confirm-button`}
+                        label="Entfernen"
+                        icon="removeMember"
+                        variant="danger"
+                        className="flex-1"
+                        loading={removeMemberMutation.isPending}
+                        onPress={() =>
+                          handleConfirmRemoveMember(member.user_id)
+                        }
+                      />
+                    </View>
+                  </View>
                 ) : null}
               </View>
             );
