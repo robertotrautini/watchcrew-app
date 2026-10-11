@@ -1,7 +1,6 @@
 import {
   DEFAULT_DIARY_SORT,
   DEFAULT_WATCHLIST_SORT,
-  isSameSort,
   type SortState,
 } from "./entrySorting";
 import {
@@ -182,18 +181,16 @@ export function removeFilterKey(
 }
 
 /**
- * True when the collapsible filter panel hides any non-default choice (a
- * non-default sort or any active filter; NOT the view mode or the Tagebuch
- * scope, which are visible outside the panel) -> gold dot on the toggle.
+ * True when at least one FILTER is active (genre, year, streaming, liked,
+ * rating-state) -> gold dot on the panel toggle. Sort field/direction, view
+ * mode, Tagebuch scope and column count never count.
  */
 export function hasActiveListFilters(
   stored: ListFilters | undefined,
   tab: ListFiltersTab,
 ): boolean {
   const list = stored ?? DEFAULT_LIST_FILTERS;
-  const sortActive =
-    list.sort != null && !isSameSort(list.sort, defaultSortFor(tab));
-  return sortActive || activeFilterKeys(list.filters, tab).length > 0;
+  return activeFilterKeys(list.filters, tab).length > 0;
 }
 
 // ---------------------------------------------------------------------------

@@ -10,34 +10,18 @@ describe("hasActiveListFilters", () => {
     expect(hasActiveListFilters(undefined, "watchlist")).toBe(false);
   });
 
-  it("is false when the stored sort equals the tab default", () => {
-    expect(
-      hasActiveListFilters(
-        { ...DEFAULT_LIST_FILTERS, sort: { field: "added", direction: "desc" } },
-        "watchlist",
-      ),
-    ).toBe(false);
-    expect(
-      hasActiveListFilters(
-        { ...DEFAULT_LIST_FILTERS, sort: { field: "average", direction: "desc" } },
-        "diary",
-      ),
-    ).toBe(false);
-  });
-
-  it("is true for a non-default sort field or direction", () => {
-    expect(
-      hasActiveListFilters(
-        { ...DEFAULT_LIST_FILTERS, sort: { field: "title", direction: "asc" } },
-        "diary",
-      ),
-    ).toBe(true);
-    expect(
-      hasActiveListFilters(
-        { ...DEFAULT_LIST_FILTERS, sort: { field: "added", direction: "asc" } },
-        "watchlist",
-      ),
-    ).toBe(true);
+  it("is false for any sort (default or not)", () => {
+    const sorts = [
+      ["watchlist", { field: "added", direction: "desc" }],
+      ["watchlist", { field: "added", direction: "asc" }],
+      ["diary", { field: "average", direction: "desc" }],
+      ["diary", { field: "title", direction: "asc" }],
+    ] as const;
+    for (const [tab, sort] of sorts) {
+      expect(
+        hasActiveListFilters({ ...DEFAULT_LIST_FILTERS, sort: { ...sort } }, tab),
+      ).toBe(false);
+    }
   });
 
   it("is true for any active filter", () => {

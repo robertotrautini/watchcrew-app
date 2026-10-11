@@ -1,5 +1,10 @@
 import { render } from "@testing-library/react-native";
 
+import {
+  PANEL_LIST_CONTENT_PT_CLASSNAME,
+  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
+} from "@/components/ui/Glass";
+
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
 
 const mockCardRender = jest.fn();
@@ -41,7 +46,6 @@ describe("TagebuchEntryList sort remount", () => {
         displayNameById={names}
         onOpenEntry={onOpen}
         sort={{ field: "title", direction: dir }}
-        onSortField={jest.fn()}
       />
     );
     const r = await render(ui([a, b, c] as never[], "asc"));
@@ -55,5 +59,26 @@ describe("TagebuchEntryList sort remount", () => {
       "Film b",
       "Film a",
     ]);
+  });
+
+  it.each(["cards", "grid", "list"] as const)("%s mode: list content starts with PANEL_LIST_CONTENT_PT_CLASSNAME", async (mode) => {
+    const r = await render((
+      <TagebuchEntryList
+        entries={[entry("a")] as never[]}
+        mode={mode}
+        userId="u"
+        starColor="#fff"
+        showTitlesInGrid
+        groupMemberIds={[]}
+        displayNameById={new Map()}
+        onOpenEntry={jest.fn()}
+        sort={{ field: "title", direction: "asc" }}
+      />
+    ));
+    const cls = r.getByTestId("tagebuch-entry-list").props.contentContainerClassName as string;
+    expect(cls).toContain(
+      mode === "grid" ? PANEL_LIST_GRID_CONTENT_PT_CLASSNAME : PANEL_LIST_CONTENT_PT_CLASSNAME,
+    );
+    expect(cls).not.toMatch(/(^| )pt-3( |$)/);
   });
 });

@@ -392,7 +392,6 @@ export default function AddMovieScreen() {
                 onPressItem={handlePressItem}
                 onAddItem={handleAddItem}
                 getBadge={getBadge}
-                columns={4}
                 testID="add-movie-film-grid"
                 emptyMessage={
                   query.trim().length === 0
@@ -458,7 +457,6 @@ export default function AddMovieScreen() {
                     onPressItem={handlePressItem}
                     onAddItem={handleAddItem}
                     getBadge={getBadge}
-                    columns={4}
                     testID="add-movie-person-grid"
                     emptyMessage="Keine Filme gefunden."
                   />
@@ -515,7 +513,6 @@ export default function AddMovieScreen() {
                     onPressItem={handlePressItem}
                     onAddItem={handleAddItem}
                     getBadge={getBadge}
-                    columns={4}
                     testID="add-movie-studio-grid"
                     emptyMessage="Keine Filme gefunden."
                     footer={

@@ -39,16 +39,6 @@ describe("useEntryFilters", () => {
     expect(result.current.sort).toEqual({ field: "likes", direction: "asc" });
   });
 
-  it("toggleHeaderSort cycles asc -> desc -> default", async () => {
-    const { result } = await renderHook(() => useEntryFilters("diary"));
-    await act(async () => result.current.toggleHeaderSort("title"));
-    expect(result.current.sort).toEqual({ field: "title", direction: "asc" });
-    await act(async () => result.current.toggleHeaderSort("title"));
-    expect(result.current.sort).toEqual({ field: "title", direction: "desc" });
-    await act(async () => result.current.toggleHeaderSort("title"));
-    expect(result.current.sort).toEqual({ field: "average", direction: "desc" });
-  });
-
   it("scope is its own state", async () => {
     const { result } = await renderHook(() => useEntryFilters("diary"));
     await act(async () => result.current.setScope("my_diary"));

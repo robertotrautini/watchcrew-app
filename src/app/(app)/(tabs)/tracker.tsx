@@ -10,7 +10,13 @@ import { TrackerEntrySheet } from "@/components/movie/TrackerEntrySheet";
 import { PaymentModal } from "@/components/movie/PaymentModal";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
-import { Glass, GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import {
+  Glass,
+  GLASS_SEARCH_INPUT_CLASSNAME,
+  PANEL_LIST_CONTENT_PT_CLASSNAME,
+  PANEL_LIST_OVERLAP_CLASSNAME,
+} from "@/components/ui/Glass";
+import { PanelShadow } from "@/components/ui/PanelShadow";
 import { TABLE_DATE_CELL, TABLE_TITLE_CELL } from "@/components/ui/GlassTable";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -145,26 +151,26 @@ export default function TrackerScreen() {
         settingsTestID="tracker-group-settings-button"
       />
 
-      <Glass
-        variant="strong"
-        className="mx-4 mt-3 flex-row items-center gap-3 p-3"
-      >
-        <TextInput
-          testID="tracker-search-input"
-          className={GLASS_SEARCH_INPUT_CLASSNAME}
-          placeholder="Film suchen…"
-          placeholderTextColor="#8b8b8b"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-        <IconButton
-          testID="tracker-log-payment-button"
-          icon="price"
-          variant="accent"
-          accessibilityLabel="Zahlung erfassen"
-          onPress={() => setPaymentModalVisible(true)}
-        />
-      </Glass>
+      <View testID="tracker-panel-wrapper" className="z-10 mx-4 mt-3">
+        <PanelShadow testID="tracker-panel-shadow" />
+        <Glass variant="solid" className="flex-row items-center gap-3 p-3">
+          <TextInput
+            testID="tracker-search-input"
+            className={GLASS_SEARCH_INPUT_CLASSNAME}
+            placeholder="Film suchen…"
+            placeholderTextColor="#8b8b8b"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          <IconButton
+            testID="tracker-log-payment-button"
+            icon="price"
+            variant="accent"
+            accessibilityLabel="Zahlung erfassen"
+            onPress={() => setPaymentModalVisible(true)}
+          />
+        </Glass>
+      </View>
 
       {searchedEntries.length === 0 ? (
         <View
@@ -182,8 +188,8 @@ export default function TrackerScreen() {
         <ScrollView
           {...parallaxScroll}
           testID="tracker-list"
-          className="flex-1"
-          contentContainerClassName="px-4 pb-3 pt-3"
+          className={`${PANEL_LIST_OVERLAP_CLASSNAME} flex-1`}
+          contentContainerClassName={`px-4 pb-3 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
         >
           <Glass className="px-3 pb-1 pt-3">
             <View

@@ -3,8 +3,8 @@ appId: com.watchcrew.app
 # tagebuch-filter-sort.yaml — Tagebuch tab: search, scope switch (Mein Tagebuch |
 # Gruppe), the DECOUPLED panel rows (no labels; sort icon + field Select + direction
 # button; row 3: "+ Filter" + scrollable chips + view-mode toggle at the right; flyout with draft/Anwenden/
-# Zurücksetzen), combination filter + sort, table-header sort (same state as
-# the panel), view modes.
+# Zurücksetzen), combination filter + sort, static table header (sort only via the panel),
+# view modes.
 # Restores: scope "Gruppe" (app default; the scope is one global setting), sort "Bewertung Ø" descending (app default),
 # no filters, view mode cards, panel closed.
 - runFlow: ../subflows/ensure-app.yaml
@@ -250,23 +250,10 @@ appId: com.watchcrew.app
     id: "tagebuch-list-title-.*"
 - takeScreenshot: 28-tagebuch-view-list
 
-# --- table header sets the same sort (list mode): title asc, desc, back to default ---
-- tapOn:
-    id: "tagebuch-table-header-title"
+# --- table header is static (sorting only via the panel) ---
 - assertVisible:
-    id: "tagebuch-table-header-title-sort-asc"
-- takeScreenshot: 29-tagebuch-header-title-asc
-- tapOn:
-    id: "tagebuch-table-header-title"
-- assertVisible:
-    id: "tagebuch-table-header-title-sort-desc"
-- tapOn:
-    id: "tagebuch-table-header-title"
-- assertNotVisible:
-    id: "tagebuch-table-header-title-sort-desc"
-- assertVisible:
-    id: "tagebuch-table-header-average-sort-desc"
-- takeScreenshot: 30-tagebuch-header-back-to-default
+    id: "tagebuch-table-header"
+- takeScreenshot: 29-tagebuch-list-static-header
 - tapOn:
     id: "tagebuch-view-mode-cards"
 - assertVisible:

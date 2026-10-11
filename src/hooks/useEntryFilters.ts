@@ -1,8 +1,6 @@
 import { useState } from "react";
 
 import {
-  nextHeaderSort,
-  type SortField,
   type SortState,
 } from "@/lib/entrySorting";
 import {
@@ -63,9 +61,6 @@ export function useEntryFilters(tab: ListFiltersTab) {
     flyoutVisible,
     setFlyoutVisible,
     setSort: (next: SortState) => persist({ sort: next }),
-    /** Table-header tap: asc -> desc -> back to the default sort. */
-    toggleHeaderSort: (field: SortField) =>
-      persist({ sort: nextHeaderSort(sort, field, defaultSort) }),
     setFilters: (next: EntryFilters) => persist({ filters: next }),
     removeFilter: (key: FilterKey) =>
       persist({ filters: removeFilterKey(list.filters, key) }),

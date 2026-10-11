@@ -54,31 +54,6 @@ export const DEFAULT_WATCHLIST_SORT: SortState = {
   direction: "desc",
 };
 
-export function isSameSort(a: SortState, b: SortState): boolean {
-  return a.field === b.field && a.direction === b.direction;
-}
-
-/**
- * Table-header tap: another field starts at asc; asc -> desc; desc -> back to
- * the default sort. Tapping the default field while the default is active
- * flips it to asc (so the tap always changes something).
- */
-export function nextHeaderSort(
-  current: SortState,
-  field: SortField,
-  defaultSort: SortState,
-): SortState {
-  if (current.field !== field) {
-    return { field, direction: "asc" };
-  }
-  if (isSameSort(current, defaultSort)) {
-    return { field, direction: current.direction === "asc" ? "desc" : "asc" };
-  }
-  return current.direction === "asc"
-    ? { field, direction: "desc" }
-    : defaultSort;
-}
-
 export interface SortContext {
   /** Current user (own rating / own seen date). */
   userId: string;

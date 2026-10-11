@@ -3,6 +3,7 @@ import { Text } from "@/components/ui/Text";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Glass";
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
 import { TagebuchFilterPanel } from "@/components/tagebuch/TagebuchFilterPanel";
 import { TagebuchScopeSwitch } from "@/components/tagebuch/TagebuchScopeSwitch";
@@ -87,18 +88,19 @@ export default function TagebuchScreen() {
           </Text>
         </View>
       ) : (
-        <TagebuchEntryList
-          entries={screen.visibleEntries}
-          mode={screen.diaryViewMode}
-          userId={screen.userId}
-          starColor={screen.starColor}
-          showTitlesInGrid={screen.showTitlesInGrid}
-          groupMemberIds={screen.groupMemberIds}
-          displayNameById={screen.displayNameById}
-          onOpenEntry={screen.openEntry}
-          sort={filters.sort}
-          onSortField={filters.toggleHeaderSort}
-        />
+        <View className={PANEL_LIST_OVERLAP_CLASSNAME + " flex-1"}>
+          <TagebuchEntryList
+            entries={screen.visibleEntries}
+            mode={screen.diaryViewMode}
+            userId={screen.userId}
+            starColor={screen.starColor}
+            showTitlesInGrid={screen.showTitlesInGrid}
+            groupMemberIds={screen.groupMemberIds}
+            displayNameById={screen.displayNameById}
+            onOpenEntry={screen.openEntry}
+            sort={filters.sort}
+          />
+        </View>
       )}
 
       <EntryFilterFlyout

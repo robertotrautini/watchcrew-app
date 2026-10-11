@@ -5,6 +5,7 @@ import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Glass";
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
 import { WatchlistFilterPanel } from "@/components/watchlist/WatchlistFilterPanel";
 import { EntryFilterFlyout } from "@/components/entries/EntryFilterFlyout";
@@ -97,16 +98,17 @@ export default function WatchlistScreen() {
           </Text>
         </View>
       ) : (
-        <WatchlistEntryList
-          entries={screen.searchedEntries}
-          viewMode={screen.watchlistViewMode}
-          streamingAvailability={screen.streamingAvailability}
-          totalMembers={screen.totalMembers}
-          showTitlesInGrid={screen.showTitlesInGrid}
-          onOpenEntry={screen.openEntry}
-          sort={filters.sort}
-          onSortField={filters.toggleHeaderSort}
-        />
+        <View className={PANEL_LIST_OVERLAP_CLASSNAME + " flex-1"}>
+          <WatchlistEntryList
+            entries={screen.searchedEntries}
+            viewMode={screen.watchlistViewMode}
+            streamingAvailability={screen.streamingAvailability}
+            totalMembers={screen.totalMembers}
+            showTitlesInGrid={screen.showTitlesInGrid}
+            onOpenEntry={screen.openEntry}
+            sort={filters.sort}
+          />
+        </View>
       )}
 
       <EntryFilterFlyout

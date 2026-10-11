@@ -33,6 +33,28 @@ describe("GlassTable", () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it("rows are square slices of one container: only the last row is rounded (bottom)", async () => {
+    const { getByTestId, toJSON } = await render(
+      <>
+        <GlassTableHeader testID="h">
+          <Text>H</Text>
+        </GlassTableHeader>
+        <GlassTableRow testID="a" isLast={false} onPress={() => {}}>
+          <Text>A</Text>
+        </GlassTableRow>
+        <GlassTableRow testID="b" isLast onPress={() => {}}>
+          <Text>B</Text>
+        </GlassTableRow>
+      </>,
+    );
+    const json = JSON.stringify(toJSON());
+    // header: top rounding only; middle row square; last row bottom rounding only
+    expect(json).toContain("rounded-t-xl");
+    expect(json).toContain("rounded-b-xl");
+    expect(json).not.toMatch(/"className":"[^"]*\brounded-xl\b/);
+    expect(getByTestId("h")).toBeTruthy();
+  });
+
   it("only non-last rows get the separator border", async () => {
     const { getByTestId } = await render(
       <>
@@ -48,148 +70,32 @@ describe("GlassTable", () => {
     expect(getByTestId("b").props.className ?? "").not.toContain("border-b");
   });
 
-  describe("sortable header cells", () => {
-    it("text cell without onPress stays plain (no button)", async () => {
-      const { queryByTestId } = await render(
+  it("header content is vertically centred: symmetric pt-3/pb-3, items-center", async () => {
+    const { getByTestId, toJSON } = await render(
+      <GlassTableHeader testID="h">
+        <Text>H</Text>
+      </GlassTableHeader>,
+    );
+    const cls = getByTestId("h").props.className;
+    expect(cls).toContain("items-center");
+    expect(cls).toContain("pb-3");
+    expect(JSON.stringify(toJSON())).toContain("pt-3");
+  });
+
+  describe("static header cells", () => {
+    it("text and icon cells are plain (no button, no sort chevron)", async () => {
+      const { getByTestId } = await render(
         <GlassTableHeader>
           <GlassTableHeaderCell testID="c">Film</GlassTableHeaderCell>
-        </GlassTableHeader>,
-      );
-      expect(queryByTestId("c-sort-asc")).toBeNull();
-      expect(queryByTestId("c")?.props.accessibilityRole).not.toBe("button");
-    });
-
-    it("text cell with onPress fires, exposes state and indicator", async () => {
-      const onPress = jest.fn();
-      const { getByTestId, queryByTestId, rerender } = await render(
-        <GlassTableHeaderCell
-          testID="c"
-          onPress={onPress}
-          sortState={null}
-          accessibilityLabel="Film"
-        >
-          Film
-        </GlassTableHeaderCell>,
-      );
-      expect(getByTestId("c").props.accessibilityRole).toBe("button");
-      expect(getByTestId("c").props.accessibilityState).toMatchObject({
-        selected: false,
-      });
-      expect(queryByTestId("c-sort-asc")).toBeNull();
-      expect(queryByTestId("c-sort-desc")).toBeNull();
-      await fireEvent.press(getByTestId("c"));
-      expect(onPress).toHaveBeenCalledTimes(1);
-
-      await rerender(
-        <GlassTableHeaderCell
-          testID="c"
-          onPress={onPress}
-          sortState="asc"
-          accessibilityLabel="Film"
-        >
-          Film
-        </GlassTableHeaderCell>,
-      );
-      expect(getByTestId("c-sort-asc")).toBeTruthy();
-      expect(getByTestId("c").props.accessibilityState).toMatchObject({
-        selected: true,
-      });
-      expect(getByTestId("c").props.accessibilityLabel).toContain("aufsteigend");
-
-      await rerender(
-        <GlassTableHeaderCell
-          testID="c"
-          onPress={onPress}
-          sortState="desc"
-          accessibilityLabel="Film"
-        >
-          Film
-        </GlassTableHeaderCell>,
-      );
-      expect(getByTestId("c-sort-desc")).toBeTruthy();
-      expect(getByTestId("c").props.accessibilityLabel).toContain("absteigend");
-    });
-
-    it("icon cell keeps label and gains press + indicator when sortable", async () => {
-      const onPress = jest.fn();
-      const { getByTestId } = await render(
-        <GlassTableHeaderIconCell
-          testID="i"
-          label="Durchschnitt"
-          onPress={onPress}
-          sortState="desc"
-        >
-          <Text>*</Text>
-        </GlassTableHeaderIconCell>,
-      );
-      expect(getByTestId("i").props.accessibilityLabel).toContain("Durchschnitt");
-      expect(getByTestId("i-sort-desc")).toBeTruthy();
-      await fireEvent.press(getByTestId("i"));
-      expect(onPress).toHaveBeenCalledTimes(1);
-    });
-
-    it("icon cell without onPress has no indicator", async () => {
-      const { getByTestId, queryByTestId } = await render(
-        <GlassTableHeaderIconCell testID="i" label="Favorit">
-          <Text>*</Text>
-        </GlassTableHeaderIconCell>,
-      );
-      expect(getByTestId("i").props.accessibilityLabel).toBe("Favorit");
-      expect(queryByTestId("i-sort-asc")).toBeNull();
-    });
-
-    it("icon cell: chevron is an overlay below the icon row, icon row has fixed height, touch target >= 44dp", async () => {
-      const { getByTestId } = await render(
-        <GlassTableHeaderIconCell
-          testID="i"
-          label="Durchschnitt"
-          onPress={() => {}}
-          sortState="asc"
-        >
-          <Text>*</Text>
-        </GlassTableHeaderIconCell>,
-      );
-      const chevron = getByTestId("i-sort-asc");
-      expect(chevron.parent?.props.className).toContain("absolute");
-      expect(chevron.parent?.props.className).toContain("top-[22px]");
-      expect(chevron.parent?.props.pointerEvents).toBe("none");
-      expect(getByTestId("i").props.className).toContain("h-9");
-      const slop = getByTestId("i").props.hitSlop;
-      expect(24 + slop.top + slop.bottom).toBeGreaterThanOrEqual(44);
-    });
-
-    it("idle header cells have normal height (no reserved chevron strip)", async () => {
-      const { getByTestId } = await render(
-        <>
-          <GlassTableHeaderIconCell testID="i" label="X" onPress={() => {}}>
+          <GlassTableHeaderIconCell testID="i" label="Favorit">
             <Text>*</Text>
           </GlassTableHeaderIconCell>
-          <GlassTableHeaderCell testID="c" onPress={() => {}}>
-            Film
-          </GlassTableHeaderCell>
-        </>,
+        </GlassTableHeader>,
       );
-      for (const id of ["i", "c"]) {
-        expect(getByTestId(id).props.className).toContain("h-6");
-        expect(getByTestId(id).props.className).not.toContain("h-9");
-      }
-    });
-
-    it("text cell reserves a fixed 14px chevron slot with and without sort", async () => {
-      const { getByTestId, queryByTestId, rerender, toJSON } = await render(
-        <GlassTableHeaderCell testID="c" onPress={() => {}} sortState={null}>
-          Film
-        </GlassTableHeaderCell>,
-      );
-      const before = JSON.stringify(toJSON()).includes("w-[14px]");
-      await rerender(
-        <GlassTableHeaderCell testID="c" onPress={() => {}} sortState="desc">
-          Film
-        </GlassTableHeaderCell>,
-      );
-      expect(before).toBe(true);
-      expect(getByTestId("c-sort-desc")).toBeTruthy();
-      expect(queryByTestId("c-sort-asc")).toBeNull();
+      expect(getByTestId("c").props.accessibilityRole).not.toBe("button");
+      expect(getByTestId("i").props.accessibilityRole).not.toBe("button");
+      expect(getByTestId("i").props.accessibilityLabel).toBe("Favorit");
+      expect(getByTestId("i").props.onPress).toBeUndefined();
     });
 
     it("header and data cells of a column share the same width constants", () => {

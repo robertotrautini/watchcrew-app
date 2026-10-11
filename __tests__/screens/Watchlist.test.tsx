@@ -60,6 +60,7 @@ jest.mock("@/stores/usePreferencesStore", () => {
     watchlistViewMode: "cards",
     setWatchlistViewMode: () => {},
     showTitlesInGrid: true,
+    gridColumnsDiaryWatchlist: 4,
     selectedStreamingProviderIds: [],
     filterPanelOpen: { watchlist: false, diary: false },
     setFilterPanelOpen: (tab: string, open: boolean) =>
@@ -331,14 +332,14 @@ describe("WatchlistScreen", () => {
     expect(require("@/stores/usePreferencesStore").usePreferencesStore.getState().filterPanelOpen.watchlist).toBe(true);
   });
 
-  it("shows the active dot for a non-default sort and for an active filter", async () => {
+  it("shows the active dot only for an active filter, never for sort", async () => {
     setUpHappyPath();
     const WatchlistScreen = loadWatchlistScreen();
     const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
     expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
 
     await selectSortField(getByTestId, "tmdb");
-    expect(getByTestId("watchlist-filter-active-dot")).toBeTruthy();
+    expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
 
     await selectSortField(getByTestId, "added");
     expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
@@ -617,7 +618,7 @@ describe("WatchlistScreen", () => {
     expect(queryByTestId("watchlist-empty")).toBeNull();
   });
 
-  describe("table-header sort (list mode, same sort as the panel)", () => {
+  describe("table header (list mode, static)", () => {
     const early = makeEntry({
       id: "c1",
       added_at: "2026-01-03T00:00:00Z",
@@ -636,7 +637,7 @@ describe("WatchlistScreen", () => {
     const order = (nodes: { props: { testID?: string } }[]) =>
       nodes.map((n) => n.props.testID?.replace("watchlist-list-row-", ""));
 
-    it("title and release columns cycle asc/desc/default; missing dates last; indicator shown; panel follows", async () => {
+    it("table header is static (no buttons, no sort indicator); rows follow the panel sort", async () => {
       setUpPreferencesStore("list");
       setUpHappyPath([early, late, none]);
       const WatchlistScreen = loadWatchlistScreen();
@@ -644,21 +645,12 @@ describe("WatchlistScreen", () => {
       const rows = () => order(getAllByTestId(/^watchlist-list-row-c/));
       expect(rows()).toEqual(["c1", "c2", "c3"]); // panel sort: added desc
 
-      await fireEvent.press(getByTestId("watchlist-table-header-title"));
-      expect(rows()).toEqual(["c2", "c3", "c1"]);
-      expect(getByTestId("watchlist-table-header-title-sort-asc")).toBeTruthy();
-      expect(getByTestId("watchlist-sort-field").props.accessibilityLabel).toBe("Sortieren nach Titel");
-      await fireEvent.press(getByTestId("watchlist-table-header-title"));
-      expect(rows()).toEqual(["c1", "c3", "c2"]);
-      await fireEvent.press(getByTestId("watchlist-table-header-title"));
-      expect(rows()).toEqual(["c1", "c2", "c3"]);
+      for (const id of ["title", "release"]) {
+        expect(getByTestId(`watchlist-table-header-${id}`).props.accessibilityRole).not.toBe("button");
+      }
+      await selectSortField(getByTestId, "title");
+      expect(rows()).toEqual(["c1", "c3", "c2"]); // Zebra, Mango, Apfel (desc)
       expect(queryByTestId("watchlist-table-header-title-sort-desc")).toBeNull();
-
-      await fireEvent.press(getByTestId("watchlist-table-header-release"));
-      expect(rows()).toEqual(["c1", "c2", "c3"]);
-      await fireEvent.press(getByTestId("watchlist-table-header-release"));
-      expect(rows()).toEqual(["c2", "c1", "c3"]);
-      expect(getByTestId("watchlist-table-header-release").props.accessibilityState).toMatchObject({ selected: true });
     });
   });
 });

@@ -1,5 +1,10 @@
 import { render } from "@testing-library/react-native";
 
+import {
+  PANEL_LIST_CONTENT_PT_CLASSNAME,
+  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
+} from "@/components/ui/Glass";
+
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
 
 const mockCardRender = jest.fn();
@@ -35,7 +40,6 @@ describe("WatchlistEntryList sort remount", () => {
         showTitlesInGrid
         onOpenEntry={onOpen}
         sort={{ field: "title", direction: dir }}
-        onSortField={jest.fn()}
       />
     );
     const r = await render(ui([a, b, c] as never[], "asc"));
@@ -49,5 +53,24 @@ describe("WatchlistEntryList sort remount", () => {
       "Film b",
       "Film a",
     ]);
+  });
+
+  it.each(["cards", "grid", "list"] as const)("%s mode: list content starts with PANEL_LIST_CONTENT_PT_CLASSNAME", async (mode) => {
+    const r = await render((
+      <WatchlistEntryList
+        entries={[entry("a")] as never[]}
+        viewMode={mode}
+        streamingAvailability={new Map()}
+        totalMembers={2}
+        showTitlesInGrid
+        onOpenEntry={jest.fn()}
+        sort={{ field: "title", direction: "asc" }}
+      />
+    ));
+    const cls = r.getByTestId((mode === "list" ? "watchlist-list" : "watchlist-grid-or-cards")).props.contentContainerClassName as string;
+    expect(cls).toContain(
+      mode === "grid" ? PANEL_LIST_GRID_CONTENT_PT_CLASSNAME : PANEL_LIST_CONTENT_PT_CLASSNAME,
+    );
+    expect(cls).not.toMatch(/(^| )pt-3( |$)/);
   });
 });

@@ -14,10 +14,11 @@ import {
   TABLE_DATE_CELL,
   TABLE_TITLE_CELL,
 } from "@/components/ui/GlassTable";
-import type { SortField, SortState } from "@/lib/entrySorting";
+import type { SortState } from "@/lib/entrySorting";
 import { formatPlainDate } from "@/lib/dateFormat";
 import {
   isGridPlaceholder,
+  GRID_COLUMN_WRAPPER_STYLE,
   padToFullRows,
   type GridPlaceholder,
 } from "@/lib/gridPadding";
@@ -29,7 +30,11 @@ import type {
   StreamingAvailabilityLookup,
   WatchlistEntry,
 } from "@/lib/watchlistTypes";
-import type { WatchlistViewMode } from "@/stores/usePreferencesStore";
+import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePreferencesStore";
+import {
+  PANEL_LIST_CONTENT_PT_CLASSNAME,
+  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
+} from "@/components/ui/Glass";
 
 function ratedCountFor(entry: WatchlistEntry): number {
   return entry.ratings.filter((r) => r.rating != null && r.rating > 0).length;
@@ -80,33 +85,18 @@ const WatchlistListRow = memo(function WatchlistListRow({
   );
 });
 
-function WatchlistListHeader({
-  sort,
-  onSortField,
-}: {
-  sort: SortState;
-  onSortField: (field: SortField) => void;
-}) {
-  const stateOf = (field: SortField) =>
-    sort.field === field ? sort.direction : null;
+function WatchlistListHeader() {
   return (
     <GlassTableHeader testID="watchlist-table-header">
       <GlassTableHeaderCell
         testID="watchlist-table-header-title"
         className="flex-1"
-        accessibilityLabel="Film"
-        sortState={stateOf("title")}
-        onPress={() => onSortField("title")}
       >
         Film
       </GlassTableHeaderCell>
       <GlassTableHeaderCell
         testID="watchlist-table-header-release"
-        className="w-28"
-        align="end"
-        accessibilityLabel="Erscheint"
-        sortState={stateOf("release")}
-        onPress={() => onSortField("release")}
+        className="w-28 text-right"
       >
         Erscheint
       </GlassTableHeaderCell>
@@ -172,7 +162,6 @@ export function WatchlistEntryList({
   showTitlesInGrid,
   onOpenEntry,
   sort,
-  onSortField,
 }: {
   entries: WatchlistEntry[];
   viewMode: WatchlistViewMode;
@@ -180,12 +169,14 @@ export function WatchlistEntryList({
   totalMembers: number;
   showTitlesInGrid: boolean;
   onOpenEntry: (entry: WatchlistEntry) => void;
-  /** The one active sort (shared with the panel); table headers show/set it. */
+  /** The one active sort (set in the panel); only drives the remount key. */
   sort: SortState;
-  onSortField: (field: SortField) => void;
 }) {
   const parallaxScroll = useParallaxScroll();
-  const { listKey, skipFade } = useSortRemountKey(viewMode, sort);
+  const gridColumns = usePreferencesStore((s) => s.gridColumnsDiaryWatchlist);
+  const { listKey: sortKey, skipFade } = useSortRemountKey(viewMode, sort);
+  // numColumns cannot change on a mounted FlatList: remount on column change.
+  const listKey = viewMode === "grid" ? `${sortKey}-c${gridColumns}` : sortKey;
 
   if (viewMode === "list") {
     return (
@@ -195,10 +186,8 @@ export function WatchlistEntryList({
         testID="watchlist-list"
         data={entries}
         keyExtractor={keyOfListEntry}
-        ListHeaderComponent={
-          <WatchlistListHeader sort={sort} onSortField={onSortField} />
-        }
-        contentContainerClassName="px-4 pb-3 pt-3"
+        ListHeaderComponent={<WatchlistListHeader />}
+        contentContainerClassName={`px-4 pb-3 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
         initialNumToRender={20}
         {...VIRTUALIZATION}
         renderItem={({ item, index }) => (
@@ -218,11 +207,15 @@ export function WatchlistEntryList({
       {...parallaxScroll}
       testID="watchlist-grid-or-cards"
       key={listKey}
-      data={padToFullRows(entries, isGrid ? 4 : 1)}
+      data={padToFullRows(entries, isGrid ? gridColumns : 1)}
       keyExtractor={keyOfGridEntry}
-      numColumns={isGrid ? 4 : 1}
-      contentContainerClassName={isGrid ? "px-4 pt-3 gap-2" : "px-4 pt-3 gap-3"}
-      columnWrapperClassName={isGrid ? "gap-2" : undefined}
+      numColumns={isGrid ? gridColumns : 1}
+      contentContainerClassName={
+        isGrid
+          ? `px-4 ${PANEL_LIST_GRID_CONTENT_PT_CLASSNAME} gap-2`
+          : `px-4 ${PANEL_LIST_CONTENT_PT_CLASSNAME} gap-3`
+      }
+      columnWrapperStyle={isGrid ? GRID_COLUMN_WRAPPER_STYLE : undefined}
       initialNumToRender={isGrid ? 12 : 8}
       {...VIRTUALIZATION}
       renderItem={({ item, index }) =>

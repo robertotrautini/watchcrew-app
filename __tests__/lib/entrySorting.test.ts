@@ -3,8 +3,6 @@ import {
   DEFAULT_WATCHLIST_SORT,
   DIARY_SORT_FIELDS,
   WATCHLIST_SORT_FIELDS,
-  isSameSort,
-  nextHeaderSort,
   sortEntries,
 } from "@/lib/entrySorting";
 import { entry, genres, ids, movie } from "../helpers/entryFixtures";
@@ -136,33 +134,5 @@ describe("sortEntries", () => {
   it("sorting never drops or filters entries (decoupled from filters)", () => {
     const horror = entry("h", movie(8, "H", genres("horror")), [{ rating: 9 }]);
     expect(sortEntries([horror, a, b, n], DEFAULT_DIARY_SORT, ctx)).toHaveLength(4);
-  });
-});
-
-describe("nextHeaderSort (asc -> desc -> back to default)", () => {
-  it("another field starts at asc", () => {
-    expect(
-      nextHeaderSort({ field: "average", direction: "desc" }, "title", DEFAULT_DIARY_SORT),
-    ).toEqual({ field: "title", direction: "asc" });
-  });
-
-  it("asc -> desc -> default", () => {
-    const first = nextHeaderSort(DEFAULT_DIARY_SORT, "title", DEFAULT_DIARY_SORT);
-    const second = nextHeaderSort(first, "title", DEFAULT_DIARY_SORT);
-    expect(second).toEqual({ field: "title", direction: "desc" });
-    expect(nextHeaderSort(second, "title", DEFAULT_DIARY_SORT)).toEqual(DEFAULT_DIARY_SORT);
-  });
-
-  it("tapping the default field in default state flips to asc, then back to default", () => {
-    const asc = nextHeaderSort(DEFAULT_DIARY_SORT, "average", DEFAULT_DIARY_SORT);
-    expect(asc).toEqual({ field: "average", direction: "asc" });
-    expect(nextHeaderSort(asc, "average", DEFAULT_DIARY_SORT)).toEqual(DEFAULT_DIARY_SORT);
-  });
-});
-
-describe("isSameSort", () => {
-  it("compares field and direction", () => {
-    expect(isSameSort(DEFAULT_DIARY_SORT, { field: "average", direction: "desc" })).toBe(true);
-    expect(isSameSort(DEFAULT_DIARY_SORT, { field: "average", direction: "asc" })).toBe(false);
   });
 });

@@ -3,7 +3,7 @@ appId: com.watchcrew.app
 # watchlist-filter-sort.yaml — Watchlist tab: search, collapsible filter panel
 # with the DECOUPLED rows (no labels; sort icon + field Select + direction button;
 # row 3: "+ Filter" + scrollable chips + view-mode toggle at the right; flyout with draft/Anwenden/Zurücksetzen),
-# combination filter + sort, table-header sort (same state as the panel),
+# combination filter + sort, static table header (sort only via the panel),
 # filter dot, all 3 view modes.
 # Restores: sort "Hinzugefügt" descending, no filters, view mode grid, panel
 # closed (subflows/watchlist-normalize.yaml).
@@ -191,21 +191,10 @@ appId: com.watchcrew.app
     id: "watchlist-list"
 - takeScreenshot: 23-watchlist-view-list
 
-# --- table header sets the same sort (list mode): title asc, then desc, then default ---
-- tapOn:
-    id: "watchlist-table-header-title"
+# --- table header is static (sorting only via the panel) ---
 - assertVisible:
-    id: "watchlist-table-header-title-sort-asc"
-- takeScreenshot: 24-watchlist-header-title-asc
-- tapOn:
-    id: "watchlist-table-header-title"
-- assertVisible:
-    id: "watchlist-table-header-title-sort-desc"
-- tapOn:
-    id: "watchlist-table-header-title"
-- assertNotVisible:
-    id: "watchlist-table-header-title-sort-desc"
-- takeScreenshot: 25-watchlist-header-back-to-default
+    id: "watchlist-table-header"
+- takeScreenshot: 24-watchlist-list-static-header
 - tapOn:
     id: "watchlist-view-mode-grid-button"
 - assertVisible:

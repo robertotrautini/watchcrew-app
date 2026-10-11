@@ -24,13 +24,17 @@ import {
 } from "@/components/ui/GlassTable";
 import { Icon } from "@/components/ui/Icon";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
-import type { SortField, SortState } from "@/lib/entrySorting";
-import { isGridPlaceholder, padToFullRows, type GridPlaceholder } from "@/lib/gridPadding";
+import type { SortState } from "@/lib/entrySorting";
+import { GRID_COLUMN_WRAPPER_STYLE, isGridPlaceholder, padToFullRows, type GridPlaceholder } from "@/lib/gridPadding";
 import { formatPlainDate } from "@/lib/dateFormat";
 import { computeAverageRating, memberDisplayLabel } from "@/lib/diaryDisplay";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
-import type { DiaryViewMode } from "@/stores/usePreferencesStore";
+import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferencesStore";
+import {
+  PANEL_LIST_CONTENT_PT_CLASSNAME,
+  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
+} from "@/components/ui/Glass";
 
 /**
  * Virtualized Tagebuch list (FlatList): only the rows near the viewport are
@@ -48,12 +52,9 @@ export interface TagebuchEntryListProps {
   groupMemberIds: string[];
   displayNameById: Map<string, string>;
   onOpenEntry: (entry: WatchlistEntry) => void;
-  /** The one active sort (shared with the panel); table headers show/set it. */
+  /** The one active sort (set in the panel); only drives the remount key. */
   sort: SortState;
-  onSortField: (field: SortField) => void;
 }
-
-const GRID_COLUMNS = 4;
 
 /**
  * Virtualization tuning shared by all modes (counts are rows, not items).
@@ -146,25 +147,12 @@ const GridRow = memo(function GridRow({
   );
 }, propsEqualIgnoringIndex);
 
-function ListHeader({
-  starColor,
-  sort,
-  onSortField,
-}: {
-  starColor: string;
-  sort: SortState;
-  onSortField: (field: SortField) => void;
-}) {
-  const stateOf = (field: SortField) =>
-    sort.field === field ? sort.direction : null;
+function ListHeader({ starColor }: { starColor: string }) {
   return (
     <GlassTableHeader testID="tagebuch-table-header">
       <GlassTableHeaderCell
         testID="tagebuch-table-header-title"
         className="flex-1"
-        accessibilityLabel="Film"
-        sortState={stateOf("title")}
-        onPress={() => onSortField("title")}
       >
         Film
       </GlassTableHeaderCell>
@@ -172,8 +160,6 @@ function ListHeader({
         testID="tagebuch-table-header-like"
         label="Favorit"
         className={TABLE_ICON_CELL}
-        sortState={stateOf("likes")}
-        onPress={() => onSortField("likes")}
       >
         <Icon name="heart" size="SM" color={LIKE_HEART_COLOR} />
       </GlassTableHeaderIconCell>
@@ -181,8 +167,6 @@ function ListHeader({
         testID="tagebuch-table-header-average"
         label="Durchschnitt"
         className={TABLE_SCORE_STRONG_CELL}
-        sortState={stateOf("average")}
-        onPress={() => onSortField("average")}
       >
         <Icon name="star" size="SM" color={starColor} />
       </GlassTableHeaderIconCell>
@@ -190,8 +174,6 @@ function ListHeader({
         testID="tagebuch-table-header-tmdb"
         label="TMDB"
         className={TABLE_SCORE_CELL}
-        sortState={stateOf("tmdb")}
-        onPress={() => onSortField("tmdb")}
       >
         <TmdbBadge
           testID="tagebuch-table-header-tmdb-logo"
@@ -320,12 +302,14 @@ export function TagebuchEntryList({
   displayNameById,
   onOpenEntry,
   sort,
-  onSortField,
 }: TagebuchEntryListProps) {
   // Empty today (see parallaxContext); kept so any future scroll handler is
   // spread onto the list unchanged (must stay a UI-thread worklet handler).
   const parallaxScroll = useParallaxScroll();
-  const { listKey, skipFade } = useSortRemountKey(mode, sort);
+  const gridColumns = usePreferencesStore((s) => s.gridColumnsDiaryWatchlist);
+  const { listKey: sortKey, skipFade } = useSortRemountKey(mode, sort);
+  // numColumns cannot change on a mounted FlatList: remount on column change.
+  const listKey = mode === "grid" ? `${sortKey}-c${gridColumns}` : sortKey;
 
   if (mode === "grid") {
     return (
@@ -333,12 +317,12 @@ export function TagebuchEntryList({
         {...parallaxScroll}
         key={listKey}
         testID="tagebuch-entry-list"
-        data={padToFullRows(entries, GRID_COLUMNS)}
+        data={padToFullRows(entries, gridColumns)}
         keyExtractor={keyOfGridItem}
-        numColumns={GRID_COLUMNS}
-        columnWrapperClassName="gap-2"
+        numColumns={gridColumns}
+        columnWrapperStyle={GRID_COLUMN_WRAPPER_STYLE}
         ItemSeparatorComponent={GridSeparator}
-        contentContainerClassName="px-4 pb-8 pt-3"
+        contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_GRID_CONTENT_PT_CLASSNAME}`}
         initialNumToRender={12}
         {...VIRTUALIZATION}
         renderItem={({ item, index }) =>
@@ -368,14 +352,8 @@ export function TagebuchEntryList({
         testID="tagebuch-entry-list"
         data={entries}
         keyExtractor={keyOf}
-        ListHeaderComponent={
-          <ListHeader
-            starColor={starColor}
-            sort={sort}
-            onSortField={onSortField}
-          />
-        }
-        contentContainerClassName="px-4 pb-8 pt-3"
+        ListHeaderComponent={<ListHeader starColor={starColor} />}
+        contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
         initialNumToRender={20}
         {...VIRTUALIZATION}
         renderItem={({ item, index }) => (
@@ -398,7 +376,7 @@ export function TagebuchEntryList({
       data={entries}
       keyExtractor={keyOf}
       ItemSeparatorComponent={ItemSeparator}
-      contentContainerClassName="px-4 pb-8 pt-3"
+      contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
       initialNumToRender={8}
       {...VIRTUALIZATION}
       renderItem={({ item, index }) => (

@@ -1,5 +1,6 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
+import { StyleSheet } from "react-native";
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import type { Movie, Rating, WatchlistEntry } from "@/lib/watchlistTypes";
@@ -509,14 +510,16 @@ describe("TagebuchScreen", () => {
       const TagebuchScreen = loadTagebuchScreen();
       const { getByTestId } = await render(<TagebuchScreen />);
 
-      expect(getByTestId("tagebuch-view-mode-grid-segment").props.className).toContain("bg-accent");
-      expect(getByTestId("tagebuch-view-mode-cards-segment").props.className).not.toContain("bg-accent");
-      expect(getByTestId("tagebuch-view-mode-list-segment").props.className).not.toContain("bg-accent");
+      const fill = (id: string) =>
+        StyleSheet.flatten(getByTestId(`tagebuch-view-mode-${id}-segment`).props.style).backgroundColor;
+      expect(fill("grid")).not.toBe("transparent");
+      expect(fill("cards")).toBe("transparent");
+      expect(fill("list")).toBe("transparent");
     });
   });
 
   describe("collapsible filter panel", () => {
-    it("is closed by default, toggle opens it and persists; dot shows for non-default sort", async () => {
+    it("is closed by default, toggle opens it and persists; dot not shown for non-default sort", async () => {
       mockHappyPath([]);
       loadPreferencesStore().setState({ filterPanelOpen: { watchlist: false, diary: false } });
       const TagebuchScreen = loadTagebuchScreen();
@@ -537,6 +540,18 @@ describe("TagebuchScreen", () => {
       await fireEvent.press(getByTestId("tagebuch-sort-direction"));
       await fireEvent.press(getByTestId("tagebuch-filter-toggle"));
       expect(queryByTestId("tagebuch-filter-panel")).toBeNull();
+      expect(queryByTestId("tagebuch-filter-active-dot")).toBeNull();
+    });
+
+    it("shows the dot once a filter is applied", async () => {
+      mockHappyPath([]);
+      loadPreferencesStore().setState({ filterPanelOpen: { watchlist: false, diary: true } });
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+      expect(queryByTestId("tagebuch-filter-active-dot")).toBeNull();
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId("tagebuch-filter-liked"));
+      });
       expect(getByTestId("tagebuch-filter-active-dot")).toBeTruthy();
     });
   });
@@ -995,69 +1010,24 @@ describe("TagebuchScreen", () => {
       expect(getByTestId("tagebuch-sort-direction").props.accessibilityLabel).toMatch(/absteigend/);
     });
 
-    it("panel sort row and table headers share ONE sort (field select updates the header indicator)", async () => {
+    it("panel sort row sorts the list; table header is static (no buttons, no sort indicator)", async () => {
       loadPreferencesStore().setState({ diaryViewMode: "list" });
       mockHappyPath([low, high, mid]);
       const TagebuchScreen = loadTagebuchScreen();
       const { getAllByTestId, getByTestId, queryByTestId } = await render(<TagebuchScreen />);
       const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
+      for (const id of ["title", "like", "average", "tmdb"]) {
+        expect(getByTestId(`tagebuch-table-header-${id}`).props.accessibilityRole).not.toBe("button");
+      }
 
       await selectSortField(getByTestId, "seen_at");
       // own seen_at desc: low (03-01), mid (02-01), high (01-01)
       expect(rows()).toEqual(["tagebuch-entry-d-low", "tagebuch-entry-d-mid", "tagebuch-entry-d-high"]);
 
       await selectSortField(getByTestId, "title");
-      expect(getByTestId("tagebuch-table-header-title-sort-desc")).toBeTruthy();
       await fireEvent.press(getByTestId("tagebuch-sort-direction"));
-      expect(getByTestId("tagebuch-table-header-title-sort-asc")).toBeTruthy();
       expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
-      expect(queryByTestId("tagebuch-table-header-average-sort-desc")).toBeNull();
-    });
-
-    it("header tap cycles asc -> desc -> default sort, with indicator and a11y state", async () => {
-      loadPreferencesStore().setState({ diaryViewMode: "list" });
-      mockHappyPath([low, high, mid]);
-      const TagebuchScreen = loadTagebuchScreen();
-      const { getAllByTestId, getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
-
-      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
-      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
-      expect(getByTestId("tagebuch-table-header-title-sort-asc")).toBeTruthy();
-      expect(getByTestId("tagebuch-table-header-title").props.accessibilityState).toMatchObject({ selected: true });
-      expect(getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach Titel");
-
-      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
-      expect(rows()).toEqual(["tagebuch-entry-d-mid", "tagebuch-entry-d-low", "tagebuch-entry-d-high"]);
-      expect(getByTestId("tagebuch-table-header-title-sort-desc")).toBeTruthy();
-
-      await fireEvent.press(getByTestId("tagebuch-table-header-title"));
-      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
       expect(queryByTestId("tagebuch-table-header-title-sort-asc")).toBeNull();
-      expect(queryByTestId("tagebuch-table-header-title-sort-desc")).toBeNull();
-      expect(getByTestId("tagebuch-table-header-average-sort-desc")).toBeTruthy();
-    });
-
-    it("TMDB / heart / average columns sort; null TMDB stays last", async () => {
-      loadPreferencesStore().setState({ diaryViewMode: "list" });
-      mockHappyPath([low, high, mid]);
-      const TagebuchScreen = loadTagebuchScreen();
-      const { getAllByTestId, getByTestId } = await render(<TagebuchScreen />);
-      const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
-
-      await fireEvent.press(getByTestId("tagebuch-table-header-tmdb"));
-      expect(rows()).toEqual(["tagebuch-entry-d-low", "tagebuch-entry-d-high", "tagebuch-entry-d-mid"]);
-      await fireEvent.press(getByTestId("tagebuch-table-header-tmdb"));
-      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
-
-      await fireEvent.press(getByTestId("tagebuch-table-header-like"));
-      await fireEvent.press(getByTestId("tagebuch-table-header-like"));
-      expect(rows()[0]).toBe("tagebuch-entry-d-mid");
-
-      // average is the default: first tap flips to asc, second back to desc
-      await fireEvent.press(getByTestId("tagebuch-table-header-average"));
-      await fireEvent.press(getByTestId("tagebuch-table-header-average"));
-      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
     });
 
     it("all view modes use the same persisted sort", async () => {
@@ -1309,7 +1279,6 @@ describe("TagebuchScreen", () => {
         expect(tile.props.className).not.toMatch(/w-\[/);
       }
       const list = getByTestId("tagebuch-entry-list");
-      expect(list.props.columnWrapperClassName).toBe("gap-2");
       expect(list.props.contentContainerClassName).toContain("px-4");
       // 5 entries + 3 invisible placeholders = 2 full rows of 4
       expect(list.props.data).toHaveLength(8);
