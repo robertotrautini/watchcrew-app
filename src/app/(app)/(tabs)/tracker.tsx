@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Pressable, ScrollView, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -112,7 +112,7 @@ export default function TrackerScreen() {
           title="Tracker"
           settingsTestID="tracker-group-settings-button"
         />
-        <ListSkeleton testID="tracker-loading" />
+        <LoadingArea testID="tracker-loading" />
       </SafeAreaView>
     );
   }
@@ -188,7 +188,7 @@ export default function TrackerScreen() {
           className="flex-1"
           contentContainerClassName="px-4 pb-3 pt-3"
         >
-          <Glass cheap className="px-3 pb-1 pt-3">
+          <Glass className="px-3 pb-1 pt-3">
             <View
               className="flex-row border-b border-glass-border pb-2"
               testID="tracker-table-header"

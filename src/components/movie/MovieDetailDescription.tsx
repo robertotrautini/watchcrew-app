@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Pressable, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { SkeletonText } from "@/components/ui/Skeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { shouldShowMoreToggle } from "@/lib/movieDetailLogic";
 
 const MAX_COLLAPSED_LINES = 3;
@@ -22,7 +22,7 @@ const TEXT_CLASSNAME = MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME;
  */
 export interface MovieDetailDescriptionProps {
   overview: string | null;
-  /** Live details still loading: three skeleton text lines while no overview is known. */
+  /** Live details still loading: centered spinner while no overview is known. */
   isLoading?: boolean;
 }
 
@@ -35,10 +35,9 @@ export function MovieDetailDescription({
 
   if (overview == null && isLoading) {
     return (
-      <SkeletonText
-        testID="movie-detail-description-skeleton"
-        textClassName={TEXT_CLASSNAME}
-        lines={MAX_COLLAPSED_LINES}
+      <LoadingArea
+        testID="movie-detail-description-loading"
+        className="min-h-24 w-full"
       />
     );
   }

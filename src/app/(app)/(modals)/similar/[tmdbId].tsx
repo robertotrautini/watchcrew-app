@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useState } from "react";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -76,7 +76,7 @@ export default function SimilarMoviesScreen() {
   if (similarMoviesQuery.isLoading || userGroupsQuery.isLoading) {
     return (
       <View className="flex-1" testID="similar-movies-screen">
-        <ListSkeleton testID="similar-movies-screen-loading" />
+        <LoadingArea testID="similar-movies-screen-loading" />
       </View>
     );
   }

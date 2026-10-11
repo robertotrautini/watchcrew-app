@@ -6,8 +6,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
-import { GlassBlur } from "@/components/ui/GlassBlur";
+import { GLASS_BAR_CLASSNAME, GLASS_FLAT_FILL } from "@/components/ui/Glass";
 import { SheetHost } from "@/components/ui/Sheet";
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
 import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
@@ -171,7 +170,7 @@ export default function MovieDetailScreen() {
 
   // Structure first: header/poster/action bar render from whatever exists (stored
   // movie / route JSON); only the parts still missing while the live query loads
-  // show skeleton placeholders.
+  // show spinners.
   const isDetailLoading = movieDetailQuery.isLoading;
 
   // Stored movie (DB row / instant-paint JSON) wins; the live TMDB `details`
@@ -387,7 +386,6 @@ export default function MovieDetailScreen() {
                       }
                     : null
                 }
-                isLoading={isDetailLoading}
                 onEditReleaseDate={
                   canEditReleaseDate
                     ? () => setReleaseDateSheetVisible(true)
@@ -395,7 +393,7 @@ export default function MovieDetailScreen() {
                 }
               />
 
-              <MovieDetailGenreTags genres={genres} isLoading={isDetailLoading} />
+              <MovieDetailGenreTags genres={genres} />
 
               {source === "diary" ? (
                 <MovieDetailRatingsSection
@@ -406,7 +404,6 @@ export default function MovieDetailScreen() {
               ) : null}
 
               <MovieDetailCastRow
-                isLoading={isDetailLoading}
                 director={movieDetailQuery.data?.credits?.director ?? null}
                 cast={movieDetailQuery.data?.credits?.cast ?? []}
                 onDirectorPress={(personId) =>
@@ -423,7 +420,6 @@ export default function MovieDetailScreen() {
               />
 
               <MovieDetailProviders
-                isLoading={isDetailLoading}
                 providers={movieDetailQuery.data?.providers ?? null}
               />
             </View>
@@ -447,10 +443,8 @@ export default function MovieDetailScreen() {
           </View>
         </View>
 
-        <GlassBlur
-          className={`absolute bottom-0 left-0 right-0 ${GLASS_BAR_CLASSNAME}`}
-          fallbackClassName="bg-bg-sheet"
-          blurClassName="bg-bg-sheet-blur"
+        <View
+          className={`absolute bottom-0 left-0 right-0 overflow-hidden ${GLASS_BAR_CLASSNAME} ${GLASS_FLAT_FILL}`}
         >
           <SafeAreaView edges={["bottom"]} testID="movie-detail-action-bar">
             <MovieDetailActionsBar
@@ -466,7 +460,7 @@ export default function MovieDetailScreen() {
               onDirectRateEntryCreated={handleDirectRateEntryCreated}
             />
           </SafeAreaView>
-        </GlassBlur>
+        </View>
 
         <MovieDetailReleaseDateSheet
           visible={releaseDateSheetVisible}

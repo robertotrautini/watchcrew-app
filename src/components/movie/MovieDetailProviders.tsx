@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { Image } from "@/components/ui/Image";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { shouldShowAllProvidersToggle } from "@/lib/movieDetailLogic";
@@ -31,8 +30,6 @@ export const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
  */
 export interface MovieDetailProvidersProps {
   providers: TmdbMovieProviders | null;
-  /** Live details still loading: header + logo/name skeleton row. */
-  isLoading?: boolean;
 }
 
 interface FlatProvider extends TmdbProviderRef {
@@ -67,27 +64,8 @@ function groupBySection(
 
 export function MovieDetailProviders({
   providers,
-  isLoading = false,
 }: MovieDetailProvidersProps) {
   const [expanded, setExpanded] = useState(false);
-
-  if (providers == null && isLoading) {
-    return (
-      <View testID="movie-detail-providers-skeleton" className="gap-2">
-        <View className="gap-2 py-1">
-          <SkeletonText textClassName={PROVIDER_HEADER_CLASSNAME} className="w-20" />
-          <View className="flex-row flex-wrap gap-x-3 gap-y-2">
-            {[0, 1].map((index) => (
-              <View key={index} className="flex-row items-center gap-1.5">
-                <Skeleton className={`${PROVIDER_LOGO_CLASSNAME} rounded-md`} />
-                <SkeletonText textClassName={PROVIDER_NAME_CLASSNAME} className="w-20" />
-              </View>
-            ))}
-          </View>
-        </View>
-      </View>
-    );
-  }
 
   if (providers == null) {
     return null;

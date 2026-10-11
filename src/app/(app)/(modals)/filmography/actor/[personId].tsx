@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
@@ -60,7 +60,7 @@ export default function ActorFilmographyScreen() {
   if (filmographyQuery.isLoading || userGroupsQuery.isLoading) {
     return (
       <View className="flex-1" testID="actor-filmography-screen">
-        <ListSkeleton testID="actor-filmography-screen-loading" />
+        <LoadingArea testID="actor-filmography-screen-loading" />
       </View>
     );
   }

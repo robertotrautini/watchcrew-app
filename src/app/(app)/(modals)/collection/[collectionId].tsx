@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useState } from "react";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -73,7 +73,7 @@ export default function CollectionScreen() {
   if (collectionQuery.isLoading || userGroupsQuery.isLoading) {
     return (
       <View className="flex-1" testID="collection-screen">
-        <ListSkeleton testID="collection-screen-loading" />
+        <LoadingArea testID="collection-screen-loading" />
       </View>
     );
   }

@@ -39,8 +39,3 @@ export function nextTabSwitchState(state: TabSwitchState, tab: string | null): T
   if (state.tab == null) return { tab, epoch: state.epoch };
   return { tab, epoch: state.epoch + 1 };
 }
-
-/** Skeleton placeholder pulse (src/components/ui/Skeleton.tsx): one half-cycle duration and opacity range. */
-export const SKELETON_PULSE_MS = 800;
-export const SKELETON_MIN_OPACITY = 0.5;
-export const SKELETON_MAX_OPACITY = 1;

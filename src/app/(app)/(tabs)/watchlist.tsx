@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { Spinner } from "@/components/ui/Spinner";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -31,7 +31,7 @@ export default function WatchlistScreen() {
         testID="watchlist-screen"
       >
         <AppHeader title="Watchlist" settingsTestID="watchlist-settings-button" />
-        <ListSkeleton testID="watchlist-loading" />
+        <LoadingArea testID="watchlist-loading" />
       </SafeAreaView>
     );
   }

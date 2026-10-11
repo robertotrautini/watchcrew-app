@@ -4,9 +4,9 @@ import { useGroupTheme } from "@/components/GroupThemeProvider";
 
 /**
  * The one loading spinner of the app: an `ActivityIndicator` that always uses
- * the group-theme accent colour (follows gold/red/... per group). Use it only
- * where a skeleton makes no sense (buttons, tiny inline areas); page structure
- * gets a `Skeleton` instead (docs/style-guide.md "Laden").
+ * the group-theme accent colour (follows gold/red/... per group). Use it directly in
+ * (buttons, inline areas); whole content areas use `LoadingArea` (spinner
+ * centered with a min height; docs/style-guide.md "Laden").
  * Never use a raw `ActivityIndicator`. `color` is only overridden for
  * contrast on accent/danger filled buttons.
  */

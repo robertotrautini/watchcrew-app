@@ -2,7 +2,6 @@ import { Icon } from "@/components/ui/Icon";
 import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 import { Image } from "@/components/ui/Image";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
@@ -32,8 +31,6 @@ export interface MovieDetailCastRowProps {
   cast: TmdbCastMember[];
   onDirectorPress: (personId: number) => void;
   onCastMemberPress: (personId: number) => void;
-  /** Credits still loading: skeleton director line / cast avatars where data is missing. */
-  isLoading?: boolean;
 }
 
 export function MovieDetailCastRow({
@@ -41,28 +38,9 @@ export function MovieDetailCastRow({
   cast,
   onDirectorPress,
   onCastMemberPress,
-  isLoading = false,
 }: MovieDetailCastRowProps) {
   return (
     <>
-      {!director && isLoading ? (
-        <View
-          testID="movie-detail-director-skeleton"
-          className="flex-row items-center gap-3 border-t border-accent-a30 pt-3"
-        >
-          <Text className={CAST_LABEL_CLASSNAME}>
-            Regie
-          </Text>
-          <View className={`${CAST_DIRECTOR_BOX_CLASSNAME} flex-1`}>
-            <SkeletonText
-              textClassName={CAST_DIRECTOR_NAME_CLASSNAME}
-              widthClassName="w-2/5"
-              className="w-full"
-            />
-          </View>
-        </View>
-      ) : null}
-
       {director ? (
         <View className="flex-row items-center gap-3 border-t border-accent-a30 pt-3">
           <Text className={CAST_LABEL_CLASSNAME}>
@@ -76,32 +54,6 @@ export function MovieDetailCastRow({
           >
             <Text className={CAST_DIRECTOR_NAME_CLASSNAME}>{director.name}</Text>
           </Pressable>
-        </View>
-      ) : null}
-
-      {cast.length === 0 && isLoading ? (
-        <View
-          testID="movie-detail-cast-skeleton"
-          className="gap-2 border-y border-accent-a30 py-3"
-        >
-          <Text className={CAST_LABEL_CLASSNAME}>
-            Besetzung
-          </Text>
-          <View className="flex-row py-1">
-            {[0, 1, 2, 3, 4].map((index) => (
-              <View key={index} className="mr-3 w-20 items-center">
-                <Skeleton className={`${CAST_AVATAR_SIZE_CLASSNAME} rounded-full`} />
-                <SkeletonText
-                  textClassName={CAST_NAME_CLASSNAME}
-                  className="w-14"
-                />
-                <SkeletonText
-                  textClassName={CAST_CHARACTER_CLASSNAME}
-                  className="w-10"
-                />
-              </View>
-            ))}
-          </View>
         </View>
       ) : null}
 

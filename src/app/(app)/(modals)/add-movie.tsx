@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { useState } from "react";
 import { KeyboardInsetView } from "@/components/ui/KeyboardInsetView";
@@ -271,7 +271,7 @@ export default function AddMovieScreen() {
     isError: boolean,
   ) {
     if (isLoading) {
-      return <ListSkeleton rows={3} testID="add-movie-person-loading" />;
+      return <LoadingArea className="min-h-32 w-full" testID="add-movie-person-loading" />;
     }
     if (isError) {
       return (
@@ -310,7 +310,7 @@ export default function AddMovieScreen() {
     isError: boolean,
   ) {
     if (isLoading) {
-      return <ListSkeleton rows={3} testID="add-movie-company-loading" />;
+      return <LoadingArea className="min-h-32 w-full" testID="add-movie-company-loading" />;
     }
     if (isError) {
       return (
@@ -381,7 +381,7 @@ export default function AddMovieScreen() {
 
           <View className="mt-3 flex-1">
             {movieSearchQuery.isLoading ? (
-              <ListSkeleton rows={3} testID="add-movie-film-loading" />
+              <LoadingArea className="min-h-32 w-full" testID="add-movie-film-loading" />
             ) : movieSearchQuery.isError ? (
               <Text testID="add-movie-film-error" className="text-danger">
                 Filmsuche fehlgeschlagen.
@@ -444,7 +444,7 @@ export default function AddMovieScreen() {
               />
               <View className="mt-3 flex-1">
                 {personFilmographyQuery.isLoading ? (
-                  <ListSkeleton rows={3} testID="add-movie-person-filmography-loading" />
+                  <LoadingArea className="min-h-32 w-full" testID="add-movie-person-filmography-loading" />
                 ) : personFilmographyQuery.isError ? (
                   <Text
                     testID="add-movie-person-filmography-error"
@@ -504,7 +504,7 @@ export default function AddMovieScreen() {
               />
               <View className="mt-3 flex-1">
                 {studioFilmographyQuery.isLoading ? (
-                  <ListSkeleton rows={3} testID="add-movie-studio-loading" />
+                  <LoadingArea className="min-h-32 w-full" testID="add-movie-studio-loading" />
                 ) : studioFilmographyQuery.isError ? (
                   <Text testID="add-movie-studio-error" className="text-danger">
                     Studio-Filmografie konnte nicht geladen werden.

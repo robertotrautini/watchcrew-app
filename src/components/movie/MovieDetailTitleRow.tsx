@@ -3,7 +3,7 @@ import { Icon } from "@/components/ui/Icon";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { SkeletonText } from "@/components/ui/Skeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
 
 /**
@@ -16,7 +16,7 @@ import { TmdbBadge } from "@/components/ui/TmdbBadge";
  * Fixed heart color, same spec value as StarRating.tsx's LIKE_HEART_COLOR —
  * never swapped by the active group theme.
  */
-/** Title text classes (real title and its skeleton share them). */
+/** Title text classes . */
 export const MOVIE_DETAIL_TITLE_TEXT_CLASSNAME = `text-2xl ${MOVIE_TITLE_FONT}`;
 
 const LIKE_HEART_COLOR = "#e05c6e";
@@ -30,7 +30,7 @@ export interface MovieDetailTitleRowProps {
   liked: boolean;
   onToggleLike: () => void;
   isTogglingLike?: boolean;
-  /** No title known yet (no stored movie, live details pending): skeleton bar instead of the title. */
+  /** No title known yet (no stored movie, live details pending): small spinner instead of the title. */
   isLoading?: boolean;
 }
 
@@ -49,11 +49,10 @@ export function MovieDetailTitleRow({
       className="flex-row flex-wrap items-center justify-center gap-2 px-2"
     >
       {isLoading ? (
-        <SkeletonText
-          testID="movie-detail-title-skeleton"
-          textClassName={MOVIE_DETAIL_TITLE_TEXT_CLASSNAME}
-          widthClassName="w-56"
-          className="w-56"
+        <LoadingArea
+          testID="movie-detail-title-loading"
+          size="small"
+          className="h-8 w-16"
         />
       ) : (
         <Text

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Pressable, ScrollView, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -75,7 +75,7 @@ export default function SettingsStreamingServicesScreen() {
         className="flex-1"
         testID="settings-streaming-screen"
       >
-        <ListSkeleton testID="settings-streaming-loading" />
+        <LoadingArea testID="settings-streaming-loading" />
       </View>
     );
   }

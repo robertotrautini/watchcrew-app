@@ -1,6 +1,6 @@
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
-import { ListSkeleton } from "@/components/ui/ListSkeleton";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
@@ -28,7 +28,7 @@ export default function TagebuchScreen() {
         testID="tagebuch-screen"
       >
         <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
-        <ListSkeleton testID="tagebuch-loading" />
+        <LoadingArea testID="tagebuch-loading" />
       </SafeAreaView>
     );
   }

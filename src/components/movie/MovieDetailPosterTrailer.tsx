@@ -1,6 +1,5 @@
 import { Icon } from "@/components/ui/Icon";
 import { Image } from "@/components/ui/Image";
-import { Skeleton } from "@/components/ui/Skeleton";
 import { Spinner } from "@/components/ui/Spinner";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useEffect, useState } from "react";
@@ -117,11 +116,6 @@ export function MovieDetailPosterTrailer({
               accessibilityLabel={title}
               className="h-full w-full bg-card"
               contentFit="cover"
-            />
-          ) : isLoadingDetail ? (
-            <Skeleton
-              testID="movie-detail-poster-skeleton"
-              className="h-full w-full"
             />
           ) : (
             <View
