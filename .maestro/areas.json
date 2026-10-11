@@ -166,7 +166,7 @@
       ]
     },
     "add-movie": {
-      "description": "Add-movie modal (film/director/cast/studio search), grid, duplicate warning",
+      "description": "Add-movie modal (film/director/cast/studio search), grid, poster tap opens detail",
       "flows": [
         "add-movie-modes",
         "movie-detail",

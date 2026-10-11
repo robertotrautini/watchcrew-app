@@ -1,0 +1,6686 @@
+{
+ "generated": "2026-10-11",
+ "stats": {
+  "total": 134,
+  "byCategory": {
+   "layout": 13,
+   "entries": 8,
+   "movie": 24,
+   "settings": 6,
+   "tagebuch": 9,
+   "ui": 46,
+   "watchlist": 5,
+   "screen": 22,
+   "screen-lokal": 1
+  },
+  "totalLines": 9148,
+  "usedOnce": 64,
+  "unused": 2,
+  "onlyTests": 0,
+  "routes": 28,
+  "over300": 5,
+  "similarPairs": 20,
+  "files": 109
+ },
+ "components": [
+  {
+   "id": "src/components/ActiveGroupThemeProvider.tsx#ActiveGroupThemeProvider",
+   "name": "ActiveGroupThemeProvider",
+   "file": "src/components/ActiveGroupThemeProvider.tsx",
+   "category": "layout",
+   "lines": 11,
+   "startLine": 14,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "GroupThemeProvider"
+   ],
+   "classTokens": [
+    "flex-1"
+   ],
+   "description": "Themes everything inside (tabs, modals) with the ACTIVE group's `color_theme`.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 25
+  },
+  {
+   "id": "src/components/BackSwipeView.tsx#BackSwipeView",
+   "name": "BackSwipeView",
+   "file": "src/components/BackSwipeView.tsx",
+   "category": "layout",
+   "lines": 31,
+   "startLine": 23,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/modalScreenLayout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "GestureHandlerRootView",
+    "GestureDetector",
+    "View"
+   ],
+   "classTokens": [
+    "flex-1"
+   ],
+   "description": "Android: left-to-right swipe from the left part of a stack screen pops one level (same as the header back arrow).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 54
+  },
+  {
+   "id": "src/components/GroupThemeProvider.tsx#GroupThemeProvider",
+   "name": "GroupThemeProvider",
+   "file": "src/components/GroupThemeProvider.tsx",
+   "category": "layout",
+   "lines": 11,
+   "startLine": 34,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "themeName"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 7,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/ActiveGroupThemeProvider.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "GroupThemeContext.Provider",
+    "View"
+   ],
+   "classTokens": [
+    "mergedClassName"
+   ],
+   "description": "Applies the Watch-Group's active theme as a `.theme-<name>` class (see src/global.css) to a root View, so any NativeWind `className` using the `accent` / `accent-light` / `accent-gradient-*` / `star-color` tokens resolve",
+   "descriptionSource": "Kommentar",
+   "fileLines": 45
+  },
+  {
+   "id": "src/components/ParallaxProvider.tsx#ParallaxProvider",
+   "name": "ParallaxProvider",
+   "file": "src/components/ParallaxProvider.tsx",
+   "category": "layout",
+   "lines": 6,
+   "startLine": 8,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "ParallaxContext.Provider"
+   ],
+   "classTokens": [],
+   "description": "Root-layout provider: shared values read by AppBackground on the UI thread.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 36
+  },
+  {
+   "id": "src/components/TabSwipeView.tsx#TabSwipeView",
+   "name": "TabSwipeView",
+   "file": "src/components/TabSwipeView.tsx",
+   "category": "layout",
+   "lines": 62,
+   "startLine": 23,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visibleTabs",
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "GestureHandlerRootView",
+    "GestureDetector",
+    "View"
+   ],
+   "classTokens": [
+    "flex-1"
+   ],
+   "description": "Wraps the tab navigator: a horizontal swipe left/right navigates to the next/previous VISIBLE tab (no wrap-around).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 85
+  },
+  {
+   "id": "src/components/animated-icon.tsx#AnimatedSplashOverlay",
+   "name": "AnimatedSplashOverlay",
+   "file": "src/components/animated-icon.tsx",
+   "category": "layout",
+   "lines": 56,
+   "startLine": 20,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "Image",
+    "Animated.View",
+    "View"
+   ],
+   "classTokens": [],
+   "description": "In-app start screen: black with a subtle diagonal grey gradient (assets/ images/splash-bg.png, from scripts/generate-brand-assets.py) and the brand glyph centered.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 90
+  },
+  {
+   "id": "src/components/entries/EntryFilterBar.tsx#EntryFilterBar",
+   "name": "EntryFilterBar",
+   "file": "src/components/entries/EntryFilterBar.tsx",
+   "category": "entries",
+   "lines": 60,
+   "startLine": 21,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testIDPrefix",
+    "keys",
+    "filters",
+    "genreNamesById",
+    "onRemove",
+    "onAdd",
+    "trailing"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchFilterPanel.tsx (1x)",
+    "src/components/watchlist/WatchlistFilterPanel.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "Icon"
+   ],
+   "children": [
+    "View",
+    "Pressable",
+    "Text",
+    "ScrollView",
+    "Icon"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "gap-2",
+    "chipClassName(false)",
+    "chipTextClassName(false)",
+    "flex-1",
+    "chipClassName(true)",
+    "chipTextClassName(true)"
+   ],
+   "description": "Panel row 3: fixed \"+ Filter\" button (opens the flyout) at the left, the removable active-filter chips (tap = remove) in a horizontally scrollable strip, and an optional fixed `trailing` slot (view mode toggle) at the ri",
+   "descriptionSource": "Kommentar",
+   "fileLines": 81
+  },
+  {
+   "id": "src/components/entries/EntryFilterFlyout.tsx#Section",
+   "name": "Section",
+   "file": "src/components/entries/EntryFilterFlyout.tsx",
+   "category": "entries",
+   "lines": 18,
+   "startLine": 22,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "title",
+    "testID",
+    "children"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 5
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text"
+   ],
+   "classTokens": [
+    "gap-2",
+    "text-xs",
+    "font-sans-semibold",
+    "uppercase",
+    "text-text-secondary"
+   ],
+   "description": "Abschnitt: section (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 215
+  },
+  {
+   "id": "src/components/entries/EntryFilterFlyout.tsx#EntryFilterFlyout",
+   "name": "EntryFilterFlyout",
+   "file": "src/components/entries/EntryFilterFlyout.tsx",
+   "category": "entries",
+   "lines": 8,
+   "startLine": 66,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "tab",
+    "testIDPrefix",
+    "visible",
+    "filters",
+    "genreIds",
+    "genreNamesById",
+    "years",
+    "showNoDateYear",
+    "hideRatingState",
+    "onClose",
+    "onApply"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (1x)",
+    "src/app/(app)/(tabs)/watchlist.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet"
+   ],
+   "children": [
+    "Sheet",
+    "FlyoutContent"
+   ],
+   "classTokens": [],
+   "description": "\"+ Filter\" flyout (Sheet): sections Genre (multi), Jahr, Streaming (Meine Dienste + Flatrate/Leihen/Kaufen), Mag ich and the tab's rating-state filters.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 215
+  },
+  {
+   "id": "src/components/entries/EntryFilterFlyout.tsx#FlyoutContent",
+   "name": "FlyoutContent",
+   "file": "src/components/entries/EntryFilterFlyout.tsx",
+   "category": "entries",
+   "lines": 140,
+   "startLine": 75,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "tab",
+    "testIDPrefix",
+    "filters",
+    "genreIds",
+    "genreNamesById",
+    "years",
+    "showNoDateYear",
+    "hideRatingState",
+    "onClose",
+    "onApply"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Chip",
+    "Button"
+   ],
+   "children": [
+    "Chip",
+    "View",
+    "Section",
+    "GenrePills",
+    "YearPills",
+    "ProviderCategoryPills",
+    "Button"
+   ],
+   "classTokens": [
+    "gap-5",
+    "flex-row",
+    "flex-wrap",
+    "gap-2",
+    "gap-3",
+    "flex-1"
+   ],
+   "description": "Komponente: flyout content (nutzt Chip, Button)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 215
+  },
+  {
+   "id": "src/components/entries/EntryFilterPills.tsx#GenrePills",
+   "name": "GenrePills",
+   "file": "src/components/entries/EntryFilterPills.tsx",
+   "category": "entries",
+   "lines": 30,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testIDPrefix",
+    "genreIds",
+    "selectedGenreIds",
+    "genreNamesById",
+    "onToggle"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/entries/EntryFilterFlyout.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Chip"
+   ],
+   "children": [
+    "View",
+    "Chip"
+   ],
+   "classTokens": [
+    "flex-row",
+    "flex-wrap",
+    "gap-2"
+   ],
+   "description": "\"tagebuch\" or \"watchlist\" (Maestro relies on the resulting testIDs).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 112
+  },
+  {
+   "id": "src/components/entries/EntryFilterPills.tsx#YearPills",
+   "name": "YearPills",
+   "file": "src/components/entries/EntryFilterPills.tsx",
+   "category": "entries",
+   "lines": 39,
+   "startLine": 46,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testIDPrefix",
+    "years",
+    "selectedYear",
+    "showNoDate",
+    "onSelect"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/entries/EntryFilterFlyout.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Chip"
+   ],
+   "children": [
+    "View",
+    "Chip"
+   ],
+   "classTokens": [
+    "flex-row",
+    "flex-wrap",
+    "gap-2"
+   ],
+   "description": "Komponente: year pills (nutzt Chip)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 112
+  },
+  {
+   "id": "src/components/entries/EntryFilterPills.tsx#ProviderCategoryPills",
+   "name": "ProviderCategoryPills",
+   "file": "src/components/entries/EntryFilterPills.tsx",
+   "category": "entries",
+   "lines": 26,
+   "startLine": 86,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testIDPrefix",
+    "active",
+    "onToggle"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/entries/EntryFilterFlyout.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Chip"
+   ],
+   "children": [
+    "View",
+    "Chip"
+   ],
+   "classTokens": [
+    "flex-row",
+    "flex-wrap",
+    "gap-2"
+   ],
+   "description": "Komponente: provider category pills (nutzt Chip)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 112
+  },
+  {
+   "id": "src/components/entries/EntrySortRow.tsx#EntrySortRow",
+   "name": "EntrySortRow",
+   "file": "src/components/entries/EntrySortRow.tsx",
+   "category": "entries",
+   "lines": 50,
+   "startLine": 13,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testIDPrefix",
+    "fields",
+    "sort",
+    "onChange"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchFilterPanel.tsx (1x)",
+    "src/components/watchlist/WatchlistFilterPanel.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Select",
+    "IconButton"
+   ],
+   "children": [
+    "View",
+    "Select",
+    "IconButton"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "gap-2",
+    "flex-1"
+   ],
+   "description": "Panel row 2: sort field (Select, leading sort icon) + direction toggle.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 63
+  },
+  {
+   "id": "src/components/movie/DiaryEntryCard.tsx#DiaryEntryCard",
+   "name": "DiaryEntryCard",
+   "file": "src/components/movie/DiaryEntryCard.tsx",
+   "category": "movie",
+   "lines": 80,
+   "startLine": 38,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "posterUrl",
+    "title",
+    "seenLabel",
+    "seenLabelTestID",
+    "starColor",
+    "averageRating",
+    "liked",
+    "tmdbScore",
+    "members"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Card",
+    "Icon",
+    "Text",
+    "TmdbBadge"
+   ],
+   "children": [
+    "Card",
+    "View",
+    "Image",
+    "Icon",
+    "Text",
+    "MemberRatingRow",
+    "TmdbBadge"
+   ],
+   "classTokens": [
+    "flex-row",
+    "overflow-hidden",
+    "min-h-36",
+    "w-24",
+    "self-stretch",
+    "bg-black/40",
+    "absolute",
+    "inset-0",
+    "h-full",
+    "w-full",
+    "items-center",
+    "justify-center",
+    "flex-1",
+    "px-3",
+    "py-2",
+    "pr-20",
+    "text-base",
+    "MOVIE_TITLE_TEXT",
+    "text-sm",
+    "text-text-secondary",
+    "mt-1",
+    "right-0",
+    "top-0",
+    "gap-1",
+    "rounded-bl-xl",
+    "bg-black/60",
+    "py-1",
+    "text-xs",
+    "font-sans-semibold",
+    "text-white",
+    "bottom-0",
+    "rounded-tl-xl"
+   ],
+   "description": "Legacy Tagebuch row card (docs/reference-screenshots/05-tagebuch.jpg): glass card, small poster left, gold serif title, \"Gesehen am ...\", one labelled star row per group member, average-rating corner badge flush top-righ",
+   "descriptionSource": "Kommentar",
+   "fileLines": 118
+  },
+  {
+   "id": "src/components/movie/DiaryPosterTile.tsx#DiaryPosterTile",
+   "name": "DiaryPosterTile",
+   "file": "src/components/movie/DiaryPosterTile.tsx",
+   "category": "movie",
+   "lines": 51,
+   "startLine": 35,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "posterUrl",
+    "title",
+    "starColor",
+    "averageRating",
+    "liked",
+    "tmdbScore",
+    "testID",
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Card",
+    "Icon"
+   ],
+   "children": [
+    "Card",
+    "View",
+    "Image",
+    "Icon",
+    "PosterCornerBadge",
+    "PosterTmdbBadge"
+   ],
+   "classTokens": [
+    "overflow-hidden",
+    "relative",
+    "w-full",
+    "aspect-[2/3]",
+    "bg-black/40",
+    "items-center",
+    "justify-center",
+    "px-2",
+    "py-1.5"
+   ],
+   "description": "Kachel: diary poster tile (nutzt Card, Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 86
+  },
+  {
+   "id": "src/components/movie/MemberRatingRow.tsx#MemberRatingRow",
+   "name": "MemberRatingRow",
+   "file": "src/components/movie/MemberRatingRow.tsx",
+   "category": "movie",
+   "lines": 61,
+   "startLine": 31,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "memberLabel",
+    "rating",
+    "starColor",
+    "compact",
+    "hideValue"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/DiaryEntryCard.tsx (1x)",
+    "src/components/movie/RatingDialog.tsx (1x)",
+    "src/hooks/useGroupWatchlist.ts (import)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "StarRating"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "StarRating"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "py-0.5",
+    "w-16",
+    "pr-1",
+    "text-sm",
+    "text-text-secondary",
+    "w-8",
+    "pl-1",
+    "text-right",
+    "text-xs",
+    "justify-between",
+    "py-1",
+    "gap-2",
+    "w-10",
+    "text-text-primary"
+   ],
+   "description": "Zeile: member rating row (nutzt Text, StarRating)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 92
+  },
+  {
+   "id": "src/components/movie/MovieDetailActionsBar.tsx#ActionIconButton",
+   "name": "ActionIconButton",
+   "file": "src/components/movie/MovieDetailActionsBar.tsx",
+   "category": "movie",
+   "lines": 52,
+   "startLine": 129,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "id",
+    "testID",
+    "label",
+    "widthClass",
+    "danger",
+    "loading",
+    "onPress"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 7
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Spinner",
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "Pressable",
+    "View",
+    "Spinner",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "min-h-touch-comfortable",
+    "widthClass",
+    "danger",
+    "rounded-xl",
+    "bg-black",
+    "DANGER_PRESSED_CLASSNAME",
+    "ACTION_TILE_CLASSNAME",
+    "loading",
+    "opacity-50",
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "gap-1",
+    "px-2",
+    "py-3",
+    "DANGER_SURFACE_CLASSNAME",
+    "text-center",
+    "text-xs",
+    "DANGER_TEXT_CLASSNAME",
+    "text-text-secondary"
+   ],
+   "description": "Button: action icon button (nutzt Spinner, Icon, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 380
+  },
+  {
+   "id": "src/components/movie/MovieDetailActionsBar.tsx#MovieDetailActionsBar",
+   "name": "MovieDetailActionsBar",
+   "file": "src/components/movie/MovieDetailActionsBar.tsx",
+   "category": "movie",
+   "lines": 198,
+   "startLine": 182,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "actions",
+    "router",
+    "tmdbId",
+    "groupId",
+    "watchlistEntryId",
+    "activeGroupId",
+    "currentUserId",
+    "collectionId",
+    "onOpenRatingDialog",
+    "onDirectRate"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "ConfirmDialog"
+   ],
+   "children": [
+    "ActionIconButton",
+    "View",
+    "Fragment",
+    "ConfirmDialog"
+   ],
+   "classTokens": [
+    "gap-2",
+    "px-4",
+    "pb-2",
+    "pt-3",
+    "flex-row",
+    "justify-center"
+   ],
+   "description": "Leiste: movie detail actions bar (nutzt ConfirmDialog)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 380
+  },
+  {
+   "id": "src/components/movie/MovieDetailCastRow.tsx#MovieDetailDirector",
+   "name": "MovieDetailDirector",
+   "file": "src/components/movie/MovieDetailCastRow.tsx",
+   "category": "movie",
+   "lines": 18,
+   "startLine": 36,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "director",
+    "onDirectorPress"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Pressable",
+    "Text"
+   ],
+   "classTokens": [
+    "items-start",
+    "CAST_DIRECTOR_BOX_CLASSNAME",
+    "CAST_DIRECTOR_NAME_CLASSNAME"
+   ],
+   "description": "Komponente: movie detail director (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 113
+  },
+  {
+   "id": "src/components/movie/MovieDetailCastRow.tsx#MovieDetailCastRow",
+   "name": "MovieDetailCastRow",
+   "file": "src/components/movie/MovieDetailCastRow.tsx",
+   "category": "movie",
+   "lines": 53,
+   "startLine": 60,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "cast",
+    "onCastMemberPress"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "ScrollView",
+    "Pressable",
+    "Image",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "self-stretch",
+    "flex-row",
+    "mr-3",
+    "w-20",
+    "items-center",
+    "CAST_AVATAR_SIZE_CLASSNAME",
+    "rounded-[32px]",
+    "border-[1.5px]",
+    "border-accent-a45",
+    "bg-card",
+    "justify-center",
+    "rounded-full",
+    "CAST_NAME_CLASSNAME",
+    "CAST_CHARACTER_CLASSNAME"
+   ],
+   "description": "Zeile: movie detail cast row (nutzt Icon, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 113
+  },
+  {
+   "id": "src/components/movie/MovieDetailDescription.tsx#MovieDetailDescription",
+   "name": "MovieDetailDescription",
+   "file": "src/components/movie/MovieDetailDescription.tsx",
+   "category": "movie",
+   "lines": 60,
+   "startLine": 26,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "overview"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "Pressable"
+   ],
+   "classTokens": [
+    "absolute",
+    "h-0",
+    "w-full",
+    "overflow-hidden",
+    "opacity-0",
+    "TEXT_CLASSNAME",
+    "self-start",
+    "text-accent"
+   ],
+   "description": "Komponente: movie detail description (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 86
+  },
+  {
+   "id": "src/components/movie/MovieDetailGenreTags.tsx#MovieDetailGenreTags",
+   "name": "MovieDetailGenreTags",
+   "file": "src/components/movie/MovieDetailGenreTags.tsx",
+   "category": "movie",
+   "lines": 22,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "genres"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "ChipTag"
+   ],
+   "children": [
+    "View",
+    "ChipTag"
+   ],
+   "classTokens": [
+    "flex-row",
+    "flex-wrap",
+    "gap-2"
+   ],
+   "description": "Komponente: movie detail genre tags (nutzt ChipTag)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 37
+  },
+  {
+   "id": "src/components/movie/MovieDetailMetaRow.tsx#MovieDetailMetaRow",
+   "name": "MovieDetailMetaRow",
+   "file": "src/components/movie/MovieDetailMetaRow.tsx",
+   "category": "movie",
+   "lines": 69,
+   "startLine": 41,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "runtimeLabel",
+    "releaseInfo",
+    "onEditReleaseDate",
+    "trailing"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "Icon"
+   ],
+   "children": [
+    "Text",
+    "Pressable",
+    "Icon",
+    "View"
+   ],
+   "classTokens": [
+    "MOVIE_DETAIL_META_TEXT_CLASSNAME",
+    "flex-row",
+    "items-center",
+    "gap-1",
+    "flex-wrap"
+   ],
+   "description": "Zeile: movie detail meta row (nutzt Text, Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 110
+  },
+  {
+   "id": "src/components/movie/MovieDetailOwnRating.tsx#MovieDetailOwnRating",
+   "name": "MovieDetailOwnRating",
+   "file": "src/components/movie/MovieDetailOwnRating.tsx",
+   "category": "movie",
+   "lines": 49,
+   "startLine": 25,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "rating",
+    "starColor",
+    "showHeart",
+    "liked",
+    "onToggleLike",
+    "isTogglingLike",
+    "ratedCount",
+    "totalMembers"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "StarRating",
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "StarRating",
+    "Pressable",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "items-start",
+    "flex-row",
+    "items-center",
+    "h-touch-comfortable",
+    "w-touch-comfortable",
+    "isTogglingLike",
+    "opacity-50",
+    "text-sm",
+    "text-text-secondary"
+   ],
+   "description": "Komponente: movie detail own rating (nutzt StarRating, Icon, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 74
+  },
+  {
+   "id": "src/components/movie/MovieDetailPosterTrailer.tsx#MovieDetailPosterTrailer",
+   "name": "MovieDetailPosterTrailer",
+   "file": "src/components/movie/MovieDetailPosterTrailer.tsx",
+   "category": "movie",
+   "lines": 96,
+   "startLine": 45,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "posterUrl",
+    "title",
+    "isLoadingDetail",
+    "trailer"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "IconButton",
+    "Icon"
+   ],
+   "children": [
+    "View",
+    "WebView",
+    "IconButton",
+    "Image",
+    "Pressable",
+    "Icon"
+   ],
+   "classTokens": [
+    "isPlayingTrailer",
+    "relative",
+    "aspect-video",
+    "w-full",
+    "aspect-[2/3]",
+    "w-[55%]",
+    "max-w-[260px]",
+    "self-center",
+    "overflow-hidden",
+    "rounded-lg",
+    "border",
+    "border-glass-border",
+    "h-full",
+    "absolute",
+    "left-1",
+    "top-1",
+    "bg-card",
+    "inset-0",
+    "items-center",
+    "justify-center",
+    "h-14",
+    "w-14",
+    "rounded-full",
+    "bg-black/55"
+   ],
+   "description": "Komponente: movie detail poster trailer (nutzt IconButton, Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 141
+  },
+  {
+   "id": "src/components/movie/MovieDetailProviders.tsx#MovieDetailProviders",
+   "name": "MovieDetailProviders",
+   "file": "src/components/movie/MovieDetailProviders.tsx",
+   "category": "movie",
+   "lines": 83,
+   "startLine": 65,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "providers"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "Image",
+    "Pressable"
+   ],
+   "classTokens": [
+    "gap-2",
+    "self-stretch",
+    "PROVIDER_HEADER_CLASSNAME",
+    "flex-row",
+    "flex-wrap",
+    "gap-x-3",
+    "gap-y-2",
+    "items-center",
+    "gap-1.5",
+    "PROVIDER_LOGO_CLASSNAME",
+    "rounded-md",
+    "PROVIDER_NAME_CLASSNAME",
+    "self-start",
+    "text-accent"
+   ],
+   "description": "Komponente: movie detail providers (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 148
+  },
+  {
+   "id": "src/components/movie/MovieDetailRatingsSection.tsx#MovieDetailRatingsSection",
+   "name": "MovieDetailRatingsSection",
+   "file": "src/components/movie/MovieDetailRatingsSection.tsx",
+   "category": "movie",
+   "lines": 76,
+   "startLine": 26,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "rows",
+    "displayNameById",
+    "starColor"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "Icon",
+    "StarRating"
+   ],
+   "children": [
+    "View",
+    "Pressable",
+    "Text",
+    "Icon",
+    "StarRating"
+   ],
+   "classTokens": [
+    "self-stretch",
+    "flex-row",
+    "items-center",
+    "justify-between",
+    "text-sm",
+    "font-sans-semibold",
+    "text-text-primary",
+    "pt-2",
+    "MOVIE_DETAIL_GROUP_ROW_CLASSNAME",
+    "w-28",
+    "pr-2",
+    "text-text-secondary",
+    "w-10",
+    "pl-2",
+    "text-right",
+    "opacity-60"
+   ],
+   "description": "Abschnitt: movie detail ratings section (nutzt Text, Icon, StarRating)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 102
+  },
+  {
+   "id": "src/components/movie/MovieDetailReleaseDateSheet.tsx#MovieDetailReleaseDateSheet",
+   "name": "MovieDetailReleaseDateSheet",
+   "file": "src/components/movie/MovieDetailReleaseDateSheet.tsx",
+   "category": "movie",
+   "lines": 83,
+   "startLine": 27,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "onClose",
+    "groupId",
+    "watchlistEntryId",
+    "releaseDate",
+    "hasReleaseDateOverride"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "Text",
+    "DateField",
+    "Button"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "Text",
+    "DateField",
+    "Button"
+   ],
+   "classTokens": [
+    "gap-3",
+    "text-sm",
+    "text-text-secondary",
+    "flex-row",
+    "flex-1"
+   ],
+   "description": "Bottom-Sheet: movie detail release date sheet (nutzt Sheet, Text, DateField)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 110
+  },
+  {
+   "id": "src/components/movie/MovieDetailSection.tsx#MovieDetailSection",
+   "name": "MovieDetailSection",
+   "file": "src/components/movie/MovieDetailSection.tsx",
+   "category": "movie",
+   "lines": 25,
+   "startLine": 28,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "name",
+    "title",
+    "withDivider",
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (6x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text"
+   ],
+   "classTokens": [
+    "items-start",
+    "MOVIE_DETAIL_SECTION_GAP_CLASSNAME",
+    "MOVIE_DETAIL_SECTION_PADDING_CLASSNAME",
+    "withDivider",
+    "border-t",
+    "border-glass-border",
+    "MOVIE_DETAIL_SECTION_LABEL_CLASSNAME"
+   ],
+   "description": "Abschnitt: movie detail section (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 53
+  },
+  {
+   "id": "src/components/movie/MovieDetailTitleRow.tsx#MovieDetailTitleRow",
+   "name": "MovieDetailTitleRow",
+   "file": "src/components/movie/MovieDetailTitleRow.tsx",
+   "category": "movie",
+   "lines": 12,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "title"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text"
+   ],
+   "classTokens": [
+    "self-stretch",
+    "MOVIE_DETAIL_TITLE_TEXT_CLASSNAME",
+    "text-accent-light"
+   ],
+   "description": "Zeile: movie detail title row (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 27
+  },
+  {
+   "id": "src/components/movie/MovieGrid.tsx#MovieGrid",
+   "name": "MovieGrid",
+   "file": "src/components/movie/MovieGrid.tsx",
+   "category": "movie",
+   "lines": 172,
+   "startLine": 83,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "items",
+    "onPressItem",
+    "testID",
+    "getBadge",
+    "progressHeader",
+    "streamingFilter",
+    "footer",
+    "emptyMessage",
+    "emptyIcon",
+    "columns"
+   ],
+   "usage": {
+    "src": 6,
+    "tests": 3,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/add-movie.tsx (3x)",
+    "src/app/(app)/(modals)/collection/[collectionId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/actor/[personId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/director/[personId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/studio/[companyId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Card",
+    "Icon",
+    "Text",
+    "Chip",
+    "EmptyState",
+    "FadeInItem"
+   ],
+   "children": [
+    "Card",
+    "View",
+    "Image",
+    "Icon",
+    "Text",
+    "PosterCornerBadge",
+    "PosterTmdbBadge",
+    "Chip",
+    "EmptyState",
+    "FlatList",
+    "FadeInItem"
+   ],
+   "classTokens": [
+    "overflow-hidden",
+    "relative",
+    "w-full",
+    "aspect-[2/3]",
+    "bg-card",
+    "items-center",
+    "justify-center",
+    "bg-black/40",
+    "px-1",
+    "mt-1",
+    "text-center",
+    "text-xs",
+    "text-text-secondary",
+    "py-1.5",
+    "MOVIE_TITLE_TEXT",
+    "flex-1",
+    "mb-3",
+    "mb-1",
+    "text-sm",
+    "text-text-primary",
+    "h-2",
+    "rounded-full",
+    "bg-accent",
+    "flex-row",
+    "gap-2"
+   ],
+   "description": "Raster: movie grid (nutzt Card, Icon, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 255
+  },
+  {
+   "id": "src/components/movie/PaymentModal.tsx#PaymentModal",
+   "name": "PaymentModal",
+   "file": "src/components/movie/PaymentModal.tsx",
+   "category": "movie",
+   "lines": 135,
+   "startLine": 61,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "onClose",
+    "groupId",
+    "entries",
+    "groupMembers",
+    "displayNameById",
+    "memberColors",
+    "now",
+    "onSaved"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tracker.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "Text",
+    "Select",
+    "DateField",
+    "Button"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "Text",
+    "Select",
+    "DateField",
+    "Button"
+   ],
+   "classTokens": [
+    "gap-3",
+    "gap-2",
+    "text-text-secondary"
+   ],
+   "description": "Modal: payment modal (nutzt Sheet, Text, Select)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 196
+  },
+  {
+   "id": "src/components/movie/PosterCornerBadge.tsx#PosterCornerBadge",
+   "name": "PosterCornerBadge",
+   "file": "src/components/movie/PosterCornerBadge.tsx",
+   "category": "movie",
+   "lines": 64,
+   "startLine": 42,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "liked",
+    "average",
+    "watched",
+    "onWatchlist",
+    "dateText",
+    "starColor",
+    "testID",
+    "idPrefix"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/DiaryPosterTile.tsx (1x)",
+    "src/components/movie/MovieGrid.tsx (1x)",
+    "src/components/movie/WatchlistPosterCard.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "gap-1",
+    "text-xs",
+    "text-white",
+    "absolute",
+    "right-0",
+    "top-0",
+    "rounded-bl-xl",
+    "bg-black/60",
+    "py-1",
+    "pl-2.5",
+    "pr-1.5"
+   ],
+   "description": "Badge: poster corner badge (nutzt Icon, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 106
+  },
+  {
+   "id": "src/components/movie/PosterTmdbBadge.tsx#PosterTmdbBadge",
+   "name": "PosterTmdbBadge",
+   "file": "src/components/movie/PosterTmdbBadge.tsx",
+   "category": "movie",
+   "lines": 10,
+   "startLine": 14,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "score",
+    "testID",
+    "valueTestID"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/DiaryPosterTile.tsx (1x)",
+    "src/components/movie/MovieGrid.tsx (1x)",
+    "src/components/movie/WatchlistPosterCard.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "TmdbBadge"
+   ],
+   "children": [
+    "TmdbBadge"
+   ],
+   "classTokens": [
+    "absolute",
+    "bottom-0",
+    "right-0",
+    "gap-1",
+    "rounded-tl-xl",
+    "bg-black/60",
+    "py-1",
+    "pl-2.5",
+    "pr-1.5"
+   ],
+   "description": "Badge: poster tmdb badge (nutzt TmdbBadge)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 24
+  },
+  {
+   "id": "src/components/movie/RatingDialog.tsx#RatingDialog",
+   "name": "RatingDialog",
+   "file": "src/components/movie/RatingDialog.tsx",
+   "category": "movie",
+   "lines": 423,
+   "startLine": 138,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "onClose",
+    "mode",
+    "groupId",
+    "currentUserId",
+    "movieTitle",
+    "movieReleaseDate",
+    "watchlistEntryId",
+    "movieId",
+    "paidByMemberId",
+    "paidAt",
+    "ratings",
+    "groupMembers",
+    "displayNameById",
+    "starColor",
+    "onSaved",
+    "directCreate"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "Text",
+    "DateField",
+    "Icon",
+    "StarRating",
+    "IconButton",
+    "Select",
+    "Button",
+    "ConfirmDialog"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "Text",
+    "DateField",
+    "Pressable",
+    "Icon",
+    "StarRating",
+    "IconButton",
+    "MemberRatingRow",
+    "Select",
+    "Button",
+    "ConfirmDialog"
+   ],
+   "classTokens": [
+    "gap-4",
+    "text-lg",
+    "MOVIE_TITLE_FONT",
+    "text-accent-light",
+    "gap-2",
+    "text-text-secondary",
+    "flex-row",
+    "flex-wrap",
+    "gap-x-6",
+    "min-h-touch-comfortable",
+    "items-center",
+    "text-text-primary",
+    "justify-between",
+    "gap-1",
+    "border-t",
+    "border-glass-border",
+    "pt-3",
+    "gap-3",
+    "flex-1",
+    "flex-[1.6]"
+   ],
+   "description": "Dialog: rating dialog (nutzt Sheet, Text, DateField)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 561
+  },
+  {
+   "id": "src/components/movie/TrackerEntrySheet.tsx#TrackerEntrySheet",
+   "name": "TrackerEntrySheet",
+   "file": "src/components/movie/TrackerEntrySheet.tsx",
+   "category": "movie",
+   "lines": 143,
+   "startLine": 32,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "entry",
+    "onClose",
+    "groupId",
+    "groupMembers",
+    "memberColors"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tracker.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "Text",
+    "Select",
+    "DateField",
+    "Button",
+    "ConfirmDialog"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "Text",
+    "Select",
+    "DateField",
+    "Button",
+    "ConfirmDialog"
+   ],
+   "classTokens": [
+    "gap-4",
+    "gap-2",
+    "text-text-secondary",
+    "flex-row",
+    "gap-3",
+    "flex-1"
+   ],
+   "description": "Bottom flyout opened by tapping a Tracker row: change payer + date, save, or delete (with a confirmation step inside the same flyout).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 175
+  },
+  {
+   "id": "src/components/movie/WatchlistPosterCard.tsx#WatchlistPosterCard",
+   "name": "WatchlistPosterCard",
+   "file": "src/components/movie/WatchlistPosterCard.tsx",
+   "category": "movie",
+   "lines": 148,
+   "startLine": 76,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "variant",
+    "movie",
+    "streamingAvailability",
+    "ratedCount",
+    "totalMembers",
+    "now",
+    "onPress",
+    "testID",
+    "showTitle"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/watchlist/WatchlistEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Card",
+    "Text",
+    "TmdbBadge"
+   ],
+   "children": [
+    "Card",
+    "View",
+    "Image",
+    "Text",
+    "TmdbBadge",
+    "PosterCornerBadge",
+    "PosterTmdbBadge"
+   ],
+   "classTokens": [
+    "overflow-hidden",
+    "dimClassName",
+    "min-h-36",
+    "w-24",
+    "self-stretch",
+    "bg-black/40",
+    "absolute",
+    "inset-0",
+    "h-full",
+    "w-full",
+    "flex-1",
+    "px-3",
+    "py-2",
+    "flex-row",
+    "items-start",
+    "justify-between",
+    "gap-2",
+    "text-base",
+    "MOVIE_TITLE_TEXT",
+    "rounded-sm",
+    "bg-black/70",
+    "px-2",
+    "py-0.5",
+    "text-xs",
+    "text-white",
+    "text-sm",
+    "text-text-secondary",
+    "mt-1",
+    "font-sans-italic",
+    "hasOverview",
+    "text-text-dim",
+    "bottom-0",
+    "right-0",
+    "rounded-tl-xl",
+    "bg-black/60",
+    "py-1",
+    "dimClassName.trim()",
+    "relative",
+    "aspect-[2/3]",
+    "left-1",
+    "top-8",
+    "px-1",
+    "py-1.5"
+   ],
+   "description": "Karte: watchlist poster card (nutzt Card, Text, TmdbBadge)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 224
+  },
+  {
+   "id": "src/components/settings/CreateGroupSheet.tsx#CreateGroupSheet",
+   "name": "CreateGroupSheet",
+   "file": "src/components/settings/CreateGroupSheet.tsx",
+   "category": "settings",
+   "lines": 91,
+   "startLine": 29,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "loading",
+    "onCancel",
+    "onCreate"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/group-settings.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "TextInput",
+    "Text",
+    "Icon",
+    "Button"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "TextInput",
+    "Text",
+    "Pressable",
+    "Icon",
+    "Button"
+   ],
+   "classTokens": [
+    "gap-4",
+    "rounded-lg",
+    "GLASS_INSET_EDGE",
+    "bg-black/35",
+    "px-3",
+    "py-2",
+    "text-text-primary",
+    "text-text-secondary",
+    "flex-row",
+    "flex-wrap",
+    "gap-3",
+    "h-touch-comfortable",
+    "w-touch-comfortable",
+    "items-center",
+    "justify-center",
+    "absolute",
+    "-right-1",
+    "-top-1",
+    "flex-1"
+   ],
+   "description": "Flyout \"Neue Gruppe anlegen\": name (required, same rule as onboarding) + optional colour theme.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 120
+  },
+  {
+   "id": "src/components/settings/DataSourceAttributions.tsx#DataSourceAttributions",
+   "name": "DataSourceAttributions",
+   "file": "src/components/settings/DataSourceAttributions.tsx",
+   "category": "settings",
+   "lines": 27,
+   "startLine": 37,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "Pressable",
+    "Image"
+   ],
+   "classTokens": [
+    "gap-2",
+    "px-1",
+    "font-title",
+    "text-base",
+    "text-accent-light",
+    "flex-row",
+    "items-center",
+    "gap-3",
+    "py-1",
+    "h-10",
+    "w-10",
+    "flex-1",
+    "text-xs",
+    "text-text-secondary"
+   ],
+   "description": "Komponente: data source attributions (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 64
+  },
+  {
+   "id": "src/components/settings/SettingsBackBar.tsx#SettingsBackBar",
+   "name": "SettingsBackBar",
+   "file": "src/components/settings/SettingsBackBar.tsx",
+   "category": "settings",
+   "lines": 15,
+   "startLine": 10,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 4,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/group-settings.tsx (1x)",
+    "src/app/(app)/(modals)/settings/display.tsx (1x)",
+    "src/app/(app)/(modals)/settings/notifications.tsx (1x)",
+    "src/app/(app)/(modals)/settings/streaming-services.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Button"
+   ],
+   "children": [
+    "SafeAreaView",
+    "View",
+    "Button"
+   ],
+   "classTokens": [
+    "px-4",
+    "pb-3",
+    "pt-2"
+   ],
+   "description": "Legacy-style glass \"Zurück\" button pinned to the bottom of the settings sub-screens, in addition to the native header back arrow.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 25
+  },
+  {
+   "id": "src/components/settings/SettingsColumnsRow.tsx#SettingsColumnsRow",
+   "name": "SettingsColumnsRow",
+   "file": "src/components/settings/SettingsColumnsRow.tsx",
+   "category": "settings",
+   "lines": 19,
+   "startLine": 17,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "label",
+    "value",
+    "onChange"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings/display.tsx (2x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "SegmentedControl"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "SegmentedControl"
+   ],
+   "classTokens": [
+    "min-h-touch-comfortable",
+    "flex-row",
+    "items-center",
+    "justify-between",
+    "px-4",
+    "py-3",
+    "flex-1",
+    "pr-3",
+    "text-text-primary",
+    "active",
+    "font-bold",
+    "text-black"
+   ],
+   "description": "Settings row with a small 3 | 4 segment switch (posters per row).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 36
+  },
+  {
+   "id": "src/components/settings/SettingsGroup.tsx#SettingsGroup",
+   "name": "SettingsGroup",
+   "file": "src/components/settings/SettingsGroup.tsx",
+   "category": "settings",
+   "lines": 19,
+   "startLine": 21,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "title",
+    "testID",
+    "children"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings.tsx (4x)",
+    "src/app/(app)/(modals)/settings/display.tsx (1x)",
+    "src/app/(app)/(modals)/settings/notifications.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "Glass"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "Glass"
+   ],
+   "classTokens": [
+    "gap-2",
+    "px-1",
+    "font-title",
+    "text-base",
+    "text-accent-light",
+    "border-t",
+    "border-glass-border"
+   ],
+   "description": "One glass card per settings section: rows are separated by hairlines (`border-t` on every item except the first, so there is never a separator after the last row) instead of one bordered box per row.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 40
+  },
+  {
+   "id": "src/components/settings/SettingsToggleRow.tsx#SettingsToggleRow",
+   "name": "SettingsToggleRow",
+   "file": "src/components/settings/SettingsToggleRow.tsx",
+   "category": "settings",
+   "lines": 19,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "label",
+    "checked",
+    "disabled",
+    "onPress"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings/display.tsx (2x)",
+    "src/app/(app)/(modals)/group-settings.tsx (1x)",
+    "src/app/(app)/(modals)/settings/notifications.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "SwitchIndicator"
+   ],
+   "children": [
+    "Pressable",
+    "Text",
+    "SwitchIndicator"
+   ],
+   "classTokens": [
+    "min-h-touch-comfortable",
+    "flex-row",
+    "items-center",
+    "justify-between",
+    "px-4",
+    "py-3",
+    "flex-1",
+    "pr-3",
+    "text-text-primary"
+   ],
+   "description": "Flat switch row for a `SettingsGroup` card (Material 3 `SwitchIndicator`).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 34
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#GridSeparator",
+   "name": "GridSeparator",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 3,
+   "startLine": 83,
+   "exported": false,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ungenutzt",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "h-2"
+   ],
+   "description": "Row gap of the 4-column grid, equal to the column gap (gap-2).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#ItemSeparator",
+   "name": "ItemSeparator",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 3,
+   "startLine": 87,
+   "exported": false,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ungenutzt",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "h-3"
+   ],
+   "description": "Komponente: item separator",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#GridRow",
+   "name": "GridRow",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 44,
+   "startLine": 103,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "entry",
+    "index",
+    "skipFade",
+    "userId",
+    "onOpenEntry",
+    "starColor",
+    "showTitlesInGrid"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "FadeInItem",
+    "Text"
+   ],
+   "children": [
+    "FadeInItem",
+    "Pressable",
+    "DiaryPosterTile",
+    "Text"
+   ],
+   "classTokens": [
+    "flex-1",
+    "text-xs",
+    "MOVIE_TITLE_TEXT"
+   ],
+   "description": "Zeile: grid row (nutzt FadeInItem, Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#ListHeader",
+   "name": "ListHeader",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 38,
+   "startLine": 148,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "starColor"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "GlassTableHeader",
+    "GlassTableHeaderCell",
+    "GlassTableHeaderIconCell",
+    "Icon",
+    "TmdbBadge"
+   ],
+   "children": [
+    "GlassTableHeader",
+    "GlassTableHeaderCell",
+    "GlassTableHeaderIconCell",
+    "Icon",
+    "TmdbBadge"
+   ],
+   "classTokens": [
+    "flex-1",
+    "TABLE_ICON_CELL",
+    "TABLE_SCORE_STRONG_CELL",
+    "TABLE_SCORE_CELL"
+   ],
+   "description": "Kopfbereich: list header (nutzt GlassTableHeader, GlassTableHeaderCell, GlassTableHeaderIconCell)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#ListRow",
+   "name": "ListRow",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 49,
+   "startLine": 187,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "isLast"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "GlassTableRow",
+    "Text",
+    "Icon"
+   ],
+   "children": [
+    "GlassTableRow",
+    "Text",
+    "View",
+    "Icon"
+   ],
+   "classTokens": [
+    "TABLE_TITLE_CELL",
+    "TABLE_ICON_CELL",
+    "TABLE_SCORE_STRONG_CELL",
+    "TABLE_SCORE_CELL"
+   ],
+   "description": "Zeile: list row (nutzt GlassTableRow, Text, Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#CardRow",
+   "name": "CardRow",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 55,
+   "startLine": 237,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "entry",
+    "index",
+    "skipFade",
+    "userId",
+    "onOpenEntry",
+    "starColor",
+    "groupMemberIds",
+    "displayNameById"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "FadeInItem"
+   ],
+   "children": [
+    "FadeInItem",
+    "Pressable",
+    "DiaryEntryCard"
+   ],
+   "classTokens": [],
+   "description": "Zeile: card row (nutzt FadeInItem)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchEntryList.tsx#TagebuchEntryList",
+   "name": "TagebuchEntryList",
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "category": "tagebuch",
+   "lines": 102,
+   "startLine": 293,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "entries",
+    "mode",
+    "userId",
+    "starColor",
+    "showTitlesInGrid",
+    "groupMemberIds",
+    "displayNameById",
+    "onOpenEntry",
+    "sort"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "FlatList",
+    "GridRow",
+    "ListHeader",
+    "ListRow",
+    "CardRow"
+   ],
+   "classTokens": [],
+   "description": "Liste: tagebuch entry list",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 395
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchFilterPanel.tsx#TagebuchFilterPanel",
+   "name": "TagebuchFilterPanel",
+   "file": "src/components/tagebuch/TagebuchFilterPanel.tsx",
+   "category": "tagebuch",
+   "lines": 46,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "screen"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "CollapsibleFilterPanel",
+    "TextInput",
+    "ViewModeToggle"
+   ],
+   "children": [
+    "CollapsibleFilterPanel",
+    "TextInput",
+    "EntrySortRow",
+    "EntryFilterBar",
+    "ViewModeToggle"
+   ],
+   "classTokens": [
+    "GLASS_SEARCH_INPUT_CLASSNAME"
+   ],
+   "description": "Panel: tagebuch filter panel (nutzt CollapsibleFilterPanel, TextInput, ViewModeToggle)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 61
+  },
+  {
+   "id": "src/components/tagebuch/TagebuchScopeSwitch.tsx#TagebuchScopeSwitch",
+   "name": "TagebuchScopeSwitch",
+   "file": "src/components/tagebuch/TagebuchScopeSwitch.tsx",
+   "category": "tagebuch",
+   "lines": 22,
+   "startLine": 17,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "scope",
+    "onChange"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Chip"
+   ],
+   "children": [
+    "View",
+    "Chip"
+   ],
+   "classTokens": [
+    "mx-4",
+    "mt-3",
+    "flex-row",
+    "gap-2"
+   ],
+   "description": "Scope switch above the filter panel: \"Mein Tagebuch\" (all movies I rated/saw, across ALL my groups and movies in no group; ADR 0014) vs.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 39
+  },
+  {
+   "id": "src/components/ui/AppBackground.tsx#AppBackground",
+   "name": "AppBackground",
+   "file": "src/components/ui/AppBackground.tsx",
+   "category": "ui",
+   "lines": 57,
+   "startLine": 40,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View",
+    "Animated.View",
+    "Image"
+   ],
+   "classTokens": [
+    "bg-bg-primary"
+   ],
+   "description": "App-wide legacy backdrop: the ORIGINAL legacy photo (assets/images/ cinema-bg.jpg, 1920x1280 colour, kept untouched as the source) behind everything, rendered ONCE in the root layout; screens have transparent backgrounds",
+   "descriptionSource": "Kommentar",
+   "fileLines": 97
+  },
+  {
+   "id": "src/components/ui/AppHeader.tsx#AppHeader",
+   "name": "AppHeader",
+   "file": "src/components/ui/AppHeader.tsx",
+   "category": "ui",
+   "lines": 45,
+   "startLine": 36,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "title",
+    "settingsTestID",
+    "actions",
+    "groupName"
+   ],
+   "usage": {
+    "src": 3,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (2x)",
+    "src/app/(app)/(tabs)/tracker.tsx (2x)",
+    "src/app/(app)/(tabs)/watchlist.tsx (2x)"
+   ],
+   "usesPrimitives": [
+    "BrandLogo",
+    "Text",
+    "SettingsButton"
+   ],
+   "children": [
+    "View",
+    "Pressable",
+    "BrandLogo",
+    "Text",
+    "SettingsButton"
+   ],
+   "classTokens": [
+    "APP_HEADER_BOTTOM_GAP_CLASSNAME",
+    "px-3",
+    "pt-2",
+    "min-h-touch-comfortable",
+    "flex-row",
+    "items-center",
+    "justify-center",
+    "flex-1",
+    "gap-1.5",
+    "px-2",
+    "h-2",
+    "w-2",
+    "rounded-full",
+    "bg-accent",
+    "shrink",
+    "font-title",
+    "text-xs",
+    "uppercase",
+    "tracking-wide",
+    "text-text-secondary",
+    "mt-2",
+    "justify-end",
+    "gap-2"
+   ],
+   "description": "Compact app header shared by the three main tabs: horizontal WatchCrew logo left (`BrandLogo`, tap = next group), group name display (accent dot + name, no tap target) in the flexible middle, round settings button right ",
+   "descriptionSource": "Kommentar",
+   "fileLines": 81
+  },
+  {
+   "id": "src/components/ui/Brand.tsx#Brand",
+   "name": "Brand",
+   "file": "src/components/ui/Brand.tsx",
+   "category": "ui",
+   "lines": 12,
+   "startLine": 13,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "subtitle"
+   ],
+   "usage": {
+    "src": 6,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(auth)/register.tsx (2x)",
+    "src/app/auth/callback.tsx (2x)",
+    "src/app/(auth)/forgot-password.tsx (1x)",
+    "src/app/(auth)/login.tsx (1x)",
+    "src/app/(onboarding)/create-or-join-group.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "BrandLogo",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "BrandLogo",
+    "Text"
+   ],
+   "classTokens": [
+    "mb-6",
+    "items-center",
+    "mt-1",
+    "text-xs",
+    "uppercase",
+    "tracking-widest",
+    "text-text-secondary"
+   ],
+   "description": "Centred logo header for auth/onboarding screens: horizontal WatchCrew logo (`BrandLogo`).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 25
+  },
+  {
+   "id": "src/components/ui/BrandLogo.tsx#BrandLogo",
+   "name": "BrandLogo",
+   "file": "src/components/ui/BrandLogo.tsx",
+   "category": "ui",
+   "lines": 16,
+   "startLine": 41,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "height",
+    "badgeOnly",
+    "testID"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/ui/AppHeader.tsx (1x)",
+    "src/components/ui/Brand.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "Image"
+   ],
+   "classTokens": [],
+   "description": "WatchCrew logo (P3 badge + wordmark) in the current group-theme accent.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 57
+  },
+  {
+   "id": "src/components/ui/Button.tsx#Button",
+   "name": "Button",
+   "file": "src/components/ui/Button.tsx",
+   "category": "ui",
+   "lines": 85,
+   "startLine": 154,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "variant",
+    "size",
+    "label",
+    "children",
+    "icon",
+    "disabled",
+    "loading",
+    "iconOnly",
+    "className",
+    "textClassName"
+   ],
+   "usage": {
+    "src": 20,
+    "tests": 4,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings.tsx (4x)",
+    "src/app/(onboarding)/create-or-join-group.tsx (4x)",
+    "src/app/(app)/(modals)/add-movie.tsx (3x)",
+    "src/app/(app)/(modals)/group-settings.tsx (3x)",
+    "src/app/(auth)/forgot-password.tsx (3x)"
+   ],
+   "usesPrimitives": [
+    "Spinner",
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "Pressable",
+    "Spinner",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "containerClassName",
+    "labelClassName"
+   ],
+   "description": "Base themed Button, following the RN Reusables (shadcn/ui-style) convention: a `Pressable` wrapper, variant/size lookup tables, and a `className` prop merged in via `cn()` so callers can override/extend styling without f",
+   "descriptionSource": "Kommentar",
+   "fileLines": 239
+  },
+  {
+   "id": "src/components/ui/Card.tsx#Card",
+   "name": "Card",
+   "file": "src/components/ui/Card.tsx",
+   "category": "ui",
+   "lines": 13,
+   "startLine": 34,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "onPress"
+   ],
+   "usage": {
+    "src": 5,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(onboarding)/create-or-join-group.tsx (2x)",
+    "src/components/movie/WatchlistPosterCard.tsx (2x)",
+    "src/components/movie/DiaryEntryCard.tsx (1x)",
+    "src/components/movie/DiaryPosterTile.tsx (1x)",
+    "src/components/movie/MovieGrid.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Glass"
+   ],
+   "children": [
+    "Glass"
+   ],
+   "classTokens": [
+    "className"
+   ],
+   "description": "Themed Card container (React Native Reusables / shadcn-style copied-in component, per ADR 0007).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 47
+  },
+  {
+   "id": "src/components/ui/Chip.tsx#ChipTint",
+   "name": "ChipTint",
+   "file": "src/components/ui/Chip.tsx",
+   "category": "ui",
+   "lines": 10,
+   "startLine": 31,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "testID"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 2
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "CHIP_TINT_CLASSNAME"
+   ],
+   "description": "Komponente: chip tint",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 88
+  },
+  {
+   "id": "src/components/ui/Chip.tsx#Chip",
+   "name": "Chip",
+   "file": "src/components/ui/Chip.tsx",
+   "category": "ui",
+   "lines": 15,
+   "startLine": 58,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "label",
+    "active",
+    "className",
+    "textClassName"
+   ],
+   "usage": {
+    "src": 5,
+    "tests": 3,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/entries/EntryFilterPills.tsx (4x)",
+    "src/app/(app)/(modals)/add-movie.tsx (2x)",
+    "src/components/entries/EntryFilterFlyout.tsx (2x)",
+    "src/components/movie/MovieGrid.tsx (1x)",
+    "src/components/tagebuch/TagebuchScopeSwitch.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "ChipTint",
+    "Text"
+   ],
+   "children": [
+    "Pressable",
+    "ChipTint",
+    "Text"
+   ],
+   "classTokens": [
+    "className)",
+    "textClassName)"
+   ],
+   "description": "Pressable chip (filters, modes, selections).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 88
+  },
+  {
+   "id": "src/components/ui/Chip.tsx#ChipTag",
+   "name": "ChipTag",
+   "file": "src/components/ui/Chip.tsx",
+   "category": "ui",
+   "lines": 8,
+   "startLine": 80,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "label",
+    "className"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/MovieDetailGenreTags.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "ChipTint",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "ChipTint",
+    "Text"
+   ],
+   "classTokens": [
+    "className)",
+    "chipTextClassName(false)"
+   ],
+   "description": "Non-interactive chip (genre tags).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 88
+  },
+  {
+   "id": "src/components/ui/CollapsibleFilterPanel.tsx#CollapsibleFilterPanel",
+   "name": "CollapsibleFilterPanel",
+   "file": "src/components/ui/CollapsibleFilterPanel.tsx",
+   "category": "ui",
+   "lines": 48,
+   "startLine": 29,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "open",
+    "onToggle",
+    "hasActiveFilters",
+    "search",
+    "actions",
+    "children"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchFilterPanel.tsx (1x)",
+    "src/components/watchlist/WatchlistFilterPanel.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "PanelShadow",
+    "Glass",
+    "IconButton"
+   ],
+   "children": [
+    "View",
+    "PanelShadow",
+    "Glass",
+    "IconButton"
+   ],
+   "classTokens": [
+    "z-10",
+    "mx-4",
+    "mt-3",
+    "gap-3",
+    "p-3",
+    "flex-row",
+    "items-center",
+    "relative",
+    "absolute",
+    "right-0",
+    "top-0",
+    "h-3",
+    "w-3",
+    "rounded-full",
+    "border",
+    "border-bg-primary",
+    "bg-accent"
+   ],
+   "description": "Glass card with an always-visible row (search, optional actions, filter toggle) and a collapsible panel below it (sort, view mode, chips).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 77
+  },
+  {
+   "id": "src/components/ui/ConfirmDialog.tsx#ConfirmDialog",
+   "name": "ConfirmDialog",
+   "file": "src/components/ui/ConfirmDialog.tsx",
+   "category": "ui",
+   "lines": 50,
+   "startLine": 33,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "testID",
+    "title",
+    "description",
+    "children",
+    "confirmLabel",
+    "confirmIcon",
+    "cancelLabel",
+    "loading",
+    "confirmDisabled",
+    "onCancel",
+    "onConfirm"
+   ],
+   "usage": {
+    "src": 5,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/group-settings.tsx (3x)",
+    "src/app/(app)/(modals)/settings.tsx (1x)",
+    "src/components/movie/MovieDetailActionsBar.tsx (1x)",
+    "src/components/movie/RatingDialog.tsx (1x)",
+    "src/components/movie/TrackerEntrySheet.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Sheet",
+    "Text",
+    "Button"
+   ],
+   "children": [
+    "Sheet",
+    "View",
+    "Text",
+    "Button"
+   ],
+   "classTokens": [
+    "gap-4",
+    "text-text-secondary",
+    "flex-row",
+    "gap-3",
+    "flex-1"
+   ],
+   "description": "The ONE confirmation dialog for every destructive action (docs/style-guide.md \"Destruktive Aktionen: immer ConfirmDialog\").",
+   "descriptionSource": "Kommentar",
+   "fileLines": 83
+  },
+  {
+   "id": "src/components/ui/DateField.tsx#DateField",
+   "name": "DateField",
+   "file": "src/components/ui/DateField.tsx",
+   "category": "ui",
+   "lines": 65,
+   "startLine": 47,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "valueIso",
+    "displayText",
+    "placeholder",
+    "editable",
+    "onChangeIso",
+    "className"
+   ],
+   "usage": {
+    "src": 4,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/RatingDialog.tsx (2x)",
+    "src/components/movie/MovieDetailReleaseDateSheet.tsx (1x)",
+    "src/components/movie/PaymentModal.tsx (1x)",
+    "src/components/movie/TrackerEntrySheet.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "Pressable",
+    "Text",
+    "DateTimePicker"
+   ],
+   "classTokens": [
+    "rounded-lg",
+    "GLASS_EDGE",
+    "bg-white/10",
+    "px-4",
+    "py-3",
+    "!editable",
+    "opacity-50",
+    "displayText",
+    "text-text-primary",
+    "text-text-secondary"
+   ],
+   "description": "Feld: date field (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 112
+  },
+  {
+   "id": "src/components/ui/EmptyState.tsx#EmptyState",
+   "name": "EmptyState",
+   "file": "src/components/ui/EmptyState.tsx",
+   "category": "ui",
+   "lines": 8,
+   "startLine": 14,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "title",
+    "icon",
+    "testID"
+   ],
+   "usage": {
+    "src": 6,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tagebuch.tsx (2x)",
+    "src/app/(app)/(tabs)/watchlist.tsx (2x)",
+    "src/app/(app)/(modals)/group-settings.tsx (1x)",
+    "src/app/(app)/(tabs)/tracker.tsx (1x)",
+    "src/components/movie/MovieGrid.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Icon",
+    "Text"
+   ],
+   "classTokens": [
+    "min-h-40",
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "gap-3",
+    "px-6",
+    "text-center",
+    "text-base",
+    "text-text-secondary"
+   ],
+   "description": "The ONLY empty state: one large muted icon + ONE short text, centered both ways in the free space.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 22
+  },
+  {
+   "id": "src/components/ui/FadeInItem.tsx#FadeInItem",
+   "name": "FadeInItem",
+   "file": "src/components/ui/FadeInItem.tsx",
+   "category": "ui",
+   "lines": 13,
+   "startLine": 37,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "index",
+    "children",
+    "className",
+    "testID",
+    "replayTab",
+    "skipInitialFade"
+   ],
+   "usage": {
+    "src": 5,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (2x)",
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)",
+    "src/app/(app)/(tabs)/tracker.tsx (1x)",
+    "src/components/movie/MovieGrid.tsx (1x)",
+    "src/components/watchlist/WatchlistEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "FadingItem"
+   ],
+   "children": [
+    "View",
+    "FadingItem"
+   ],
+   "classTokens": [
+    "props.className"
+   ],
+   "description": "Komponente: fade in item (nutzt FadingItem)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 87
+  },
+  {
+   "id": "src/components/ui/FadeInItem.tsx#FadingItem",
+   "name": "FadingItem",
+   "file": "src/components/ui/FadeInItem.tsx",
+   "category": "ui",
+   "lines": 36,
+   "startLine": 51,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "index",
+    "children",
+    "className",
+    "testID",
+    "replayTab",
+    "skipInitialFade"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "Animated.View"
+   ],
+   "classTokens": [
+    "className"
+   ],
+   "description": "Komponente: fading item",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 87
+  },
+  {
+   "id": "src/components/ui/Glass.tsx#Glass",
+   "name": "Glass",
+   "file": "src/components/ui/Glass.tsx",
+   "category": "ui",
+   "lines": 10,
+   "startLine": 109,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "onPress",
+    "variant"
+   ],
+   "usage": {
+    "src": 9,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tracker.tsx (2x)",
+    "src/app/(auth)/register.tsx (2x)",
+    "src/app/auth/callback.tsx (2x)",
+    "src/app/(auth)/forgot-password.tsx (1x)",
+    "src/app/(auth)/login.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "Root"
+   ],
+   "classTokens": [
+    "overflow-hidden",
+    "variant",
+    "solid",
+    "bg-black",
+    "GLASS_FLAT_FILL)"
+   ],
+   "description": "Komponente: glass",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 125
+  },
+  {
+   "id": "src/components/ui/GlassTable.tsx#GlassTableHeader",
+   "name": "GlassTableHeader",
+   "file": "src/components/ui/GlassTable.tsx",
+   "category": "ui",
+   "lines": 18,
+   "startLine": 39,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "children"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)",
+    "src/components/watchlist/WatchlistEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "rounded-t-xl",
+    "border-t",
+    "pt-3",
+    "flex-row",
+    "items-center",
+    "border-b",
+    "border-glass-border",
+    "pb-3"
+   ],
+   "description": "Static header row (top slice, rounded top); sorting lives in the panel.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 130
+  },
+  {
+   "id": "src/components/ui/GlassTable.tsx#GlassTableHeaderCell",
+   "name": "GlassTableHeaderCell",
+   "file": "src/components/ui/GlassTable.tsx",
+   "category": "ui",
+   "lines": 15,
+   "startLine": 59,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "className",
+    "children",
+    "testID"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/watchlist/WatchlistEntryList.tsx (2x)",
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "Text"
+   ],
+   "classTokens": [
+    "className)"
+   ],
+   "description": "Plain header text cell.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 130
+  },
+  {
+   "id": "src/components/ui/GlassTable.tsx#GlassTableRow",
+   "name": "GlassTableRow",
+   "file": "src/components/ui/GlassTable.tsx",
+   "category": "ui",
+   "lines": 27,
+   "startLine": 79,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "isLast",
+    "onPress",
+    "children"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)",
+    "src/components/watchlist/WatchlistEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View",
+    "Pressable"
+   ],
+   "classTokens": [
+    "isLast",
+    "rounded-b-xl",
+    "border-b",
+    "pb-1",
+    "flex-row",
+    "items-center",
+    "py-3",
+    "!isLast",
+    "border-glass-border"
+   ],
+   "description": "Table row slice.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 130
+  },
+  {
+   "id": "src/components/ui/GlassTable.tsx#GlassTableHeaderIconCell",
+   "name": "GlassTableHeaderIconCell",
+   "file": "src/components/ui/GlassTable.tsx",
+   "category": "ui",
+   "lines": 22,
+   "startLine": 108,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "label",
+    "className",
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchEntryList.tsx (3x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "h-5",
+    "items-center",
+    "justify-center",
+    "className)"
+   ],
+   "description": "Header cell showing an icon/logo instead of a text label (static).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 130
+  },
+  {
+   "id": "src/components/ui/Icon.tsx#Icon",
+   "name": "Icon",
+   "file": "src/components/ui/Icon.tsx",
+   "category": "ui",
+   "lines": 3,
+   "startLine": 97,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "name",
+    "size"
+   ],
+   "usage": {
+    "src": 27,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/ui/Select.tsx (5x)",
+    "src/app/(onboarding)/create-or-join-group.tsx (4x)",
+    "src/components/movie/PosterCornerBadge.tsx (4x)",
+    "src/components/movie/DiaryEntryCard.tsx (3x)",
+    "src/components/movie/RatingDialog.tsx (3x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "MaterialIcons"
+   ],
+   "classTokens": [],
+   "description": "Komponente: icon",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 100
+  },
+  {
+   "id": "src/components/ui/IconButton.tsx#IconButton",
+   "name": "IconButton",
+   "file": "src/components/ui/IconButton.tsx",
+   "category": "ui",
+   "lines": 28,
+   "startLine": 49,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "icon",
+    "variant",
+    "size",
+    "accessibilityLabel",
+    "testID",
+    "disabled",
+    "loading",
+    "className",
+    "iconColor"
+   ],
+   "usage": {
+    "src": 12,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/group-settings.tsx (3x)",
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)",
+    "src/app/(app)/(modals)/settings.tsx (1x)",
+    "src/app/(app)/(tabs)/tracker.tsx (1x)",
+    "src/components/entries/EntrySortRow.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Button",
+    "Icon"
+   ],
+   "children": [
+    "Button",
+    "Icon"
+   ],
+   "classTokens": [
+    "variant",
+    "overlay",
+    "OVERLAY_CLASSNAME",
+    "className"
+   ],
+   "description": "THE icon-only action button (docs/style-guide.md \"Icon-Buttons\"): round, 48dp, one icon size (token `M`), colour by variant and disabled state.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 77
+  },
+  {
+   "id": "src/components/ui/KeyboardAwareScrollView.tsx#KeyboardAwareScrollView",
+   "name": "KeyboardAwareScrollView",
+   "file": "src/components/ui/KeyboardAwareScrollView.tsx",
+   "category": "ui",
+   "lines": 41,
+   "startLine": 17,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "onScroll",
+    "props"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/group-settings.tsx (1x)",
+    "src/app/(app)/(modals)/settings.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "KeyboardInsetView"
+   ],
+   "children": [
+    "KeyboardInsetView",
+    "ScrollView"
+   ],
+   "classTokens": [],
+   "description": "ScrollView for form-like screens: shrinks above the keyboard (Android, via KeyboardInsetView) and, when the keyboard opens, scrolls the focused TextInput into view (Android does not do this reliably on its own once the w",
+   "descriptionSource": "Kommentar",
+   "fileLines": 58
+  },
+  {
+   "id": "src/components/ui/KeyboardInsetView.tsx#KeyboardInsetView",
+   "name": "KeyboardInsetView",
+   "file": "src/components/ui/KeyboardInsetView.tsx",
+   "category": "ui",
+   "lines": 17,
+   "startLine": 16,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children",
+    "testID",
+    "className"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/add-movie.tsx (1x)",
+    "src/components/ui/KeyboardAwareScrollView.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "flex-1",
+    "className"
+   ],
+   "description": "Screen wrapper that shrinks its content by the on-screen keyboard height on Android, where (edge-to-edge) the window is not resized by the keyboard.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 33
+  },
+  {
+   "id": "src/components/ui/LoadingArea.tsx#LoadingArea",
+   "name": "LoadingArea",
+   "file": "src/components/ui/LoadingArea.tsx",
+   "category": "ui",
+   "lines": 15,
+   "startLine": 20,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "className",
+    "size"
+   ],
+   "usage": {
+    "src": 13,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/add-movie.tsx (2x)",
+    "src/app/(app)/(modals)/collection/[collectionId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/actor/[personId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/director/[personId].tsx (1x)",
+    "src/app/(app)/(modals)/filmography/studio/[companyId].tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Spinner"
+   ],
+   "children": [
+    "View",
+    "Spinner"
+   ],
+   "classTokens": [
+    "items-center",
+    "justify-center",
+    "className"
+   ],
+   "description": "Komponente: loading area (nutzt Spinner)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 35
+  },
+  {
+   "id": "src/components/ui/OfflineBanner.tsx#OfflineBanner",
+   "name": "OfflineBanner",
+   "file": "src/components/ui/OfflineBanner.tsx",
+   "category": "ui",
+   "lines": 9,
+   "startLine": 13,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "SafeAreaView",
+    "Text"
+   ],
+   "classTokens": [
+    "bg-danger",
+    "px-4",
+    "pb-1",
+    "text-center",
+    "text-xs",
+    "text-text-primary"
+   ],
+   "description": "Slim top banner, rendered only while `onlineManager` reports offline.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 22
+  },
+  {
+   "id": "src/components/ui/PanelShadow.tsx#PanelShadow",
+   "name": "PanelShadow",
+   "file": "src/components/ui/PanelShadow.tsx",
+   "category": "ui",
+   "lines": 30,
+   "startLine": 18,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "radius"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/tracker.tsx (1x)",
+    "src/components/ui/CollapsibleFilterPanel.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "absolute",
+    "inset-0",
+    "bg-black",
+    "radius",
+    "PANEL_RADIUS",
+    "PANEL_RADIUS_CLASSNAME"
+   ],
+   "description": "Soft shadow that follows the panel shape: stacked black views with the same width and corner radius as the panel, each 1dp further down with falling opacity (pure JS, no native module / elevation).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 48
+  },
+  {
+   "id": "src/components/ui/ScreenBackdrop.tsx#ScreenBackdrop",
+   "name": "ScreenBackdrop",
+   "file": "src/components/ui/ScreenBackdrop.tsx",
+   "category": "ui",
+   "lines": 7,
+   "startLine": 12,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 1,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View"
+   ],
+   "classTokens": [
+    "flex-1",
+    "GLASS_FLAT_FILL"
+   ],
+   "description": "Flat dark backdrop (docs/style-guide.md \"Backdrop rule\"): the projector photo (root AppBackground) is covered by the shared flat fill (`GLASS_FLAT_FILL`, 95 %), no blur.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 81
+  },
+  {
+   "id": "src/components/ui/SearchResultsArea.tsx#SearchResultsArea",
+   "name": "SearchResultsArea",
+   "file": "src/components/ui/SearchResultsArea.tsx",
+   "category": "ui",
+   "lines": 45,
+   "startLine": 34,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "isLoading",
+    "loadingTestID",
+    "isError",
+    "errorTestID",
+    "errorMessage",
+    "isEmpty",
+    "emptyTestID",
+    "emptyIcon",
+    "emptyTitle",
+    "scroll",
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/add-movie.tsx (3x)"
+   ],
+   "usesPrimitives": [
+    "LoadingArea",
+    "Text",
+    "EmptyState"
+   ],
+   "children": [
+    "LoadingArea",
+    "Text",
+    "EmptyState",
+    "ScrollView",
+    "View"
+   ],
+   "classTokens": [
+    "min-h-32",
+    "w-full",
+    "flex-1",
+    "text-danger",
+    "mt-3"
+   ],
+   "description": "ONE result area for every search tab (Film / Regisseur / Besetzung / Studio): a `flex-1` wrapper that fills the space below the search field down to the screen/keyboard edge and holds exactly one of loading / error / Emp",
+   "descriptionSource": "Kommentar",
+   "fileLines": 79
+  },
+  {
+   "id": "src/components/ui/SegmentedControl.tsx#SegmentedControl",
+   "name": "SegmentedControl",
+   "file": "src/components/ui/SegmentedControl.tsx",
+   "category": "ui",
+   "lines": 41,
+   "startLine": 44,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "options",
+    "value",
+    "onChange",
+    "testID",
+    "className"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/settings/SettingsColumnsRow.tsx (1x)",
+    "src/components/ui/ViewModeToggle.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "View",
+    "Pressable"
+   ],
+   "classTokens": [
+    "h-12",
+    "flex-row",
+    "items-center",
+    "gap-1",
+    "border",
+    "border-glass-border",
+    "bg-black/35",
+    "p-[3px]",
+    "className)",
+    "h-10",
+    "w-10",
+    "justify-center"
+   ],
+   "description": "Shared segmented switch: identical 40x40 cells in a glass pill.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 85
+  },
+  {
+   "id": "src/components/ui/Select.tsx#Select",
+   "name": "Select",
+   "file": "src/components/ui/Select.tsx",
+   "category": "ui",
+   "lines": 238,
+   "startLine": 96,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID",
+    "options",
+    "value",
+    "onChange",
+    "placeholder",
+    "searchable",
+    "searchPlaceholder",
+    "autoFocusSearch",
+    "defaultOptions",
+    "emptyText",
+    "disabled",
+    "onOpenChange",
+    "accessibilityLabel",
+    "leadingIcon",
+    "className"
+   ],
+   "usage": {
+    "src": 6,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/PaymentModal.tsx (2x)",
+    "src/app/(app)/(modals)/group-settings.tsx (1x)",
+    "src/app/(app)/(modals)/settings.tsx (1x)",
+    "src/components/entries/EntrySortRow.tsx (1x)",
+    "src/components/movie/RatingDialog.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text",
+    "TextInput"
+   ],
+   "children": [
+    "View",
+    "Pressable",
+    "Icon",
+    "Text",
+    "Modal",
+    "TextInput",
+    "ScrollView"
+   ],
+   "classTokens": [
+    "className",
+    "fieldClass",
+    "flex-1",
+    "selected",
+    "text-text-primary",
+    "text-text-secondary",
+    "py-2",
+    "overflow-hidden",
+    "rounded-lg",
+    "GLASS_EDGE",
+    "GLASS_FLAT_FILL",
+    "px-4",
+    "py-3",
+    "min-h-touch-comfortable",
+    "justify-center",
+    "border-b",
+    "border-glass-border",
+    "isSelected",
+    "bg-accent",
+    "text-bg-primary",
+    "text-xs"
+   ],
+   "description": "Dropdown: trigger field in the layout; while open, field + list are drawn in a transparent RN `Modal` (own Android window) at the trigger's measured window position.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 343
+  },
+  {
+   "id": "src/components/ui/SettingsButton.tsx#SettingsButton",
+   "name": "SettingsButton",
+   "file": "src/components/ui/SettingsButton.tsx",
+   "category": "ui",
+   "lines": 12,
+   "startLine": 13,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "testID"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/ui/AppHeader.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "IconButton"
+   ],
+   "children": [
+    "IconButton"
+   ],
+   "classTokens": [
+    "self-start"
+   ],
+   "description": "The settings gear shared by all three tab screens (Tracker, Watchlist, Tagebuch): the Settings hub must stay reachable even when the Tracker tab is hidden (\"Tracker aktiv\" off).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 25
+  },
+  {
+   "id": "src/components/ui/SettingsRow.tsx#SettingsRow",
+   "name": "SettingsRow",
+   "file": "src/components/ui/SettingsRow.tsx",
+   "category": "ui",
+   "lines": 35,
+   "startLine": 33,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "icon",
+    "label",
+    "onPress",
+    "testID",
+    "value",
+    "right",
+    "danger",
+    "className"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 3,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings.tsx (5x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text"
+   ],
+   "children": [
+    "Pressable",
+    "Icon",
+    "Text",
+    "View"
+   ],
+   "classTokens": [
+    "min-h-touch-comfortable",
+    "flex-row",
+    "items-center",
+    "gap-3",
+    "px-4",
+    "py-3",
+    "danger",
+    "bg-danger/15",
+    "DANGER_PRESSED_CLASSNAME",
+    "flex-1",
+    "text-base",
+    "DANGER_TEXT_CLASSNAME",
+    "text-text-primary",
+    "text-sm",
+    "text-text-secondary",
+    "gap-2"
+   ],
+   "description": "Flat settings list row (icon, label, optional value/badge, accent chevron).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 68
+  },
+  {
+   "id": "src/components/ui/Sheet.tsx#SheetHost",
+   "name": "SheetHost",
+   "file": "src/components/ui/Sheet.tsx",
+   "category": "ui",
+   "lines": 23,
+   "startLine": 41,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "SheetHostContext.Provider",
+    "Fragment"
+   ],
+   "classTokens": [],
+   "description": "Optional screen-level host: Sheets rendered below it (even deep inside a small absolutely positioned bar) draw their overlay here instead, so the overlay fills the whole host area rather than only the nearest parent view",
+   "descriptionSource": "Kommentar",
+   "fileLines": 231
+  },
+  {
+   "id": "src/components/ui/Sheet.tsx#Sheet",
+   "name": "Sheet",
+   "file": "src/components/ui/Sheet.tsx",
+   "category": "ui",
+   "lines": 135,
+   "startLine": 91,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "visible",
+    "onClose",
+    "title",
+    "children"
+   ],
+   "usage": {
+    "src": 8,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings.tsx (1x)",
+    "src/components/entries/EntryFilterFlyout.tsx (1x)",
+    "src/components/movie/MovieDetailReleaseDateSheet.tsx (1x)",
+    "src/components/movie/PaymentModal.tsx (1x)",
+    "src/components/movie/RatingDialog.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text",
+    "IconButton"
+   ],
+   "children": [
+    "View",
+    "KeyboardAvoidingView",
+    "Pressable",
+    "Animated.View",
+    "SafeAreaView",
+    "Text",
+    "IconButton",
+    "ScrollView"
+   ],
+   "classTokens": [
+    "flex-1",
+    "justify-end",
+    "overflow-hidden",
+    "border-t",
+    "border-glass-border",
+    "bg-black",
+    "shrink",
+    "flex-row",
+    "items-center",
+    "justify-between",
+    "border-b",
+    "px-4",
+    "py-3",
+    "font-title",
+    "text-lg",
+    "text-text-primary"
+   ],
+   "description": "Generic bottom-sheet overlay (in-window, glass) — the shared dialog primitive referenced in docs/planning-report.html (\"Ein wiederverwendetes Sheet/Modal-System treibt jeden Dialog an\").",
+   "descriptionSource": "Kommentar",
+   "fileLines": 231
+  },
+  {
+   "id": "src/components/ui/Spinner.tsx#Spinner",
+   "name": "Spinner",
+   "file": "src/components/ui/Spinner.tsx",
+   "category": "ui",
+   "lines": 5,
+   "startLine": 15,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "color",
+    "rest"
+   ],
+   "usage": {
+    "src": 8,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/settings/notifications.tsx (1x)",
+    "src/app/(app)/(tabs)/tagebuch.tsx (1x)",
+    "src/app/(app)/(tabs)/watchlist.tsx (1x)",
+    "src/app/auth/callback.tsx (1x)",
+    "src/app/join/[token].tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "ActivityIndicator"
+   ],
+   "classTokens": [],
+   "description": "Komponente: spinner",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 20
+  },
+  {
+   "id": "src/components/ui/StarRating.tsx#StarRating",
+   "name": "StarRating",
+   "file": "src/components/ui/StarRating.tsx",
+   "category": "ui",
+   "lines": 103,
+   "startLine": 77,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "rating",
+    "starColor",
+    "onChange",
+    "liked",
+    "onToggleLike",
+    "iconSize",
+    "compactBox",
+    "denseBox"
+   ],
+   "usage": {
+    "src": 4,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/movie/MemberRatingRow.tsx (2x)",
+    "src/components/movie/MovieDetailOwnRating.tsx (1x)",
+    "src/components/movie/MovieDetailRatingsSection.tsx (1x)",
+    "src/components/movie/RatingDialog.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon"
+   ],
+   "children": [
+    "View",
+    "Icon",
+    "Pressable"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "boxClassName",
+    "h-touch-comfortable",
+    "STAR_TOUCH_WIDTH",
+    "px]",
+    "justify-center"
+   ],
+   "description": "Komponente: star rating (nutzt Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 180
+  },
+  {
+   "id": "src/components/ui/Switch.tsx#NativeSwitch",
+   "name": "NativeSwitch",
+   "file": "src/components/ui/Switch.tsx",
+   "category": "ui",
+   "lines": 24,
+   "startLine": 25,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "checked",
+    "pressed",
+    "disabled",
+    "testID"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View",
+    "Host",
+    "Switch"
+   ],
+   "classTokens": [],
+   "description": "Real Material 3 Compose switch (`@expo/ui` Jetpack Compose, already part of the installed dev-client), Android only.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 92
+  },
+  {
+   "id": "src/components/ui/Switch.tsx#SwitchIndicator",
+   "name": "SwitchIndicator",
+   "file": "src/components/ui/Switch.tsx",
+   "category": "ui",
+   "lines": 6,
+   "startLine": 57,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "checked",
+    "pressed",
+    "disabled",
+    "testID"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/settings/SettingsToggleRow.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "NativeSwitch",
+    "FallbackSwitch"
+   ],
+   "children": [
+    "NativeSwitch",
+    "FallbackSwitch"
+   ],
+   "classTokens": [],
+   "description": "Material 3 switch visual (non-interactive; the surrounding row is the `accessibilityRole=\"switch\"` Pressable).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 92
+  },
+  {
+   "id": "src/components/ui/Switch.tsx#FallbackSwitch",
+   "name": "FallbackSwitch",
+   "file": "src/components/ui/Switch.tsx",
+   "category": "ui",
+   "lines": 28,
+   "startLine": 64,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "checked",
+    "pressed",
+    "disabled",
+    "testID"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Icon"
+   ],
+   "children": [
+    "View",
+    "Icon"
+   ],
+   "classTokens": [
+    "h-8",
+    "w-[52px]",
+    "justify-center",
+    "rounded-full",
+    "border-2",
+    "checked",
+    "border-accent",
+    "bg-accent",
+    "border-text-secondary",
+    "bg-bg-primary",
+    "disabled",
+    "opacity-40",
+    "h-10",
+    "w-10",
+    "items-center",
+    "-mr-1.5",
+    "self-end",
+    "-ml-1.5",
+    "self-start",
+    "pressed",
+    "bg-white/10",
+    "handleSize",
+    "bg-text-primary",
+    "bg-text-secondary"
+   ],
+   "description": "Komponente: fallback switch (nutzt Icon)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 92
+  },
+  {
+   "id": "src/components/ui/TabBarButton.tsx#TabBarButton",
+   "name": "TabBarButton",
+   "file": "src/components/ui/TabBarButton.tsx",
+   "category": "ui",
+   "lines": 14,
+   "startLine": 11,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "children"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/_layout.tsx (import)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "Pressable",
+    "View"
+   ],
+   "classTokens": [
+    "absolute",
+    "left-3",
+    "right-3",
+    "top-0",
+    "h-0.5",
+    "rounded-full",
+    "bg-accent"
+   ],
+   "description": "Tab-bar item with the legacy gold top line over the active tab.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 25
+  },
+  {
+   "id": "src/components/ui/Text.tsx#Text",
+   "name": "Text",
+   "file": "src/components/ui/Text.tsx",
+   "category": "ui",
+   "lines": 3,
+   "startLine": 23,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "className"
+   ],
+   "usage": {
+    "src": 62,
+    "tests": 28,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(auth)/register.tsx (12x)",
+    "src/app/(app)/(modals)/group-settings.tsx (11x)",
+    "src/app/(app)/(modals)/settings.tsx (10x)",
+    "src/app/(onboarding)/create-or-join-group.tsx (10x)",
+    "src/app/(app)/(tabs)/tracker.tsx (7x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "RNText"
+   ],
+   "classTokens": [
+    "withDefaultFont(className)"
+   ],
+   "description": "Komponente: text",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 30
+  },
+  {
+   "id": "src/components/ui/Text.tsx#TextInput",
+   "name": "TextInput",
+   "file": "src/components/ui/Text.tsx",
+   "category": "ui",
+   "lines": 3,
+   "startLine": 27,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "className"
+   ],
+   "usage": {
+    "src": 15,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(auth)/register.tsx (4x)",
+    "src/app/(app)/(modals)/add-movie.tsx (3x)",
+    "src/app/(app)/(modals)/settings.tsx (2x)",
+    "src/app/(auth)/login.tsx (2x)",
+    "src/app/(onboarding)/create-or-join-group.tsx (2x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "RNTextInput"
+   ],
+   "classTokens": [
+    "withDefaultFont(className)"
+   ],
+   "description": "Komponente: text input",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 30
+  },
+  {
+   "id": "src/components/ui/TmdbBadge.tsx#TmdbBadge",
+   "name": "TmdbBadge",
+   "file": "src/components/ui/TmdbBadge.tsx",
+   "category": "ui",
+   "lines": 18,
+   "startLine": 27,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "score",
+    "testID",
+    "valueTestID",
+    "className",
+    "hideScore",
+    "largeLogo"
+   ],
+   "usage": {
+    "src": 5,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(modals)/movie/[tmdbId].tsx (1x)",
+    "src/components/movie/DiaryEntryCard.tsx (1x)",
+    "src/components/movie/PosterTmdbBadge.tsx (1x)",
+    "src/components/movie/WatchlistPosterCard.tsx (1x)",
+    "src/components/tagebuch/TagebuchEntryList.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Text"
+   ],
+   "children": [
+    "View",
+    "Image",
+    "Text"
+   ],
+   "classTokens": [
+    "flex-row",
+    "items-center",
+    "gap-1.5",
+    "className",
+    "largeLogo",
+    "h-4",
+    "w-9",
+    "h-3.5",
+    "w-8",
+    "text-xs",
+    "font-sans-semibold",
+    "text-white"
+   ],
+   "description": "Badge: tmdb badge (nutzt Text)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 45
+  },
+  {
+   "id": "src/components/ui/Toast.tsx#ToastHost",
+   "name": "ToastHost",
+   "file": "src/components/ui/Toast.tsx",
+   "category": "ui",
+   "lines": 137,
+   "startLine": 92,
+   "exported": true,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 1,
+    "tests": 1,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/_layout.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "Icon",
+    "Text",
+    "Glass",
+    "IconButton"
+   ],
+   "children": [
+    "View",
+    "Icon",
+    "Text",
+    "Animated.View",
+    "Glass",
+    "Pressable",
+    "IconButton"
+   ],
+   "classTokens": [
+    "min-w-0",
+    "flex-1",
+    "flex-row",
+    "items-center",
+    "justify-center",
+    "gap-2",
+    "shrink",
+    "text-center",
+    "look.text",
+    "absolute",
+    "bottom-24",
+    "left-4",
+    "right-4",
+    "rounded-xl",
+    "px-4",
+    "py-3",
+    "look.surface",
+    "look.tint",
+    "-my-3",
+    "-mr-3"
+   ],
+   "description": "M10 (Realtime foreground sync, ADR 0006): the single toast host, mounted once near the app root (src/app/_layout.tsx).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 229
+  },
+  {
+   "id": "src/components/ui/ViewModeToggle.tsx#ViewModeToggle",
+   "name": "ViewModeToggle",
+   "file": "src/components/ui/ViewModeToggle.tsx",
+   "category": "ui",
+   "lines": 16,
+   "startLine": 25,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "value",
+    "onChange",
+    "testID",
+    "buttonTestID"
+   ],
+   "usage": {
+    "src": 2,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/components/tagebuch/TagebuchFilterPanel.tsx (1x)",
+    "src/components/watchlist/WatchlistFilterPanel.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "SegmentedControl",
+    "Icon"
+   ],
+   "children": [
+    "SegmentedControl",
+    "Icon"
+   ],
+   "classTokens": [
+    "self-center"
+   ],
+   "description": "Segmented Karten/Grid/Liste switch (shared `SegmentedControl`): three identical 40x40 icon cells, equal 4px inset (1 border + 3 padding) and 4px gaps (lives inside the search glass card).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 41
+  },
+  {
+   "id": "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListRow",
+   "name": "WatchlistListRow",
+   "file": "src/components/watchlist/WatchlistEntryList.tsx",
+   "category": "watchlist",
+   "lines": 24,
+   "startLine": 63,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "item",
+    "isLast",
+    "onOpenEntry"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "GlassTableRow",
+    "Text"
+   ],
+   "children": [
+    "GlassTableRow",
+    "Text"
+   ],
+   "classTokens": [
+    "TABLE_TITLE_CELL",
+    "TABLE_DATE_CELL"
+   ],
+   "description": "Row components are memoized and take stable props (entry object, shared lookup, stable `onOpenEntry`), so a parent re-render (typing, filter panel) does not re-render every mounted row and `withEffectiveReleaseDate` is n",
+   "descriptionSource": "Kommentar",
+   "fileLines": 240
+  },
+  {
+   "id": "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListHeader",
+   "name": "WatchlistListHeader",
+   "file": "src/components/watchlist/WatchlistEntryList.tsx",
+   "category": "watchlist",
+   "lines": 18,
+   "startLine": 88,
+   "exported": false,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "GlassTableHeader",
+    "GlassTableHeaderCell"
+   ],
+   "children": [
+    "GlassTableHeader",
+    "GlassTableHeaderCell"
+   ],
+   "classTokens": [
+    "flex-1",
+    "w-28",
+    "text-right"
+   ],
+   "description": "Kopfbereich: watchlist list header (nutzt GlassTableHeader, GlassTableHeaderCell)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 240
+  },
+  {
+   "id": "src/components/watchlist/WatchlistEntryList.tsx#WatchlistPosterRow",
+   "name": "WatchlistPosterRow",
+   "file": "src/components/watchlist/WatchlistEntryList.tsx",
+   "category": "watchlist",
+   "lines": 39,
+   "startLine": 107,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "item",
+    "index",
+    "skipFade",
+    "isGrid",
+    "streamingAvailability",
+    "totalMembers",
+    "showTitlesInGrid",
+    "onOpenEntry"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "FadeInItem"
+   ],
+   "children": [
+    "FadeInItem",
+    "WatchlistPosterCard"
+   ],
+   "classTokens": [
+    "isGrid",
+    "flex-1",
+    "undefined"
+   ],
+   "description": "Zeile: watchlist poster row (nutzt FadeInItem)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 240
+  },
+  {
+   "id": "src/components/watchlist/WatchlistEntryList.tsx#WatchlistEntryList",
+   "name": "WatchlistEntryList",
+   "file": "src/components/watchlist/WatchlistEntryList.tsx",
+   "category": "watchlist",
+   "lines": 83,
+   "startLine": 157,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "entries",
+    "viewMode",
+    "streamingAvailability",
+    "totalMembers",
+    "showTitlesInGrid",
+    "onOpenEntry",
+    "sort"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 2,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/watchlist.tsx (1x)"
+   ],
+   "usesPrimitives": [],
+   "children": [
+    "FlatList",
+    "WatchlistListHeader",
+    "WatchlistListRow",
+    "WatchlistPosterRow"
+   ],
+   "classTokens": [],
+   "description": "Liste: watchlist entry list",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 240
+  },
+  {
+   "id": "src/components/watchlist/WatchlistFilterPanel.tsx#WatchlistFilterPanel",
+   "name": "WatchlistFilterPanel",
+   "file": "src/components/watchlist/WatchlistFilterPanel.tsx",
+   "category": "watchlist",
+   "lines": 59,
+   "startLine": 16,
+   "exported": true,
+   "isDefault": false,
+   "props": [
+    "screen",
+    "onAddMovie"
+   ],
+   "usage": {
+    "src": 1,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "ok",
+   "topUsers": [
+    "src/app/(app)/(tabs)/watchlist.tsx (1x)"
+   ],
+   "usesPrimitives": [
+    "CollapsibleFilterPanel",
+    "TextInput",
+    "IconButton",
+    "ViewModeToggle"
+   ],
+   "children": [
+    "CollapsibleFilterPanel",
+    "TextInput",
+    "IconButton",
+    "EntrySortRow",
+    "EntryFilterBar",
+    "ViewModeToggle"
+   ],
+   "classTokens": [
+    "GLASS_SEARCH_INPUT_CLASSNAME"
+   ],
+   "description": "Panel: watchlist filter panel (nutzt CollapsibleFilterPanel, TextInput, IconButton)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 75
+  },
+  {
+   "id": "src/app/(app)/(modals)/_layout.tsx#ModalsLayout",
+   "name": "ModalsLayout",
+   "file": "src/app/(app)/(modals)/_layout.tsx",
+   "category": "layout",
+   "lines": 63,
+   "startLine": 24,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "Stack",
+    "Stack.Screen"
+   ],
+   "classTokens": [],
+   "description": "Every modal route gets a flat dark glass backdrop instead of the busy projector photo (see ScreenBackdrop + docs/style-guide.md): detail-style routes \"calm\", settings routes \"dim\".",
+   "descriptionSource": "Kommentar",
+   "fileLines": 87
+  },
+  {
+   "id": "src/app/(app)/(modals)/add-movie.tsx#AddMovieScreen",
+   "name": "AddMovieScreen",
+   "file": "src/app/(app)/(modals)/add-movie.tsx",
+   "category": "screen",
+   "lines": 331,
+   "startLine": 68,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "KeyboardInsetView",
+    "Chip",
+    "TextInput",
+    "SearchResultsArea",
+    "Text",
+    "Button",
+    "LoadingArea"
+   ],
+   "children": [
+    "KeyboardInsetView",
+    "View",
+    "Chip",
+    "TextInput",
+    "SearchResultsArea",
+    "MovieGrid",
+    "Pressable",
+    "Text",
+    "Button",
+    "LoadingArea"
+   ],
+   "classTokens": [
+    "px-4",
+    "pt-4",
+    "flex-row",
+    "gap-2",
+    "flex-1",
+    "items-center",
+    "pt-3",
+    "rounded-lg",
+    "border",
+    "border-accent",
+    "bg-card",
+    "px-3",
+    "py-3",
+    "text-text-primary",
+    "mt-3",
+    "self-start",
+    "index",
+    "personResults.length",
+    "border-b",
+    "border-border-subtle",
+    "min-h-32",
+    "w-full",
+    "text-danger",
+    "companyResults.length",
+    "py-4"
+   ],
+   "description": "Komponente: add movie screen (nutzt KeyboardInsetView, Chip, TextInput)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 399
+  },
+  {
+   "id": "src/app/(app)/(modals)/collection/[collectionId].tsx#CollectionScreen",
+   "name": "CollectionScreen",
+   "file": "src/app/(app)/(modals)/collection/[collectionId].tsx",
+   "category": "screen",
+   "lines": 87,
+   "startLine": 30,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "LoadingArea"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "LoadingArea",
+    "MovieGrid"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4",
+    "mb-3",
+    "font-title",
+    "text-xl",
+    "text-text-primary"
+   ],
+   "description": "M6 part 2b: \"Filmreihe\" (collection) sub-view screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 117
+  },
+  {
+   "id": "src/app/(app)/(modals)/filmography/actor/[personId].tsx#ActorFilmographyScreen",
+   "name": "ActorFilmographyScreen",
+   "file": "src/app/(app)/(modals)/filmography/actor/[personId].tsx",
+   "category": "screen",
+   "lines": 66,
+   "startLine": 23,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "LoadingArea"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "LoadingArea",
+    "MovieGrid"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4"
+   ],
+   "description": "M6 part 2b: \"Filmografie: Schauspieler:in\" sub-view screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 89
+  },
+  {
+   "id": "src/app/(app)/(modals)/filmography/director/[personId].tsx#DirectorFilmographyScreen",
+   "name": "DirectorFilmographyScreen",
+   "file": "src/app/(app)/(modals)/filmography/director/[personId].tsx",
+   "category": "screen",
+   "lines": 66,
+   "startLine": 27,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "LoadingArea"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "LoadingArea",
+    "MovieGrid"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4"
+   ],
+   "description": "M6 part 2b: \"Filmografie: Regisseur\" sub-view screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 93
+  },
+  {
+   "id": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx#StudioFilmographyScreen",
+   "name": "StudioFilmographyScreen",
+   "file": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx",
+   "category": "screen",
+   "lines": 128,
+   "startLine": 32,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "LoadingArea",
+    "Button"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "LoadingArea",
+    "MovieGrid",
+    "Button"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4",
+    "py-4"
+   ],
+   "description": "M6 part 2b: \"Studio-Filmografie\" sub-view screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 160
+  },
+  {
+   "id": "src/app/(app)/(modals)/group-settings.tsx#GroupSettingsScreen",
+   "name": "GroupSettingsScreen",
+   "file": "src/app/(app)/(modals)/group-settings.tsx",
+   "category": "screen",
+   "lines": 537,
+   "startLine": 80,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "LoadingArea",
+    "Text",
+    "EmptyState",
+    "KeyboardAwareScrollView",
+    "Select",
+    "IconButton",
+    "TextInput",
+    "Icon",
+    "Button",
+    "ConfirmDialog"
+   ],
+   "children": [
+    "View",
+    "Stack.Screen",
+    "LoadingArea",
+    "Text",
+    "EmptyState",
+    "KeyboardAwareScrollView",
+    "Select",
+    "IconButton",
+    "TextInput",
+    "Pressable",
+    "Icon",
+    "Button",
+    "SettingsToggleRow",
+    "ConfirmDialog",
+    "CreateGroupSheet",
+    "SettingsBackBar"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "z-50",
+    "gap-2",
+    "font-title",
+    "text-lg",
+    "text-accent-light",
+    "flex-row",
+    "gap-3",
+    "rounded-lg",
+    "GLASS_INSET_EDGE",
+    "bg-black/35",
+    "px-3",
+    "py-2",
+    "text-text-primary",
+    "text-sm",
+    "flex-wrap",
+    "h-touch-comfortable",
+    "w-touch-comfortable",
+    "absolute",
+    "-right-1",
+    "-top-1",
+    "GLASS_TILE_CLASSNAME",
+    "py-3",
+    "text-text-secondary",
+    "h-12",
+    "w-12",
+    "shrink-0"
+   ],
+   "description": "Komponente: group settings screen (nutzt LoadingArea, Text, EmptyState)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 617
+  },
+  {
+   "id": "src/app/(app)/(modals)/movie/[tmdbId].tsx#MovieDetailScreen",
+   "name": "MovieDetailScreen",
+   "file": "src/app/(app)/(modals)/movie/[tmdbId].tsx",
+   "category": "screen",
+   "lines": 504,
+   "startLine": 84,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "Icon",
+    "SheetHost",
+    "LoadingArea",
+    "FadeInItem",
+    "TmdbBadge",
+    "IconButton"
+   ],
+   "children": [
+    "SafeAreaView",
+    "Stack.Screen",
+    "Text",
+    "Pressable",
+    "Icon",
+    "SheetHost",
+    "View",
+    "ScrollView",
+    "MovieDetailPosterTrailer",
+    "MovieDetailSection",
+    "MovieDetailTitleRow",
+    "MovieDetailDescription",
+    "MovieDetailOwnRating",
+    "MovieDetailRatingsSection",
+    "LoadingArea",
+    "FadeInItem",
+    "MovieDetailMetaRow",
+    "TmdbBadge",
+    "MovieDetailGenreTags",
+    "MovieDetailDirector",
+    "MovieDetailCastRow",
+    "MovieDetailProviders",
+    "IconButton",
+    "MovieDetailActionsBar",
+    "MovieDetailReleaseDateSheet",
+    "RatingDialog"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-text-primary",
+    "mt-4",
+    "h-touch-comfortable",
+    "min-w-touch-comfortable",
+    "pt-3",
+    "min-h-64",
+    "w-full",
+    "absolute",
+    "left-4",
+    "top-2",
+    "z-10",
+    "bottom-0",
+    "left-0",
+    "right-0",
+    "overflow-hidden",
+    "GLASS_BAR_CLASSNAME",
+    "bg-black"
+   ],
+   "description": "Movie-Detail-Overlay route (M6 part 2a) — the final integration point that wires together the already-built logic module, hooks and presentational components for this screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 588
+  },
+  {
+   "id": "src/app/(app)/(modals)/settings/display.tsx#SettingsDisplayScreen",
+   "name": "SettingsDisplayScreen",
+   "file": "src/app/(app)/(modals)/settings/display.tsx",
+   "category": "screen",
+   "lines": 45,
+   "startLine": 20,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "View",
+    "SettingsGroup",
+    "SettingsToggleRow",
+    "SettingsColumnsRow",
+    "SettingsBackBar"
+   ],
+   "classTokens": [
+    "flex-1",
+    "px-4",
+    "pt-4"
+   ],
+   "description": "M10 Settings hub — \"Darstellung\" sub-screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 65
+  },
+  {
+   "id": "src/app/(app)/(modals)/settings/notifications.tsx#GroupPushToggleRow",
+   "name": "GroupPushToggleRow",
+   "file": "src/app/(app)/(modals)/settings/notifications.tsx",
+   "category": "screen-lokal",
+   "lines": 26,
+   "startLine": 33,
+   "exported": false,
+   "isDefault": false,
+   "props": [
+    "groupId",
+    "userId",
+    "label"
+   ],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Spinner"
+   ],
+   "children": [
+    "View",
+    "Spinner",
+    "SettingsToggleRow"
+   ],
+   "classTokens": [
+    "min-h-touch-comfortable",
+    "items-center",
+    "justify-center"
+   ],
+   "description": "Zeile: group push toggle row (nutzt Spinner)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 132
+  },
+  {
+   "id": "src/app/(app)/(modals)/settings/notifications.tsx#SettingsNotificationsScreen",
+   "name": "SettingsNotificationsScreen",
+   "file": "src/app/(app)/(modals)/settings/notifications.tsx",
+   "category": "screen",
+   "lines": 72,
+   "startLine": 60,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "Button"
+   ],
+   "children": [
+    "View",
+    "ScrollView",
+    "Text",
+    "Button",
+    "SettingsGroup",
+    "GroupPushToggleRow",
+    "SettingsBackBar"
+   ],
+   "classTokens": [
+    "flex-1",
+    "px-4",
+    "pt-4",
+    "mb-4",
+    "gap-3",
+    "GLASS_TILE_CLASSNAME",
+    "p-4",
+    "text-text-primary",
+    "text-sm",
+    "text-text-secondary"
+   ],
+   "description": "Komponente: settings notifications screen (nutzt Text, Button)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 132
+  },
+  {
+   "id": "src/app/(app)/(modals)/settings/streaming-services.tsx#SettingsStreamingServicesScreen",
+   "name": "SettingsStreamingServicesScreen",
+   "file": "src/app/(app)/(modals)/settings/streaming-services.tsx",
+   "category": "screen",
+   "lines": 117,
+   "startLine": 43,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "LoadingArea",
+    "Text",
+    "TextInput"
+   ],
+   "children": [
+    "View",
+    "LoadingArea",
+    "Text",
+    "TextInput",
+    "ScrollView",
+    "Pressable",
+    "Image",
+    "SettingsBackBar"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4",
+    "rounded-lg",
+    "GLASS_INSET_EDGE",
+    "bg-black/35",
+    "px-3",
+    "py-2",
+    "text-text-primary",
+    "flex-row",
+    "gap-3",
+    "rounded-xl",
+    "border",
+    "p-2",
+    "pr-3",
+    "selected",
+    "CHIP_ACTIVE_CLASSNAME",
+    "CHIP_INACTIVE_CLASSNAME",
+    "h-10",
+    "w-10",
+    "bg-bg-glass-strong",
+    "shrink"
+   ],
+   "description": "Komponente: settings streaming services screen (nutzt LoadingArea, Text, TextInput)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 160
+  },
+  {
+   "id": "src/app/(app)/(modals)/settings.tsx#SettingsScreen",
+   "name": "SettingsScreen",
+   "file": "src/app/(app)/(modals)/settings.tsx",
+   "category": "screen",
+   "lines": 304,
+   "startLine": 94,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "KeyboardAwareScrollView",
+    "Text",
+    "IconButton",
+    "Select",
+    "SettingsRow",
+    "Button",
+    "Sheet",
+    "TextInput",
+    "ConfirmDialog"
+   ],
+   "children": [
+    "View",
+    "KeyboardAwareScrollView",
+    "SettingsGroup",
+    "Text",
+    "IconButton",
+    "Select",
+    "SettingsRow",
+    "DataSourceAttributions",
+    "Button",
+    "Sheet",
+    "TextInput",
+    "ConfirmDialog"
+   ],
+   "classTokens": [
+    "flex-1",
+    "min-h-12",
+    "flex-row",
+    "items-center",
+    "gap-3",
+    "px-4",
+    "py-2",
+    "gap-0.5",
+    "text-sm",
+    "text-text-secondary",
+    "text-base",
+    "text-text-primary",
+    "py-3",
+    "gap-2",
+    "w-full",
+    "text-center",
+    "text-xs",
+    "GLASS_INPUT_CLASSNAME",
+    "text-danger",
+    "rounded-lg",
+    "GLASS_INSET_EDGE",
+    "bg-black/35",
+    "px-3"
+   ],
+   "description": "Komponente: settings screen (nutzt KeyboardAwareScrollView, Text, IconButton)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 398
+  },
+  {
+   "id": "src/app/(app)/(modals)/similar/[tmdbId].tsx#SimilarMoviesScreen",
+   "name": "SimilarMoviesScreen",
+   "file": "src/app/(app)/(modals)/similar/[tmdbId].tsx",
+   "category": "screen",
+   "lines": 115,
+   "startLine": 35,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Text",
+    "LoadingArea"
+   ],
+   "children": [
+    "View",
+    "Text",
+    "LoadingArea",
+    "MovieGrid"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "pt-4"
+   ],
+   "description": "M6 part 2b: \"Ähnliche Filme\" (similar movies, sourced from Trakt's related-movies endpoint via the tmdb-proxy) sub-view screen.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 150
+  },
+  {
+   "id": "src/app/(app)/(tabs)/_layout.tsx#TabsLayout",
+   "name": "TabsLayout",
+   "file": "src/app/(app)/(tabs)/_layout.tsx",
+   "category": "layout",
+   "lines": 63,
+   "startLine": 79,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Icon"
+   ],
+   "children": [
+    "Redirect",
+    "TabSwitchContext.Provider",
+    "TabSwipeView",
+    "Tabs",
+    "Tabs.Screen",
+    "Icon"
+   ],
+   "classTokens": [],
+   "description": "The main app shell's tab bar.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 142
+  },
+  {
+   "id": "src/app/(app)/(tabs)/tagebuch.tsx#TagebuchScreen",
+   "name": "TagebuchScreen",
+   "file": "src/app/(app)/(tabs)/tagebuch.tsx",
+   "category": "screen",
+   "lines": 93,
+   "startLine": 24,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "Spinner",
+    "EmptyState"
+   ],
+   "children": [
+    "SafeAreaView",
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "TagebuchScopeSwitch",
+    "TagebuchFilterPanel",
+    "View",
+    "Spinner",
+    "EmptyState",
+    "TagebuchEntryList",
+    "EntryFilterFlyout"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-6",
+    "text-center",
+    "text-text-primary",
+    "mt-2",
+    "text-text-secondary",
+    "PANEL_LIST_OVERLAP_CLASSNAME"
+   ],
+   "description": "Tagebuch (diary) tab (M5 part 2).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 117
+  },
+  {
+   "id": "src/app/(app)/(tabs)/tracker.tsx#TrackerScreen",
+   "name": "TrackerScreen",
+   "file": "src/app/(app)/(tabs)/tracker.tsx",
+   "category": "screen",
+   "lines": 239,
+   "startLine": 50,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "PanelShadow",
+    "Glass",
+    "TextInput",
+    "IconButton",
+    "EmptyState",
+    "FadeInItem"
+   ],
+   "children": [
+    "SafeAreaView",
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "View",
+    "PanelShadow",
+    "Glass",
+    "TextInput",
+    "IconButton",
+    "EmptyState",
+    "ScrollView",
+    "FadeInItem",
+    "Pressable",
+    "TrackerEntrySheet",
+    "PaymentModal"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "z-10",
+    "mx-4",
+    "mt-3",
+    "flex-row",
+    "gap-3",
+    "p-3",
+    "GLASS_SEARCH_INPUT_CLASSNAME",
+    "PANEL_LIST_OVERLAP_CLASSNAME",
+    "px-3",
+    "pb-1",
+    "pt-3",
+    "border-b",
+    "border-glass-border",
+    "pb-2",
+    "text-sm",
+    "text-text-secondary",
+    "w-24",
+    "w-28",
+    "text-right",
+    "entryIndex",
+    "searchedEntries.length",
+    "py-3",
+    "TABLE_TITLE_CELL",
+    "pr-2",
+    "font-sans-semibold",
+    "TABLE_DATE_CELL"
+   ],
+   "description": "M8: the Bezahl-Tracker screen (third tab).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 289
+  },
+  {
+   "id": "src/app/(app)/(tabs)/watchlist.tsx#WatchlistScreen",
+   "name": "WatchlistScreen",
+   "file": "src/app/(app)/(tabs)/watchlist.tsx",
+   "category": "screen",
+   "lines": 96,
+   "startLine": 24,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "Spinner",
+    "EmptyState"
+   ],
+   "children": [
+    "SafeAreaView",
+    "AppHeader",
+    "LoadingArea",
+    "Text",
+    "WatchlistFilterPanel",
+    "View",
+    "Spinner",
+    "EmptyState",
+    "WatchlistEntryList",
+    "EntryFilterFlyout"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-4",
+    "text-center",
+    "text-danger",
+    "px-8",
+    "mt-2",
+    "text-text-secondary",
+    "PANEL_LIST_OVERLAP_CLASSNAME"
+   ],
+   "description": "Watchlist tab (M5 part 2).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 120
+  },
+  {
+   "id": "src/app/(app)/_layout.tsx#AppLayout",
+   "name": "AppLayout",
+   "file": "src/app/(app)/_layout.tsx",
+   "category": "layout",
+   "lines": 11,
+   "startLine": 25,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "ActiveGroupThemeProvider",
+    "ThemedStack"
+   ],
+   "classTokens": [],
+   "description": "Authenticated, in-a-group route group (M3 navigation shell).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 52
+  },
+  {
+   "id": "src/app/(app)/_layout.tsx#ThemedStack",
+   "name": "ThemedStack",
+   "file": "src/app/(app)/_layout.tsx",
+   "category": "layout",
+   "lines": 14,
+   "startLine": 38,
+   "exported": false,
+   "isDefault": false,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 1
+   },
+   "status": "ok",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "ThemeProvider",
+    "Stack",
+    "Stack.Screen"
+   ],
+   "classTokens": [],
+   "description": "Stack inside the group theme: the navigation theme's `primary` follows the group accent.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 52
+  },
+  {
+   "id": "src/app/(auth)/_layout.tsx#AuthLayout",
+   "name": "AuthLayout",
+   "file": "src/app/(auth)/_layout.tsx",
+   "category": "layout",
+   "lines": 9,
+   "startLine": 9,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "Stack",
+    "Stack.Screen"
+   ],
+   "classTokens": [],
+   "description": "Unauthenticated route group (M3 navigation shell).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 18
+  },
+  {
+   "id": "src/app/(auth)/forgot-password.tsx#ForgotPasswordScreen",
+   "name": "ForgotPasswordScreen",
+   "file": "src/app/(auth)/forgot-password.tsx",
+   "category": "screen",
+   "lines": 102,
+   "startLine": 24,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "TextInput"
+   ],
+   "children": [
+    "KeyboardAvoidingView",
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "TextInput"
+   ],
+   "classTokens": [
+    "flex-1",
+    "justify-center",
+    "px-6",
+    "gap-4",
+    "p-5",
+    "font-title",
+    "text-2xl",
+    "text-text-primary",
+    "text-base",
+    "text-text-secondary",
+    "GLASS_INPUT_CLASSNAME",
+    "text-sm",
+    "text-danger"
+   ],
+   "description": "\"Passwort vergessen?\" (ADR 0004: Supabase's built-in recovery mail).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 126
+  },
+  {
+   "id": "src/app/(auth)/login.tsx#LoginScreen",
+   "name": "LoginScreen",
+   "file": "src/app/(auth)/login.tsx",
+   "category": "screen",
+   "lines": 135,
+   "startLine": 35,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Brand",
+    "Glass",
+    "Text",
+    "TextInput",
+    "Button"
+   ],
+   "children": [
+    "KeyboardAvoidingView",
+    "Brand",
+    "Glass",
+    "Text",
+    "TextInput",
+    "Button",
+    "Link",
+    "Pressable"
+   ],
+   "classTokens": [
+    "flex-1",
+    "justify-center",
+    "px-6",
+    "gap-3",
+    "p-5",
+    "text-sm",
+    "text-text-secondary",
+    "GLASS_INPUT_CLASSNAME",
+    "text-danger",
+    "min-h-touch-comfortable",
+    "items-center",
+    "text-center",
+    "text-base",
+    "text-accent-light"
+   ],
+   "description": "Real M3 Login screen content.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 170
+  },
+  {
+   "id": "src/app/(auth)/register.tsx#RegisterScreen",
+   "name": "RegisterScreen",
+   "file": "src/app/(auth)/register.tsx",
+   "category": "screen",
+   "lines": 207,
+   "startLine": 50,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "TextInput"
+   ],
+   "children": [
+    "View",
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "KeyboardAvoidingView",
+    "TextInput"
+   ],
+   "classTokens": [
+    "flex-1",
+    "justify-center",
+    "px-6",
+    "items-stretch",
+    "gap-4",
+    "p-5",
+    "text-center",
+    "font-title",
+    "text-2xl",
+    "text-text-primary",
+    "text-base",
+    "text-text-secondary",
+    "gap-1",
+    "text-sm",
+    "INPUT_CLASSNAME",
+    "text-danger",
+    "text-xs",
+    "text-accent",
+    "underline"
+   ],
+   "description": "Real M3 Register screen content (per ADR 0004).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 257
+  },
+  {
+   "id": "src/app/(onboarding)/_layout.tsx#OnboardingLayout",
+   "name": "OnboardingLayout",
+   "file": "src/app/(onboarding)/_layout.tsx",
+   "category": "layout",
+   "lines": 7,
+   "startLine": 9,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "Stack",
+    "Stack.Screen"
+   ],
+   "classTokens": [],
+   "description": "Onboarding route group (M3 navigation shell): shown to an authenticated user with zero Watch-Group memberships (ADR 0003 — \"create or join a group\" is a required app state, not optional).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 16
+  },
+  {
+   "id": "src/app/(onboarding)/create-or-join-group.tsx#CreateOrJoinGroupScreen",
+   "name": "CreateOrJoinGroupScreen",
+   "file": "src/app/(onboarding)/create-or-join-group.tsx",
+   "category": "screen",
+   "lines": 241,
+   "startLine": 80,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Brand",
+    "Text",
+    "Card",
+    "Icon",
+    "TextInput",
+    "Button"
+   ],
+   "children": [
+    "SafeAreaView",
+    "Brand",
+    "Text",
+    "View",
+    "Card",
+    "Icon",
+    "TextInput",
+    "Pressable",
+    "Button"
+   ],
+   "classTokens": [
+    "flex-1",
+    "px-6",
+    "py-8",
+    "mb-6",
+    "text-center",
+    "font-title",
+    "text-2xl",
+    "text-text-primary",
+    "gap-4",
+    "items-center",
+    "gap-2",
+    "p-5",
+    "text-xl",
+    "text-text-secondary",
+    "GLASS_INPUT_CLASSNAME",
+    "flex-row",
+    "flex-wrap",
+    "gap-3",
+    "h-touch-comfortable",
+    "w-touch-comfortable",
+    "justify-center",
+    "absolute",
+    "-right-1",
+    "-top-1",
+    "text-sm",
+    "text-danger"
+   ],
+   "description": "Komponente: create or join group screen (nutzt Brand, Text, Card)",
+   "descriptionSource": "abgeleitet aus Name/Aufbau",
+   "fileLines": 321
+  },
+  {
+   "id": "src/app/_layout.tsx#RootLayout",
+   "name": "RootLayout",
+   "file": "src/app/_layout.tsx",
+   "category": "layout",
+   "lines": 76,
+   "startLine": 65,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "AppBackground",
+    "OfflineBanner",
+    "ToastHost"
+   ],
+   "children": [
+    "PersistQueryClientProvider",
+    "ThemeProvider",
+    "ParallaxProvider",
+    "View",
+    "AppBackground",
+    "StatusBar",
+    "AnimatedSplashOverlay",
+    "OfflineBanner",
+    "Stack",
+    "Stack.Screen",
+    "ToastHost"
+   ],
+   "classTokens": [
+    "flex-1",
+    "bg-bg-primary"
+   ],
+   "description": "Root layout (M3 navigation shell).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 141
+  },
+  {
+   "id": "src/app/auth/callback.tsx#AuthCallbackScreen",
+   "name": "AuthCallbackScreen",
+   "file": "src/app/auth/callback.tsx",
+   "category": "screen",
+   "lines": 181,
+   "startLine": 42,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Spinner",
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "TextInput"
+   ],
+   "children": [
+    "KeyboardAvoidingView",
+    "Spinner",
+    "Brand",
+    "Glass",
+    "Text",
+    "Button",
+    "TextInput"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "px-6",
+    "gap-4",
+    "p-5",
+    "text-center",
+    "text-base",
+    "text-danger",
+    "font-title",
+    "text-2xl",
+    "text-text-primary",
+    "GLASS_INPUT_CLASSNAME",
+    "text-sm"
+   ],
+   "description": "Deep-link target `watchcrew://auth/callback` for Supabase Auth emails (public route: lives outside the (auth)/(app) groups, so no auth gate bounces a signed-in recovery session away before the password is set).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 223
+  },
+  {
+   "id": "src/app/index.tsx#Index",
+   "name": "Index",
+   "file": "src/app/index.tsx",
+   "category": "screen",
+   "lines": 22,
+   "startLine": 22,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [],
+   "children": [
+    "Redirect"
+   ],
+   "classTokens": [],
+   "description": "The app's initial route.",
+   "descriptionSource": "Kommentar",
+   "fileLines": 44
+  },
+  {
+   "id": "src/app/join/[token].tsx#JoinTokenScreen",
+   "name": "JoinTokenScreen",
+   "file": "src/app/join/[token].tsx",
+   "category": "screen",
+   "lines": 76,
+   "startLine": 30,
+   "exported": true,
+   "isDefault": true,
+   "props": [],
+   "usage": {
+    "src": 0,
+    "tests": 0,
+    "self": 0
+   },
+   "status": "route",
+   "topUsers": [],
+   "usesPrimitives": [
+    "Brand",
+    "Text",
+    "Button",
+    "Spinner"
+   ],
+   "children": [
+    "SafeAreaView",
+    "Brand",
+    "Text",
+    "Button",
+    "Spinner"
+   ],
+   "classTokens": [
+    "flex-1",
+    "items-center",
+    "justify-center",
+    "gap-4",
+    "px-6",
+    "text-center",
+    "text-danger"
+   ],
+   "description": "Deep-link target for `watchcrew://join/<invite_token>` (invite link built in group-settings.tsx).",
+   "descriptionSource": "Kommentar",
+   "fileLines": 106
+  }
+ ],
+ "similarPairs": [
+  {
+   "a": "src/app/(app)/(modals)/filmography/actor/[personId].tsx#ActorFilmographyScreen",
+   "b": "src/app/(app)/(modals)/filmography/director/[personId].tsx#DirectorFilmographyScreen",
+   "aName": "ActorFilmographyScreen",
+   "bName": "DirectorFilmographyScreen",
+   "score": 1,
+   "props": null,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(app)/(modals)/filmography/actor/[personId].tsx#ActorFilmographyScreen",
+   "b": "src/app/(app)/(modals)/similar/[tmdbId].tsx#SimilarMoviesScreen",
+   "aName": "ActorFilmographyScreen",
+   "bName": "SimilarMoviesScreen",
+   "score": 1,
+   "props": null,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(app)/(modals)/filmography/director/[personId].tsx#DirectorFilmographyScreen",
+   "b": "src/app/(app)/(modals)/similar/[tmdbId].tsx#SimilarMoviesScreen",
+   "aName": "DirectorFilmographyScreen",
+   "bName": "SimilarMoviesScreen",
+   "score": 1,
+   "props": null,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(app)/(modals)/filmography/actor/[personId].tsx#ActorFilmographyScreen",
+   "b": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx#StudioFilmographyScreen",
+   "aName": "ActorFilmographyScreen",
+   "bName": "StudioFilmographyScreen",
+   "score": 0.84,
+   "props": null,
+   "children": 0.8,
+   "classes": 0.88
+  },
+  {
+   "a": "src/app/(app)/(modals)/filmography/director/[personId].tsx#DirectorFilmographyScreen",
+   "b": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx#StudioFilmographyScreen",
+   "aName": "DirectorFilmographyScreen",
+   "bName": "StudioFilmographyScreen",
+   "score": 0.84,
+   "props": null,
+   "children": 0.8,
+   "classes": 0.88
+  },
+  {
+   "a": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx#StudioFilmographyScreen",
+   "b": "src/app/(app)/(modals)/similar/[tmdbId].tsx#SimilarMoviesScreen",
+   "aName": "StudioFilmographyScreen",
+   "bName": "SimilarMoviesScreen",
+   "score": 0.84,
+   "props": null,
+   "children": 0.8,
+   "classes": 0.88
+  },
+  {
+   "a": "src/components/BackSwipeView.tsx#BackSwipeView",
+   "b": "src/components/TabSwipeView.tsx#TabSwipeView",
+   "aName": "BackSwipeView",
+   "bName": "TabSwipeView",
+   "score": 0.83,
+   "props": 0.5,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(auth)/forgot-password.tsx#ForgotPasswordScreen",
+   "b": "src/app/auth/callback.tsx#AuthCallbackScreen",
+   "aName": "ForgotPasswordScreen",
+   "bName": "AuthCallbackScreen",
+   "score": 0.83,
+   "props": null,
+   "children": 0.86,
+   "classes": 0.8
+  },
+  {
+   "a": "src/app/(app)/(modals)/collection/[collectionId].tsx#CollectionScreen",
+   "b": "src/app/(app)/(modals)/filmography/actor/[personId].tsx#ActorFilmographyScreen",
+   "aName": "CollectionScreen",
+   "bName": "ActorFilmographyScreen",
+   "score": 0.82,
+   "props": null,
+   "children": 1,
+   "classes": 0.64
+  },
+  {
+   "a": "src/app/(app)/(modals)/collection/[collectionId].tsx#CollectionScreen",
+   "b": "src/app/(app)/(modals)/filmography/director/[personId].tsx#DirectorFilmographyScreen",
+   "aName": "CollectionScreen",
+   "bName": "DirectorFilmographyScreen",
+   "score": 0.82,
+   "props": null,
+   "children": 1,
+   "classes": 0.64
+  },
+  {
+   "a": "src/app/(app)/(modals)/collection/[collectionId].tsx#CollectionScreen",
+   "b": "src/app/(app)/(modals)/similar/[tmdbId].tsx#SimilarMoviesScreen",
+   "aName": "CollectionScreen",
+   "bName": "SimilarMoviesScreen",
+   "score": 0.82,
+   "props": null,
+   "children": 1,
+   "classes": 0.64
+  },
+  {
+   "a": "src/components/entries/EntryFilterPills.tsx#GenrePills",
+   "b": "src/components/entries/EntryFilterPills.tsx#ProviderCategoryPills",
+   "aName": "GenrePills",
+   "bName": "ProviderCategoryPills",
+   "score": 0.78,
+   "props": 0.33,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/components/tagebuch/TagebuchFilterPanel.tsx#TagebuchFilterPanel",
+   "b": "src/components/watchlist/WatchlistFilterPanel.tsx#WatchlistFilterPanel",
+   "aName": "TagebuchFilterPanel",
+   "bName": "WatchlistFilterPanel",
+   "score": 0.78,
+   "props": 0.5,
+   "children": 0.83,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(auth)/forgot-password.tsx#ForgotPasswordScreen",
+   "b": "src/app/(auth)/register.tsx#RegisterScreen",
+   "aName": "ForgotPasswordScreen",
+   "bName": "RegisterScreen",
+   "score": 0.73,
+   "props": null,
+   "children": 0.86,
+   "classes": 0.6
+  },
+  {
+   "a": "src/components/entries/EntryFilterPills.tsx#YearPills",
+   "b": "src/components/entries/EntryFilterPills.tsx#ProviderCategoryPills",
+   "aName": "YearPills",
+   "bName": "ProviderCategoryPills",
+   "score": 0.71,
+   "props": 0.14,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/components/entries/EntryFilterPills.tsx#GenrePills",
+   "b": "src/components/entries/EntryFilterPills.tsx#YearPills",
+   "aName": "GenrePills",
+   "bName": "YearPills",
+   "score": 0.7,
+   "props": 0.11,
+   "children": 1,
+   "classes": 1
+  },
+  {
+   "a": "src/app/(app)/(modals)/collection/[collectionId].tsx#CollectionScreen",
+   "b": "src/app/(app)/(modals)/filmography/studio/[companyId].tsx#StudioFilmographyScreen",
+   "aName": "CollectionScreen",
+   "bName": "StudioFilmographyScreen",
+   "score": 0.69,
+   "props": null,
+   "children": 0.8,
+   "classes": 0.58
+  },
+  {
+   "a": "src/app/(auth)/register.tsx#RegisterScreen",
+   "b": "src/app/auth/callback.tsx#AuthCallbackScreen",
+   "aName": "RegisterScreen",
+   "bName": "AuthCallbackScreen",
+   "score": 0.66,
+   "props": null,
+   "children": 0.75,
+   "classes": 0.57
+  },
+  {
+   "a": "src/app/(auth)/forgot-password.tsx#ForgotPasswordScreen",
+   "b": "src/app/(auth)/login.tsx#LoginScreen",
+   "aName": "ForgotPasswordScreen",
+   "bName": "LoginScreen",
+   "score": 0.63,
+   "props": null,
+   "children": 0.75,
+   "classes": 0.5
+  },
+  {
+   "a": "src/app/(auth)/login.tsx#LoginScreen",
+   "b": "src/app/auth/callback.tsx#AuthCallbackScreen",
+   "aName": "LoginScreen",
+   "bName": "AuthCallbackScreen",
+   "score": 0.61,
+   "props": null,
+   "children": 0.67,
+   "classes": 0.56
+  }
+ ],
+ "clusters": {
+  "*Provider": [
+   "src/components/ActiveGroupThemeProvider.tsx#ActiveGroupThemeProvider",
+   "src/components/GroupThemeProvider.tsx#GroupThemeProvider",
+   "src/components/ParallaxProvider.tsx#ParallaxProvider"
+  ],
+  "Group*": [
+   "src/components/GroupThemeProvider.tsx#GroupThemeProvider",
+   "src/app/(app)/(modals)/group-settings.tsx#GroupSettingsScreen",
+   "src/app/(app)/(modals)/settings/notifications.tsx#GroupPushToggleRow"
+  ],
+  "*Bar": [
+   "src/components/entries/EntryFilterBar.tsx#EntryFilterBar",
+   "src/components/movie/MovieDetailActionsBar.tsx#MovieDetailActionsBar",
+   "src/components/settings/SettingsBackBar.tsx#SettingsBackBar"
+  ],
+  "*Section": [
+   "src/components/entries/EntryFilterFlyout.tsx#Section",
+   "src/components/movie/MovieDetailRatingsSection.tsx#MovieDetailRatingsSection",
+   "src/components/movie/MovieDetailSection.tsx#MovieDetailSection"
+  ],
+  "*Row": [
+   "src/components/entries/EntrySortRow.tsx#EntrySortRow",
+   "src/components/movie/MemberRatingRow.tsx#MemberRatingRow",
+   "src/components/movie/MovieDetailCastRow.tsx#MovieDetailCastRow",
+   "src/components/movie/MovieDetailMetaRow.tsx#MovieDetailMetaRow",
+   "src/components/movie/MovieDetailTitleRow.tsx#MovieDetailTitleRow",
+   "src/components/settings/SettingsColumnsRow.tsx#SettingsColumnsRow",
+   "src/components/settings/SettingsToggleRow.tsx#SettingsToggleRow",
+   "src/components/tagebuch/TagebuchEntryList.tsx#GridRow",
+   "src/components/tagebuch/TagebuchEntryList.tsx#ListRow",
+   "src/components/tagebuch/TagebuchEntryList.tsx#CardRow",
+   "src/components/ui/GlassTable.tsx#GlassTableRow",
+   "src/components/ui/SettingsRow.tsx#SettingsRow",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListRow",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistPosterRow",
+   "src/app/(app)/(modals)/settings/notifications.tsx#GroupPushToggleRow"
+  ],
+  "*Card": [
+   "src/components/movie/DiaryEntryCard.tsx#DiaryEntryCard",
+   "src/components/movie/WatchlistPosterCard.tsx#WatchlistPosterCard",
+   "src/components/ui/Card.tsx#Card"
+  ],
+  "Diary*": [
+   "src/components/movie/DiaryEntryCard.tsx#DiaryEntryCard",
+   "src/components/movie/DiaryPosterTile.tsx#DiaryPosterTile"
+  ],
+  "*Tile": [
+   "src/components/movie/DiaryPosterTile.tsx#DiaryPosterTile"
+  ],
+  "*Button": [
+   "src/components/movie/MovieDetailActionsBar.tsx#ActionIconButton",
+   "src/components/ui/Button.tsx#Button",
+   "src/components/ui/IconButton.tsx#IconButton",
+   "src/components/ui/SettingsButton.tsx#SettingsButton",
+   "src/components/ui/TabBarButton.tsx#TabBarButton"
+  ],
+  "MovieDetail*": [
+   "src/components/movie/MovieDetailActionsBar.tsx#MovieDetailActionsBar",
+   "src/components/movie/MovieDetailCastRow.tsx#MovieDetailDirector",
+   "src/components/movie/MovieDetailCastRow.tsx#MovieDetailCastRow",
+   "src/components/movie/MovieDetailDescription.tsx#MovieDetailDescription",
+   "src/components/movie/MovieDetailGenreTags.tsx#MovieDetailGenreTags",
+   "src/components/movie/MovieDetailMetaRow.tsx#MovieDetailMetaRow",
+   "src/components/movie/MovieDetailOwnRating.tsx#MovieDetailOwnRating",
+   "src/components/movie/MovieDetailPosterTrailer.tsx#MovieDetailPosterTrailer",
+   "src/components/movie/MovieDetailProviders.tsx#MovieDetailProviders",
+   "src/components/movie/MovieDetailRatingsSection.tsx#MovieDetailRatingsSection",
+   "src/components/movie/MovieDetailReleaseDateSheet.tsx#MovieDetailReleaseDateSheet",
+   "src/components/movie/MovieDetailSection.tsx#MovieDetailSection",
+   "src/components/movie/MovieDetailTitleRow.tsx#MovieDetailTitleRow",
+   "src/app/(app)/(modals)/movie/[tmdbId].tsx#MovieDetailScreen"
+  ],
+  "*Sheet": [
+   "src/components/movie/MovieDetailReleaseDateSheet.tsx#MovieDetailReleaseDateSheet",
+   "src/components/movie/TrackerEntrySheet.tsx#TrackerEntrySheet",
+   "src/components/settings/CreateGroupSheet.tsx#CreateGroupSheet",
+   "src/components/ui/Sheet.tsx#Sheet"
+  ],
+  "*Grid": [
+   "src/components/movie/MovieGrid.tsx#MovieGrid"
+  ],
+  "*Modal": [
+   "src/components/movie/PaymentModal.tsx#PaymentModal"
+  ],
+  "*Badge": [
+   "src/components/movie/PosterCornerBadge.tsx#PosterCornerBadge",
+   "src/components/movie/PosterTmdbBadge.tsx#PosterTmdbBadge",
+   "src/components/ui/TmdbBadge.tsx#TmdbBadge"
+  ],
+  "Poster*": [
+   "src/components/movie/PosterCornerBadge.tsx#PosterCornerBadge",
+   "src/components/movie/PosterTmdbBadge.tsx#PosterTmdbBadge"
+  ],
+  "*Dialog": [
+   "src/components/movie/RatingDialog.tsx#RatingDialog",
+   "src/components/ui/ConfirmDialog.tsx#ConfirmDialog"
+  ],
+  "Tracker*": [
+   "src/components/movie/TrackerEntrySheet.tsx#TrackerEntrySheet",
+   "src/app/(app)/(tabs)/tracker.tsx#TrackerScreen"
+  ],
+  "Watchlist*": [
+   "src/components/movie/WatchlistPosterCard.tsx#WatchlistPosterCard",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListRow",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListHeader",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistPosterRow",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistEntryList",
+   "src/components/watchlist/WatchlistFilterPanel.tsx#WatchlistFilterPanel",
+   "src/app/(app)/(tabs)/watchlist.tsx#WatchlistScreen"
+  ],
+  "Settings*": [
+   "src/components/settings/SettingsBackBar.tsx#SettingsBackBar",
+   "src/components/settings/SettingsColumnsRow.tsx#SettingsColumnsRow",
+   "src/components/settings/SettingsGroup.tsx#SettingsGroup",
+   "src/components/settings/SettingsToggleRow.tsx#SettingsToggleRow",
+   "src/components/ui/SettingsButton.tsx#SettingsButton",
+   "src/components/ui/SettingsRow.tsx#SettingsRow",
+   "src/app/(app)/(modals)/settings/display.tsx#SettingsDisplayScreen",
+   "src/app/(app)/(modals)/settings/notifications.tsx#SettingsNotificationsScreen",
+   "src/app/(app)/(modals)/settings/streaming-services.tsx#SettingsStreamingServicesScreen",
+   "src/app/(app)/(modals)/settings.tsx#SettingsScreen"
+  ],
+  "*Header": [
+   "src/components/tagebuch/TagebuchEntryList.tsx#ListHeader",
+   "src/components/ui/AppHeader.tsx#AppHeader",
+   "src/components/ui/GlassTable.tsx#GlassTableHeader",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistListHeader"
+  ],
+  "*List": [
+   "src/components/tagebuch/TagebuchEntryList.tsx#TagebuchEntryList",
+   "src/components/watchlist/WatchlistEntryList.tsx#WatchlistEntryList"
+  ],
+  "Tagebuch*": [
+   "src/components/tagebuch/TagebuchEntryList.tsx#TagebuchEntryList",
+   "src/components/tagebuch/TagebuchFilterPanel.tsx#TagebuchFilterPanel",
+   "src/components/tagebuch/TagebuchScopeSwitch.tsx#TagebuchScopeSwitch",
+   "src/app/(app)/(tabs)/tagebuch.tsx#TagebuchScreen"
+  ],
+  "*Panel": [
+   "src/components/tagebuch/TagebuchFilterPanel.tsx#TagebuchFilterPanel",
+   "src/components/ui/CollapsibleFilterPanel.tsx#CollapsibleFilterPanel",
+   "src/components/watchlist/WatchlistFilterPanel.tsx#WatchlistFilterPanel"
+  ],
+  "*Field": [
+   "src/components/ui/DateField.tsx#DateField"
+  ],
+  "*Toggle": [
+   "src/components/ui/ViewModeToggle.tsx#ViewModeToggle"
+  ],
+  "Add*": [
+   "src/app/(app)/(modals)/add-movie.tsx#AddMovieScreen"
+  ]
+ },
+ "tagebuchWatchlistPairs": [
+  {
+   "tagebuch": "src/components/tagebuch/TagebuchEntryList.tsx#TagebuchEntryList",
+   "watchlist": "src/components/watchlist/WatchlistEntryList.tsx#WatchlistEntryList"
+  },
+  {
+   "tagebuch": "src/components/tagebuch/TagebuchFilterPanel.tsx#TagebuchFilterPanel",
+   "watchlist": "src/components/watchlist/WatchlistFilterPanel.tsx#WatchlistFilterPanel"
+  },
+  {
+   "tagebuch": "src/app/(app)/(tabs)/tagebuch.tsx#TagebuchScreen",
+   "watchlist": "src/app/(app)/(tabs)/watchlist.tsx#WatchlistScreen"
+  }
+ ],
+ "bigFiles": [
+  {
+   "file": "src/app/(app)/(modals)/group-settings.tsx",
+   "lines": 617
+  },
+  {
+   "file": "src/app/(app)/(modals)/movie/[tmdbId].tsx",
+   "lines": 588
+  },
+  {
+   "file": "src/components/movie/RatingDialog.tsx",
+   "lines": 561
+  },
+  {
+   "file": "src/app/(app)/(modals)/add-movie.tsx",
+   "lines": 399
+  },
+  {
+   "file": "src/app/(app)/(modals)/settings.tsx",
+   "lines": 398
+  },
+  {
+   "file": "src/components/tagebuch/TagebuchEntryList.tsx",
+   "lines": 395
+  },
+  {
+   "file": "src/components/movie/MovieDetailActionsBar.tsx",
+   "lines": 380
+  },
+  {
+   "file": "src/components/ui/Select.tsx",
+   "lines": 343
+  },
+  {
+   "file": "src/app/(onboarding)/create-or-join-group.tsx",
+   "lines": 321
+  }
+ ]
+}

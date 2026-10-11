@@ -55,15 +55,15 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Tracker-Zeile bearbeiten (Flyout, Bezahlt-von-Dropdown `tracker-entry-sheet-payer-select`, Speichern; Dropdown nur per Jest, im Flow unveraendert gespeichert) | `tracker-payment` | tracker | `07`, `09`, `10` | covered |
 | Tracker-Zahlung löschen (Bestätigung gezeigt/abgebrochen, dann echt, nur selbst angelegte Zahlung) | `tracker-payment` | tracker | `08`, `11` | covered |
 | Tracker-Suche | `tracker-payment` | tracker | `02-tracker-search-no-match` | covered |
-| Film hinzufügen (Suche, Quick-Add, Detail "Zur Watchlist") | `watchlist-add-remove`, `movie-detail` | watchlist, add-movie, movie-detail | `watchlist-add-remove/02..05` | covered |
+| Film hinzufügen (Suche, Tipp aufs Poster, Detail "Zur Watchlist") | `watchlist-add-remove`, `movie-detail` | watchlist, add-movie, movie-detail | `watchlist-add-remove/02..05` | covered |
 | Film suchen nach Regisseur/Besetzung/Studio | `add-movie-modes` | add-movie | `05..11` | covered |
-| Duplikat-Warnung "Film bereits gesehen" | `add-movie-modes` | add-movie | `04-add-movie-duplicate-warning` | covered (abgebrochen) |
+| Poster in Suchergebnissen oeffnet Detail (kein Quick-Add-Plus mehr) | `add-movie-modes` | add-movie | `04-add-movie-poster-opens-detail` | covered |
 | Manuelles Erscheinungsdatum (Add-Movie-Sheet) | - | - | - | not automatable (braucht Film ohne TMDB-Datum, datenabhängig) |
 | Streaming-Filter-Toggle im Add-Movie | `add-movie-modes` | add-movie | `03-add-movie-streaming-filter-toggled` | covered |
 | Film bewerten (Sterne, Like, Speichern) | `rating-cycle` | rating | `02..05` | covered |
 | Bewertung bearbeiten | `rating-cycle`, `movie-detail-full` | rating, movie-detail | `rating-cycle/06..08`, `movie-detail-full/08` | covered |
 | Bewertung zurücksetzen (nur Entwurf; Speichern fragt per ConfirmDialog 'Bewertung wirklich löschen?', abgebrochen) | `rating-cycle` | rating | `09-edit-dialog-after-reset`, `09b-rating-delete-confirm` | partial (Bestätigung gezeigt, abgebrochen, destruktiv; ADR 0014: Bestätigen würde die Zeile in user_movie_ratings löschen = in ALLEN Gruppen ungesehen) |
-| "Direkt bewerten" | - | - | `watchlist-add-remove/03` (Button sichtbar) | partial (Button sichtbar, nicht ausgelöst, würde Film dauerhaft hinzufügen+bewerten) |
+| "Direkt bewerten" | - | - | `watchlist-add-remove/03` (Button sichtbar) | partial (Button sichtbar, nicht ausgelöst; öffnet nur das Bewertungs-Flyout, Film + Bewertung erst bei Speichern, würde Film dauerhaft hinzufügen+bewerten) |
 | Film von Watchlist löschen (Bestätigung + echt, nur selbst angelegt) | `watchlist-add-remove` | watchlist, add-movie | `07-delete-confirm`, `08-watchlist-after-remove` | covered |
 | Film aus Tagebuch löschen | `movie-detail-full` | movie-detail | `09-detail-delete-confirm` | partial (Dialog gezeigt/abgebrochen, Löschen zerstört echte Daten) |
 | Watchlist-Eintrag bearbeiten (Tipp auf Datumszeile `movie-detail-release-date-edit` -> Erscheinungsdatum-Sheet) | `watchlist-add-remove` | watchlist, add-movie | `05b-watchlist-detail-date-edit`, `06-watchlist-entry-edit-sheet` | partial (Sheet gezeigt, nicht gespeichert) |
@@ -76,7 +76,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Tagebuch-Scope "Mein Tagebuch" bzw. "Gruppe" | `tagebuch-filter-sort` | tagebuch | `05`, `06` | covered (Scope-Umschaltung; "Mein Tagebuch" = alle Gruppen inkl. Filme ohne Gruppen-Eintrag: nur Jest, kein Flow mit Zweitgruppe/gruppenlosem Film, offen) |
 | Listenkopf statisch (keine Sortierung per Spaltenkopf, Sortierung nur ueber das Panel; Tabelle = ein Container wie Tracker) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `24` / `29` | covered |
 | Ansichtsmodi Karten/Grid/Liste | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `22,23,26` / `27,28,31` | covered |
-| Detail: Bewertungen auf/zuklappen, Beschreibung, Besetzung | `movie-detail-full` | movie-detail | `02..04`, `07` | covered |
+| Detail: einheitliche linksbuendige Abschnitte (`movie-detail-section-*`: Info, Bewertung, Details, Regie, Besetzung, Streaming; Trennlinien nur zwischen sichtbaren), Gruppen-Bewertungen auf/zuklappen, Beschreibung, Besetzung | `movie-detail-full` | movie-detail | `02..04`, `07` | covered |
 | Detail: Anbieter-Liste (Provider) | `movie-detail-full` | movie-detail | `05`, `06` | partial (nur wenn Film Anbieter hat, sonst bedingt übersprungen) |
 | Detail: Trailer abspielen | - | - | - | not automatable (WebView/YouTube, externer Inhalt) |
 | Ähnliche Filme / Filmreihe / Regisseur- und Schauspieler-Filmografie | `movie-detail-full`, `movie-collection` | movie-detail | siehe oben | covered |

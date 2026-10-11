@@ -2,6 +2,13 @@
 
 Stand: 2026-10-10. Reine Code-Analyse (nichts gemessen, nichts geaendert). Alle Aussagen zu Gewinn sind Schaetzungen aus dem Code, keine Profiler-Messung.
 
+> **HISTORISCH (Stand 2026-10-11):** Die Abschnitte 1-7 und die Nachtraege 1-3 beschreiben den Zustand VOR den Fixes (BlurView pro Karte, `windowSize` 21, Tagebuch nicht virtualisiert). Ist-Zustand:
+> - Flache Karten/Flaechen `bg-bg-card-flat` statt Blur; `GlassBlur`, `cheap`-Prop und `expo-blur` sind aus dem Code entfernt (Nachtrag 4).
+> - Grid-Ansicht 3 oder 4 Spalten (Einstellung `gridColumns`), Listenschluessel enthaelt die Spaltenzahl (`-c${gridColumns}`).
+> - Virtualisierung beider Entry-Listen (`VIRTUALIZATION` in `TagebuchEntryList.tsx`/`WatchlistEntryList.tsx`): `windowSize` 9, `maxToRenderPerBatch` 6, `updateCellsBatchingPeriod` 30, `removeClippedSubviews` false.
+> - Remount-Key bei Sortierwechsel/Spaltenwechsel (`useSortRemountKey`), Memo-Rows mit `propsEqualIgnoringIndex`.
+> - Die im Text genannten Werte 11/8/25 ms sind ueberholt (jetzt 9/6/30).
+
 ## Ausgangslage (Stack)
 
 - RN 0.86.3 (New Architecture ist ab RN 0.82 Pflicht, Hermes Standard), Expo 57, React 19.2, Reanimated 4.5.1 + react-native-worklets 0.10.1, gesture-handler 2.32, expo-image 57, expo-blur 57. Kein FlashList/LegendList/Pager-View installiert (`package.json`).

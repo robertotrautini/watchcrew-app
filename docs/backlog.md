@@ -22,4 +22,5 @@ Status: zurückgestellt am 2026-10-11 ("machen wir irgendwann anders, jetzt zu v
 - [ ] **Phase 3 Legacy-Import:** auf neue Rating-Struktur umstellen; Push-Trigger vorher abschalten.
 - [ ] **Phase 4:** alte `ratings`-Tabelle entfernen.
 - [ ] **Tracker:** Spaltensortierung.
-- [ ] **`expo-blur` entfernen:** im nächsten nativen Build (Modul steckt noch im Dev-Client-Binary).
+- [x] **`expo-blur` entfernen:** im Code/`package.json` erledigt (2026-10-11); das native Modul steckt noch im bestehenden Dev-Client-Binary und verschwindet erst mit dem nächsten nativen Build (ungefährlich).
+- [x] **`expo-web-browser` entfernen:** ungenutzt, aus `package.json` entfernt (2026-10-11); natives Modul bleibt bis zum nächsten nativen Build im Binary.

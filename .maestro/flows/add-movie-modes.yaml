@@ -2,7 +2,7 @@ appId: com.watchcrew.app
 ---
 # add-movie-modes.yaml — Add-Movie modal: Film / Regisseur / Besetzung /
 # Studio modes, searches, result grids, change-person, streaming filter
-# toggle, duplicate-warning sheet (cancelled). Adds nothing.
+# toggle, tap on poster -> detail (add button there, not pressed). Adds nothing.
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-watchlist.yaml
 - extendedWaitUntil:
@@ -35,18 +35,21 @@ appId: com.watchcrew.app
 - takeScreenshot: 03-add-movie-streaming-filter-toggled
 - tapOn:
     id: "add-movie-streaming-filter-toggle"
-# Duplicate warning: Inception is already rated -> quick-add asks first.
-- tapOn:
+# Adding only via detail: tap poster (Inception) -> detail, no quick-add on the grid.
+- assertNotVisible:
     id: "add-movie-film-grid-add-27205"
+- tapOn:
+    id: "add-movie-film-grid-item-27205"
 - extendedWaitUntil:
     visible:
-      id: "add-movie-duplicate-cancel-button"
+      id: "movie-detail-title"
+    timeout: 15000
+- takeScreenshot: 04-add-movie-poster-opens-detail
+- back
+- extendedWaitUntil:
+    visible:
+      id: "add-movie-film-grid"
     timeout: 10000
-- takeScreenshot: 04-add-movie-duplicate-warning
-- tapOn:
-    id: "add-movie-duplicate-cancel-button"
-- assertNotVisible:
-    id: "add-movie-duplicate-cancel-button"
 
 # --- Regisseur ---
 - tapOn:
