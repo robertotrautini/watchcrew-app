@@ -74,17 +74,17 @@ describe("MovieDetailActionsBar", () => {
     const { getByTestId } = await render(
       <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
     );
-    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("bg-danger/15");
-    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("border-danger/30");
+    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("bg-btn-danger");
+    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("border-btn-danger-border");
     expect(getByTestId("movie-detail-action-aehnliche").props.className).not.toContain("danger");
   });
 
-  it("all tiles sit on the opaque black, delete is tinted on top of it", async () => {
+  it("all tiles sit on the opaque field fill, delete is tinted on top of it", async () => {
     const { getByTestId } = await render(
       <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
     );
-    expect(getByTestId("movie-detail-action-aehnliche").props.className).toContain("bg-black");
-    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("bg-black");
+    expect(getByTestId("movie-detail-action-aehnliche").props.className).toContain("bg-field");
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("bg-field");
   });
 
   it("renders only the actions passed in the actions prop, in order", async () => {
@@ -288,6 +288,6 @@ describe("MovieDetailActionsBar delete tile touch handling", () => {
     const tint = getByTestId("movie-detail-action-loeschen-tint");
     expect(tint.props.pointerEvents).toBe("none");
     expect(tint.props.className).not.toContain("active:");
-    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("active:bg-danger/25");
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("active:bg-btn-danger-pressed");
   });
 });

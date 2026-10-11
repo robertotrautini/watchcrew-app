@@ -86,7 +86,7 @@ export function DateField({
         disabled={!editable}
         onPress={handlePress}
         className={cn(
-          `rounded-lg ${SURFACE_EDGE} bg-white/10 px-4 py-3`,
+          `min-h-touch-comfortable justify-center rounded-lg ${SURFACE_EDGE} bg-field px-4 py-3`,
           !editable && "opacity-50",
           className,
         )}

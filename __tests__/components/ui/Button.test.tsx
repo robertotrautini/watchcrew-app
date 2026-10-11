@@ -70,10 +70,10 @@ describe("Button", () => {
     );
 
     const { className } = getByTestId("save-button").props;
-    expect(className).toContain("bg-white/10");
+    expect(className).toContain("bg-field");
     expect(className).toContain("border-surface-border");
     expect(className).not.toMatch(/border-[tb]-/);
-    expect(className).toContain("active:bg-white/20");
+    expect(className).toContain("active:bg-btn-neutral-pressed");
   });
 
   it("ghost variant has no fill and transparent border", async () => {
@@ -102,8 +102,8 @@ describe("Button", () => {
     );
 
     const { className } = getByTestId("save-button").props;
-    expect(className).toContain("bg-danger/15");
-    expect(className).toContain("border-danger/30");
+    expect(className).toContain("bg-btn-danger");
+    expect(className).toContain("border-btn-danger-border");
     expect(className).not.toMatch(/border-[tb]-/);
   });
 
@@ -129,7 +129,7 @@ describe("Button", () => {
     const { className } = getByTestId("save-button").props;
     expect(className).not.toContain("opacity-50");
     expect(className).not.toContain("bg-accent");
-    expect(className).toContain("bg-white/10");
+    expect(className).toContain("bg-field");
     expect(getByText("Save").props.className).toContain("text-white/35");
   });
 
@@ -175,5 +175,18 @@ describe("Button", () => {
     );
     await rerender(<Button label="X" testID="b" onPress={() => {}} />);
     expect(queryByTestId("b-icon")).toBeNull();
+  });
+
+  it("standard variants and disabled states carry no alpha fill (opaque controls)", async () => {
+    for (const variant of ["primary", "secondary", "danger"] as const) {
+      for (const disabled of [false, true]) {
+        const { getByTestId, unmount } = await render(
+          <Button label="x" onPress={() => {}} variant={variant} disabled={disabled} testID="b" />,
+        );
+        const bg = (getByTestId("b").props.className as string).split(" ").filter((c) => /(^|:)bg-/.test(c));
+        expect(bg.join(" ")).not.toMatch(/\//);
+        await unmount();
+      }
+    }
   });
 });

@@ -30,7 +30,7 @@ describe("MovieDetailGenreTags unified chip style", () => {
     const { MovieDetailGenreTags } = require("@/components/movie/MovieDetailGenreTags");
     const view = await render(<MovieDetailGenreTags genres={["Drama"]} />);
     const cls = view.getByTestId("movie-detail-genre-tag-0").props.className as string;
-    expect(cls).toContain("bg-chip-base");
+    expect(cls).toContain("bg-accent-soft");
     expect(cls).toContain("border-accent-a55");
     expect(cls).toContain("rounded-lg");
   });

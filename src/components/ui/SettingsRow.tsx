@@ -48,7 +48,7 @@ export function SettingsRow({
       onPress={onPress}
       className={cn(
         "min-h-touch-comfortable flex-row items-center gap-3 px-4 py-3",
-        danger && `bg-danger/15 ${DANGER_PRESSED_CLASSNAME}`,
+        danger && `bg-btn-danger ${DANGER_PRESSED_CLASSNAME}`,
         className,
       )}
     >

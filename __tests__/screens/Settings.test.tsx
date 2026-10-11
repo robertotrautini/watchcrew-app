@@ -333,7 +333,7 @@ describe("SettingsScreen", () => {
     const { getByTestId, queryByText } = await render(<SettingsScreen />);
     expect(queryByText("Konto")).toBeNull();
     const del = getByTestId("settings-section-delete-account");
-    expect(del.props.className).toContain("bg-danger/15");
+    expect(del.props.className).toContain("bg-btn-danger");
     const ids: string[] = [];
     (function walk(node: any) {
       if (!node) return;

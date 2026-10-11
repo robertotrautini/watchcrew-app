@@ -45,4 +45,11 @@ describe("SegmentedControl", () => {
     const r = await render(<SegmentedControl options={options} value={3} onChange={jest.fn()} />);
     expect(r.getByLabelText("3 Spalten").props.accessibilityRole).toBe("button");
   });
+
+  it("track uses the opaque field fill", async () => {
+    const r = await render(<SegmentedControl options={options} value={3} onChange={jest.fn()} testID="sc" />);
+    const cls = r.getByTestId("sc").props.className as string;
+    expect(cls).toContain("bg-field");
+    expect(cls).not.toMatch(/bg-[a-z]+\/\d+/);
+  });
 });

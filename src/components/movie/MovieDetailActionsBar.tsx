@@ -114,7 +114,7 @@ const ACTION_ICONS: Record<ActionButtonId, IconRole> = {
 const ACTION_ICON_COLOR = "#a8a8a8";
 
 // Fully opaque black (same as the bar surface behind them) so the tiles stand off from the content.
-const ACTION_TILE_CLASSNAME = `${SURFACE_TILE_CLASSNAME.replace("bg-card", "")} bg-black`;
+const ACTION_TILE_CLASSNAME = `${SURFACE_TILE_CLASSNAME}`;
 
 interface ActionIconButtonProps {
   id: ActionButtonId;
@@ -145,7 +145,7 @@ function ActionIconButton({
       onPress={onPress}
       className={`min-h-touch-comfortable ${widthClass} ${
         danger
-          ? `rounded-xl bg-black ${DANGER_PRESSED_CLASSNAME}`
+          ? `rounded-xl bg-field ${DANGER_PRESSED_CLASSNAME}`
           : ACTION_TILE_CLASSNAME
       }${loading ? " opacity-50" : ""}`}
     >

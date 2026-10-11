@@ -23,7 +23,7 @@ export function SettingsGroup({ title, testID, children }: SettingsGroupProps) {
   return (
     <View testID={testID} className="gap-2">
       {title ? <Text className="px-1 font-title text-base text-accent-light">{title}</Text> : null}
-      <Surface>
+      <Surface variant="field">
         {items.map((item, index) => (
           <View
             key={item.key ?? index}

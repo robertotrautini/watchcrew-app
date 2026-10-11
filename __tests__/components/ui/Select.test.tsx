@@ -201,3 +201,18 @@ describe("Select", () => {
     expect(queryByTestId("sel-search")).toBeNull();
   });
 });
+
+describe("Select opaque fill", () => {
+  it("trigger uses bg-field without alpha", async () => {
+    const r = await setup();
+    const cls = r.getByTestId("sel").props.className as string;
+    expect(cls).toContain("bg-field");
+    expect(cls).not.toMatch(/bg-[a-z-]+\/\d+/);
+  });
+
+  it("open list uses bg-field", async () => {
+    const r = await setup();
+    await fireEvent.press(r.getByTestId("sel"));
+    expect(r.getByTestId("sel-list").props.className).toContain("bg-field");
+  });
+});

@@ -56,8 +56,8 @@ export interface ButtonProps extends Omit<
  * fill + 1px red 30% border + `danger-text` label/icon. Reused by
  * SettingsRow (danger) and MovieDetailActionsBar.
  */
-export const DANGER_SURFACE_CLASSNAME = "bg-danger/15 border border-danger/30";
-export const DANGER_PRESSED_CLASSNAME = "active:bg-danger/25";
+export const DANGER_SURFACE_CLASSNAME = "bg-btn-danger border border-btn-danger-border";
+export const DANGER_PRESSED_CLASSNAME = "active:bg-btn-danger-pressed";
 export const DANGER_TEXT_CLASSNAME = "text-danger-text";
 export const DANGER_ICON_COLOR = DANGER_TEXT_COLOR;
 
@@ -73,16 +73,16 @@ export const DANGER_ICON_COLOR = DANGER_TEXT_COLOR;
  */
 const VARIANT_CONTAINER_CLASSES: Record<ButtonVariant, string> = {
   primary: "bg-accent border border-transparent active:bg-accent-light",
-  secondary: "bg-white/10 border border-surface-border active:bg-white/20",
+  secondary: "bg-field border border-surface-border active:bg-btn-neutral-pressed",
   ghost: "bg-transparent border border-transparent active:bg-white/10",
   danger: `${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`,
 };
 
 const VARIANT_DISABLED_CONTAINER_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-white/10 border border-surface-border",
-  secondary: "bg-white/5 border border-surface-border",
+  primary: "bg-field border border-surface-border",
+  secondary: "bg-field border border-surface-border",
   ghost: "bg-transparent border border-transparent",
-  danger: "bg-white/5 border border-surface-border",
+  danger: "bg-field border border-surface-border",
 };
 
 const VARIANT_TEXT_CLASSES: Record<ButtonVariant, string> = {

@@ -53,7 +53,7 @@ export function SegmentedControl<K extends string | number>({
     <View
       testID={testID}
       style={styles.outer}
-      className={cn("h-12 flex-row items-center gap-1 border border-surface-border bg-black/35 p-[3px]", className)}
+      className={cn("h-12 flex-row items-center gap-1 border border-surface-border bg-field p-[3px]", className)}
     >
       {options.map((option) => {
         const active = value === option.key;

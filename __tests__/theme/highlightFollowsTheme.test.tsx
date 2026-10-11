@@ -106,9 +106,9 @@ describe("class-token components resolve through theme variables (no static colo
       </GroupThemeProvider>,
     );
     expect(getByTestId("c").props.className).toContain("border-accent-a55");
-    expect(getByTestId("c-tint").props.className).toContain("bg-accent-a15");
+    expect(getByTestId("c").props.className).toContain("bg-accent-soft");
     expect(getByTestId("a").props.className).toContain("bg-accent");
-    expect(getByTestId("t-tint").props.className).toContain("bg-accent-a15");
+    expect(getByTestId("t").props.className).toContain("bg-accent-soft");
   });
 
   it("ViewModeToggle active segment uses bg-accent", async () => {

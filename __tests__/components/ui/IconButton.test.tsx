@@ -29,11 +29,11 @@ describe("IconButton", () => {
       );
       return getByTestId("ib").props.className as string;
     };
-    expect(await make("neutral")).toContain("bg-white/10");
+    expect(await make("neutral")).toContain("bg-field");
     expect(await make("accent")).toContain("bg-accent");
     const danger = await make("danger");
-    expect(danger).toContain("bg-danger/15");
-    expect(danger).toContain("border-danger/30");
+    expect(danger).toContain("bg-btn-danger");
+    expect(danger).toContain("border-btn-danger-border");
   });
 
   it("calls onPress, but not when disabled", async () => {

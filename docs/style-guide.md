@@ -26,12 +26,20 @@ Kurzreferenz. Quelle der Wahrheit fuer Tokens: `tailwind.config.js`; Komponenten
 | Funktion | Variante | Look |
 |---|---|---|
 | Hauptaktion (eine pro Screen) | `primary` | Akzent (Gold) gefuellt, dunkler Text |
-| Nebenaktion, Abbrechen | `secondary` | `bg-white/10` + `surface-border`, heller Text |
+| Nebenaktion, Abbrechen | `secondary` | `bg-field` + `surface-border`, heller Text |
 | Tertiaer / Icon im Header | `ghost` | keine Fuellung, keine Kante |
 | Zerstoerend (loeschen, verlassen, entfernen) | `danger` | siehe unten |
 | Nur Icon | `IconButton` (siehe "Icon-Buttons") | rund, 48dp |
 
 Chips (`Chip.tsx`) bleiben die eigene Auswahl-Komponente (Filter/Modi/Tags), `ViewModeToggle` = Segment in `surface-border` mit aktivem Primary-Segment; Pille 48 hoch, `p-[3px]`+1px Border = 4px Innenabstand ringsum, drei identische 40x40-Zellen mit `gap-1`, Icons mittig, Toolbar-Reihe `items-center`.
+
+## Felder und Flächen (opak, ein Wert)
+
+- **FIELD_FILL = `#0a0a0c`** (Token `field`, Klasse `bg-field`, Konstante `FIELD_FILL` in `src/lib/colors.ts`): gemessen am Dropdown-Trigger auf dem Pixel 6 Pro (rgb 10,10,12). Gilt fuer ALLE Bedien-Flaechen: Textfelder, Dropdown (Trigger + Liste), Buttons (neutral/secondary, disabled), Datums-Felder, Settings-Gruppen/-Zeilen, Mitglieder-Kapseln, Switch-Zeilen, View-Changer/SegmentedControl-Spur.
+- **Rahmen:** immer `border-surface-border` (rgba 0.12, 1 dp). Keine Akzent-/gelben Rahmen an Feldern, kein Farbwechsel bei Fokus.
+- **Textfelder:** ueberall `TextField` (`src/components/ui/TextField.tsx`); Varianten nur per Props `search`, `error`, `secure`, `multiline`; `className` nur fuer Platzierung (`flex-1`). Hoehe >= 48 dp, Platzhalter `PLACEHOLDER_COLOR`. Kein rohes `<TextInput>` (einzige Ausnahme: Suchfeld im geoeffneten Select-Overlay, sitzt in dessen Feld-Container).
+- **Buttons opak:** primary = Akzent, secondary/neutral = `bg-field` (gedrueckt `bg-btn-neutral-pressed`), danger = `bg-btn-danger` `#251111` (danger 15 % ueber field, gedrueckt `#381614`, Rahmen `#411815`), Chips inaktiv = `bg-accent-soft` (Akzent 15 % ueber field, pro Theme in `global.css`). Ghost bleibt transparent (Toast-Schliessen, Overlays).
+- **Regel:** keine Alpha-Fuellungen (`bg-x/NN`, `rgba`) bei Bedien-Elementen; Mischwerte als Hex vorberechnen. Alpha-Werte rendern auf dem Geraet teils schwarz. Panels/Sheets/Karten (`SURFACE_FILL`, schwarz) und Poster-Kacheln bleiben.
 
 ## Icon-Buttons
 

@@ -7,7 +7,7 @@ describe("SettingsRow", () => {
     const { getByTestId, getByText } = await render(
       <SettingsRow testID="row" icon="delete" label="Konto löschen" danger onPress={() => {}} />,
     );
-    expect(getByTestId("row").props.className).toContain("bg-danger/15");
+    expect(getByTestId("row").props.className).toContain("bg-btn-danger");
     expect(getByText("Konto löschen").props.className).toContain("text-danger-text");
   });
 
