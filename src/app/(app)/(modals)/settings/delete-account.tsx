@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { Button } from "@/components/ui/Button";
-import { Sheet } from "@/components/ui/Sheet";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { signOut } from "@/lib/auth";
 import { deleteOwnAccount } from "@/lib/deleteAccount";
 import { GLASS_INSET_EDGE } from "@/components/ui/Glass";
@@ -84,15 +84,20 @@ export default function SettingsDeleteAccountScreen() {
           onPress={openSheet}
         />
 
-        <Sheet
+        <ConfirmDialog
           visible={sheetVisible}
-          onClose={closeSheet}
+          testID="delete-account"
           title="Konto endgültig löschen"
+          confirmLabel="Endgültig löschen"
+          confirmDisabled={!isConfirmed}
+          loading={isDeleting}
+          onCancel={closeSheet}
+          onConfirm={handleConfirmDelete}
         >
           <View className="gap-3">
             <Text className="text-text-secondary">
-              Gib zur Bestätigung &quot;{CONFIRMATION_PHRASE}&quot; ein. Diese Aktion ist
-              endgültig.
+              Gib zur Bestätigung &quot;{CONFIRMATION_PHRASE}&quot; ein. Diese
+              Aktion ist endgültig.
             </Text>
             <TextInput
               testID="delete-account-confirm-input"
@@ -107,17 +112,8 @@ export default function SettingsDeleteAccountScreen() {
                 Konto konnte nicht gelöscht werden: {errorMessage}
               </Text>
             ) : null}
-            <Button
-              testID="delete-account-confirm-button"
-              variant="danger"
-              label="Endgültig löschen"
-              icon="delete"
-              disabled={!isConfirmed}
-              loading={isDeleting}
-              onPress={handleConfirmDelete}
-            />
           </View>
-        </Sheet>
+        </ConfirmDialog>
       </View>
       <SettingsBackBar />
     </View>

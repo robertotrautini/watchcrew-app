@@ -1,8 +1,9 @@
+import { IconButton } from "@/components/ui/IconButton";
 import Constants from "expo-constants";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Icon, type IconRole } from "@/components/ui/Icon";
+import { type IconRole } from "@/components/ui/Icon";
 import { View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
 
@@ -10,8 +11,6 @@ import { DataSourceAttributions } from "@/components/settings/DataSourceAttribut
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import {
   Button,
-  BUTTON_ICON_COLORS,
-  BUTTON_ICON_COLOR_DISABLED,
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
 import { GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
@@ -185,26 +184,15 @@ export default function SettingsScreen() {
                 placeholderTextColor="#888888"
                 className={`flex-1 ${GLASS_INPUT_CLASSNAME}`}
               />
-              <Button
+              <IconButton
                 testID="settings-display-name-save"
-                variant="primary"
-                iconOnly
+                icon="save"
+                variant="accent"
                 accessibilityLabel="Anzeigename speichern"
-                accessibilityRole="button"
                 disabled={!displayNameChanged}
                 loading={updateDisplayName.isPending}
                 onPress={handleSaveDisplayName}
-              >
-                <Icon
-                  name="save"
-                  size="M"
-                  color={
-                    displayNameChanged
-                      ? BUTTON_ICON_COLORS.primary
-                      : BUTTON_ICON_COLOR_DISABLED
-                  }
-                />
-              </Button>
+              />
             </View>
             {displayNameError ? (
               <Text

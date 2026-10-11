@@ -136,6 +136,16 @@ appId: com.watchcrew.app
 - tapOn:
     id: "rating-dialog-reset-button"
 - takeScreenshot: 09-edit-dialog-after-reset
+# Reset is only a draft: Speichern asks for confirmation (screenshot), both cancels delete nothing.
+- tapOn:
+    id: "rating-dialog-save-button"
+- extendedWaitUntil:
+    visible:
+      id: "rating-dialog-delete-dialog"
+    timeout: 5000
+- takeScreenshot: 09b-rating-delete-confirm
+- tapOn:
+    id: "rating-dialog-delete-cancel-button"
 - tapOn:
     id: "rating-dialog-cancel-button"
 - assertNotVisible:

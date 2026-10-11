@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
@@ -8,8 +9,9 @@ import { useSetReleaseDateOverride } from "@/hooks/useMovieDetailMutations";
 import { formatDateForInput } from "@/lib/ratingLogic";
 
 // "Eintrag bearbeiten" sheet of a watchlist entry (release date only). Opened
-// by tapping the date line in MovieDetailMetaRow; saves immediately on pick /
-// reset (null = back to the TMDB date) and closes itself.
+// by tapping the date line in MovieDetailMetaRow. Pick / reset only change a
+// local draft; "Speichern" persists it (reset = null = back to the TMDB date),
+// "Abbrechen" / closing discards it.
 
 export interface MovieDetailReleaseDateSheetProps {
   visible: boolean;
@@ -31,18 +33,32 @@ export function MovieDetailReleaseDateSheet({
   hasReleaseDateOverride = false,
 }: MovieDetailReleaseDateSheetProps) {
   const releaseDateMutation = useSetReleaseDateOverride();
+  const [draftDate, setDraftDate] = useState<string | null>(releaseDate);
+  const [resetDraft, setResetDraft] = useState(false);
 
-  function saveReleaseDate(nextReleaseDate: string | null) {
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
+    setDraftDate(releaseDate);
+    setResetDraft(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, watchlistEntryId]);
+
+  function handleSave() {
     if (!watchlistEntryId || !groupId) {
       return;
     }
     releaseDateMutation.mutate({
       watchlistEntryId,
       groupId,
-      releaseDate: nextReleaseDate,
+      releaseDate: resetDraft ? null : draftDate,
     });
     onClose();
   }
+
+  const dirty = resetDraft || draftDate !== releaseDate;
 
   return (
     <Sheet visible={visible} onClose={onClose} title="Eintrag bearbeiten">
@@ -50,20 +66,43 @@ export function MovieDetailReleaseDateSheet({
         <Text className="text-sm text-text-secondary">Erscheinungsdatum</Text>
         <DateField
           testID="movie-detail-release-date-field"
-          valueIso={releaseDate}
-          displayText={formatDateForInput(releaseDate)}
+          valueIso={resetDraft ? null : draftDate}
+          displayText={
+            resetDraft ? "TMDB-Datum" : formatDateForInput(draftDate)
+          }
           placeholder="Datum wählen"
-          onChangeIso={saveReleaseDate}
+          onChangeIso={(iso) => {
+            setResetDraft(false);
+            setDraftDate(iso);
+          }}
         />
-        {hasReleaseDateOverride ? (
+        {hasReleaseDateOverride && !resetDraft ? (
           <Button
             testID="movie-detail-release-date-reset"
             label="Auf TMDB-Datum zurücksetzen"
             icon="reset"
             variant="secondary"
-            onPress={() => saveReleaseDate(null)}
+            onPress={() => setResetDraft(true)}
           />
         ) : null}
+        <View className="flex-row gap-3">
+          <Button
+            testID="movie-detail-release-date-cancel-button"
+            label="Abbrechen"
+            icon="close"
+            variant="secondary"
+            className="flex-1"
+            onPress={onClose}
+          />
+          <Button
+            testID="movie-detail-release-date-save-button"
+            label="Speichern"
+            icon="save"
+            className="flex-1"
+            disabled={!dirty}
+            onPress={handleSave}
+          />
+        </View>
       </View>
     </Sheet>
   );

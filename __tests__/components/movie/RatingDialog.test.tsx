@@ -55,6 +55,11 @@ function makeMember(userId: string, displayName: string): GroupMemberRow {
   };
 }
 
+async function selectPayer(getByTestId: (id: string) => unknown, userId: string) {
+  await fireEvent.press(getByTestId("rating-dialog-payer-select") as never);
+  await fireEvent.press(getByTestId(`rating-dialog-payer-select-option-${userId}`) as never);
+}
+
 function baseProps(overrides: Partial<Parameters<typeof RatingDialog>[0]> = {}) {
   return {
     visible: true,
@@ -163,12 +168,10 @@ describe("RatingDialog", () => {
     it("checkbox rows and reset button reach 48dp", async () => {
       const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
       expect(getByTestId("rating-dialog-checkbox-unknown").props.className).toContain("min-h-touch-comfortable");
-      expect(getByTestId("rating-dialog-reset-button").props.hitSlop).toEqual({
-        top: 6,
-        bottom: 6,
-        left: 6,
-        right: 6,
-      });
+      const { className, hitSlop } = getByTestId("rating-dialog-reset-button").props;
+      expect(className).toContain("h-12");
+      expect(className).toContain("w-12");
+      expect(hitSlop).toBeUndefined();
     });
   });
 
@@ -191,7 +194,7 @@ describe("RatingDialog", () => {
       expect(getByTestId("rating-dialog-reset-button").props.accessibilityState.disabled).toBe(true);
     });
 
-    it("is enabled when there IS a real existing rating, and resets rating+like to 0/false on success", async () => {
+    it("is enabled when there IS a real existing rating; pressing it only marks a draft (no mutation, stars empty)", async () => {
       const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
       const { getByTestId } = await render(<RatingDialog {...baseProps({ ratings })} />);
 
@@ -199,17 +202,99 @@ describe("RatingDialog", () => {
 
       await fireEvent.press(getByTestId("rating-dialog-reset-button"));
 
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+      expect(getByTestId("star-rating-heart-icon").props.name).toBe("favorite-border");
+    });
+
+    it("reset + Abbrechen: nothing is deleted or saved", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const props = baseProps({ ratings });
+      const { getByTestId } = await render(<RatingDialog {...props} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await fireEvent.press(getByTestId("rating-dialog-cancel-button"));
+
+      expect(props.onClose).toHaveBeenCalled();
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+    });
+
+    it("reset + Speichern asks for confirmation first, then deletes exactly once", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const { getByTestId, getByText } = await render(
+        <RatingDialog {...baseProps({ ratings })} />,
+      );
+
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      expect(getByText("Bewertung wirklich löschen?")).toBeTruthy();
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+
+      await fireEvent.press(getByTestId("rating-dialog-delete-confirm-button"));
+
+      expect(mockResetMutate).toHaveBeenCalledTimes(1);
       expect(mockResetMutate).toHaveBeenCalledWith(
         { groupId: "group-1", ratingId: "r1" },
         expect.objectContaining({ onSuccess: expect.any(Function) }),
       );
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+    });
 
-      // Star rating visually resets to empty (rating=null) once the reset
-      // mutation's onSuccess fires -- simulate that callback.
-      const onSuccess = mockResetMutate.mock.calls[0][1].onSuccess;
-      await act(async () => onSuccess());
+    it("reset + Speichern + confirm-Abbrechen: nothing deleted, dialog stays open", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const props = baseProps({ ratings });
+      const { getByTestId, queryByTestId } = await render(<RatingDialog {...props} />);
 
-      expect(getByTestId("star-rating-heart-icon").props.name).toBe("favorite-border");
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+      await fireEvent.press(getByTestId("rating-dialog-delete-cancel-button"));
+
+      expect(queryByTestId("rating-dialog-delete-confirm-button")).toBeNull();
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(props.onClose).not.toHaveBeenCalled();
+    });
+
+    it("on successful delete: toast, onSaved and onClose", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const props = baseProps({ ratings, onSaved: jest.fn() });
+      const { getByTestId } = await render(<RatingDialog {...props} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+      await fireEvent.press(getByTestId("rating-dialog-delete-confirm-button"));
+      await act(async () => mockResetMutate.mock.calls[0][1].onSuccess());
+
+      expect(props.onSaved).toHaveBeenCalled();
+      expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it("re-rating after reset cancels the delete draft: Speichern saves, no delete", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const { getByTestId, getAllByLabelText } = await render(<RatingDialog {...baseProps({ ratings })} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await fireEvent.press(getAllByLabelText(/Stern/)[1]);
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).toHaveBeenCalledTimes(1);
+    });
+
+    it("delete draft is discarded when the dialog is reopened", async () => {
+      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const props = baseProps({ ratings });
+      const { getByTestId, rerender } = await render(<RatingDialog {...props} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-reset-button"));
+      await rerender(<RatingDialog {...props} visible={false} />);
+      await rerender(<RatingDialog {...props} visible />);
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      expect(mockResetMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -279,19 +364,19 @@ describe("RatingDialog", () => {
       );
     });
 
-    it("selecting a payer chip includes a payment write with that member and the existing paid_at passed through", async () => {
+    it("selecting a payer includes a payment write with that member and the existing paid_at prefilled and passed through", async () => {
       const { getByTestId } = await render(
         <RatingDialog {...baseProps({ paidAt: "2026-08-01T00:00:00.000Z" })} />,
       );
 
-      await fireEvent.press(getByTestId("rating-dialog-payer-chip-user-2"));
+      await selectPayer(getByTestId, "user-2");
       await fireEvent.press(getByTestId("rating-dialog-save-button"));
 
       expect(mockSaveMutate).toHaveBeenCalledWith(
         expect.objectContaining({
           payment: {
             paidByMemberId: "user-2",
-            explicitPaidAt: null,
+            explicitPaidAt: "2026-08-01",
             existingPaidAt: "2026-08-01T00:00:00.000Z",
           },
         }),
@@ -302,7 +387,7 @@ describe("RatingDialog", () => {
     it("an explicitly-entered 'Bezahlt am' date is passed through as explicitPaidAt", async () => {
       const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
 
-      await fireEvent.press(getByTestId("rating-dialog-payer-chip-user-2"));
+      await selectPayer(getByTestId, "user-2");
       await fireEvent.press(getByTestId("rating-dialog-payment-date-input"));
       await fireEvent(
         getByTestId("rating-dialog-payment-date-input-picker"),
@@ -320,16 +405,54 @@ describe("RatingDialog", () => {
       );
     });
 
-    it("tapping an already-selected payer chip again deselects it and removes the payment write", async () => {
+    it("pre-selects the existing payer in the dropdown and shows the existing paid_at as TT.MM.JJJJ", async () => {
       const { getByTestId } = await render(
-        <RatingDialog {...baseProps({ paidByMemberId: "user-2" })} />,
+        <RatingDialog
+          {...baseProps({ paidByMemberId: "user-2", paidAt: "2026-08-01T00:00:00.000Z" })}
+        />,
       );
 
-      await fireEvent.press(getByTestId("rating-dialog-payer-chip-user-2"));
+      expect(getByTestId("rating-dialog-payer-select")).toBeTruthy();
+      expect(getByTestId("rating-dialog-payment-date-input")).toHaveTextContent("01.08.2026");
+    });
+
+    it("shows the existing paid_at even when it equals the seen_at date", async () => {
+      const { getByTestId } = await render(
+        <RatingDialog
+          {...baseProps({
+            paidByMemberId: "user-2",
+            paidAt: "2026-09-10",
+            ratings: [makeRating({ seen_at: "2026-09-10", rated_at: "2026-09-10T10:00:00Z" })],
+          })}
+        />,
+      );
+
+      expect(getByTestId("rating-dialog-payment-date-input")).toHaveTextContent("10.09.2026");
+    });
+
+    it("leaves 'Bezahlt am' empty when no payment exists", async () => {
+      const { getByTestId } = await render(<RatingDialog {...baseProps()} />);
+      await selectPayer(getByTestId, "user-2");
+
+      expect(getByTestId("rating-dialog-payment-date-input")).not.toHaveTextContent(/\d{2}\.\d{2}\.\d{4}/);
+    });
+
+    it("saving with an existing payment passes the same payer and date (update, no new payment)", async () => {
+      const { getByTestId } = await render(
+        <RatingDialog
+          {...baseProps({ paidByMemberId: "user-2", paidAt: "2026-08-01T00:00:00.000Z" })}
+        />,
+      );
       await fireEvent.press(getByTestId("rating-dialog-save-button"));
 
       expect(mockSaveMutate).toHaveBeenCalledWith(
-        expect.objectContaining({ payment: undefined }),
+        expect.objectContaining({
+          payment: expect.objectContaining({
+            paidByMemberId: "user-2",
+            explicitPaidAt: "2026-08-01",
+            existingPaidAt: "2026-08-01T00:00:00.000Z",
+          }),
+        }),
         expect.anything(),
       );
     });
@@ -403,7 +526,7 @@ describe("RatingDialog with the tracker feature flag off", () => {
     const { queryByTestId, queryByText } = await render(<RatingDialog {...baseProps()} />);
 
     expect(queryByText("Wer hat bezahlt?")).toBeNull();
-    expect(queryByTestId("rating-dialog-payer-chip-user-2")).toBeNull();
+    expect(queryByTestId("rating-dialog-payer-select")).toBeNull();
     expect(queryByTestId("rating-dialog-payment-date-input")).toBeNull();
   });
 

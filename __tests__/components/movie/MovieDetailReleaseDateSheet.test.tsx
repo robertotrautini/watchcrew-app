@@ -48,9 +48,7 @@ describe("MovieDetailReleaseDateSheet", () => {
     expect(queryByTestId("movie-detail-release-date-field")).toBeNull();
   });
 
-  it("picking a date saves it as ISO for the entry and closes the sheet", async () => {
-    const { utils, onClose } = renderSheet();
-    const { getByTestId } = await utils;
+  async function pickDate(getByTestId: (id: string) => any) {
     await fireEvent.press(getByTestId("movie-detail-release-date-field"));
     await fireEvent(
       getByTestId("movie-detail-release-date-field-picker"),
@@ -58,6 +56,22 @@ describe("MovieDetailReleaseDateSheet", () => {
       { type: "set" },
       new Date(2027, 2, 5),
     );
+  }
+
+  it("picking a date only changes the draft: nothing saved, sheet stays open", async () => {
+    const { utils, onClose } = renderSheet();
+    const { getByTestId, getByText } = await utils;
+    await pickDate(getByTestId);
+    expect(getByText("05.03.2027")).toBeTruthy();
+    expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("Speichern saves the picked date as ISO and closes the sheet", async () => {
+    const { utils, onClose } = renderSheet();
+    const { getByTestId } = await utils;
+    await pickDate(getByTestId);
+    await fireEvent.press(getByTestId("movie-detail-release-date-save-button"));
     expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
       watchlistEntryId: "entry-1",
       groupId: "group-1",
@@ -66,7 +80,16 @@ describe("MovieDetailReleaseDateSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("offers reset to the TMDB date only when an override exists, saving null", async () => {
+  it("Abbrechen discards the draft: nothing saved, sheet closes", async () => {
+    const { utils, onClose } = renderSheet();
+    const { getByTestId } = await utils;
+    await pickDate(getByTestId);
+    await fireEvent.press(getByTestId("movie-detail-release-date-cancel-button"));
+    expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("offers reset to the TMDB date only when an override exists; reset is a draft until Speichern, then saves null", async () => {
     const first = renderSheet();
     const a = await first.utils;
     expect(a.queryByTestId("movie-detail-release-date-reset")).toBeNull();
@@ -75,6 +98,9 @@ describe("MovieDetailReleaseDateSheet", () => {
     const { utils, onClose } = renderSheet({ hasReleaseDateOverride: true });
     const { getByTestId } = await utils;
     await fireEvent.press(getByTestId("movie-detail-release-date-reset"));
+    expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+    await fireEvent.press(getByTestId("movie-detail-release-date-save-button"));
     expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
       watchlistEntryId: "entry-1",
       groupId: "group-1",
@@ -83,18 +109,21 @@ describe("MovieDetailReleaseDateSheet", () => {
     expect(onClose).toHaveBeenCalled();
   });
 
-  it("works with an empty initial date: placeholder shown, picking saves, no reset button", async () => {
+  it("reset + Abbrechen saves nothing", async () => {
+    const { utils } = renderSheet({ hasReleaseDateOverride: true });
+    const { getByTestId } = await utils;
+    await fireEvent.press(getByTestId("movie-detail-release-date-reset"));
+    await fireEvent.press(getByTestId("movie-detail-release-date-cancel-button"));
+    expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
+  });
+
+  it("works with an empty initial date: placeholder shown, no reset button, picking + Speichern saves", async () => {
     const { utils, onClose } = renderSheet({ releaseDate: null });
     const { getByTestId, getByText, queryByTestId } = await utils;
     expect(getByText("Datum wählen")).toBeTruthy();
     expect(queryByTestId("movie-detail-release-date-reset")).toBeNull();
-    await fireEvent.press(getByTestId("movie-detail-release-date-field"));
-    await fireEvent(
-      getByTestId("movie-detail-release-date-field-picker"),
-      "change",
-      { type: "set" },
-      new Date(2027, 2, 5),
-    );
+    await pickDate(getByTestId);
+    await fireEvent.press(getByTestId("movie-detail-release-date-save-button"));
     expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
       watchlistEntryId: "entry-1",
       groupId: "group-1",
@@ -106,13 +135,8 @@ describe("MovieDetailReleaseDateSheet", () => {
   it("does not save without a watchlist entry/group", async () => {
     const { utils } = renderSheet({ watchlistEntryId: undefined });
     const { getByTestId } = await utils;
-    await fireEvent.press(getByTestId("movie-detail-release-date-field"));
-    await fireEvent(
-      getByTestId("movie-detail-release-date-field-picker"),
-      "change",
-      { type: "set" },
-      new Date(2027, 2, 5),
-    );
+    await pickDate(getByTestId);
+    await fireEvent.press(getByTestId("movie-detail-release-date-save-button"));
     expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
   });
 });
