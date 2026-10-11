@@ -2,6 +2,7 @@ import { fireEvent, render } from "@testing-library/react-native";
 
 import {
   GenrePills,
+  PillRow,
   ProviderCategoryPills,
   YearPills,
 } from "@/components/entries/EntryFilterPills";
@@ -84,5 +85,25 @@ describe("ProviderCategoryPills", () => {
     expect(r.getByTestId("x-provider-category-flatrate").props.accessibilityState).toMatchObject({ selected: false });
     await fireEvent.press(r.getByTestId("x-provider-category-flatrate"));
     expect(onToggle).toHaveBeenCalledWith("flatrate");
+  });
+});
+
+describe("PillRow", () => {
+  it("renders one chip per pill with its testID, state and press handler", async () => {
+    const onPress = jest.fn();
+    const r = await render(
+      <PillRow
+        testID="row"
+        pills={[
+          { key: "a", testID: "pill-a", label: "A", active: true, onPress },
+          { key: "b", testID: "pill-b", label: "B", active: false, onPress: jest.fn() },
+        ]}
+      />,
+    );
+    expect(r.getByTestId("row")).toBeTruthy();
+    expect(r.getByTestId("pill-a").props.accessibilityState).toMatchObject({ selected: true });
+    expect(r.getByTestId("pill-b").props.accessibilityState).toMatchObject({ selected: false });
+    await fireEvent.press(r.getByTestId("pill-a"));
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });

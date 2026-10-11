@@ -12,6 +12,25 @@ import type { YearFilterValue } from "@/lib/watchlistTypes";
 // Pill rows of the Tagebuch/Watchlist filter panel. `testIDPrefix` is
 // "tagebuch" or "watchlist" (Maestro relies on the resulting testIDs).
 
+export interface PillItem {
+  key: string;
+  testID: string;
+  label: string;
+  active: boolean;
+  onPress: () => void;
+}
+
+/** Shared wrapping row of filter chips; the three pill groups below only map their data to it. */
+export function PillRow({ testID, pills }: { testID: string; pills: PillItem[] }) {
+  return (
+    <View className="flex-row flex-wrap gap-2" testID={testID}>
+      {pills.map(({ key, ...chip }) => (
+        <Chip key={key} {...chip} />
+      ))}
+    </View>
+  );
+}
+
 export function GenrePills({
   testIDPrefix,
   genreIds,
@@ -26,20 +45,16 @@ export function GenrePills({
   onToggle: (genreId: string) => void;
 }) {
   return (
-    <View
-      className="flex-row flex-wrap gap-2"
+    <PillRow
       testID={`${testIDPrefix}-genre-pills`}
-    >
-      {genreIds.map((genreId) => (
-        <Chip
-          key={genreId}
-          testID={`${testIDPrefix}-genre-pill-${genreId}`}
-          active={selectedGenreIds.includes(genreId)}
-          onPress={() => onToggle(genreId)}
-          label={genreDisplayLabel(genreId, genreNamesById.get(genreId))}
-        />
-      ))}
-    </View>
+      pills={genreIds.map((genreId) => ({
+        key: genreId,
+        testID: `${testIDPrefix}-genre-pill-${genreId}`,
+        active: selectedGenreIds.includes(genreId),
+        onPress: () => onToggle(genreId),
+        label: genreDisplayLabel(genreId, genreNamesById.get(genreId)),
+      }))}
+    />
   );
 }
 
@@ -57,29 +72,18 @@ export function YearPills({
   showNoDate?: boolean;
   onSelect: (year: YearFilterValue) => void;
 }) {
+  const values: YearFilterValue[] = showNoDate ? [...years, "no_date"] : years;
   return (
-    <View
-      className="flex-row flex-wrap gap-2"
+    <PillRow
       testID={`${testIDPrefix}-year-pills`}
-    >
-      {years.map((year) => (
-        <Chip
-          key={year}
-          testID={`${testIDPrefix}-year-pill-${year}`}
-          active={selectedYear === year}
-          onPress={() => onSelect(year)}
-          label={String(year)}
-        />
-      ))}
-      {showNoDate ? (
-        <Chip
-          testID={`${testIDPrefix}-year-pill-no_date`}
-          active={selectedYear === "no_date"}
-          onPress={() => onSelect("no_date")}
-          label="Kein Datum"
-        />
-      ) : null}
-    </View>
+      pills={values.map((year) => ({
+        key: String(year),
+        testID: `${testIDPrefix}-year-pill-${year}`,
+        active: selectedYear === year,
+        onPress: () => onSelect(year),
+        label: year === "no_date" ? "Kein Datum" : String(year),
+      }))}
+    />
   );
 }
 
@@ -93,19 +97,15 @@ export function ProviderCategoryPills({
   onToggle: (category: ProviderCategory) => void;
 }) {
   return (
-    <View
-      className="flex-row flex-wrap gap-2"
+    <PillRow
       testID={`${testIDPrefix}-provider-categories`}
-    >
-      {ALL_PROVIDER_CATEGORIES.map((category) => (
-        <Chip
-          key={category}
-          testID={`${testIDPrefix}-provider-category-${category}`}
-          active={active.includes(category)}
-          onPress={() => onToggle(category)}
-          label={PROVIDER_CATEGORY_LABELS[category]}
-        />
-      ))}
-    </View>
+      pills={ALL_PROVIDER_CATEGORIES.map((category) => ({
+        key: category,
+        testID: `${testIDPrefix}-provider-category-${category}`,
+        active: active.includes(category),
+        onPress: () => onToggle(category),
+        label: PROVIDER_CATEGORY_LABELS[category],
+      }))}
+    />
   );
 }

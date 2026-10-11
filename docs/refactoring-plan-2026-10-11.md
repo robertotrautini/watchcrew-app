@@ -106,6 +106,8 @@ Aufwand: S < 0,5 Tag, M ca. 1 Tag, L > 1 Tag. Testrisiko: Hoch/Mittel/Niedrig. "
 
 ### P-B Filter-Panels und Pillen auf gemeinsame Basis
 
+**Status: erledigt 2026-10-11.** Ähnlichkeit per Code-Lektüre geprüft: Panels real zu ca. 90 % gleich, Unterschiede nur Props (`tab`, Prefix, Sortfelder, aktive Filter, ViewMode-Button-testIDs, `actions`); `hasActiveFilters` beider Berechnungen ist äquivalent (`hasActiveListFilters` ruft intern `activeFilterKeys`), daher eine Berechnung. Neu `entries/EntryFilterPanel.tsx` (103 Z.); `TagebuchFilterPanel` (60) und `WatchlistFilterPanel` (74) gelöscht, Screens rufen das Panel direkt (Watchlist übergibt den Hinzufügen-`IconButton` als `actions`). Pillen: `PillRow` + `PillItem` in `EntryFilterPills.tsx`, die drei Exporte bleiben dünne Wrapper (API/testIDs unverändert); die Ähnlichkeit war real (identischer Container + Chip), Unterschiede nur Daten-Mapping. Zeilen vorher/nachher (`wc -l`): Panels+Pillen+beide Screens 480 (60+74+111+116+119) auf 478 (103+111+127+137), also netto -2 und keine echte Ersparnis (Plan-Schätzung 60-90 nicht erreicht: das Panel zählt die Prop-Verdrahtung in den Screens, die Pillen gewinnen durch `PillRow` nichts an Zeilen); Gewinn ist ein Muster statt zwei driftender Kopien. Neue Tests `EntryFilterPanel.test.tsx` (10, beide Tabs) und `PillRow` in `EntryFilterPills.test.tsx`. testIDs und Optik unverändert. tsc/jest (232 Suiten, 2530 Tests)/eslint grün.
+
 | Feld | Inhalt |
 |---|---|
 | Ziel | `TagebuchFilterPanel` (60 Z.) und `WatchlistFilterPanel` (74 Z.) sind zu ca. 90 % gleich (Inventar 0,78); die drei Pillen-Komponenten in `entries/EntryFilterPills.tsx` (111 Z.) wiederholen dasselbe `View flex-row flex-wrap gap-2` plus `Chip` [M] |

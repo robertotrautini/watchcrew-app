@@ -1,3 +1,4 @@
+import { DIARY_SORT_FIELDS } from "@/lib/entrySorting";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -6,7 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Surface";
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
-import { TagebuchFilterPanel } from "@/components/tagebuch/TagebuchFilterPanel";
+import { EntryFilterPanel } from "@/components/entries/EntryFilterPanel";
 import { TagebuchScopeSwitch } from "@/components/tagebuch/TagebuchScopeSwitch";
 import { EntryFilterFlyout } from "@/components/entries/EntryFilterFlyout";
 import { AppHeader } from "@/components/ui/AppHeader";
@@ -58,7 +59,17 @@ export default function TagebuchScreen() {
     <SafeAreaView edges={["top"]} className="flex-1" testID="tagebuch-screen">
       <AppHeader title="Tagebuch" settingsTestID="tagebuch-settings-button" />
       <TagebuchScopeSwitch scope={filters.scope} onChange={filters.setScope} />
-      <TagebuchFilterPanel screen={screen} />
+      <EntryFilterPanel
+        tab="diary"
+        testIDPrefix="tagebuch"
+        sortFields={DIARY_SORT_FIELDS}
+        filters={filters}
+        activeFilters={screen.activeFilters}
+        genreNamesById={screen.genreNamesById}
+        viewMode={screen.diaryViewMode}
+        onViewModeChange={screen.setDiaryViewMode}
+        viewModeButtonTestID={(mode) => `tagebuch-view-mode-${mode}`}
+      />
 
       {screen.providersLoading ? (
         <View

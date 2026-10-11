@@ -1,3 +1,4 @@
+import { WATCHLIST_SORT_FIELDS } from "@/lib/entrySorting";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useRouter } from "expo-router";
 import { LoadingArea } from "@/components/ui/LoadingArea";
@@ -8,7 +9,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Surface";
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
-import { WatchlistFilterPanel } from "@/components/watchlist/WatchlistFilterPanel";
+import { EntryFilterPanel } from "@/components/entries/EntryFilterPanel";
+import { IconButton } from "@/components/ui/IconButton";
 import { EntryFilterFlyout } from "@/components/entries/EntryFilterFlyout";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { useWatchlistScreen } from "@/hooks/useWatchlistScreen";
@@ -62,9 +64,25 @@ export default function WatchlistScreen() {
     <SafeAreaView edges={["top"]} className="flex-1" testID="watchlist-screen">
       <AppHeader title="Watchlist" settingsTestID="watchlist-settings-button" />
 
-      <WatchlistFilterPanel
-        screen={screen}
-        onAddMovie={() => router.push("/add-movie")}
+      <EntryFilterPanel
+        tab="watchlist"
+        testIDPrefix="watchlist"
+        sortFields={WATCHLIST_SORT_FIELDS}
+        filters={filters}
+        activeFilters={filters.filters}
+        genreNamesById={screen.genreNamesById}
+        viewMode={screen.watchlistViewMode}
+        onViewModeChange={screen.setWatchlistViewMode}
+        viewModeButtonTestID={(mode) => `watchlist-view-mode-${mode}-button`}
+        actions={
+          <IconButton
+            testID="watchlist-add-movie-button"
+            icon="add"
+            variant="accent"
+            accessibilityLabel="Film hinzufügen"
+            onPress={() => router.push("/add-movie")}
+          />
+        }
       />
 
       {screen.providersLoading ? (
