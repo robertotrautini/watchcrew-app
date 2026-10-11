@@ -18,8 +18,10 @@ export function SettingsColumnsRow({ testID, label, value, onChange }: SettingsC
     <ListRow
       testID={testID}
       label={label}
+      trailingInset
       trailing={
         <SegmentedControl
+          size="row"
           value={value}
           onChange={onChange}
           options={OPTIONS.map((option) => ({

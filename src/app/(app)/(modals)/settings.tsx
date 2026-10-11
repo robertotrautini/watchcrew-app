@@ -108,17 +108,17 @@ export default function SettingsScreen() {
             }
           />
           <ListRow testID="settings-user-email-row" label="E-Mail" value={email ?? ""} valueTestID="settings-user-email" />
-          <View testID="settings-active-group" className="gap-1">
-            <Text className="px-1 text-sm text-text-secondary">Aktuelle Gruppe</Text>
-            <Select
-              testID="settings-active-group-select"
-              accessibilityLabel="Aktuelle Gruppe"
-              placeholder="Keine Gruppe"
-              value={activeGroupId ?? null}
-              options={groups.map((g) => ({ value: g.id, label: g.name }))}
-              onChange={selectGroup}
-            />
-          </View>
+        </SettingsGroup>
+
+        <SettingsGroup testID="settings-active-group" title="Aktuelle Gruppe" grouped={false}>
+          <Select
+            testID="settings-active-group-select"
+            accessibilityLabel="Aktuelle Gruppe"
+            placeholder="Keine Gruppe"
+            value={activeGroupId ?? null}
+            options={groups.map((g) => ({ value: g.id, label: g.name }))}
+            onChange={selectGroup}
+          />
         </SettingsGroup>
 
         <SettingsGroup testID="settings-group-group" title="Gruppe">

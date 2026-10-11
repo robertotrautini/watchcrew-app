@@ -12,6 +12,10 @@ const SEGMENTED_INSET = 4;
 const SEGMENTED_INNER_RADIUS = SEGMENTED_OUTER_RADIUS - SEGMENTED_INSET;
 
 const SEGMENT_HIT_SLOP = { top: 4, bottom: 4, left: 2, right: 2 };
+/** `row` size: 32dp cells, slop tops them up to 44dp. */
+const SEGMENT_HIT_SLOP_ROW = { top: 6, bottom: 6, left: 2, right: 2 };
+/** `row` track sits in a 56dp row with 8dp spacing; its own slop makes the track touch box 56dp. */
+const TRACK_HIT_SLOP_ROW = { top: 8, bottom: 8, left: 0, right: 0 };
 
 const styles = StyleSheet.create({
   outer: { borderRadius: SEGMENTED_OUTER_RADIUS, overflow: "hidden" },
@@ -32,6 +36,8 @@ export interface SegmentedControlProps<K extends string | number> {
   onChange: (key: K) => void;
   testID?: string;
   className?: string;
+  /** `default`: 48dp track, 40x40 cells. `row`: 40dp track, 32x48 cells, for a 56dp ListRow (8dp to card edge all round, use with `trailingInset`). */
+  size?: "default" | "row";
 }
 
 /**
@@ -47,13 +53,16 @@ export function SegmentedControl<K extends string | number>({
   onChange,
   testID,
   className,
+  size = "default",
 }: SegmentedControlProps<K>) {
+  const row = size === "row";
   const { colors } = useGroupTheme();
   return (
     <View
       testID={testID}
       style={styles.outer}
-      className={cn("h-12 flex-row items-center gap-1 border border-surface-border bg-field p-[3px]", className)}
+      hitSlop={row ? TRACK_HIT_SLOP_ROW : undefined}
+      className={cn(row ? "h-10" : "h-12", "flex-row items-center gap-1 border border-surface-border bg-field p-[3px]", className)}
     >
       {options.map((option) => {
         const active = value === option.key;
@@ -66,13 +75,13 @@ export function SegmentedControl<K extends string | number>({
             accessibilityState={{ selected: active }}
             onPress={() => onChange(option.key)}
             // identical 40x40 cells; hitSlop tops the touch box up to 44x48 without overlapping neighbours (gap 4)
-            hitSlop={SEGMENT_HIT_SLOP}
-            className="h-10 w-10 items-center justify-center"
+            hitSlop={row ? SEGMENT_HIT_SLOP_ROW : SEGMENT_HIT_SLOP}
+            className={cn(row ? "h-8 w-12" : "h-10 w-10", "items-center justify-center")}
           >
             <View
               testID={`${option.testID}-segment`}
               style={[styles.segment, { backgroundColor: active ? colors.accent : "transparent" }]}
-              className="h-10 w-10 items-center justify-center"
+              className={cn(row ? "h-8 w-12" : "h-10 w-10", "items-center justify-center")}
             >
               {option.render(active)}
             </View>

@@ -52,4 +52,18 @@ describe("SegmentedControl", () => {
     expect(cls).toContain("bg-field");
     expect(cls).not.toMatch(/bg-[a-z]+\/\d+/);
   });
+
+  it("size row: 40dp track, 32x48 cells, hitSlop tops touch height up to >= 44", async () => {
+    const r = await render(<SegmentedControl options={options} value={3} onChange={jest.fn()} testID="sc" size="row" />);
+    expect(r.getByTestId("sc").props.className).toContain("h-10");
+    expect(r.getByTestId("seg-3").props.className).toContain("h-8 w-12");
+    const slop = r.getByTestId("seg-3").props.hitSlop;
+    expect(32 + slop.top + slop.bottom).toBeGreaterThanOrEqual(44);
+  });
+
+  it("default size keeps the 48dp track and 40x40 cells", async () => {
+    const r = await render(<SegmentedControl options={options} value={3} onChange={jest.fn()} testID="sc" />);
+    expect(r.getByTestId("sc").props.className).toContain("h-12");
+    expect(r.getByTestId("seg-3").props.className).toContain("h-10 w-10");
+  });
 });

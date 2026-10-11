@@ -17,6 +17,27 @@ describe("ListRow", () => {
     expect(cls).toContain("items-center");
   });
 
+  it("grouped: no own border, fill or radius, only a bottom divider unless last", async () => {
+    const a = await render(<ListRow testID="r" label="A" grouped />);
+    const cls = a.getByTestId("r").props.className as string;
+    expect(cls).toContain(CONTROL_HEIGHT_CLASSNAME);
+    expect(cls).not.toContain("bg-field");
+    expect(cls).not.toContain("rounded");
+    expect(cls).toContain("border-b");
+    expect(cls).toContain("border-surface-border");
+    const b = await render(<ListRow testID="l" label="A" grouped isLast />);
+    const last = b.getByTestId("l").props.className as string;
+    expect(last).not.toContain("border-b");
+    expect(last).not.toContain("border-surface-border");
+  });
+
+  it("trailingInset swaps the right padding for 8dp", async () => {
+    const { getByTestId } = await render(<ListRow testID="r" label="A" trailingInset trailing={<Text>T</Text>} />);
+    const cls = getByTestId("r").props.className as string;
+    expect(cls).toContain("pr-2");
+    expect(cls).not.toContain("pr-4");
+  });
+
   it("keeps the label on one line (ellipsis)", async () => {
     const { getByText } = await render(<ListRow label="Sehr langer Titel" />);
     expect(getByText("Sehr langer Titel").props.numberOfLines).toBe(1);
