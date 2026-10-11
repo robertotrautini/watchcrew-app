@@ -263,7 +263,7 @@ describe("CollectionScreen", () => {
     const CollectionScreen = loadCollectionScreen();
     const { getByTestId, queryByTestId } = await render(<CollectionScreen />);
 
-    expect(getByTestId("collection-screen-grid-badge-1").props.accessibilityLabel).toBe("Gesehen");
+    expect(getByTestId("collection-screen-grid-badge-1-watched").props.accessibilityLabel).toBe("Gesehen");
     expect(queryByTestId("collection-screen-grid-badge-2")).toBeNull();
   });
 });

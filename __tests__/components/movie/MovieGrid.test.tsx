@@ -125,7 +125,7 @@ describe("MovieGrid", () => {
         <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" getBadge={getBadge} />,
       );
 
-      const badge = getByTestId("grid-badge-1");
+      const badge = getByTestId("grid-badge-1-watched");
       expect(badge).toBeTruthy();
       expect(badge.props.accessibilityLabel).toBe("Gesehen");
     });
@@ -138,7 +138,7 @@ describe("MovieGrid", () => {
         <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" getBadge={getBadge} />,
       );
 
-      const badge = getByTestId("grid-badge-1");
+      const badge = getByTestId("grid-badge-1-watchlist");
       expect(badge).toBeTruthy();
       expect(badge.props.accessibilityLabel).toBe("Auf der Watchlist");
     });
@@ -176,24 +176,24 @@ describe("MovieGrid", () => {
       expect(getByTestId("grid-score-1-value").props.children).toBe("8.0");
     });
 
-    it("renders no score pill when voteAverage is null", async () => {
+    it("renders a dash in the TMDB badge when voteAverage is null", async () => {
       const items = [makeItem({ tmdbId: 1, voteAverage: null })];
 
-      const { queryByTestId } = await render(
+      const { getByTestId } = await render(
         <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" />,
       );
 
-      expect(queryByTestId("grid-score-1")).toBeNull();
+      expect(getByTestId("grid-score-1-value").props.children).toBe("–");
     });
 
-    it("renders no score pill when voteAverage is undefined", async () => {
+    it("renders a dash in the TMDB badge when voteAverage is undefined", async () => {
       const items = [makeItem({ tmdbId: 1, voteAverage: undefined })];
 
-      const { queryByTestId } = await render(
+      const { getByTestId } = await render(
         <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" />,
       );
 
-      expect(queryByTestId("grid-score-1")).toBeNull();
+      expect(getByTestId("grid-score-1-value").props.children).toBe("–");
     });
   });
 

@@ -3,6 +3,8 @@ import { View, type GestureResponderEvent } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
+import { PosterCornerBadge } from "./PosterCornerBadge";
+import { PosterTmdbBadge } from "./PosterTmdbBadge";
 
 import { Card } from "../ui/Card";
 import { TmdbBadge } from "../ui/TmdbBadge";
@@ -69,10 +71,6 @@ export interface WatchlistPosterCardProps {
    * pre-M10 always-shown behavior.
    */
   showTitle?: boolean;
-}
-
-function formatTmdbScore(voteAverage: number): string {
-  return voteAverage.toFixed(1);
 }
 
 export function WatchlistPosterCard({
@@ -185,8 +183,14 @@ export function WatchlistPosterCard({
             className="aspect-[2/3] w-full bg-black/40"
           />
 
+          <PosterCornerBadge
+            testID={`${testID}-date-badge`}
+            idPrefix={testID}
+            dateText={dateBadgeText}
+          />
+
           {showProgressBadge ? (
-            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-1 py-0.5">
+            <View className="absolute left-1 top-8 rounded-sm bg-black/70 px-1 py-0.5">
               <Text
                 testID={`${testID}-progress-badge`}
                 className="text-xs text-white"
@@ -194,27 +198,12 @@ export function WatchlistPosterCard({
                 {progressBadgeText}
               </Text>
             </View>
-          ) : (
-            <View className="absolute left-1 top-1 rounded-sm bg-black/70 px-1 py-0.5">
-              <Text
-                testID={`${testID}-date-badge-overlay`}
-                className="text-xs text-white"
-              >
-                {dateBadgeText}
-              </Text>
-            </View>
-          )}
-
-          {hasTmdbScore ? (
-            <View
-              testID={`${testID}-tmdb-badge`}
-              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2 py-1"
-            >
-              <Text className="text-xs font-sans-semibold text-white">
-                {formatTmdbScore(movie.vote_average as number)}
-              </Text>
-            </View>
           ) : null}
+
+          <PosterTmdbBadge
+            testID={`${testID}-tmdb-badge`}
+            score={movie.vote_average}
+          />
         </View>
 
         {showTitle ? (

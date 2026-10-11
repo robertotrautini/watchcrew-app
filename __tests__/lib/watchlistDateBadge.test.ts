@@ -25,9 +25,9 @@ function lookup(entries: Array<[number, boolean]> = []): StreamingAvailabilityLo
 }
 
 describe("getDateBadgeText", () => {
-  it('returns "Kommt am DD.MM.YYYY" for a future release date', () => {
+  it('returns plain "DD.MM.YYYY" (no prefix) for a future release date', () => {
     const movie = makeMovie({ release_date: "2025-07-01" });
-    expect(getDateBadgeText(movie, lookup(), NOW)).toBe("Kommt am 01.07.2025");
+    expect(getDateBadgeText(movie, lookup(), NOW)).toBe("01.07.2025");
   });
 
   it("returns the plain DD.MM.YYYY date for a past release date", () => {
@@ -52,7 +52,7 @@ describe("getDateBadgeText", () => {
 
   it("zero-pads single-digit day and month", () => {
     const movie = makeMovie({ release_date: "2026-03-05" });
-    expect(getDateBadgeText(movie, lookup(), NOW)).toBe("Kommt am 05.03.2026");
+    expect(getDateBadgeText(movie, lookup(), NOW)).toBe("05.03.2026");
   });
 });
 

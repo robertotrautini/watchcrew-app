@@ -1,5 +1,4 @@
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
-import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { Icon } from "@/components/ui/Icon";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import type { ReactNode } from "react";
@@ -10,6 +9,8 @@ import { Chip } from "@/components/ui/Chip";
 import { Card } from "@/components/ui/Card";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Image } from "@/components/ui/Image";
+import { PosterCornerBadge } from "@/components/movie/PosterCornerBadge";
+import { PosterTmdbBadge } from "@/components/movie/PosterTmdbBadge";
 import { isGridPlaceholder, padToFullRows } from "@/lib/gridPadding";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
@@ -22,19 +23,13 @@ import { buildTmdbImageUrl } from "@/lib/tmdbImage";
  * data-loading, filtering, and pagination logic; this component only knows
  * how to render a list of items plus optional progress/filter/footer UI.
  *
- * Poster/placeholder/badge-pill conventions follow
- * `src/components/movie/DiaryPosterTile.tsx` (read that file for the exact
- * precedent this mirrors).
+ * Corner badges come only from `PosterCornerBadge` (top-right: eye/bookmark)
+ * and `PosterTmdbBadge` (bottom-right); the quick-add button sits bottom-left.
  */
 
-// Fixed regardless of active group theme — same "fixed semantic icon color"
-// approach as DiaryPosterTile.tsx's LIKE_HEART_COLOR / StarRating.tsx.
-const WATCHED_EYE_COLOR = "#22c55e"; // green — "watched"
-// "on watchlist" bookmark follows the group theme accent (useGroupTheme in MovieGrid).
 // Neutral placeholder-icon color (matches the "#8b8b8b" placeholder text
 // color already used elsewhere, e.g. src/app/(app)/(tabs)/watchlist.tsx's
-// search input) — deliberately distinct from the two fixed semantic badge
-// colors above, since "no poster" isn't a watched/watchlist state.
+// search input).
 const PLACEHOLDER_ICON_COLOR = "#8b8b8b";
 // M7 part 2 (Add-Movie-Modal quick-add button): white, for contrast against
 // the same semi-opaque dark badge/score pill background already used here.
@@ -97,10 +92,6 @@ const STREAMING_FILTER_OPTIONS: Array<{
   { value: "buy", label: "Kaufen" },
 ];
 
-function formatScore(voteAverage: number): string {
-  return voteAverage.toFixed(1);
-}
-
 export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   items,
   onPressItem,
@@ -114,10 +105,8 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   columns = 3,
 }: MovieGridProps<T>) {
   const parallaxScroll = useParallaxScroll();
-  const { colors: themeColors } = useGroupTheme();
   function renderTile(item: T) {
     const badge = getBadge ? getBadge(item) : null;
-    const hasScore = typeof item.voteAverage === "number";
 
     return (
       <Card
@@ -154,40 +143,18 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
             </View>
           )}
 
-          {badge != null ? (
-            <View
-              testID={`${testID}-badge-${item.tmdbId}`}
-              accessibilityLabel={
-                badge === "watched" ? "Gesehen" : "Auf der Watchlist"
-              }
-              className="absolute left-1 top-1 flex-row items-center gap-1 rounded-sm bg-black/70 px-1.5 py-0.5"
-            >
-              <Icon
-                testID={`${testID}-badge-icon-${item.tmdbId}`}
-                name={badge === "watched" ? "watched" : "bookmark"}
-                size="S"
-                color={
-                  badge === "watched"
-                    ? WATCHED_EYE_COLOR
-                    : themeColors.accent
-                }
-              />
-            </View>
-          ) : null}
+          <PosterCornerBadge
+            testID={`${testID}-badge-${item.tmdbId}`}
+            idPrefix={`${testID}-badge-${item.tmdbId}`}
+            watched={badge === "watched"}
+            onWatchlist={badge === "watchlist"}
+          />
 
-          {hasScore ? (
-            <View
-              testID={`${testID}-score-${item.tmdbId}`}
-              className="absolute bottom-0 right-0 rounded-tl-xl bg-black/60 px-2 py-0.5"
-            >
-              <Text
-                testID={`${testID}-score-${item.tmdbId}-value`}
-                className="text-[10px] font-sans-semibold text-white"
-              >
-                {formatScore(item.voteAverage as number)}
-              </Text>
-            </View>
-          ) : null}
+          <PosterTmdbBadge
+            testID={`${testID}-score-${item.tmdbId}`}
+            valueTestID={`${testID}-score-${item.tmdbId}-value`}
+            score={item.voteAverage}
+          />
 
           {onAddItem ? (
             <Pressable
@@ -196,7 +163,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
               accessibilityLabel="Zur Watchlist hinzufügen"
               onPress={() => onAddItem(item)}
               // 48x48 touch box in the tile corner; the dark 24dp circle stays the visible size
-              className="absolute right-0 top-0 h-12 w-12 items-center justify-center"
+              className="absolute bottom-0 left-0 h-12 w-12 items-center justify-center"
             >
               <View className="items-center justify-center rounded-full bg-black/70 p-1">
                 <Icon name="add" size="S" color={ADD_BUTTON_ICON_COLOR} />

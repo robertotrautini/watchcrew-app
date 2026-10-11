@@ -206,14 +206,14 @@ describe("WatchlistPosterCard", () => {
         />,
       );
 
-      expect(getByTestId("watchlist-poster-card-date-badge-overlay").props.children).toBe(
+      expect(getByTestId("watchlist-poster-card-date-value").props.children).toBe(
         "10.01.2024",
       );
       expect(queryByTestId("watchlist-poster-card-progress-badge")).toBeNull();
     });
 
-    it("shows the progress badge instead of the date badge when partially rated", async () => {
-      const { getByTestId, queryByTestId } = await render(
+    it("keeps the date badge and also shows the progress badge when partially rated", async () => {
+      const { getByTestId } = await render(
         <WatchlistPosterCard
           variant="grid"
           movie={makeMovie()}
@@ -225,7 +225,44 @@ describe("WatchlistPosterCard", () => {
       );
 
       expect(getByTestId("watchlist-poster-card-progress-badge").props.children).toBe("1/3 bewertet");
-      expect(queryByTestId("watchlist-poster-card-date-badge-overlay")).toBeNull();
+      expect(getByTestId("watchlist-poster-card-date-value").props.children).toBe("10.01.2024");
+    });
+
+    it("date badge is flush top-right like the diary tile, without a 'Kommt am' prefix", async () => {
+      const { getByTestId } = await render(
+        <WatchlistPosterCard
+          variant="grid"
+          movie={makeMovie({ release_date: "2030-05-01" })}
+          streamingAvailability={lookup()}
+          ratedCount={0}
+          totalMembers={3}
+          now={NOW}
+        />,
+      );
+      expect(getByTestId("watchlist-poster-card-date-value").props.children).toBe("01.05.2030");
+      const cls = getByTestId("watchlist-poster-card-date-badge").props.className as string;
+      for (const c of ["right-0", "top-0", "rounded-bl-xl", "bg-black/60", "py-1", "pl-2.5", "pr-1.5"]) {
+        expect(cls).toContain(c);
+      }
+    });
+
+    it("TMDB badge is the logo badge with diary-tile corner classes", async () => {
+      const { getByTestId } = await render(
+        <WatchlistPosterCard
+          variant="grid"
+          movie={makeMovie()}
+          streamingAvailability={lookup()}
+          ratedCount={0}
+          totalMembers={3}
+          now={NOW}
+        />,
+      );
+      expect(getByTestId("watchlist-poster-card-tmdb-badge-logo")).toBeTruthy();
+      expect(getByTestId("watchlist-poster-card-tmdb-badge-value").props.children).toBe("7.8");
+      const cls = getByTestId("watchlist-poster-card-tmdb-badge").props.className as string;
+      for (const c of ["bottom-0", "right-0", "rounded-tl-xl", "bg-black/60", "py-1", "pl-2.5", "pr-1.5"]) {
+        expect(cls).toContain(c);
+      }
     });
 
     it("still renders the TMDB badge", async () => {

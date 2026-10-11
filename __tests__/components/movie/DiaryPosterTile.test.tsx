@@ -101,7 +101,7 @@ describe("DiaryPosterTile", () => {
   });
 
   it("is an edge-to-edge poster tile: no padding, full-width poster without own radius, flush TMDB corner badge", async () => {
-    const { getByTestId } = await render(
+    const { getByTestId, queryByTestId } = await render(
       <DiaryPosterTile
         posterUrl="https://x/p.jpg"
         title="T"
@@ -109,19 +109,59 @@ describe("DiaryPosterTile", () => {
         averageRating={4}
         liked={false}
         tmdbScore={8.5}
-      >
-        <></>
-      </DiaryPosterTile>,
+      />,
     );
     const tile = getByTestId("diary-poster-tile").props.className as string;
     expect(tile).toContain("overflow-hidden");
     expect(tile).not.toMatch(/(^|\s)p[xytblr]?-\d/);
-    expect(getByTestId("poster-card-poster-wrapper").props.className).not.toMatch(/rounded/);
+    expect(
+      getByTestId("poster-card-poster-wrapper").props.className,
+    ).not.toMatch(/rounded/);
     expect(getByTestId("poster-card-image").props.contentFit).toBe("cover");
-    const badge = getByTestId("poster-card-tmdb-badge").props.className as string;
+    const badge = getByTestId("poster-card-tmdb-badge").props
+      .className as string;
+    expect(badge).toContain("absolute");
     expect(badge).toContain("bottom-0");
     expect(badge).toContain("right-0");
     expect(badge).toContain("rounded-tl-xl");
-    expect(getByTestId("poster-card-info").props.className).toContain("px-2");
+    expect(badge).toContain("pl-2.5");
+    expect(getByTestId("poster-card-tmdb-badge-logo")).toBeTruthy();
+    expect(queryByTestId("poster-card-info")).toBeNull();
+  });
+
+  it("puts heart, star, average in ONE top-right overlay badge in this order, all inside the poster wrapper", async () => {
+    const { getByTestId } = await render(
+      <DiaryPosterTile
+        posterUrl="https://x/p.jpg"
+        title="T"
+        starColor={GOLD_STAR_COLOR}
+        averageRating={4}
+        liked
+        tmdbScore={8.5}
+      />,
+    );
+    const wrapper = getByTestId("poster-card-poster-wrapper");
+    const avg = getByTestId("poster-card-average-badge");
+    const heart = getByTestId("poster-card-like-icon");
+    const value = getByTestId("poster-card-average-value");
+    const inside = (node: { parent: unknown }, anc: unknown): boolean => {
+      let n = node as { parent: unknown } | null;
+      while (n) {
+        if (n === anc) return true;
+        n = n.parent as { parent: unknown } | null;
+      }
+      return false;
+    };
+    expect(inside(avg, wrapper)).toBe(true);
+    expect(inside(heart, avg)).toBe(true);
+    expect(inside(value, avg)).toBe(true);
+    const cls = avg.props.className as string;
+    expect(cls).toContain("absolute");
+    expect(cls).toContain("right-0");
+    expect(cls).toContain("top-0");
+    expect(cls).toContain("rounded-bl-xl");
+    expect(cls).toContain("bg-black/60");
+    expect(getByTestId("poster-card-tmdb-badge")).toBeTruthy();
+    expect(inside(getByTestId("poster-card-tmdb-badge"), wrapper)).toBe(true);
   });
 });

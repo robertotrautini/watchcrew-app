@@ -196,10 +196,10 @@ describe("ActorFilmographyScreen", () => {
     const Screen = loadActorFilmographyScreen();
     const { getByTestId, queryByTestId } = await render(<Screen />);
 
-    const watchedBadge = getByTestId("actor-filmography-screen-grid-badge-1");
+    const watchedBadge = getByTestId("actor-filmography-screen-grid-badge-1-watched");
     expect(watchedBadge.props.accessibilityLabel).toBe("Gesehen");
 
-    const watchlistBadge = getByTestId("actor-filmography-screen-grid-badge-2");
+    const watchlistBadge = getByTestId("actor-filmography-screen-grid-badge-2-watchlist");
     expect(watchlistBadge.props.accessibilityLabel).toBe("Auf der Watchlist");
 
     expect(queryByTestId("actor-filmography-screen-grid-badge-5")).toBeNull();

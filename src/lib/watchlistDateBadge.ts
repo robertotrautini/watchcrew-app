@@ -2,8 +2,7 @@
 // on a card/grid tile, per docs/feature-inventory.md (verbatim rule,
 // extracted into the M5-part-2 task brief):
 //
-//   "Kommt am DD.MM.YYYY"   — movie has a release date in the future
-//   "DD.MM.YYYY"            — release date is today or in the past (released)
+//   "DD.MM.YYYY"            — movie has a release date (future or past; no prefix)
 //   "Streaming verfügbar"   — no release date, but streaming availability found
 //   "Kein Datum"            — no release date and not streaming-available
 //
@@ -52,7 +51,7 @@ export function getDateBadgeText(
   const { release_date } = movie;
 
   if (release_date != null) {
-    return isReleased(release_date, now) ? formatDate(release_date) : `Kommt am ${formatDate(release_date)}`;
+    return formatDate(release_date);
   }
 
   return isStreamingAvailable(movie, streamingAvailability) ? "Streaming verfügbar" : "Kein Datum";

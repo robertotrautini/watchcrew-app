@@ -176,11 +176,11 @@ describe("SimilarMoviesScreen", () => {
     setUpHappyPath();
 
     const SimilarMoviesScreen = loadSimilarMoviesScreen();
-    const { getByTestId, queryByTestId } = await render(<SimilarMoviesScreen />);
+    const { getByTestId } = await render(<SimilarMoviesScreen />);
 
-    // No posterPath -> placeholder tile rendered; no voteAverage -> no score pill.
+    // No posterPath -> placeholder tile rendered; no voteAverage -> TMDB badge shows a dash.
     expect(getByTestId("similar-movies-screen-grid-item-101-poster-placeholder")).toBeTruthy();
-    expect(queryByTestId("similar-movies-screen-grid-score-101")).toBeNull();
+    expect(getByTestId("similar-movies-screen-grid-score-101-value").props.children).toBe("–");
   });
 
   it("passes server-enriched posterPath/voteAverage through to the grid", async () => {
@@ -331,7 +331,7 @@ describe("SimilarMoviesScreen", () => {
     const SimilarMoviesScreen = loadSimilarMoviesScreen();
     const { getByTestId, queryByTestId } = await render(<SimilarMoviesScreen />);
 
-    expect(getByTestId("similar-movies-screen-grid-badge-101").props.accessibilityLabel).toBe("Auf der Watchlist");
+    expect(getByTestId("similar-movies-screen-grid-badge-101-watchlist").props.accessibilityLabel).toBe("Auf der Watchlist");
     expect(queryByTestId("similar-movies-screen-grid-badge-102")).toBeNull();
   });
 
@@ -366,7 +366,7 @@ describe("SimilarMoviesScreen", () => {
     const SimilarMoviesScreen = loadSimilarMoviesScreen();
     const { getByTestId, queryByTestId } = await render(<SimilarMoviesScreen />);
 
-    expect(getByTestId("similar-movies-screen-grid-badge-101").props.accessibilityLabel).toBe("Gesehen");
+    expect(getByTestId("similar-movies-screen-grid-badge-101-watched").props.accessibilityLabel).toBe("Gesehen");
     expect(queryByTestId("similar-movies-screen-grid-badge-102")).toBeNull();
   });
 });
