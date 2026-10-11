@@ -120,6 +120,10 @@ function baseProps(overrides: Partial<Parameters<typeof PaymentModal>[0]> = {}) 
   };
 }
 
+async function openSelect(utils: { getByTestId: (id: string) => unknown }) {
+  await fireEvent.press(utils.getByTestId("payment-modal-movie-select") as never);
+}
+
 describe("PaymentModal", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -127,31 +131,38 @@ describe("PaymentModal", () => {
   });
 
   it("lists only unpaid diary movies, never an already-paid entry", async () => {
-    const { getByTestId, queryByTestId } = await render(<PaymentModal {...baseProps()} />);
-    expect(getByTestId("payment-modal-movie-e1")).toBeTruthy();
-    expect(getByTestId("payment-modal-movie-e2")).toBeTruthy();
-    expect(queryByTestId("payment-modal-movie-e3")).toBeNull();
+    const utils = await render(<PaymentModal {...baseProps()} />);
+    const { getByTestId, queryByTestId } = utils;
+    await openSelect(utils);
+    expect(getByTestId("payment-modal-movie-select-option-e1")).toBeTruthy();
+    expect(getByTestId("payment-modal-movie-select-option-e2")).toBeTruthy();
+    expect(queryByTestId("payment-modal-movie-select-option-e3")).toBeNull();
   });
 
   it("labels the payer hint explicitly: 'zuletzt bezahlt: ...' / 'noch nie bezahlt'", async () => {
     const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
+    await fireEvent.press(getByTestId("payment-modal-payer-select"));
     // u1 paid ALREADY_PAID on 2026-09-01, NOW = 2026-09-20 -> 19 days; u2 never paid.
-    expect(getByTestId("payment-modal-payer-hint-u1").props.children).toBe("zuletzt bezahlt: vor 19 Tagen");
-    expect(getByTestId("payment-modal-payer-hint-u2").props.children).toBe("noch nie bezahlt");
+    expect(getByTestId("payment-modal-payer-select-option-u1-hint").props.children).toBe("zuletzt bezahlt: vor 19 Tagen");
+    expect(getByTestId("payment-modal-payer-select-option-u2-hint").props.children).toBe("noch nie bezahlt");
   });
 
   it("filters the movie list via the search field", async () => {
-    const { getByTestId, queryByTestId } = await render(<PaymentModal {...baseProps()} />);
-    await fireEvent.changeText(getByTestId("payment-modal-search-input"), "Alpha");
-    expect(getByTestId("payment-modal-movie-e1")).toBeTruthy();
-    expect(queryByTestId("payment-modal-movie-e2")).toBeNull();
+    const utils = await render(<PaymentModal {...baseProps()} />);
+    const { getByTestId, queryByTestId } = utils;
+    await openSelect(utils);
+    await fireEvent.changeText(getByTestId("payment-modal-movie-select-search"), "Alpha");
+    expect(getByTestId("payment-modal-movie-select-option-e1")).toBeTruthy();
+    expect(queryByTestId("payment-modal-movie-select-option-e2")).toBeNull();
   });
 
   it("pre-selects the payer suggested by computeNextPayer on open", async () => {
     // Neither member has ever paid in this fixture set (ALREADY_PAID has u1
     // as payer -- so u2 has never paid and should be suggested).
     const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
-    expect(getByTestId("payment-modal-payer-button-u2").props.accessibilityState.selected).toBe(true);
+    expect(within(getByTestId("payment-modal-payer-select")).getByText("Ben")).toBeTruthy();
+    await fireEvent.press(getByTestId("payment-modal-payer-select"));
+    expect(getByTestId("payment-modal-payer-select-option-u2").props.accessibilityState.selected).toBe(true);
   });
 
   it("defaults the date field to today", async () => {
@@ -162,10 +173,13 @@ describe("PaymentModal", () => {
   it("selecting a movie and a payer, then saving, calls the mutation with the right ids and the default date", async () => {
     const onClose = jest.fn();
     const onSaved = jest.fn();
-    const { getByTestId } = await render(<PaymentModal {...baseProps({ onClose, onSaved })} />);
+    const utils = await render(<PaymentModal {...baseProps({ onClose, onSaved })} />);
+    const { getByTestId } = utils;
+    await openSelect(utils);
 
-    await fireEvent.press(getByTestId("payment-modal-movie-e1"));
-    await fireEvent.press(getByTestId("payment-modal-payer-button-u1"));
+    await fireEvent.press(getByTestId("payment-modal-movie-select-option-e1"));
+    await fireEvent.press(getByTestId("payment-modal-payer-select"));
+    await fireEvent.press(getByTestId("payment-modal-payer-select-option-u1"));
     await fireEvent.press(getByTestId("payment-modal-save-button"));
 
     expect(mockSetPaymentMutate).toHaveBeenCalledWith(
@@ -189,8 +203,10 @@ describe("PaymentModal", () => {
 
   it("shows a red error toast and stays open when the payment save fails", async () => {
     const onClose = jest.fn();
-    const { getByTestId } = await render(<PaymentModal {...baseProps({ onClose })} />);
-    await fireEvent.press(getByTestId("payment-modal-movie-e1"));
+    const utils = await render(<PaymentModal {...baseProps({ onClose })} />);
+    const { getByTestId } = utils;
+    await openSelect(utils);
+    await fireEvent.press(getByTestId("payment-modal-movie-select-option-e1"));
     await fireEvent.press(getByTestId("payment-modal-save-button"));
 
     mockSetPaymentMutate.mock.calls[0][1].onError(new Error("boom"));
@@ -198,35 +214,58 @@ describe("PaymentModal", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
-  it("payer pills get a 12dp vertical hitSlop (48dp touch) and movie rows are 48dp high", async () => {
-    const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
-    expect(getByTestId("payment-modal-payer-button-u1").props.hitSlop).toEqual({
-      top: 12,
-      bottom: 12,
-      left: 0,
-      right: 0,
-    });
-    expect(getByTestId("payment-modal-movie-e1").props.className).toContain("min-h-touch-comfortable");
+  it("movie rows are 48dp high; payer Select shows the placeholder-less default and is not searchable", async () => {
+    const utils = await render(<PaymentModal {...baseProps()} />);
+    const { getByTestId, queryByTestId } = utils;
+    await openSelect(utils);
+    expect(getByTestId("payment-modal-movie-select-option-e1").props.className).toContain("min-h-touch-comfortable");
+    await fireEvent.press(getByTestId("payment-modal-payer-select"));
+    expect(queryByTestId("payment-modal-payer-select-search")).toBeNull();
+  });
+
+  it("movie select: search field is not auto-focused and the empty query shows ALL movies, most recently seen first, in a scrollable list", async () => {
+    const many = Array.from({ length: 12 }, (_, i) =>
+      makeEntry({
+        id: `m${i}`,
+        movie: makeMovie({ name: `Film ${i}`, tmdb_id: 100 + i }),
+        ratings: [makeRating({ member_id: "u1", rating: 3, seen_at: `2026-${String(i + 1).padStart(2, "0")}-01` })],
+      }),
+    );
+    const utils = await render(<PaymentModal {...baseProps({ entries: many })} />);
+    const { getByTestId, getAllByTestId } = utils;
+    await openSelect(utils);
+    expect(getByTestId("payment-modal-movie-select-search").props.autoFocus).toBe(false);
+    expect(getByTestId("payment-modal-movie-select-scroll").props.nestedScrollEnabled).toBe(true);
+    const ids = getAllByTestId(/^payment-modal-movie-select-option-m\d+$/).map((n) => n.props.testID);
+    expect(ids).toHaveLength(12);
+    expect(ids[0]).toBe("payment-modal-movie-select-option-m11");
+    expect(ids[11]).toBe("payment-modal-movie-select-option-m0");
+    await fireEvent.changeText(getByTestId("payment-modal-movie-select-search"), "Film 9");
+    expect(getByTestId("payment-modal-movie-select-option-m9")).toBeTruthy();
   });
 
   it("disables the save button until both a movie and a payer are selected", async () => {
-    const { getByTestId } = await render(<PaymentModal {...baseProps()} />);
+    const utils = await render(<PaymentModal {...baseProps()} />);
+    const { getByTestId } = utils;
     // A payer is already pre-selected (computeNextPayer), but no movie yet.
     expect(getByTestId("payment-modal-save-button").props.accessibilityState.disabled).toBe(true);
 
-    await fireEvent.press(getByTestId("payment-modal-movie-e1"));
+    await openSelect(utils);
+    await fireEvent.press(getByTestId("payment-modal-movie-select-option-e1"));
     expect(getByTestId("payment-modal-save-button").props.accessibilityState.disabled).toBe(false);
   });
 
-  it("resets its draft (search/selection) every time it re-opens", async () => {
-    const { getByTestId, rerender } = await render(<PaymentModal {...baseProps({ visible: false })} />);
+  it("resets its draft (selection/search) every time it re-opens", async () => {
+    const utils = await render(<PaymentModal {...baseProps({ visible: false })} />);
+    const { getByTestId, getByText, rerender } = utils;
     await rerender(<PaymentModal {...baseProps({ visible: true })} />);
-    await fireEvent.changeText(getByTestId("payment-modal-search-input"), "Alpha");
-    await fireEvent.press(getByTestId("payment-modal-movie-e1"));
+    await openSelect(utils);
+    await fireEvent.changeText(getByTestId("payment-modal-movie-select-search"), "Alpha");
+    await fireEvent.press(getByTestId("payment-modal-movie-select-option-e1"));
 
     await rerender(<PaymentModal {...baseProps({ visible: false })} />);
     await rerender(<PaymentModal {...baseProps({ visible: true })} />);
 
-    expect(getByTestId("payment-modal-search-input").props.value).toBe("");
+    expect(getByText("Film wählen")).toBeTruthy();
   });
 });

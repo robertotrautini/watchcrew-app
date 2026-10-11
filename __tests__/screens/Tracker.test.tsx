@@ -1,6 +1,6 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor, within } from "@testing-library/react-native";
 
 // M9 part 2: the new "⚙️" header button navigates via expo-router, same
 // router mocking convention as __tests__/screens/Watchlist.test.tsx's
@@ -265,19 +265,22 @@ describe("TrackerScreen", () => {
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
 
-      expect(getByTestId("tracker-entry-sheet-payer-u1").props.accessibilityState.selected).toBe(true);
+      expect(within(getByTestId("tracker-entry-sheet-payer-select")).getByText("Anna")).toBeTruthy();
+      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-select"));
+      expect(getByTestId("tracker-entry-sheet-payer-select-option-u1").props.accessibilityState.selected).toBe(true);
       expect(getByTestId("tracker-entry-sheet-date-field")).toBeTruthy();
     });
 
-    it("shows no 'days since' hint on the payer chips (the entry's own date is in the date field)", async () => {
+    it("shows no 'days since' hint in the payer options (the entry's own date is in the date field)", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
       const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-select"));
 
-      expect(queryByTestId("tracker-entry-sheet-payer-hint-u1")).toBeNull();
-      expect(queryByTestId("tracker-entry-sheet-payer-hint-u2")).toBeNull();
+      expect(queryByTestId("tracker-entry-sheet-payer-select-option-u1-hint")).toBeNull();
+      expect(queryByTestId("tracker-entry-sheet-payer-select-option-u2-hint")).toBeNull();
     });
 
     it("Speichern calls useSetPayment with the entry's existing paid_at as existingPaidAt", async () => {
@@ -286,7 +289,8 @@ describe("TrackerScreen", () => {
       const { getByTestId } = await render(<TrackerScreen />);
 
       await fireEvent.press(getByTestId("tracker-row-e1-header"));
-      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-u2"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-select"));
+      await fireEvent.press(getByTestId("tracker-entry-sheet-payer-select-option-u2"));
       await fireEvent.press(getByTestId("tracker-entry-sheet-save-button"));
 
       expect(mockSetPaymentMutate).toHaveBeenCalledWith(
@@ -355,6 +359,18 @@ describe("TrackerScreen", () => {
       expect(ids).toEqual(["tracker-entry-sheet-save-button", "tracker-entry-sheet-delete-button"]);
     });
 
+    it("uses the shared sheet spacing: gap-4 content, gap-2 label sections, gap-3 action row", async () => {
+      setUpHappyPath();
+      const TrackerScreen = loadTrackerScreen();
+      const { getByTestId } = await render(<TrackerScreen />);
+
+      await fireEvent.press(getByTestId("tracker-row-e1-header"));
+      expect(getByTestId("tracker-entry-sheet").props.className).toContain("gap-4");
+      expect(getByTestId("tracker-entry-sheet-payer-section").props.className).toContain("gap-2");
+      expect(getByTestId("tracker-entry-sheet-date-section").props.className).toContain("gap-2");
+      expect(getByTestId("tracker-entry-sheet-actions").props.className).toContain("gap-3");
+    });
+
     it("Löschen shows a 'Wirklich löschen?' confirmation inside the flyout", async () => {
       setUpHappyPath();
       const TrackerScreen = loadTrackerScreen();
@@ -419,11 +435,12 @@ describe("TrackerScreen", () => {
     const TrackerScreen = loadTrackerScreen();
     const { getByTestId, queryByTestId } = await render(<TrackerScreen />);
 
-    expect(queryByTestId("payment-modal-movie-e3")).toBeNull();
+    expect(queryByTestId("payment-modal-movie-select-option-e3")).toBeNull();
 
     await fireEvent.press(getByTestId("tracker-log-payment-button"));
+    await fireEvent.press(getByTestId("payment-modal-movie-select"));
 
-    expect(getByTestId("payment-modal-movie-e3")).toBeTruthy();
-    expect(queryByTestId("payment-modal-movie-e1")).toBeNull();
+    expect(getByTestId("payment-modal-movie-select-option-e3")).toBeTruthy();
+    expect(queryByTestId("payment-modal-movie-select-option-e1")).toBeNull();
   });
 });

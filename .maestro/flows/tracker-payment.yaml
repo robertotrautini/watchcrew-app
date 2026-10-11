@@ -38,14 +38,27 @@ appId: com.watchcrew.app
     timeout: 10000
 - takeScreenshot: 03-payment-sheet-open
 - tapOn:
-    id: "payment-modal-search-input"
+    id: "payment-modal-movie-select"
+# Open list shows recently seen movies, search field NOT focused (no keyboard yet).
+- assertVisible:
+    id: "payment-modal-movie-select-option-.*"
+- takeScreenshot: 03b-payment-sheet-recent-movies
+- tapOn:
+    id: "payment-modal-movie-select-search"
 - inputText: "Inception"
 - hideKeyboard
 - takeScreenshot: 04-payment-sheet-search
 - tapOn:
-    id: "payment-modal-movie-.*"
+    id: "payment-modal-movie-select-option-.*"
     index: 0
 - takeScreenshot: 05-payment-sheet-movie-selected
+# Payer is a Select dropdown now (pre-selected suggestion).
+- tapOn:
+    id: "payment-modal-payer-select"
+- takeScreenshot: 05b-payment-sheet-payer-select-open
+- tapOn:
+    id: "payment-modal-payer-select-option-.*"
+    index: 0
 - tapOn:
     id: "payment-modal-save-button"
 - extendedWaitUntil:

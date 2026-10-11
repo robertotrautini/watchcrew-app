@@ -8,11 +8,10 @@ const path = require("path");
 /**
  * Lint-style guard (docs/style-guide.md "Button-Icons"): every labelled action `<Button>` in src
  * carries a leading `icon="<role>"`. Icon-only buttons (`iconOnly`) are exempt (the icon IS the
- * content). Documented exception: the group switcher rows in group-settings (selection control,
- * label = group name).
+ * content).
  */
 const SRC = path.join(__dirname, "..", "..", "..", "src");
-const EXEMPT_TEST_IDS = ["group-settings-switch-"];
+const EXEMPT_TEST_IDS: string[] = [];
 
 function walk(dir: string): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e: any) => {

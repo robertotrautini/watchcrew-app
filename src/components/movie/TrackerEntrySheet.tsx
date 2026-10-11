@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import * as Haptics from "expo-haptics";
 
 import { Button } from "@/components/ui/Button";
-import { SMALL_PILL_HIT_SLOP } from "@/components/ui/touchTarget";
+import { Select } from "@/components/ui/Select";
 import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { useDeletePayment, useSetPayment } from "@/hooks/useTrackerPayments";
@@ -20,8 +20,8 @@ export interface TrackerEntrySheetProps {
   onClose: () => void;
   groupId: string;
   groupMembers: GroupMemberRow[];
-  /** member_id -> payer-chip colour (`assignMemberColors`). */
-  memberColors: Map<string, string>;
+  /** Unused since the payer chips became a Select; kept so callers need no change. */
+  memberColors?: Map<string, string>;
 }
 
 /**
@@ -33,7 +33,6 @@ export function TrackerEntrySheet({
   onClose,
   groupId,
   groupMembers,
-  memberColors,
 }: TrackerEntrySheetProps) {
   const [payerId, setPayerId] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState("");
@@ -70,7 +69,9 @@ export function TrackerEntrySheet({
           onClose();
         },
         onError: () => {
-          showToast("Zahlung konnte nicht gespeichert werden", { variant: "error" });
+          showToast("Zahlung konnte nicht gespeichert werden", {
+            variant: "error",
+          });
         },
       },
     );
@@ -95,21 +96,23 @@ export function TrackerEntrySheet({
   return (
     <Sheet visible={entry != null} onClose={onClose} title={entry?.movie.name}>
       {entry ? (
-        <View testID="tracker-entry-sheet" className="gap-3">
+        <View testID="tracker-entry-sheet" className="gap-4">
           {confirmingDelete ? (
-            <View testID="tracker-entry-sheet-delete-confirm" className="gap-3">
+            <View testID="tracker-entry-sheet-delete-confirm" className="gap-4">
               <Text className="text-text-primary">Wirklich löschen?</Text>
-              <View className="flex-row gap-2">
+              <View className="flex-row gap-3">
                 <Button
                   testID="tracker-entry-sheet-delete-cancel-button"
-                  label="Abbrechen" icon="close"
+                  label="Abbrechen"
+                  icon="close"
                   variant="secondary"
                   className="flex-1"
                   onPress={() => setConfirmingDelete(false)}
                 />
                 <Button
                   testID="tracker-entry-sheet-delete-confirm-button"
-                  label="Löschen" icon="delete"
+                  label="Löschen"
+                  icon="delete"
                   variant="danger"
                   className="flex-1"
                   loading={deletePaymentMutation.isPending}
@@ -119,47 +122,44 @@ export function TrackerEntrySheet({
             </View>
           ) : (
             <>
-              <Text className="text-text-secondary">Bezahlt von</Text>
-              <View className="flex-row flex-wrap gap-2">
-                {groupMembers.map((member) => {
-                  const isSelected = payerId === member.user_id;
-                  const color = memberColors.get(member.user_id);
-                  return (
-                    <Pressable
-                      key={member.user_id}
-                      testID={`tracker-entry-sheet-payer-${member.user_id}`}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: isSelected }}
-                      // visual pill stays small; hitSlop tops the touch area up to 48dp
-                      hitSlop={SMALL_PILL_HIT_SLOP}
-                      onPress={() => setPayerId(member.user_id)}
-                      className={
-                        isSelected
-                          ? "items-center rounded-sm px-3 py-1"
-                          : "items-center rounded-sm border px-3 py-1"
-                      }
-                      // Inline style exception (same documented precedent as
-                      // PaymentModal.tsx): runtime per-member hex colour.
-                      style={isSelected ? { backgroundColor: color } : { borderColor: color }}
-                    >
-                      <Text className={isSelected ? "text-xs text-bg-primary" : "text-xs text-text-primary"}>
-                        {memberDisplayLabel(member.user_id, member.profiles?.display_name)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+              <View
+                testID="tracker-entry-sheet-payer-section"
+                className="gap-2"
+              >
+                <Text className="text-text-secondary">Bezahlt von</Text>
+                <Select
+                  testID="tracker-entry-sheet-payer-select"
+                  accessibilityLabel="Bezahlt von"
+                  options={groupMembers.map((member) => ({
+                    value: member.user_id,
+                    label: memberDisplayLabel(
+                      member.user_id,
+                      member.profiles?.display_name,
+                    ),
+                  }))}
+                  value={payerId}
+                  onChange={setPayerId}
+                  placeholder="Person wählen"
+                />
               </View>
-              <DateField
-                testID="tracker-entry-sheet-date-field"
-                valueIso={dateInput || null}
-                displayText={formatDateForInput(dateInput)}
-                placeholder="Datum wählen"
-                onChangeIso={setDateInput}
-              />
-              <View className="flex-row gap-2">
+              <View testID="tracker-entry-sheet-date-section" className="gap-2">
+                <Text className="text-text-secondary">Bezahlt am</Text>
+                <DateField
+                  testID="tracker-entry-sheet-date-field"
+                  valueIso={dateInput || null}
+                  displayText={formatDateForInput(dateInput)}
+                  placeholder="Datum wählen"
+                  onChangeIso={setDateInput}
+                />
+              </View>
+              <View
+                testID="tracker-entry-sheet-actions"
+                className="flex-row gap-3"
+              >
                 <Button
                   testID="tracker-entry-sheet-save-button"
-                  label="Speichern" icon="save"
+                  label="Speichern"
+                  icon="save"
                   className="flex-1"
                   disabled={!payerId}
                   loading={setPaymentMutation.isPending}
@@ -167,7 +167,8 @@ export function TrackerEntrySheet({
                 />
                 <Button
                   testID="tracker-entry-sheet-delete-button"
-                  label="Löschen" icon="delete"
+                  label="Löschen"
+                  icon="delete"
                   variant="danger"
                   className="flex-1"
                   onPress={() => setConfirmingDelete(true)}

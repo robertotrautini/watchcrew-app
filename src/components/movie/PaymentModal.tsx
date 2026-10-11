@@ -1,16 +1,13 @@
-import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { useEffect, useState } from "react";
-import { Pressable, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
-import { SMALL_PILL_HIT_SLOP } from "@/components/ui/touchTarget";
-import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { Select } from "@/components/ui/Select";
 import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import type { GroupMemberRow } from "@/lib/groups";
-import { searchEntries } from "@/lib/watchlistLogic";
 import {
   computeNextPayer,
   lastPaidHint,
@@ -46,10 +43,15 @@ export interface PaymentModalProps {
   groupMembers: GroupMemberRow[];
   displayNameById: Map<string, string>;
   /** member_id -> payer-button color (`assignMemberColors`, src/lib/trackerLogic.ts). */
-  memberColors: Map<string, string>;
+  memberColors?: Map<string, string>;
   /** Injectable for deterministic tests; defaults to the real current time. */
   now?: Date;
   onSaved?: () => void;
+}
+
+/** Latest seen_at across all ratings of an entry ("" when none) -- ISO strings sort lexicographically. */
+function latestSeenAt(entry: WatchlistEntry): string {
+  return entry.ratings.reduce((max, r) => (r.seen_at && r.seen_at > max ? r.seen_at : max), "");
 }
 
 function todayIso(now: Date): string {
@@ -63,13 +65,11 @@ export function PaymentModal({
   entries,
   groupMembers,
   displayNameById,
-  memberColors,
   now,
   onSaved,
 }: PaymentModalProps) {
   const effectiveNow = now ?? new Date();
 
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const [selectedPayerId, setSelectedPayerId] = useState<string | null>(null);
   const [dateInput, setDateInput] = useState<string>(todayIso(effectiveNow));
@@ -84,7 +84,6 @@ export function PaymentModal({
       return;
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
-    setSearchQuery("");
     setSelectedEntryId(null);
     setSelectedPayerId(computeNextPayer(groupMembers, entries));
     setDateInput(todayIso(effectiveNow));
@@ -92,8 +91,20 @@ export function PaymentModal({
   }, [visible]);
 
   const unpaidEntries = getUnpaidDiaryEntries(entries);
-  const searchedEntries = searchEntries(unpaidEntries, searchQuery);
+  const movieOptions = unpaidEntries.map((entry) => ({
+    value: entry.id,
+    label: entry.movie.name,
+  }));
   const lastPaidByMember = getLastPaidAtByMember(entries);
+  // Empty query: ALL unpaid movies, most recently seen first (scrollable list, no cut-off).
+  const recentMovieOptions = [...unpaidEntries]
+    .sort((a, b) => latestSeenAt(b).localeCompare(latestSeenAt(a)))
+    .map((entry) => ({ value: entry.id, label: entry.movie.name }));
+  const payerOptions = groupMembers.map((member) => ({
+    value: member.user_id,
+    label: memberDisplayLabel(member.user_id, member.profiles?.display_name),
+    hint: lastPaidHint(lastPaidByMember.get(member.user_id) ?? null, effectiveNow),
+  }));
 
   const canSave =
     selectedEntryId != null &&
@@ -131,120 +142,32 @@ export function PaymentModal({
   return (
     <Sheet visible={visible} onClose={onClose} title="Zahlung erfassen">
       <View testID="payment-modal" className="gap-3">
-        <TextInput
-          testID="payment-modal-search-input"
-          className={GLASS_SEARCH_INPUT_CLASSNAME}
-          placeholder="Film suchen…"
-          placeholderTextColor="#8b8b8b"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
-
-        <View testID="payment-modal-movie-list" className="max-h-48">
-          {searchedEntries.length === 0 ? (
-            <Text
-              testID="payment-modal-movie-empty"
-              className="py-3 text-text-secondary"
-            >
-              Keine unbezahlten Filme gefunden.
-            </Text>
-          ) : (
-            searchedEntries.map((entry) => {
-              const isSelected = entry.id === selectedEntryId;
-              return (
-                <Pressable
-                  key={entry.id}
-                  testID={`payment-modal-movie-${entry.id}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  onPress={() => setSelectedEntryId(entry.id)}
-                  className={
-                    isSelected
-                      ? "min-h-touch-comfortable justify-center rounded-lg bg-accent px-3"
-                      : "min-h-touch-comfortable justify-center rounded-lg border-b border-glass-border px-3"
-                  }
-                >
-                  <Text
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                    className={`${MOVIE_TITLE_FONT} ${
-                      isSelected ? "text-bg-primary" : "text-text-primary"
-                    }`}
-                  >
-                    {entry.movie.name}
-                  </Text>
-                </Pressable>
-              );
-            })
-          )}
+        <View className="gap-2">
+          <Text className="text-text-secondary">Film</Text>
+          <Select
+            testID="payment-modal-movie-select"
+            searchable
+            autoFocusSearch={false}
+            defaultOptions={recentMovieOptions}
+            options={movieOptions}
+            value={selectedEntryId}
+            onChange={setSelectedEntryId}
+            placeholder="Film wählen"
+            searchPlaceholder="Film suchen…"
+            emptyText="Keine unbezahlten Filme gefunden."
+          />
         </View>
 
         <View className="gap-2">
           <Text className="text-text-secondary">Wer hat bezahlt?</Text>
-          <View
-            className="flex-row flex-wrap gap-2"
-            testID="payment-modal-payer-buttons"
-          >
-            {groupMembers.map((member) => {
-              const isSelected = selectedPayerId === member.user_id;
-              const color = memberColors.get(member.user_id);
-              const hint = lastPaidHint(
-                lastPaidByMember.get(member.user_id) ?? null,
-                effectiveNow,
-              );
-              return (
-                <Pressable
-                  key={member.user_id}
-                  testID={`payment-modal-payer-button-${member.user_id}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  // visual pill stays small; hitSlop tops the touch area up to 48dp
-                  hitSlop={SMALL_PILL_HIT_SLOP}
-                  onPress={() => setSelectedPayerId(member.user_id)}
-                  className={
-                    isSelected
-                      ? "items-center rounded-sm px-3 py-1"
-                      : "items-center rounded-lg border px-3 py-1"
-                  }
-                  // Inline style exception (documented, narrow -- see
-                  // docs/interim-decisions.md "M8", same precedent as the
-                  // M6-Cleanup MovieGrid progress-bar-fill exception):
-                  // `color` is a runtime hex value from `assignMemberColors`
-                  // (src/lib/trackerLogic.ts), one per member, with no fixed
-                  // enumerable set NativeWind's JIT could pre-generate
-                  // classes for.
-                  style={
-                    isSelected
-                      ? { backgroundColor: color }
-                      : { borderColor: color }
-                  }
-                >
-                  <Text
-                    className={
-                      isSelected
-                        ? "text-xs text-bg-primary"
-                        : "text-xs text-text-primary"
-                    }
-                  >
-                    {memberDisplayLabel(
-                      member.user_id,
-                      member.profiles?.display_name,
-                    )}
-                  </Text>
-                  <Text
-                    testID={`payment-modal-payer-hint-${member.user_id}`}
-                    className={
-                      isSelected
-                        ? "text-[10px] text-bg-primary"
-                        : "text-[10px] text-text-secondary"
-                    }
-                  >
-                    {hint}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <Select
+            testID="payment-modal-payer-select"
+            accessibilityLabel="Wer hat bezahlt?"
+            options={payerOptions}
+            value={selectedPayerId}
+            onChange={setSelectedPayerId}
+            placeholder="Person wählen"
+          />
         </View>
 
         <View className="gap-2">
