@@ -1,9 +1,8 @@
+import { IconButton } from "@/components/ui/IconButton";
 import type { ReactNode } from "react";
 import { LayoutAnimation, View } from "react-native";
 
-import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 import { Glass } from "@/components/ui/Glass";
-import { Icon } from "@/components/ui/Icon";
 
 export interface CollapsibleFilterPanelProps {
   /** Base testID: `<id>-toggle`, `<id>-panel`, `<id>-active-dot`. */
@@ -46,16 +45,14 @@ export function CollapsibleFilterPanel({
         {search}
         {actions}
         <View className="relative">
-          <Button
+          <IconButton
             testID={`${testID}-toggle`}
-            variant={open ? "primary" : "secondary"}
-            iconOnly
+            icon="options"
+            variant={open ? "accent" : "neutral"}
             accessibilityLabel="Filter"
             accessibilityState={{ expanded: open }}
             onPress={handleToggle}
-          >
-            <Icon name="options" size="M" color={open ? BUTTON_ICON_COLORS.primary : BUTTON_ICON_COLORS.secondary} />
-          </Button>
+          />
           {hasActiveFilters ? (
             <View
               testID={`${testID}-active-dot`}

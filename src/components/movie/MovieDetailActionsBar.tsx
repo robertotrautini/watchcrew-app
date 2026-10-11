@@ -8,14 +8,13 @@ import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 
 import {
-  Button,
   DANGER_ICON_COLOR,
   DANGER_PRESSED_CLASSNAME,
   DANGER_SURFACE_CLASSNAME,
   DANGER_TEXT_CLASSNAME,
 } from "@/components/ui/Button";
 import { GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
-import { Sheet } from "@/components/ui/Sheet";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   useAddToWatchlist,
   useDeleteWatchlistEntry,
@@ -114,6 +113,9 @@ const ACTION_ICONS: Record<ActionButtonId, IconRole> = {
 
 const ACTION_ICON_COLOR = "#a8a8a8";
 
+// Fully opaque black (same as the bar surface behind them) so the tiles stand off from the content.
+const ACTION_TILE_CLASSNAME = `${GLASS_TILE_CLASSNAME.replace("bg-card", "")} bg-black`;
+
 interface ActionIconButtonProps {
   id: ActionButtonId;
   testID: string;
@@ -141,27 +143,34 @@ function ActionIconButton({
       accessibilityState={{ disabled: loading, busy: loading }}
       disabled={loading}
       onPress={onPress}
-      className={`min-h-touch-comfortable ${widthClass} items-center justify-center gap-1 px-2 py-3 ${
-        danger
-          ? `rounded-xl ${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`
-          : GLASS_TILE_CLASSNAME
+      className={`min-h-touch-comfortable ${widthClass} ${
+        danger ? `rounded-xl bg-black` : ACTION_TILE_CLASSNAME
       }${loading ? " opacity-50" : ""}`}
     >
-      {loading ? (
-        <Spinner testID={`${testID}-loading-indicator`} />
-      ) : (
-        <Icon
-          name={ACTION_ICONS[id]}
-          size="M"
-          color={danger ? DANGER_ICON_COLOR : ACTION_ICON_COLOR}
-        />
-      )}
-      <Text
-        numberOfLines={1}
-        className={`text-center text-xs ${danger ? DANGER_TEXT_CLASSNAME : "text-text-secondary"}`}
+      <View
+        testID={danger ? `${testID}-tint` : undefined}
+        className={`min-h-touch-comfortable flex-1 items-center justify-center gap-1 px-2 py-3 ${
+          danger
+            ? `rounded-xl ${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`
+            : ""
+        }`}
       >
-        {label}
-      </Text>
+        {loading ? (
+          <Spinner testID={`${testID}-loading-indicator`} />
+        ) : (
+          <Icon
+            name={ACTION_ICONS[id]}
+            size="M"
+            color={danger ? DANGER_ICON_COLOR : ACTION_ICON_COLOR}
+          />
+        )}
+        <Text
+          numberOfLines={1}
+          className={`text-center text-xs ${danger ? DANGER_TEXT_CLASSNAME : "text-text-secondary"}`}
+        >
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }
@@ -357,31 +366,16 @@ export function MovieDetailActionsBar({
           ))}
         </View>
       )}
-      <Sheet
+      <ConfirmDialog
         visible={deleteSheetVisible}
-        onClose={() => setDeleteSheetVisible(false)}
-        title="Film löschen?"
-      >
-        <View className="flex-row gap-2">
-          <Button
-            testID="movie-detail-delete-cancel-button"
-            label="Abbrechen"
-            icon="close"
-            variant="secondary"
-            className="flex-1"
-            onPress={() => setDeleteSheetVisible(false)}
-          />
-          <Button
-            testID="movie-detail-delete-confirm-button"
-            label="Löschen"
-            icon="delete"
-            variant="danger"
-            className="flex-1"
-            loading={deleteMutation.isPending}
-            onPress={handleDeleteConfirm}
-          />
-        </View>
-      </Sheet>
+        testID="movie-detail-delete"
+        title="Film aus der Watchlist entfernen?"
+        description="Der Film wird samt aller Bewertungen und Zahlungen der Gruppe gelöscht. Das kann nicht rückgängig gemacht werden."
+        confirmLabel="Entfernen"
+        loading={deleteMutation.isPending}
+        onCancel={() => setDeleteSheetVisible(false)}
+        onConfirm={handleDeleteConfirm}
+      />
     </>
   );
 }

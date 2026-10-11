@@ -83,8 +83,8 @@ describe("settings gear shape", () => {
   it("is a true circle: equal fixed size, no stretch", async () => {
     const { getByTestId } = await render(<AppHeader title="T" settingsTestID="gear" />);
     const cls = getByTestId("gear").props.className as string;
-    expect(cls).toContain("h-11");
-    expect(cls).toContain("w-11");
+    expect(cls).toContain("h-12");
+    expect(cls).toContain("w-12");
     expect(cls).toContain("shrink-0");
     expect(cls).toContain("rounded-full");
     expect(cls).not.toContain("min-h");

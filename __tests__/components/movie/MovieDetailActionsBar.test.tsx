@@ -74,9 +74,17 @@ describe("MovieDetailActionsBar", () => {
     const { getByTestId } = await render(
       <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
     );
-    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("bg-danger/15");
-    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("border-danger/30");
+    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("bg-danger/15");
+    expect(getByTestId("movie-detail-action-loeschen-tint").props.className).toContain("border-danger/30");
     expect(getByTestId("movie-detail-action-aehnliche").props.className).not.toContain("danger");
+  });
+
+  it("all tiles sit on the opaque black, delete is tinted on top of it", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
+    );
+    expect(getByTestId("movie-detail-action-aehnliche").props.className).toContain("bg-black");
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("bg-black");
   });
 
   it("renders only the actions passed in the actions prop, in order", async () => {

@@ -1,3 +1,4 @@
+import { IconButton } from "@/components/ui/IconButton";
 import { View } from "react-native";
 import { TextInput } from "@/components/ui/Text";
 
@@ -6,10 +7,8 @@ import {
   ProviderCategoryPills,
   YearPills,
 } from "@/components/entries/EntryFilterPills";
-import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
-import { Icon } from "@/components/ui/Icon";
 import { SortButton } from "@/components/ui/SortButton";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { sortOptionLabel } from "@/lib/entryFilters";
@@ -52,15 +51,13 @@ export function WatchlistFilterPanel({
         />
       }
       actions={
-        <Button
+        <IconButton
           testID="watchlist-add-movie-button"
-          variant="primary"
-          iconOnly
+          icon="add"
+          variant="accent"
           accessibilityLabel="Film hinzufügen"
           onPress={onAddMovie}
-        >
-          <Icon name="add" size="M" color={BUTTON_ICON_COLORS.primary} />
-        </Button>
+        />
       }
     >
       <View className="flex-row items-center gap-2">

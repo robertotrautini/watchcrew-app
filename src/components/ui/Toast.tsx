@@ -1,3 +1,4 @@
+import { IconButton } from "@/components/ui/IconButton";
 import { useEffect, useRef, useState } from "react";
 import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -205,24 +206,20 @@ export function ToastHost() {
             text
           )}
           {/* 48dp touch box; negative margins cancel the surface padding so the toast keeps its height. */}
-          <Pressable
+          <IconButton
             testID="toast-close"
-            accessibilityRole="button"
+            icon="close"
+            variant="ghost"
+            iconColor={look.iconColor ?? CLOSE_ICON_COLOR}
             accessibilityLabel="Schließen"
-            className="-my-3 -mr-3 h-12 w-12 items-center justify-center"
+            className="-my-3 -mr-3"
             onPress={() => {
               if (dismissTimer.current) {
                 clearTimeout(dismissTimer.current);
               }
               setMessage(null);
             }}
-          >
-            <Icon
-              name="close"
-              size="M"
-              color={look.iconColor ?? CLOSE_ICON_COLOR}
-            />
-          </Pressable>
+          />
         </View>
       </Glass>
     </Animated.View>

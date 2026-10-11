@@ -46,7 +46,7 @@ describe("Button icon consistency", () => {
 
   it("finds Button usages (guard against a broken scanner)", () => {
     const total = files.reduce((n: number, f: string) => n + buttonOpeningTags(fs.readFileSync(f, "utf8")).length, 0);
-    expect(total).toBeGreaterThan(40);
+    expect(total).toBeGreaterThan(30);
   });
 
   it("every labelled Button has an icon role (or is icon-only / exempt)", () => {

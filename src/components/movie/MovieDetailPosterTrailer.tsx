@@ -1,3 +1,4 @@
+import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { Image } from "@/components/ui/Image";
 import { Spinner } from "@/components/ui/Spinner";
@@ -95,17 +96,14 @@ export function MovieDetailPosterTrailer({
             onMessage={handleWebViewMessage}
             className="h-full w-full"
           />
-          <Pressable
+          <IconButton
             testID="movie-detail-trailer-close-button"
-            accessibilityRole="button"
+            icon="close"
+            variant="overlay"
             accessibilityLabel="Schließen"
             onPress={() => setIsPlayingTrailer(false)}
-            className="absolute left-1 top-1 h-12 w-12 items-center justify-center"
-          >
-            <View className="h-9 w-9 items-center justify-center rounded-full bg-black/55">
-              <Icon name="close" size="M" color={OVERLAY_ICON_COLOR} />
-            </View>
-          </Pressable>
+            className="absolute left-1 top-1"
+          />
         </>
       ) : (
         <>
