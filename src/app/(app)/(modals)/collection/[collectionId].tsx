@@ -1,116 +1,36 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { LoadingArea } from "@/components/ui/LoadingArea";
-import { useState } from "react";
-import { View } from "react-native";
-import { Text } from "@/components/ui/Text";
+import { useLocalSearchParams } from "expo-router";
 
-import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
+import { MovieGridScreen } from "@/components/movie/MovieGridScreen";
+import { ProviderFilteredMovieGrid } from "@/components/movie/ProviderFilteredMovieGrid";
 import { useCollection } from "@/hooks/useCollection";
-import { useActiveGroup } from "@/hooks/useActiveGroup";
-import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useMoviesProviders } from "@/hooks/useMoviesProviders";
-import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
-import { filterByProviderCategory, type ProviderCategory } from "@/lib/movieProviderFilter";
-import { usePreferencesStore } from "@/stores/usePreferencesStore";
-import type { TmdbMovieLike } from "@/lib/tmdbProxy";
+import { mapMovieLikeToGridItem } from "@/lib/addMovieLogic";
 
 /**
- * M6 part 2b: "Filmreihe" (collection) sub-view screen. Shown when a user
- * taps "Zur Filmreihe" from the movie-detail overlay for a movie that
- * belongs to a TMDB collection. Purely a data-loading/wiring layer on top
- * of the shared `MovieGrid` (src/components/movie/MovieGrid.tsx) — no
- * grid/badge/filter rendering logic of its own.
- *
- * Needs BOTH the collection id (this route's own dynamic segment) and the
- * ORIGINATING movie's tmdbId (an optional query search param) since the
- * `collection` tmdb-proxy action keys its cache on both
- * (see src/hooks/useCollection.ts / src/lib/tmdbProxy.ts).
+ * "Filmreihe" (TMDB collection). Thin wrapper: query + props for
+ * `MovieGridScreen` (title line, provider filter). Needs the collection id
+ * (route segment) AND the originating movie's tmdbId (search param), since
+ * the `collection` tmdb-proxy action keys its cache on both.
  */
 export default function CollectionScreen() {
   const params = useLocalSearchParams<{ collectionId: string; tmdbId?: string }>();
-  const router = useRouter();
-
   const collectionId = Number(params.collectionId);
   const tmdbId = Number(params.tmdbId);
   const hasValidParams = !Number.isNaN(collectionId) && !Number.isNaN(tmdbId);
-
-  const currentUserId = useCurrentUserId();
-  const { activeGroupId, groupsQuery: userGroupsQuery } = useActiveGroup(currentUserId);
-  const watchlistQuery = useGroupWatchlist(activeGroupId);
-
-  const collectionQuery = useCollection(
-    hasValidParams ? tmdbId : undefined,
-    hasValidParams ? collectionId : undefined
-  );
-
-  const [activeCategory, setActiveCategory] = useState<ProviderCategory | null>(null);
-
-  const items: MovieGridItem[] = (collectionQuery.data?.parts ?? []).map((part: TmdbMovieLike) => ({
-    tmdbId: part.id,
-    title: part.title ?? part.name ?? "Unbekannt",
-    posterPath: part.poster_path ?? null,
-    releaseDate: part.release_date ?? null,
-    voteAverage: typeof part.vote_average === "number" ? part.vote_average : null,
-  }));
-
-  const { providersByTmdbId } = useMoviesProviders(items.map((item) => item.tmdbId));
-  // Inventory 2.10: the category pills respect the user's own streaming
-  // services ("Meine Streaming-Dienste"); with none selected they only filter by category.
-  const myProviderIds = usePreferencesStore((s) => s.selectedStreamingProviderIds);
-  const filteredItems = filterByProviderCategory(items, providersByTmdbId, activeCategory, myProviderIds);
-
-  if (!hasValidParams) {
-    return (
-      <View className="flex-1 items-center justify-center px-4" testID="collection-screen">
-        <Text testID="collection-screen-error" className="text-center text-danger">
-          Ungültige Filmreihen-Referenz.
-        </Text>
-      </View>
-    );
-  }
-
-  if (collectionQuery.isLoading || userGroupsQuery.isLoading) {
-    return (
-      <View className="flex-1" testID="collection-screen">
-        <LoadingArea testID="collection-screen-loading" />
-      </View>
-    );
-  }
-
-  if (collectionQuery.isError) {
-    return (
-      <View className="flex-1 items-center justify-center px-4" testID="collection-screen">
-        <Text testID="collection-screen-error-data" className="text-center text-danger">
-          Die Filmreihe konnte nicht geladen werden.
-        </Text>
-      </View>
-    );
-  }
+  const query = useCollection(hasValidParams ? tmdbId : undefined, hasValidParams ? collectionId : undefined);
 
   return (
-    <View className="flex-1 px-4 pt-4" testID="collection-screen">
-      <Text className="mb-3 font-title text-xl text-text-primary">
-        {collectionQuery.data?.name ?? "Filmreihe"}
-      </Text>
-      <MovieGrid
-        items={filteredItems}
-        onPressItem={(item) =>
-          router.push({
-            pathname: "/movie/[tmdbId]",
-            params: { tmdbId: String(item.tmdbId) },
-          })
-        }
-        testID="collection-screen-grid"
-        getBadge={(item) =>
-          activeGroupId
-            ? getLibraryBadgeForTmdbId(watchlistQuery.data?.entries ?? [], item.tmdbId, currentUserId ?? "")
-            : null
-        }
-        progressHeader={null}
-        streamingFilter={{ active: activeCategory, onChange: setActiveCategory }}
-        emptyMessage="Keine weiteren Teile gefunden"
-      />
-    </View>
+    <MovieGridScreen
+      testIDPrefix="collection-screen"
+      hasValidParams={hasValidParams}
+      invalidParamsText="Ungültige Filmreihen-Referenz."
+      isLoading={query.isLoading}
+      isError={query.isError}
+      items={(query.data?.parts ?? []).map(mapMovieLikeToGridItem)}
+      errorText="Die Filmreihe konnte nicht geladen werden."
+      errorTestIDSuffix="error-data"
+      emptyMessage="Keine weiteren Teile gefunden"
+      title={query.data?.name ?? "Filmreihe"}
+      Grid={ProviderFilteredMovieGrid}
+    />
   );
 }

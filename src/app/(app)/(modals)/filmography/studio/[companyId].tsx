@@ -1,158 +1,40 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { LoadingArea } from "@/components/ui/LoadingArea";
-import { View } from "react-native";
-import { Text } from "@/components/ui/Text";
+import { useLocalSearchParams } from "expo-router";
 
-import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
-import { Button } from "@/components/ui/Button";
-import { useActiveGroup } from "@/hooks/useActiveGroup";
-import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
+import { MovieGridScreen } from "@/components/movie/MovieGridScreen";
 import { useStudioFilmography } from "@/hooks/useStudioFilmography";
-import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
-import type { TmdbMovieLike } from "@/lib/tmdbProxy";
+import { mapMovieLikeToGridItem } from "@/lib/addMovieLogic";
 
 /**
- * M6 part 2b: "Studio-Filmografie" sub-view screen. Shown when a user taps
- * a production company from the movie-detail overlay. Purely a
- * data-loading/wiring layer on top of the shared `MovieGrid`
- * (src/components/movie/MovieGrid.tsx) — no grid/badge rendering logic of
- * its own.
- *
- * Unlike the director/actor filmography sub-views, the studio grid does NOT
- * get a `progressHeader` ("X von Y gesehen") or a `streamingFilter`, per the
- * task spec — a studio's catalog is generally far larger and not meaningfully
- * "completable" the way a person's filmography is.
- *
- * Paginated via `useStudioFilmography`'s `useInfiniteQuery` wrapper — pages
- * are flattened and de-duplicated by `tmdbId` (TMDB discover-style pagination
- * can in rare cases repeat an item across pages if underlying data shifts
- * between fetches) before being handed to `MovieGrid`.
+ * "Studio-Filmografie" (from a production company in the movie detail).
+ * Thin wrapper: paginated query (pages flattened, de-duplicated by tmdbId
+ * since TMDB pagination can repeat an item) + "Mehr laden". No progress
+ * header or provider filter: a studio catalog is not "completable".
  */
 export default function StudioFilmographyScreen() {
   const params = useLocalSearchParams<{ companyId: string }>();
-  const router = useRouter();
-
   const companyId = Number(params.companyId);
   const hasValidParams = params.companyId != null && !Number.isNaN(companyId);
+  const query = useStudioFilmography(hasValidParams ? companyId : undefined);
 
-  const currentUserId = useCurrentUserId();
-  const { activeGroupId } = useActiveGroup(currentUserId);
-  const watchlistQuery = useGroupWatchlist(activeGroupId);
-
-  const studioFilmographyQuery = useStudioFilmography(
-    hasValidParams ? companyId : undefined,
-  );
-  const {
-    data,
-    isLoading,
-    isError,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
-  } = studioFilmographyQuery;
-
-  const allResults: TmdbMovieLike[] = (data?.pages ?? []).flatMap(
-    (page) => page.results,
-  );
-
-  // De-duplicate by tmdbId across pages, keeping the first occurrence.
-  const seenTmdbIds = new Set<number>();
-  const dedupedResults: TmdbMovieLike[] = [];
-  for (const result of allResults) {
-    if (!seenTmdbIds.has(result.id)) {
-      seenTmdbIds.add(result.id);
-      dedupedResults.push(result);
-    }
-  }
-
-  const items: MovieGridItem[] = dedupedResults.map((part) => ({
-    tmdbId: part.id,
-    title: part.title ?? part.name ?? "Unbekannt",
-    posterPath: part.poster_path ?? null,
-    releaseDate: part.release_date ?? null,
-    voteAverage:
-      typeof part.vote_average === "number" ? part.vote_average : null,
-  }));
-
-  if (!hasValidParams) {
-    return (
-      <View
-        className="flex-1 items-center justify-center px-4"
-        testID="studio-filmography-screen"
-      >
-        <Text
-          testID="studio-filmography-screen-error"
-          className="text-center text-danger"
-        >
-          Ungültige Studio-Referenz.
-        </Text>
-      </View>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <View
-        className="flex-1"
-        testID="studio-filmography-screen"
-      >
-        <LoadingArea testID="studio-filmography-screen-loading" />
-      </View>
-    );
-  }
-
-  if (isError) {
-    return (
-      <View
-        className="flex-1 items-center justify-center px-4"
-        testID="studio-filmography-screen"
-      >
-        <Text
-          testID="studio-filmography-screen-error"
-          className="text-center text-danger"
-        >
-          Die Studio-Filmografie konnte nicht geladen werden.
-        </Text>
-      </View>
-    );
-  }
+  const results = (query.data?.pages ?? []).flatMap((page) => page.results);
+  const uniqueResults = results.filter((r, index) => results.findIndex((o) => o.id === r.id) === index);
 
   return (
-    <View className="flex-1 px-4 pt-4" testID="studio-filmography-screen">
-      <MovieGrid
-        items={items}
-        onPressItem={(item) =>
-          router.push({
-            pathname: "/movie/[tmdbId]",
-            params: { tmdbId: String(item.tmdbId) },
-          })
-        }
-        testID="studio-filmography-screen-grid"
-        getBadge={(item) =>
-          getLibraryBadgeForTmdbId(
-            watchlistQuery.data?.entries ?? [],
-            item.tmdbId,
-            currentUserId ?? "",
-          )
-        }
-        footer={
-          hasNextPage ? (
-            <View className="items-center py-4">
-              <Button
-                testID="studio-filmography-screen-load-more-button"
-                label="Mehr laden"
-                icon="chevronDown"
-                onPress={() => fetchNextPage()}
-                loading={isFetchingNextPage}
-                disabled={isFetchingNextPage}
-                variant="secondary"
-              />
-            </View>
-          ) : undefined
-        }
-        emptyMessage="Keine Filme gefunden"
-      />
-    </View>
+    <MovieGridScreen
+      testIDPrefix="studio-filmography-screen"
+      hasValidParams={hasValidParams}
+      invalidParamsText="Ungültige Studio-Referenz."
+      isLoading={query.isLoading}
+      isError={query.isError}
+      items={uniqueResults.map(mapMovieLikeToGridItem)}
+      errorText="Die Studio-Filmografie konnte nicht geladen werden."
+      emptyMessage="Keine Filme gefunden"
+      waitForGroups={false}
+      loadMore={{
+        hasMore: !!query.hasNextPage,
+        isFetching: query.isFetchingNextPage,
+        onPress: () => query.fetchNextPage(),
+      }}
+    />
   );
 }

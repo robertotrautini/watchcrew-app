@@ -68,6 +68,8 @@ Aufwand: S < 0,5 Tag, M ca. 1 Tag, L > 1 Tag. Testrisiko: Hoch/Mittel/Niedrig. "
 
 ### P-A Modal-Screens zu EINER Basiskomponente (Schauspieler, Regie, Studio, Ähnliche Filme, Filmreihen)
 
+**Status: erledigt 2026-10-11.** `MovieGridScreen.tsx` (176 Z.) + `ProviderFilteredMovieGrid.tsx` (26 Z.); Screens 603 auf 181 Z. (29/29/40/47/36). Gesamt 603 auf 383 Zeilen (-220), plus neuer Test `MovieGridScreen.test.tsx`. Abweichung vom Entwurf: Filter als `Grid`-Prop (`ProviderFilteredMovieGrid`) statt Hook, `useLibraryBadge` nicht extrahiert (Badge-Logik liegt in der Basis). testIDs und Optik unverändert.
+
 | Feld | Inhalt |
 |---|---|
 | Ziel | 5 Screens (88/92/159/149/116 Zeilen [M]) teilen dieselbe Kette: Params prüfen, Gruppe/Watchlist laden, Query, Items mappen, Laden/Fehler, `MovieGrid`. Inventar-Ähnlichkeit: actor/director 1,0; actor/similar 1,0; studio zu den anderen 0,84; collection zu den anderen 0,82 und 0,69 zu studio [M]. jscpd findet 4 Klone in diesen Dateien [M] |

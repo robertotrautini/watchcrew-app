@@ -156,6 +156,8 @@
         "src/app/(app)/(modals)/filmography/**",
         "src/components/movie/MovieDetail*",
         "src/components/movie/MemberRatingRow.tsx",
+        "src/components/movie/MovieGridScreen.tsx",
+        "src/components/movie/ProviderFilteredMovieGrid.tsx",
         "src/lib/movieDetail*.ts",
         "src/hooks/useMovieDetail*.ts",
         "src/hooks/useSimilarMovies.ts",
