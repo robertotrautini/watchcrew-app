@@ -1,0 +1,123 @@
+-- ADR 0014 Phase 0: ratings per user and movie (not per group entry).
+-- Additive: legacy public.ratings stays untouched until Phase 4.
+-- Idempotent: safe to re-run.
+--
+-- Semantics (confirmed): one row per (user_id, movie_id). Resetting/deleting
+-- a rating = DELETE the row (movie counts as unseen/unrated in ALL groups).
+-- Removing a movie from a group only deletes watchlist_entries; the rating
+-- stays. No push trigger here (Phase 2, see supabase/drafts/).
+
+create table if not exists public.user_movie_ratings (
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  movie_id   uuid not null references public.movies(id) on delete cascade,
+  rating     numeric(2,1) check (rating is null or (rating >= 0 and rating <= 5)),
+  liked      boolean not null default false,
+  seen_at    date,
+  rated_at   timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (user_id, movie_id)
+);
+
+-- Group read path: all ratings for given movies.
+create index if not exists user_movie_ratings_movie_user_idx
+  on public.user_movie_ratings (movie_id, user_id);
+
+-- Support the visibility check (movie in group X, member of group X).
+create index if not exists watchlist_entries_movie_group_idx
+  on public.watchlist_entries (movie_id, group_id);
+create index if not exists watch_group_members_user_group_idx
+  on public.watch_group_members (user_id, group_id);
+
+-- updated_at maintenance.
+create or replace function public.set_user_movie_ratings_updated_at()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  new.updated_at := now();
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_user_movie_ratings_updated_at on public.user_movie_ratings;
+create trigger trg_user_movie_ratings_updated_at
+before update on public.user_movie_ratings
+for each row
+execute function public.set_user_movie_ratings_updated_at();
+
+-- Read helper: own row, or a user sharing a group in which the movie has an
+-- entry. SECURITY DEFINER avoids RLS recursion on watch_group_members /
+-- watchlist_entries (same pattern as is_group_member).
+create or replace function public.can_read_user_movie_rating(p_user_id uuid, p_movie_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select p_user_id = (select auth.uid())
+      or exists (
+        select 1
+          from public.watchlist_entries we
+          join public.watch_group_members me
+            on me.group_id = we.group_id and me.user_id = (select auth.uid())
+          join public.watch_group_members them
+            on them.group_id = we.group_id and them.user_id = p_user_id
+         where we.movie_id = p_movie_id
+      );
+$$;
+
+alter table public.user_movie_ratings enable row level security;
+
+drop policy if exists "umr_select_own_or_shared_group" on public.user_movie_ratings;
+create policy "umr_select_own_or_shared_group"
+  on public.user_movie_ratings for select to authenticated
+  using (public.can_read_user_movie_rating(user_id, movie_id));
+
+drop policy if exists "umr_insert_own" on public.user_movie_ratings;
+create policy "umr_insert_own"
+  on public.user_movie_ratings for insert to authenticated
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "umr_update_own" on public.user_movie_ratings;
+create policy "umr_update_own"
+  on public.user_movie_ratings for update to authenticated
+  using (user_id = (select auth.uid()))
+  with check (user_id = (select auth.uid()));
+
+drop policy if exists "umr_delete_own" on public.user_movie_ratings;
+create policy "umr_delete_own"
+  on public.user_movie_ratings for delete to authenticated
+  using (user_id = (select auth.uid()));
+
+grant select, insert, update, delete on public.user_movie_ratings to authenticated;
+grant select, insert, update, delete on public.user_movie_ratings to service_role;
+
+-- Bulk read path for the group view: membership checked once. Non-members
+-- (and unauthenticated callers) get an empty set, no membership leak.
+create or replace function public.get_group_member_ratings(p_group_id uuid)
+returns table (
+  user_id  uuid,
+  movie_id uuid,
+  rating   numeric(2,1),
+  liked    boolean,
+  seen_at  date,
+  rated_at timestamptz
+)
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select r.user_id, r.movie_id, r.rating, r.liked, r.seen_at, r.rated_at
+    from public.watchlist_entries we
+    join public.watch_group_members m on m.group_id = we.group_id
+    join public.user_movie_ratings r on r.movie_id = we.movie_id and r.user_id = m.user_id
+   where we.group_id = p_group_id
+     and public.is_group_member(p_group_id);
+$$;
+
+revoke all on function public.get_group_member_ratings(uuid) from public, anon;
+grant execute on function public.get_group_member_ratings(uuid) to authenticated;
