@@ -10,7 +10,7 @@ import { Brand } from "@/components/ui/Brand";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
 import { Chip, ChipTag } from "@/components/ui/Chip";
-import { SettingsRow } from "@/components/ui/SettingsRow";
+import { ListRow } from "@/components/ui/ListRow";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { MovieGrid, type MovieGridBadge } from "@/components/movie/MovieGrid";
 import { resolveGroupTheme } from "@/lib/groupTheme";
@@ -54,10 +54,10 @@ describe("highlight colour follows the group theme (red)", () => {
     expect([getByTestId("app-header-logo").props.source].flat()[0]).toBe(LOGO_HORIZONTAL.red);
   });
 
-  it("SettingsRow chevron uses the theme accent (not gold)", async () => {
+  it("ListRow chevron uses the theme accent (not gold)", async () => {
     const { getByTestId } = await render(
       <GroupThemeProvider themeName="red">
-        <SettingsRow testID="row" icon="group" label="G" onPress={() => {}} />
+        <ListRow chevron testID="row" icon="group" label="G" onPress={() => {}} />
       </GroupThemeProvider>,
     );
     expect(styleOf(getByTestId("row-chevron"))).toContain(red.accent);

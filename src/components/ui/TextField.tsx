@@ -1,5 +1,6 @@
 import type { TextInputProps } from "react-native";
 
+import { CONTROL_MIN_HEIGHT_CLASSNAME } from "@/components/ui/controlHeight";
 import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { TextInput } from "@/components/ui/Text";
 import { PLACEHOLDER_COLOR } from "@/lib/colors";
@@ -17,10 +18,10 @@ export interface TextFieldProps extends TextInputProps {
 }
 
 /**
- * Shared field look: opaque `bg-field` fill (FIELD_FILL), 1dp `border-surface-border`, radius, >= 48dp.
+ * Shared field look: opaque `bg-field` fill (FIELD_FILL), 1dp `border-surface-border`, radius, CONTROL_HEIGHT (56dp).
  * No accent border and no focus colour change. THE text input of the app (docs/style-guide.md "Felder und Flächen").
  */
-export const TEXT_FIELD_CLASSNAME = `min-h-touch-comfortable rounded-lg ${SURFACE_EDGE} bg-field px-4 py-3 text-base text-text-primary`;
+export const TEXT_FIELD_CLASSNAME = `${CONTROL_MIN_HEIGHT_CLASSNAME} rounded-lg ${SURFACE_EDGE} bg-field px-4 py-3 text-base text-text-primary`;
 
 export function TextField({ className, search, error, secure, multiline, ...rest }: TextFieldProps) {
   return (

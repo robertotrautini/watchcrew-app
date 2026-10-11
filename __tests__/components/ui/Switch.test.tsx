@@ -54,7 +54,7 @@ describe("SwitchIndicator (Material 3)", () => {
 });
 
 describe("SettingsToggleRow", () => {
-  it("is a 48dp switch with checked state and calls onPress", async () => {
+  it("is a 56dp switch with checked state and calls onPress", async () => {
     const onPress = jest.fn();
     const { getByTestId } = await render(
       <SettingsToggleRow testID="row" label="Tracker aktiv" checked onPress={onPress} />,
@@ -62,7 +62,7 @@ describe("SettingsToggleRow", () => {
     const row = getByTestId("row");
     expect(row.props.accessibilityRole).toBe("switch");
     expect(row.props.accessibilityState).toEqual(expect.objectContaining({ checked: true }));
-    expect(row.props.className).toContain("min-h-touch-comfortable");
+    expect(row.props.className).toContain("h-14");
     await fireEvent.press(row);
     expect(onPress).toHaveBeenCalled();
   });

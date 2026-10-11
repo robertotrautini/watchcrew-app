@@ -43,7 +43,7 @@ function GroupPushToggleRow({
     useGroupPushSubscription(groupId, userId);
 
   return isLoading ? (
-    <View className="min-h-touch-comfortable items-center justify-center">
+    <View className="h-14 items-center justify-center">
       <Spinner testID={`settings-notifications-loading-${groupId}`} />
     </View>
   ) : (

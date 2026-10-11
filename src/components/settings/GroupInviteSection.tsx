@@ -2,7 +2,6 @@ import { Share, View } from "react-native";
 
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 import { Button } from "@/components/ui/Button";
-import { SURFACE_TILE_CLASSNAME } from "@/components/ui/Surface";
 import { Text } from "@/components/ui/Text";
 
 interface GroupInviteSectionProps {
@@ -53,14 +52,12 @@ export function GroupInviteSection({
           onPress={onRegeneratePress}
         />
       </View>
-      <View className={SURFACE_TILE_CLASSNAME}>
-        <SettingsToggleRow
-          testID="group-settings-invite-toggle"
-          checked={inviteEnabled}
-          onPress={onToggleEnabled}
-          label={inviteEnabled ? "Einladungen aktiv" : "Einladungen deaktiviert"}
-        />
-      </View>
+      <SettingsToggleRow
+        testID="group-settings-invite-toggle"
+        checked={inviteEnabled}
+        onPress={onToggleEnabled}
+        label={inviteEnabled ? "Einladungen aktiv" : "Einladungen deaktiviert"}
+      />
     </View>
   );
 }

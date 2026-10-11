@@ -1,6 +1,4 @@
-import { Pressable } from "react-native";
-import { Text } from "@/components/ui/Text";
-
+import { ListRow } from "@/components/ui/ListRow";
 import { SwitchIndicator } from "@/components/ui/Switch";
 
 export interface SettingsToggleRowProps {
@@ -11,23 +9,19 @@ export interface SettingsToggleRowProps {
   onPress: () => void;
 }
 
-/** Flat switch row for a `SettingsGroup` card (Material 3 `SwitchIndicator`). */
+/** Switch row (ListRow with Material 3 `SwitchIndicator` trailing). */
 export function SettingsToggleRow({ testID, label, checked, disabled, onPress }: SettingsToggleRowProps) {
   return (
-    <Pressable
+    <ListRow
       testID={testID}
+      label={label}
       accessibilityRole="switch"
       accessibilityState={{ checked, disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
-      className="min-h-touch-comfortable flex-row items-center justify-between px-4 py-3"
-    >
-      {({ pressed }) => (
-        <>
-          <Text className="flex-1 pr-3 text-text-primary">{label}</Text>
-          <SwitchIndicator checked={checked} pressed={pressed} disabled={!!disabled} testID={`${testID}-switch`} />
-        </>
+      trailing={(pressed) => (
+        <SwitchIndicator checked={checked} pressed={pressed} disabled={!!disabled} testID={`${testID}-switch`} />
       )}
-    </Pressable>
+    />
   );
 }

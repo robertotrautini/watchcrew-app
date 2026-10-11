@@ -1,7 +1,7 @@
 import { View } from "react-native";
 
 import { IconButton } from "@/components/ui/IconButton";
-import { SURFACE_TILE_CLASSNAME } from "@/components/ui/Surface";
+import { ListRow } from "@/components/ui/ListRow";
 import { Text } from "@/components/ui/Text";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 
@@ -30,22 +30,15 @@ function MemberRow({
   onRemovePress: (userId: string) => void;
 }) {
   return (
-    <View testID={`group-settings-member-${member.user_id}`} className="gap-2">
+    <View testID={`group-settings-member-${member.user_id}`}>
       <View className="flex-row items-center gap-3">
-        <View
+        <ListRow
           testID={`group-settings-member-capsule-${member.user_id}`}
-          className={`flex-1 flex-row items-center gap-3 ${SURFACE_TILE_CLASSNAME} px-3 py-3`}
-        >
-          <Text className="flex-1 text-text-primary" numberOfLines={1}>
-            {memberDisplayLabel(member.user_id, member.profiles?.display_name)}
-          </Text>
-          <Text
-            testID={`group-settings-member-role-${member.user_id}`}
-            className="text-text-secondary"
-          >
-            {member.role === "owner" ? "Owner" : "Mitglied"}
-          </Text>
-        </View>
+          className="flex-1"
+          label={memberDisplayLabel(member.user_id, member.profiles?.display_name)}
+          value={member.role === "owner" ? "Owner" : "Mitglied"}
+          valueTestID={`group-settings-member-role-${member.user_id}`}
+        />
         {isOwner && !isSelf ? (
           <IconButton
             testID={`group-settings-member-${member.user_id}-remove-button`}

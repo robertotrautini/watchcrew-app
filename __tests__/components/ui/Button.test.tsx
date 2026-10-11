@@ -138,7 +138,7 @@ describe("Button", () => {
       <Button label="Save" onPress={() => {}} testID="save-button" />,
     );
 
-    expect(getByTestId("save-button").props.className).toContain("min-h-touch-comfortable");
+    expect(getByTestId("save-button").props.className).toContain("min-h-14");
   });
 
   it("applies the sm size's min touch-target-height className", async () => {

@@ -2,7 +2,7 @@ import Constants from "expo-constants";
 
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import type { IconRole } from "@/components/ui/Icon";
-import { SettingsRow } from "@/components/ui/SettingsRow";
+import { ListRow } from "@/components/ui/ListRow";
 import { openLegalUrl } from "@/lib/legalLinks";
 
 /**
@@ -44,7 +44,8 @@ export function SettingsLegalGroup() {
   return (
     <SettingsGroup testID="settings-legal-sections" title="Rechtliches">
       {legalSections().map((section) => (
-        <SettingsRow
+        <ListRow
+          chevron
           key={section.key}
           testID={`settings-section-${section.key}`}
           icon={section.icon}

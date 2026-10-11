@@ -4,12 +4,12 @@ import { TextField } from "@/components/ui/TextField";
 import { PLACEHOLDER_COLOR } from "@/lib/colors";
 
 describe("TextField", () => {
-  it("uses the opaque field fill, the shared border and >= 48dp height", async () => {
+  it("uses the opaque field fill, the shared border and CONTROL_HEIGHT (56dp)", async () => {
     const { getByTestId } = await render(<TextField testID="tf" value="" onChangeText={() => {}} />);
     const cls = getByTestId("tf").props.className as string;
     expect(cls).toContain("bg-field");
     expect(cls).toContain("border-surface-border");
-    expect(cls).toContain("min-h-touch-comfortable");
+    expect(cls).toContain("min-h-14");
     expect(cls).not.toMatch(/\/\d+/);
   });
 

@@ -2,6 +2,7 @@ import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useEffect, useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
+import { CONTROL_MIN_HEIGHT_CLASSNAME } from "@/components/ui/controlHeight";
 import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -181,7 +182,7 @@ export function Select({
   const manualFocus = showInput && !autoFocusSearch;
   const chevronColor = PLACEHOLDER_COLOR;
   const fieldClass = cn(
-    `min-h-touch-comfortable flex-row items-center gap-2 rounded-lg ${SURFACE_EDGE} bg-field px-4`,
+    `${CONTROL_MIN_HEIGHT_CLASSNAME} flex-row items-center gap-2 rounded-lg ${SURFACE_EDGE} bg-field px-4`,
     disabled && "opacity-50",
   );
 

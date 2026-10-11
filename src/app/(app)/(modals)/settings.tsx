@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
 import { Select } from "@/components/ui/Select";
-import { SettingsRow } from "@/components/ui/SettingsRow";
+import { ListRow } from "@/components/ui/ListRow";
 import { useGroupQuickSwitch } from "@/hooks/useGroupQuickSwitch";
 import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
@@ -91,38 +91,25 @@ export default function SettingsScreen() {
         contentContainerClassName="gap-5 px-4 pb-8 pt-4"
       >
         <SettingsGroup testID="settings-account-info" title="Profil">
-          <View
+          <ListRow
             testID="settings-display-name-row"
-            className="min-h-12 flex-row items-center gap-3 px-4 py-2"
-          >
-            <View className="flex-1 gap-0.5">
-              <Text className="text-sm text-text-secondary">Anzeigename</Text>
-              <Text
-                testID="settings-current-user"
-                className="text-base text-text-primary"
-              >
-                {displayName}
-              </Text>
-            </View>
-            <IconButton
-              testID="settings-display-name-edit-button"
-              icon="edit"
-              variant="neutral"
-              size={44}
-              accessibilityLabel="Anzeigename bearbeiten"
-              onPress={openDisplayNameSheet}
-            />
-          </View>
-          <View className="px-4 py-3">
-            <Text
-              testID="settings-user-email"
-              className="text-sm text-text-secondary"
-            >
-              {email ?? ""}
-            </Text>
-          </View>
-          <View testID="settings-active-group" className="gap-2 px-4 py-3">
-            <Text className="text-sm text-text-secondary">Aktuelle Gruppe</Text>
+            label="Anzeigename"
+            value={displayName}
+            valueTestID="settings-current-user"
+            trailing={
+              <IconButton
+                testID="settings-display-name-edit-button"
+                icon="edit"
+                variant="neutral"
+                size={44}
+                accessibilityLabel="Anzeigename bearbeiten"
+                onPress={openDisplayNameSheet}
+              />
+            }
+          />
+          <ListRow testID="settings-user-email-row" label="E-Mail" value={email ?? ""} valueTestID="settings-user-email" />
+          <View testID="settings-active-group" className="gap-1">
+            <Text className="px-1 text-sm text-text-secondary">Aktuelle Gruppe</Text>
             <Select
               testID="settings-active-group-select"
               accessibilityLabel="Aktuelle Gruppe"
@@ -135,7 +122,8 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         <SettingsGroup testID="settings-group-group" title="Gruppe">
-          <SettingsRow
+          <ListRow
+            chevron
             testID="settings-section-group-settings"
             icon="group"
             label="Gruppe verwalten"
@@ -144,7 +132,8 @@ export default function SettingsScreen() {
         </SettingsGroup>
 
         <SettingsGroup testID="settings-sections" title="App">
-          <SettingsRow
+          <ListRow
+            chevron
             testID="settings-section-streaming-services"
             icon="streaming"
             label="Meine Streaming-Dienste"
@@ -153,13 +142,15 @@ export default function SettingsScreen() {
             }
             onPress={() => go("/settings/streaming-services")}
           />
-          <SettingsRow
+          <ListRow
+            chevron
             testID="settings-section-display"
             icon="theme"
             label="Darstellung"
             onPress={() => go("/settings/display")}
           />
-          <SettingsRow
+          <ListRow
+            chevron
             testID="settings-section-notifications"
             icon="notifications"
             label="Benachrichtigungen"

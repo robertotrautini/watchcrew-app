@@ -1,3 +1,4 @@
+import { CONTROL_MIN_HEIGHT_CLASSNAME } from "@/components/ui/controlHeight";
 import { useState } from "react";
 import { Platform, Pressable } from "react-native";
 import { Text } from "@/components/ui/Text";
@@ -86,7 +87,7 @@ export function DateField({
         disabled={!editable}
         onPress={handlePress}
         className={cn(
-          `min-h-touch-comfortable justify-center rounded-lg ${SURFACE_EDGE} bg-field px-4 py-3`,
+          `${CONTROL_MIN_HEIGHT_CLASSNAME} justify-center rounded-lg ${SURFACE_EDGE} bg-field px-4 py-3`,
           !editable && "opacity-50",
           className,
         )}

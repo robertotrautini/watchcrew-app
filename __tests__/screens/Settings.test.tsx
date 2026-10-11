@@ -233,8 +233,7 @@ describe("SettingsScreen", () => {
     expect(edit.props.accessibilityRole).toBe("button");
     const row = getByTestId("settings-display-name-row");
     expect(row.props.className).toContain("items-center");
-    expect(row.props.className).toContain("min-h-12");
-    expect(row.props.className).toContain("py-2");
+    expect(row.props.className).toContain("h-14");
     expect(edit.props.className).not.toMatch(/\bm[tb]-/);
   });
 
@@ -401,9 +400,9 @@ describe("SettingsScreen", () => {
     expect(getByTestId("settings-current-user").props.children).toBe("robin");
     expect(getByTestId("settings-current-user").props.className).not.toContain("text-accent");
     expect(getByTestId("settings-current-user").props.className).not.toContain("text-xl");
-    // Last row of a group has no separator below; later rows have one above.
-    expect(getByTestId("settings-sections-item-0").props.className ?? "").not.toContain("border-t");
-    expect(getByTestId("settings-sections-item-2").props.className).toContain("border-t");
+    // Every row is its own ListRow tile (fixed control height, own border).
+    expect(getByTestId("settings-section-display").props.className).toContain("h-14");
+    expect(getByTestId("settings-section-display").props.className).toContain("border-surface-border");
   });
 
   it("has no changelog row or 'Neue Funktionen' toast (removed; updates go through the store listings)", async () => {

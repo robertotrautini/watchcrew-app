@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Pressable, type PressableProps } from "react-native";
 import { Text } from "@/components/ui/Text";
 
+import { CONTROL_HEIGHT, CONTROL_MIN_HEIGHT_CLASSNAME } from "@/components/ui/controlHeight";
 import { Spinner } from "@/components/ui/Spinner";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { hitSlopFor } from "@/components/ui/touchTarget";
@@ -18,8 +19,7 @@ export interface ButtonProps extends Omit<
   /** Visual style. Defaults to `"primary"` (the active group theme's accent color). */
   variant?: ButtonVariant;
   /**
-   * Height/padding step. `"default"` uses the 48px "comfortable" touch
-   * target, `"sm"` uses the 44px minimum (see tailwind.config.js spacing
+   * Height/padding step. `"default"` uses CONTROL_HEIGHT (56px, same as TextField/Select/ListRow), `"sm"` uses the 44px minimum (see tailwind.config.js spacing
    * tokens `touch-comfortable` / `touch-min`).
    */
   size?: ButtonSize;
@@ -95,8 +95,8 @@ const VARIANT_TEXT_CLASSES: Record<ButtonVariant, string> = {
 const DISABLED_TEXT_CLASS = "text-white/35";
 
 const SIZE_CONTAINER_CLASSES: Record<ButtonSize, string> = {
-  // 48px / 44px touch targets (tailwind.config.js spacing tokens).
-  default: "min-h-touch-comfortable px-4",
+  // default = CONTROL_HEIGHT (56), sm = 44px touch minimum (tailwind.config.js spacing token).
+  default: `${CONTROL_MIN_HEIGHT_CLASSNAME} px-4`,
   sm: "min-h-touch-min px-3",
   // Compact chip/pill (filter chips, inline edit buttons): 36px, md radius.
   xs: "h-9 rounded-md px-3",
@@ -111,7 +111,7 @@ const ICON_ONLY_SIZE_CLASSES: Record<ButtonSize, string> = {
 
 // Visual heights/sizes (px) of the size steps; hitSlop tops them up to 48 (touchTarget.ts).
 const BUTTON_SIZE_PX: Record<ButtonSize, number> = {
-  default: 48,
+  default: CONTROL_HEIGHT,
   sm: 44,
   xs: 36,
 };
@@ -121,8 +121,11 @@ const BUTTON_SIZE_PX: Record<ButtonSize, number> = {
  * icon-only buttons grow on both axes, text buttons only vertically (their width is content-driven).
  */
 function buttonHitSlop(size: ButtonSize, iconOnly: boolean) {
-  const px = BUTTON_SIZE_PX[size];
-  return hitSlopFor(iconOnly ? px : 48, px);
+  if (iconOnly) {
+    const px = size === "default" ? 48 : BUTTON_SIZE_PX[size];
+    return hitSlopFor(px, px);
+  }
+  return hitSlopFor(48, BUTTON_SIZE_PX[size]);
 }
 
 /** Icon colour matching a variant (for Icon children). */

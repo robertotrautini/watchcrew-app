@@ -35,6 +35,11 @@ Chips (`Chip.tsx`) bleiben die eigene Auswahl-Komponente (Filter/Modi/Tags), `Vi
 
 ## Felder und Flächen (opak, ein Wert)
 
+- **CONTROL_HEIGHT = 56dp** (`src/components/ui/controlHeight.ts`, Klassen `h-14` fuer Zeilen, `min-h-14` fuer Felder/Buttons): EINE Hoehe fuer `TextField`, `Select`-Trigger, `DateField`, `Button` (Standardgroesse) und `ListRow`/Mitglieder-Kapsel. Grund: die 3|4-Segment-Zeile war mit Padding 72dp, Switch-Zeilen ~70dp, Mitglieder-Kapseln 41dp, Felder 48dp; 56dp (Material-3-Listenelement) nimmt das Segment (48dp-Pille) und den Switch ohne Zusatzpadding auf. Kleine Varianten behalten bewusst ihre Groesse: Button `sm` (44) / `xs` (36), Chips, IconButton (48/44, rund, neben Kapseln/Feldern vertikal mittig).
+- **ListRow-Regel:** jede Zeile mit Funktion hinten (Switch, Chevron, Wert, Segment, IconButton) ist eine `ListRow` (`src/components/ui/ListRow.tsx`): feste Hoehe 56, eigener Fill `bg-field` + `border-surface-border`, `px-4`, Inhalt vertikal zentriert, Label EINZEILIG mit Ellipsis (lange Labels brechen nie um und vergroessern die Zeile; Wert rechts `flex-1 text-right`, ebenfalls einzeilig), Props `label`, `icon`, `value`, `trailing` (Element oder `(pressed) => Element`), `chevron`, `onPress`, `danger`, `testID`. `SettingsGroup` stapelt ListRows mit `gap-2` (keine Gruppenkarte/Haarlinien mehr). `SettingsToggleRow`/`SettingsColumnsRow` sind duenne ListRow-Wrapper. Trailing-Elemente muessen in 56dp passen (SegmentedControl 48, Switch ~48).
+- Messung Pixel 6 Pro: 56dp = 171-172px (Display-Skalierung ca. 3,07 px/dp, kalibriert an IconButton 48dp = 147px).
+
+
 - **FIELD_FILL = `#0a0a0c`** (Token `field`, Klasse `bg-field`, Konstante `FIELD_FILL` in `src/lib/colors.ts`): gemessen am Dropdown-Trigger auf dem Pixel 6 Pro (rgb 10,10,12). Gilt fuer ALLE Bedien-Flaechen: Textfelder, Dropdown (Trigger + Liste), Buttons (neutral/secondary, disabled), Datums-Felder, Settings-Gruppen/-Zeilen, Mitglieder-Kapseln, Switch-Zeilen, View-Changer/SegmentedControl-Spur.
 - **Rahmen:** immer `border-surface-border` (rgba 0.12, 1 dp). Keine Akzent-/gelben Rahmen an Feldern, kein Farbwechsel bei Fokus.
 - **Textfelder:** ueberall `TextField` (`src/components/ui/TextField.tsx`); Varianten nur per Props `search`, `error`, `secure`, `multiline`; `className` nur fuer Platzierung (`flex-1`). Hoehe >= 48 dp, Platzhalter `PLACEHOLDER_COLOR`. Kein rohes `<TextInput>` (einzige Ausnahme: Suchfeld im geoeffneten Select-Overlay, sitzt in dessen Feld-Container).
@@ -195,7 +200,7 @@ Mindestens 48dp (Android) bzw. 44pt (iOS) pro tippbarem Element; Konstanten und 
 
 - Android: echter Material-3-Compose-Switch (`@expo/ui/jetpack-compose` `Switch`, nativ im Dev-Client enthalten), nicht interaktiv unter `pointerEvents="none"`; an-Farbe = Gruppen-Akzent (`useGroupTheme().colors.accent`). Sonst (iOS/Web/Jest) `FallbackSwitch`.
 - Fallback exakt M3: Track 52x32 (`border-2`), an = `bg-accent` + heller 24dp-Daumen (`bg-text-primary`, nie dunkel) mit Check-Icon (16dp, Akzentfarbe); aus = `border-text-secondary` + 16dp-Daumen `bg-text-secondary`; gedrueckt = 28dp-Daumen + 40dp State-Layer (`bg-white/10`); disabled = `opacity-40`.
-- Immer ueber `SettingsToggleRow` (ganze Zeile `Pressable`, `accessibilityRole="switch"`, `accessibilityState.checked`, `min-h-touch-comfortable` = 48dp). Kein nativer `Switch`, keine Button-als-Switch.
+- Immer ueber `SettingsToggleRow` (ganze Zeile `Pressable`, `accessibilityRole="switch"`, `accessibilityState.checked`, `ListRow`, `h-14` = 56dp). Kein nativer `Switch`, keine Button-als-Switch.
 - Textlinks (`expo-router` `Link`): `asChild` + `Pressable` + `Text` mit expliziter Farbe (`text-accent-light`); `className` direkt auf `Link` wirkt nicht (Text wird schwarz). Jeder `Text` auf dunklen Flaechen braucht eine explizite `text-*`-Klasse.
 
 ## Logo
