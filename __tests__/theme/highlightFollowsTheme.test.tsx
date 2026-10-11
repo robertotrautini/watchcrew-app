@@ -1,9 +1,11 @@
 // Asserts the real icon glyph colour (style), so it opts out of the global @expo/vector-icons mock.
 jest.unmock("@expo/vector-icons");
 
+import { StyleSheet } from "react-native";
 import { render } from "@testing-library/react-native";
 
 import { GroupThemeProvider } from "@/components/GroupThemeProvider";
+import { LOGO_HORIZONTAL } from "@/components/ui/BrandLogo";
 import { Brand } from "@/components/ui/Brand";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { Button } from "@/components/ui/Button";
@@ -33,26 +35,23 @@ function styleOf(node: { props: { style?: unknown } }): string {
 }
 
 describe("highlight colour follows the group theme (red)", () => {
-  it("Brand reel icon is white in every theme (not accent)", async () => {
+  it("Brand logo badge follows the theme accent", async () => {
     const { getByTestId } = await render(
       <GroupThemeProvider themeName="red">
         <Brand />
       </GroupThemeProvider>,
     );
-    expect(styleOf(getByTestId("brand-icon"))).toContain("#ffffff");
-    expect(styleOf(getByTestId("brand-icon"))).not.toContain(red.accentLight);
+    expect([getByTestId("brand-logo").props.source].flat()[0]).toBe(LOGO_HORIZONTAL.red);
+    expect([getByTestId("brand-logo").props.source].flat()[0]).not.toBe(LOGO_HORIZONTAL.gold);
   });
 
-  it("AppHeader reel icon, wordmark and group name are white in every theme", async () => {
+  it("AppHeader logo follows the theme accent", async () => {
     const { getByTestId } = await render(
       <GroupThemeProvider themeName="red">
         <AppHeader title="T" settingsTestID="s" groupName="G" />
       </GroupThemeProvider>,
     );
-    expect(styleOf(getByTestId("app-header-icon"))).toContain("#ffffff");
-    expect(styleOf(getByTestId("app-header-icon"))).not.toContain(red.accentLight);
-    expect(getByTestId("app-header-wordmark").props.className).toContain("text-white");
-    expect(getByTestId("app-header-wordmark").props.className).not.toContain("accent");
+    expect([getByTestId("app-header-logo").props.source].flat()[0]).toBe(LOGO_HORIZONTAL.red);
   });
 
   it("SettingsRow chevron uses the theme accent (not gold)", async () => {
@@ -118,7 +117,9 @@ describe("class-token components resolve through theme variables (no static colo
         <ViewModeToggle value="grid" onChange={() => {}} testID="v" buttonTestID={(m) => `v-${m}`} />
       </GroupThemeProvider>,
     );
-    expect(getByTestId("v-grid-segment").props.className).toContain("bg-accent");
+    expect(StyleSheet.flatten(getByTestId("v-grid-segment").props.style).backgroundColor).toBe(
+      resolveGroupTheme("red").colors.accent,
+    );
   });
 
   it("star colour is the fixed yellow in every theme (css + ts)", () => {

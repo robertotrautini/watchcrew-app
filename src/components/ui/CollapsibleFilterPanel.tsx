@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { LayoutAnimation, View } from "react-native";
 
 import { Glass } from "@/components/ui/Glass";
+import { PanelShadow } from "@/components/ui/PanelShadow";
 
 export interface CollapsibleFilterPanelProps {
   /** Base testID: `<id>-toggle`, `<id>-panel`, `<id>-active-dot`. */
@@ -40,33 +41,36 @@ export function CollapsibleFilterPanel({
   }
 
   return (
-    <Glass variant="strong" className="mx-4 mt-3 gap-3 p-3">
-      <View className="flex-row items-center gap-3">
-        {search}
-        {actions}
-        <View className="relative">
-          <IconButton
-            testID={`${testID}-toggle`}
-            icon="options"
-            variant={open ? "accent" : "neutral"}
-            accessibilityLabel="Filter"
-            accessibilityState={{ expanded: open }}
-            onPress={handleToggle}
-          />
-          {hasActiveFilters ? (
-            <View
-              testID={`${testID}-active-dot`}
-              pointerEvents="none"
-              className="absolute right-0 top-0 h-3 w-3 rounded-full border border-bg-primary bg-accent"
+    <View testID={`${testID}-wrapper`} className="z-10 mx-4 mt-3">
+      <PanelShadow testID={`${testID}-shadow`} />
+      <Glass variant="solid" className="gap-3 p-3">
+        <View className="flex-row items-center gap-3">
+          {search}
+          {actions}
+          <View className="relative">
+            <IconButton
+              testID={`${testID}-toggle`}
+              icon="options"
+              variant={open ? "accent" : "neutral"}
+              accessibilityLabel="Filter"
+              accessibilityState={{ expanded: open }}
+              onPress={handleToggle}
             />
-          ) : null}
+            {hasActiveFilters ? (
+              <View
+                testID={`${testID}-active-dot`}
+                pointerEvents="none"
+                className="absolute right-0 top-0 h-3 w-3 rounded-full border border-bg-primary bg-accent"
+              />
+            ) : null}
+          </View>
         </View>
-      </View>
-      {open ? (
-        <View testID={`${testID}-panel`} className="gap-3">
-          {children}
-        </View>
-      ) : null}
-    </Glass>
+        {open ? (
+          <View testID={`${testID}-panel`} className="gap-3">
+            {children}
+          </View>
+        ) : null}
+      </Glass>
+    </View>
   );
 }

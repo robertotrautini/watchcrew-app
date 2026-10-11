@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * single flat 1px faint white border + rounded corners. No blur anywhere
  * (docs/style-guide.md). Shared by Card, Toast, settings groups and similar surfaces.
  */
-export type GlassVariant = "default" | "strong" | "panel";
+export type GlassVariant = "default" | "strong" | "panel" | "solid";
 
 /**
  * Flat Material border (docs/style-guide.md): ONE uniform 1px hairline in
@@ -21,6 +21,8 @@ export const GLASS_INSET_EDGE = GLASS_EDGE;
 export const GLASS_CLASSNAMES: Record<GlassVariant, string> = {
   default: `rounded-xl ${GLASS_EDGE}`,
   strong: `rounded-xl ${GLASS_EDGE}`,
+  /** Fully opaque black (#000) card, like tab bar / sheet intent: filter panels. */
+  solid: `rounded-xl ${GLASS_EDGE}`,
   /** Large panels: toast, bottom action bar (sheet/tab bar reuse the same tokens). */
   panel: GLASS_EDGE,
 };
@@ -51,6 +53,63 @@ export const GLASS_TAB_BAR_STYLE = {
   borderTopWidth: 1,
 } as const;
 
+/**
+ * Panel shadow = stacked, equally rounded black layers directly BEHIND the
+ * opaque panel (see PanelShadow), each shifted 1dp further down with falling
+ * opacity. They only show below / around the lower corners of the panel. No
+ * elevation / shadow* (Android elevation paints a square shadow).
+ */
+export const PANEL_SHADOW_LAYERS = 12;
+/** Kept as alias: shadow extends this many dp below the panel. */
+export const PANEL_SHADOW_HEIGHT = PANEL_SHADOW_LAYERS;
+/** Resulting (compounded) darkness right below the panel edge; fades to 0. */
+export const PANEL_SHADOW_PEAK_OPACITY = 0.52;
+/** Panel wrapper must sit above the list so it covers the list's top edge. */
+export const PANEL_Z_INDEX = 10;
+/** Panel corner radius in dp (= Tailwind `rounded-xl`). */
+export const PANEL_RADIUS = 12;
+/** Radius class, must match PANEL_RADIUS. */
+export const PANEL_RADIUS_CLASSNAME = "rounded-xl";
+/**
+ * The list container starts this many dp higher (under the panel) so rows are
+ * only hidden by the rounded panel, not cut by a straight list edge. Must equal
+ * (at least) PANEL_RADIUS; `-mt-3` is the matching class (12dp).
+ */
+export const PANEL_LIST_OVERLAP = 12;
+export const PANEL_LIST_OVERLAP_CLASSNAME = "-mt-3";
+/**
+ * Visible air between panel bottom and first row at scroll position 0 (dp) is
+ * EXACTLY the vertical gap between two rows of the same view: cards/list 12
+ * (`h-3`/`gap-3`, = panel top margin `mt-3`), poster grid 8 (`h-2`/`gap-2`).
+ * Keep these in sync with the row separators in Tagebuch/WatchlistEntryList.
+ */
+export const PANEL_LIST_START_GAP = 12;
+export const PANEL_LIST_GRID_START_GAP = 8;
+/**
+ * contentContainer top padding = PANEL_LIST_OVERLAP + start gap. Literals so
+ * NativeWind sees them; lists must use these for `pt`.
+ * Cards + list/table: 12 + 12 = 24 dp. Grid: 12 + 8 = 20 dp.
+ */
+export const PANEL_LIST_CONTENT_PT_CLASSNAME = "pt-[24px]";
+export const PANEL_LIST_GRID_CONTENT_PT_CLASSNAME = "pt-[20px]";
+
+/**
+ * Per-layer opacity for PANEL_SHADOW_LAYERS stacked layers (layer i is offset
+ * i+1 dp and therefore covers depths 1..i+1). Values are chosen so the
+ * COMPOUNDED darkness at depth d is peak * (1 - (d-1)/n)^2, i.e. a quadratic
+ * ease from the peak down to ~0, and every layer value is below the previous.
+ */
+export function panelShadowOpacities(
+  layers: number = PANEL_SHADOW_LAYERS,
+  peak: number = PANEL_SHADOW_PEAK_OPACITY,
+): number[] {
+  const target = (d: number) => peak * Math.max(0, 1 - (d - 1) / layers) ** 2;
+  return Array.from({ length: layers }, (_, k) => {
+    const survive = (1 - target(k + 1)) / (1 - target(k + 2));
+    return 1 - survive;
+  });
+}
+
 export interface GlassProps extends ViewProps {
   onPress?: (event: GestureResponderEvent) => void;
   variant?: GlassVariant;
@@ -61,7 +120,7 @@ export function Glass({ variant = "default", className, onPress, ...rest }: Glas
   const rootProps = onPress ? { onPress, ...rest } : rest;
   return (
     <Root
-      className={cn("overflow-hidden", GLASS_CLASSNAMES[variant], className, GLASS_FLAT_FILL)}
+      className={cn("overflow-hidden", GLASS_CLASSNAMES[variant], className, variant === "solid" ? "bg-black" : GLASS_FLAT_FILL)}
       {...rootProps}
     />
   );

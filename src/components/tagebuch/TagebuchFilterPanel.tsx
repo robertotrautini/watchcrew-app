@@ -6,7 +6,7 @@ import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import type { useTagebuchScreen } from "@/hooks/useTagebuchScreen";
-import { DIARY_SORT_FIELDS, isSameSort } from "@/lib/entrySorting";
+import { DIARY_SORT_FIELDS } from "@/lib/entrySorting";
 import { activeFilterKeys } from "@/lib/listFilters";
 
 type Screen = ReturnType<typeof useTagebuchScreen>;
@@ -14,8 +14,7 @@ type Screen = ReturnType<typeof useTagebuchScreen>;
 export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
   const f = screen.filters;
   const filterKeys = activeFilterKeys(screen.activeFilters, "diary");
-  const hasActiveFilters =
-    !isSameSort(f.sort, f.defaultSort) || filterKeys.length > 0;
+  const hasActiveFilters = filterKeys.length > 0;
   return (
     <CollapsibleFilterPanel
       testID="tagebuch-filter"
