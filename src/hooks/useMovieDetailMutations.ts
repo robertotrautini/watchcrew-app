@@ -1,5 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { showToast } from "@/lib/toast";
+import { useAppMutation } from "@/hooks/useAppMutation";
 import * as Haptics from "expo-haptics";
 
 import {
@@ -41,9 +40,7 @@ export interface ToggleLikeMutationParams extends ToggleLikeParams {
 }
 
 export function useToggleLike() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: ToggleLikeMutationParams) => {
       // Destructured (not `toggleLike(params)` directly) so `groupId` --
       // a mutation-only variable, not part of `ToggleLikeParams` -- never
@@ -55,11 +52,8 @@ export function useToggleLike() {
       }
       return data;
     },
-    onSuccess: () => {
-      // ADR 0014: a like belongs to (user, movie) and shows in every group.
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
-    },
+    // ADR 0014: a like belongs to (user, movie) and shows in every group.
+    invalidateKeys: [queryKeys.watchlist.all, queryKeys.myDiary.all],
   });
 }
 
@@ -78,9 +72,7 @@ export interface DeleteWatchlistEntryMutationParams extends DeleteWatchlistEntry
 }
 
 export function useDeleteWatchlistEntry() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: DeleteWatchlistEntryMutationParams) => {
       const { error } = await deleteWatchlistEntry({
         watchlistEntryId: params.watchlistEntryId,
@@ -90,18 +82,12 @@ export function useDeleteWatchlistEntry() {
       }
       return params.watchlistEntryId;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.watchlist.byGroup(variables.groupId),
-      });
-    },
+    invalidateKeys: (variables) => [queryKeys.watchlist.byGroup(variables.groupId)],
   });
 }
 
 export function useAddToWatchlist() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: AddToWatchlistParams) => {
       const { data, error } = await addToWatchlist(params);
       if (error) {
@@ -109,10 +95,8 @@ export function useAddToWatchlist() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.watchlist.byGroup(variables.groupId),
-      });
+    invalidateKeys: (variables) => [queryKeys.watchlist.byGroup(variables.groupId)],
+    onSuccess: () => {
       // M11 (haptic polish, see docs/interim-decisions.md "M11 — Haptik"):
       // centralized here (rather than at each of this hook's call sites --
       // MovieDetailActionsBar's "zur_watchlist"/"direkt_bewerten" buttons
@@ -120,8 +104,8 @@ export function useAddToWatchlist() {
       // successful add-to-watchlist gets the same light confirmation
       // impact, in exactly one place.
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      showToast("Zur Watchlist hinzugefügt", { variant: "success" });
     },
+    successToast: "Zur Watchlist hinzugefügt",
   });
 }
 
@@ -131,9 +115,7 @@ export interface SetReleaseDateOverrideMutationParams extends SetWatchlistEntryR
 
 /** Edits (or resets, with `releaseDate: null`) the per-group release date of a watchlist entry. */
 export function useSetReleaseDateOverride() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: SetReleaseDateOverrideMutationParams) => {
       const { error } = await setWatchlistEntryReleaseDate({
         watchlistEntryId: params.watchlistEntryId,
@@ -144,21 +126,11 @@ export function useSetReleaseDateOverride() {
       }
       return params.releaseDate;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.watchlist.byGroup(variables.groupId),
-      });
-      showToast(
-        variables.releaseDate == null
-          ? "Erscheinungsdatum zurückgesetzt"
-          : "Erscheinungsdatum gespeichert",
-        { variant: "success" },
-      );
-    },
-    onError: () => {
-      showToast("Erscheinungsdatum konnte nicht gespeichert werden", {
-        variant: "error",
-      });
-    },
+    invalidateKeys: (variables) => [queryKeys.watchlist.byGroup(variables.groupId)],
+    successToast: (_data, variables) =>
+      variables.releaseDate == null
+        ? "Erscheinungsdatum zurückgesetzt"
+        : "Erscheinungsdatum gespeichert",
+    errorToast: "Erscheinungsdatum konnte nicht gespeichert werden",
   });
 }

@@ -1,6 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/hooks/useAppMutation";
 import type { GroupThemeName } from "@/lib/groupTheme";
-import { showToast } from "@/lib/toast";
 
 import {
   createWatchGroup,
@@ -26,9 +25,7 @@ export interface RenameGroupParams {
 }
 
 export function useRenameGroup() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId, newName }: RenameGroupParams) => {
       const { data, error } = await renameWatchGroup(groupId, newName);
       if (error) {
@@ -36,20 +33,16 @@ export function useRenameGroup() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
-      });
-      // Prefix match: the group switcher chips read the name from every
-      // ["userGroups", userId] query.
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
-      // "Deine Gruppen" chips read names via useGroupNames: ["groupNames", groupIds].
-      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
-      showToast("Gruppe umbenannt", { variant: "success" });
-    },
-    onError: () => {
-      showToast("Gruppe konnte nicht umbenannt werden", { variant: "error" });
-    },
+    // Prefix match: the group switcher chips read the name from every
+    // ["userGroups", userId] query; "Deine Gruppen" chips read names via
+    // useGroupNames: ["groupNames", groupIds].
+    invalidateKeys: (variables) => [
+      queryKeys.groupDetails.byGroup(variables.groupId),
+      queryKeys.userGroups.all,
+      queryKeys.groupNames.all,
+    ],
+    successToast: "Gruppe umbenannt",
+    errorToast: "Gruppe konnte nicht umbenannt werden",
   });
 }
 
@@ -59,9 +52,7 @@ export interface SetGroupThemeParams {
 }
 
 export function useSetGroupTheme() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId, theme }: SetGroupThemeParams) => {
       const { data, error } = await setGroupColorTheme(groupId, theme);
       if (error) {
@@ -69,16 +60,12 @@ export function useSetGroupTheme() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
-      });
-      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
-      showToast("Farbthema geändert", { variant: "success" });
-    },
-    onError: () => {
-      showToast("Farbthema konnte nicht geändert werden", { variant: "error" });
-    },
+    invalidateKeys: (variables) => [
+      queryKeys.groupDetails.byGroup(variables.groupId),
+      queryKeys.groupNames.all,
+    ],
+    successToast: "Farbthema geändert",
+    errorToast: "Farbthema konnte nicht geändert werden",
   });
 }
 
@@ -88,9 +75,7 @@ export interface SetInviteEnabledParams {
 }
 
 export function useSetInviteEnabled() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId, enabled }: SetInviteEnabledParams) => {
       const { data, error } = await setInviteEnabled(groupId, enabled);
       if (error) {
@@ -98,11 +83,7 @@ export function useSetInviteEnabled() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
-      });
-    },
+    invalidateKeys: (variables) => [queryKeys.groupDetails.byGroup(variables.groupId)],
   });
 }
 
@@ -111,9 +92,7 @@ export interface RegenerateInviteTokenParams {
 }
 
 export function useRegenerateInviteToken() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId }: RegenerateInviteTokenParams) => {
       const { data, error } = await regenerateInviteToken(groupId);
       if (error) {
@@ -121,11 +100,7 @@ export function useRegenerateInviteToken() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupDetails.byGroup(variables.groupId),
-      });
-    },
+    invalidateKeys: (variables) => [queryKeys.groupDetails.byGroup(variables.groupId)],
   });
 }
 
@@ -136,20 +111,14 @@ export interface RemoveMemberParams {
 
 /** Owner "Entfernen" (kick) action -- invalidates only this group's own member list, since the kicked user isn't the caller. */
 export function useRemoveMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId, userId }: RemoveMemberParams) => {
       const { error } = await removeMember(groupId, userId);
       if (error) {
         throw error;
       }
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupMembers.byGroup(variables.groupId),
-      });
-    },
+    invalidateKeys: (variables) => [queryKeys.groupMembers.byGroup(variables.groupId)],
   });
 }
 
@@ -167,23 +136,17 @@ export interface LeaveGroupParams {
  * list too (`["userGroups", userId]`), not just the group's member roster.
  */
 export function useLeaveGroup() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ groupId, userId }: LeaveGroupParams) => {
       const { error } = await removeMember(groupId, userId);
       if (error) {
         throw error;
       }
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.groupMembers.byGroup(variables.groupId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.userGroups.byUser(variables.userId),
-      });
-    },
+    invalidateKeys: (variables) => [
+      queryKeys.groupMembers.byGroup(variables.groupId),
+      queryKeys.userGroups.byUser(variables.userId),
+    ],
   });
 }
 
@@ -198,9 +161,7 @@ export interface CreateGroupParams {
  * cache; the caller activates the new group via the returned `groupId`.
  */
 export function useCreateGroup() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async ({ name, theme }: CreateGroupParams) => {
       const { data, error } = await createWatchGroup(name, theme);
       if (error) {
@@ -208,13 +169,8 @@ export function useCreateGroup() {
       }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
-      showToast("Gruppe angelegt", { variant: "success" });
-    },
-    onError: () => {
-      showToast("Gruppe konnte nicht angelegt werden", { variant: "error" });
-    },
+    invalidateKeys: [queryKeys.userGroups.all, queryKeys.groupNames.all],
+    successToast: "Gruppe angelegt",
+    errorToast: "Gruppe konnte nicht angelegt werden",
   });
 }

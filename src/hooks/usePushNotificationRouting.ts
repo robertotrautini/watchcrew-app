@@ -4,6 +4,7 @@ import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
 
 import { userGroupsQueryOptions } from "@/hooks/useUserGroups";
+import { navigateToMovieDetailWithContext } from "@/lib/movieDetailNavigation";
 import { supabase } from "@/lib/supabase";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
@@ -83,14 +84,11 @@ export function usePushNotificationRouting(): void {
       // push event (new_entry, first_rating, release_reminder) targets members
       // who have not rated the entry yet, so it is a Watchlist entry for them.
       const hasGroupContext = Boolean(groupId && watchlistEntryId);
-      router.push({
-        pathname: "/movie/[tmdbId]",
-        params: {
-          tmdbId: String(tmdbId),
-          ...(groupId ? { groupId } : {}),
-          ...(watchlistEntryId ? { watchlistEntryId } : {}),
-          ...(hasGroupContext ? { source: "watchlist" as const } : {}),
-        },
+      navigateToMovieDetailWithContext(router, {
+        tmdbId: Number(tmdbId),
+        groupId: groupId || undefined,
+        watchlistEntryId: watchlistEntryId || undefined,
+        source: hasGroupContext ? "watchlist" : undefined,
       });
     }
 

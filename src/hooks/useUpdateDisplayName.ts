@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/hooks/useAppMutation";
 
 import { updateOwnDisplayName } from "@/lib/profile";
 import { queryKeys } from "@/lib/queryKeys";
@@ -9,9 +9,7 @@ import { queryKeys } from "@/lib/queryKeys";
  * joined `profiles` row in group-member queries, so those are invalidated too.
  */
 export function useUpdateDisplayName() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (displayName: string) => {
       const { data, error } = await updateOwnDisplayName(displayName);
       if (error) {
@@ -19,13 +17,13 @@ export function useUpdateDisplayName() {
       }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.ownProfile.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.groupDetails.all });
-      // Tracker payer column, Tagebuch, rating dialog and payment modal build
-      // their name maps from useGroupMembers.
-      queryClient.invalidateQueries({ queryKey: queryKeys.groupMembers.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
-    },
+    // Tracker payer column, Tagebuch, rating dialog and payment modal build
+    // their name maps from useGroupMembers.
+    invalidateKeys: [
+      queryKeys.ownProfile.all,
+      queryKeys.groupDetails.all,
+      queryKeys.groupMembers.all,
+      queryKeys.watchlist.all,
+    ],
   });
 }

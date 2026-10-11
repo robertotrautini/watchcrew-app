@@ -24,6 +24,7 @@ import {
   mapMovieLikeToGridItem,
   mapSearchResultToGridItem,
 } from "@/lib/addMovieLogic";
+import { navigateToMovieDetailWithContext } from "@/lib/movieDetailNavigation";
 import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
 import { filterByMyStreaming } from "@/lib/movieProviderFilter";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
@@ -148,20 +149,14 @@ export default function AddMovieScreen() {
       const matchingEntry = watchlistQuery.data?.entries.find(
         (entry) => entry.movie?.tmdb_id === item.tmdbId,
       );
-      router.push({
-        pathname: "/movie/[tmdbId]",
-        params: {
-          tmdbId: String(item.tmdbId),
-          groupId: activeGroupId,
-          source: badge === "watched" ? "diary" : "watchlist",
-          ...(matchingEntry ? { watchlistEntryId: matchingEntry.id } : {}),
-        },
+      navigateToMovieDetailWithContext(router, {
+        tmdbId: item.tmdbId,
+        groupId: activeGroupId,
+        source: badge === "watched" ? "diary" : "watchlist",
+        watchlistEntryId: matchingEntry?.id,
       });
     } else {
-      router.push({
-        pathname: "/movie/[tmdbId]",
-        params: { tmdbId: String(item.tmdbId) },
-      });
+      navigateToMovieDetailWithContext(router, { tmdbId: item.tmdbId });
     }
   }
 

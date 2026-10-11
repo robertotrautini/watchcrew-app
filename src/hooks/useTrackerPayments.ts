@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/hooks/useAppMutation";
 
 import { deletePayment, savePayment } from "@/lib/movieDetailMutations";
 import { resolvePaymentDate } from "@/lib/ratingLogic";
@@ -45,9 +45,7 @@ export interface SetPaymentMutationParams {
 }
 
 export function useSetPayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: SetPaymentMutationParams) => {
       const now = params.now ?? new Date();
       const paidAt = resolvePaymentDate(params.explicitDate, params.existingPaidAt, null, now);
@@ -62,9 +60,7 @@ export function useSetPayment() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
-    },
+    invalidateKeys: (variables) => [queryKeys.watchlist.byGroup(variables.groupId)],
   });
 }
 
@@ -79,9 +75,7 @@ export interface DeletePaymentMutationParams {
  * action (after the inline "Wirklich löschen?" confirmation).
  */
 export function useDeletePayment() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: DeletePaymentMutationParams) => {
       const { data, error } = await deletePayment({ watchlistEntryId: params.watchlistEntryId });
       if (error) {
@@ -89,8 +83,6 @@ export function useDeletePayment() {
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
-    },
+    invalidateKeys: (variables) => [queryKeys.watchlist.byGroup(variables.groupId)],
   });
 }

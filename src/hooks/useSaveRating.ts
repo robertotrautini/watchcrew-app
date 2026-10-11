@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAppMutation } from "@/hooks/useAppMutation";
 
 import { resetRating, savePayment, saveRating } from "@/lib/movieDetailMutations";
 import { buildRatingUpsertPayload, resolvePaymentDate } from "@/lib/ratingLogic";
@@ -59,9 +59,7 @@ export interface SaveRatingMutationParams {
  * channel.
  */
 export function useSaveRating() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: SaveRatingMutationParams) => {
       const now = params.now ?? new Date();
 
@@ -102,11 +100,8 @@ export function useSaveRating() {
 
       return ratingData;
     },
-    onSuccess: () => {
-      // ADR 0014: the rating is valid in every group that has the movie.
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
-    },
+    // ADR 0014: the rating is valid in every group that has the movie.
+    invalidateKeys: [queryKeys.watchlist.all, queryKeys.myDiary.all],
   });
 }
 
@@ -123,9 +118,7 @@ export interface ResetRatingMutationParams {
  * this hook guarding against a missing id.
  */
 export function useResetRating() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+  return useAppMutation({
     mutationFn: async (params: ResetRatingMutationParams) => {
       const { data, error } = await resetRating({ userId: params.userId, movieId: params.movieId });
       if (error) {
@@ -133,9 +126,6 @@ export function useResetRating() {
       }
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
-    },
+    invalidateKeys: [queryKeys.watchlist.all, queryKeys.myDiary.all],
   });
 }

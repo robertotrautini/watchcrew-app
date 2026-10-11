@@ -7,6 +7,7 @@ import {
   navigateToCollection,
   navigateToDirectorFilmography,
   navigateToMovieDetail,
+  navigateToMovieDetailWithContext,
   navigateToMovieDetailWithoutGroup,
 } from "@/lib/movieDetailNavigation";
 
@@ -88,6 +89,41 @@ describe("navigateToMovieDetailWithoutGroup", () => {
     expect(router.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "603", movieJson: encodeURIComponent(JSON.stringify(movie)) },
+    });
+  });
+});
+
+describe("navigateToMovieDetailWithContext", () => {
+  type R = Parameters<typeof navigateToMovieDetail>[0];
+  it("pushes with only tmdbId when no context is given", () => {
+    const router = { push: jest.fn(), replace: jest.fn() } as unknown as R;
+    navigateToMovieDetailWithContext(router, { tmdbId: 603 });
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "603" },
+    });
+  });
+
+  it("includes only the defined optional params", () => {
+    const router = { push: jest.fn(), replace: jest.fn() } as unknown as R;
+    navigateToMovieDetailWithContext(router, { tmdbId: 603, groupId: "g1", source: "watchlist" });
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "603", groupId: "g1", source: "watchlist" },
+    });
+  });
+
+  it("uses router.replace when asked", () => {
+    const router = { push: jest.fn(), replace: jest.fn() } as unknown as R;
+    navigateToMovieDetailWithContext(
+      router,
+      { tmdbId: 603, groupId: "g1", source: "diary", watchlistEntryId: "e1" },
+      "replace",
+    );
+    expect(router.push).not.toHaveBeenCalled();
+    expect(router.replace).toHaveBeenCalledWith({
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "603", groupId: "g1", source: "diary", watchlistEntryId: "e1" },
     });
   });
 });

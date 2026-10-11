@@ -76,6 +76,35 @@ export function navigateToMovieDetail(router: Router, target: MovieDetailTarget)
   });
 }
 
+/** Group context is optional: search results and push payloads may carry only part of it. */
+export interface MovieDetailContextTarget {
+  tmdbId: number;
+  groupId?: string;
+  source?: "watchlist" | "diary";
+  watchlistEntryId?: string;
+}
+
+/**
+ * Opens the overlay with whatever group context is known (undefined fields
+ * are omitted from the params). `replace` keeps the back stack flat when the
+ * origin is itself part of a detail view (movie grids opened from the detail).
+ */
+export function navigateToMovieDetailWithContext(
+  router: Router,
+  target: MovieDetailContextTarget,
+  method: "push" | "replace" = "push",
+): void {
+  router[method]({
+    pathname: "/movie/[tmdbId]",
+    params: {
+      tmdbId: String(target.tmdbId),
+      ...(target.groupId ? { groupId: target.groupId } : {}),
+      ...(target.watchlistEntryId ? { watchlistEntryId: target.watchlistEntryId } : {}),
+      ...(target.source ? { source: target.source } : {}),
+    },
+  });
+}
+
 /**
  * Opens the overlay WITHOUT group params (Tagebuch "Mein Tagebuch" item that
  * is not in the active group): the screen then resolves the group context

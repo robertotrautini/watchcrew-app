@@ -11,6 +11,7 @@ import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { computeFilmographyProgress } from "@/lib/filmographyProgress";
+import { navigateToMovieDetailWithContext } from "@/lib/movieDetailNavigation";
 import { getLibraryBadgeForTmdbId, getWatchedTmdbIdSet } from "@/lib/movieLibraryStatus";
 
 /**
@@ -83,7 +84,7 @@ export function MovieGridScreen({
 
   const openItem = (item: MovieGridItem) => {
     if (navigation === "push") {
-      router.push({ pathname: "/movie/[tmdbId]", params: { tmdbId: String(item.tmdbId) } });
+      navigateToMovieDetailWithContext(router, { tmdbId: item.tmdbId });
       return;
     }
     // router.replace (not push): the grid is part of the opening detail view,
@@ -94,17 +95,18 @@ export function MovieGridScreen({
     const badge = getBadge(item);
     if (badge !== null && activeGroupId) {
       const matchingEntry = entries.find((entry) => entry.movie?.tmdb_id === item.tmdbId);
-      router.replace({
-        pathname: "/movie/[tmdbId]",
-        params: {
-          tmdbId: String(item.tmdbId),
+      navigateToMovieDetailWithContext(
+        router,
+        {
+          tmdbId: item.tmdbId,
           groupId: activeGroupId,
           source: badge === "watched" ? "diary" : "watchlist",
-          ...(matchingEntry ? { watchlistEntryId: matchingEntry.id } : {}),
+          watchlistEntryId: matchingEntry?.id,
         },
-      });
+        "replace",
+      );
     } else {
-      router.replace({ pathname: "/movie/[tmdbId]", params: { tmdbId: String(item.tmdbId) } });
+      navigateToMovieDetailWithContext(router, { tmdbId: item.tmdbId }, "replace");
     }
   };
 
