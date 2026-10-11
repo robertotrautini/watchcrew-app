@@ -39,6 +39,9 @@ export type WatchlistViewMode = "cards" | "grid" | "list";
  */
 export type DiaryViewMode = "cards" | "grid" | "list";
 
+/** Posters per row in the poster grids (settings "Darstellung"). */
+export type GridColumns = 3 | 4;
+
 /** Tabs with a collapsible filter panel (Watchlist, Tagebuch). */
 export type FilterPanelTab = "watchlist" | "diary";
 
@@ -91,6 +94,12 @@ interface PreferencesState {
    */
   trackerEnabled: boolean;
   setTrackerEnabled: (value: boolean) => void;
+  /** Posters per row in Tagebuch/Watchlist grid view (default 4). */
+  gridColumnsDiaryWatchlist: GridColumns;
+  setGridColumnsDiaryWatchlist: (columns: GridColumns) => void;
+  /** Posters per row in MovieGrid screens: similar, search, collection, filmographies (default 3). */
+  gridColumnsMovies: GridColumns;
+  setGridColumnsMovies: (columns: GridColumns) => void;
   /**
    * Tagebuch scope ("Mein Tagebuch" | "Gruppe"): ONE global choice, not per
    * group; survives switching the active group. Default "group".
@@ -135,6 +144,10 @@ export const usePreferencesStore = create<PreferencesState>()(
         set((state) => ({
           filterPanelOpen: { ...state.filterPanelOpen, [tab]: open },
         })),
+      gridColumnsDiaryWatchlist: 4,
+      setGridColumnsDiaryWatchlist: (columns) => set({ gridColumnsDiaryWatchlist: columns }),
+      gridColumnsMovies: 3,
+      setGridColumnsMovies: (columns) => set({ gridColumnsMovies: columns }),
       diaryScope: DEFAULT_DIARY_SCOPE,
       setDiaryScope: (scope) => set({ diaryScope: scope }),
       listFilters: {},

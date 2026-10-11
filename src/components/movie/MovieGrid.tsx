@@ -11,8 +11,9 @@ import { FadeInItem } from "@/components/ui/FadeInItem";
 import { Image } from "@/components/ui/Image";
 import { PosterCornerBadge } from "@/components/movie/PosterCornerBadge";
 import { PosterTmdbBadge } from "@/components/movie/PosterTmdbBadge";
-import { isGridPlaceholder, padToFullRows } from "@/lib/gridPadding";
+import { GRID_COLUMN_WRAPPER_STYLE, isGridPlaceholder, padToFullRows } from "@/lib/gridPadding";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
+import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
  * Shared, presentational movie grid used by the M6 movie-detail sub-views
@@ -79,7 +80,7 @@ export interface MovieGridProps<T extends MovieGridItem = MovieGridItem> {
    * using this component is unaffected.
    */
   onAddItem?: (item: T) => void;
-  /** Number of grid columns (default 3; the Add-Movie search uses 4 like the legacy app). */
+  /** Number of grid columns (default: the "Raster Aehnliche Filme & Filmsuche" setting, 3 or 4). */
   columns?: number;
 }
 
@@ -102,9 +103,11 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   footer,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
   onAddItem,
-  columns = 3,
+  columns: columnsProp,
 }: MovieGridProps<T>) {
   const parallaxScroll = useParallaxScroll();
+  const storeColumns = usePreferencesStore((s) => s.gridColumnsMovies);
+  const columns = columnsProp ?? storeColumns;
   function renderTile(item: T) {
     const badge = getBadge ? getBadge(item) : null;
 
@@ -256,7 +259,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
           }
           numColumns={columns}
           key={columns}
-          columnWrapperClassName="gap-2"
+          columnWrapperStyle={GRID_COLUMN_WRAPPER_STYLE}
           contentContainerClassName="gap-2"
           renderItem={({ item, index }) =>
             isGridPlaceholder(item) ? (

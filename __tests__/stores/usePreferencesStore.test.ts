@@ -46,6 +46,17 @@ describe("usePreferencesStore", () => {
     expect(usePreferencesStore.getState().lastActiveTab).toBeNull();
   });
 
+  it("grid column prefs default to 4 (diary/watchlist) and 3 (movies) and can be set", () => {
+    const usePreferencesStore = loadStore();
+
+    expect(usePreferencesStore.getState().gridColumnsDiaryWatchlist).toBe(4);
+    expect(usePreferencesStore.getState().gridColumnsMovies).toBe(3);
+    usePreferencesStore.getState().setGridColumnsDiaryWatchlist(3);
+    usePreferencesStore.getState().setGridColumnsMovies(4);
+    expect(usePreferencesStore.getState().gridColumnsDiaryWatchlist).toBe(3);
+    expect(usePreferencesStore.getState().gridColumnsMovies).toBe(4);
+  });
+
   it("setLastActiveTab updates the store's state", () => {
     const usePreferencesStore = loadStore();
 

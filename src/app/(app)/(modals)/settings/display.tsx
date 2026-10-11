@@ -2,6 +2,7 @@ import { View } from "react-native";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
+import { SettingsColumnsRow } from "@/components/settings/SettingsColumnsRow";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
@@ -22,6 +23,11 @@ export default function SettingsDisplayScreen() {
   const trackerEnabled = usePreferencesStore((s) => s.trackerEnabled);
   const setTrackerEnabled = usePreferencesStore((s) => s.setTrackerEnabled);
 
+  const gridColumnsDiaryWatchlist = usePreferencesStore((s) => s.gridColumnsDiaryWatchlist);
+  const setGridColumnsDiaryWatchlist = usePreferencesStore((s) => s.setGridColumnsDiaryWatchlist);
+  const gridColumnsMovies = usePreferencesStore((s) => s.gridColumnsMovies);
+  const setGridColumnsMovies = usePreferencesStore((s) => s.setGridColumnsMovies);
+
   return (
     <View className="flex-1" testID="settings-display-screen">
       <View className="flex-1 px-4 pt-4">
@@ -31,6 +37,18 @@ export default function SettingsDisplayScreen() {
             label="Filmtitel in Grid anzeigen"
             checked={showTitlesInGrid}
             onPress={() => setShowTitlesInGrid(!showTitlesInGrid)}
+          />
+          <SettingsColumnsRow
+            testID="settings-grid-columns-diary-watchlist"
+            label="Raster Tagebuch & Watchlist"
+            value={gridColumnsDiaryWatchlist}
+            onChange={setGridColumnsDiaryWatchlist}
+          />
+          <SettingsColumnsRow
+            testID="settings-grid-columns-movies"
+            label="Raster Ähnliche Filme & Filmsuche"
+            value={gridColumnsMovies}
+            onChange={setGridColumnsMovies}
           />
           <SettingsToggleRow
             testID="settings-display-tracker-toggle"

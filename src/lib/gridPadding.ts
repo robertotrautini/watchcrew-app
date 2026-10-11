@@ -23,3 +23,12 @@ export function padToFullRows<T>(items: T[], columns: number): Array<T | GridPla
   }));
   return [...items, ...placeholders];
 }
+
+/** Horizontal gap (dp) between poster columns in every poster grid (3 and 4 columns). */
+export const GRID_COLUMN_GAP = 4;
+
+/**
+ * Explicit style (not `columnWrapperClassName`, which NativeWind does not
+ * apply to the FlatList row wrapper, leaving only a 1-2px gap).
+ */
+export const GRID_COLUMN_WRAPPER_STYLE = { columnGap: GRID_COLUMN_GAP } as const;
