@@ -58,6 +58,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4.5,
         liked: true,
@@ -68,8 +69,8 @@ describe("useSaveRating", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockSaveRating).toHaveBeenCalledWith({
-      watchlist_entry_id: "we-1",
-      member_id: "user-1",
+      user_id: "user-1",
+      movie_id: "movie-1",
       rating: 4.5,
       liked: true,
       seen_at: "2026-09-10",
@@ -90,6 +91,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -119,6 +121,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -152,6 +155,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -185,6 +189,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -202,6 +207,33 @@ describe("useSaveRating", () => {
     });
   });
 
+  it("skipRating writes only the payment (no user_movie_ratings row is touched)", async () => {
+    mockSavePayment.mockResolvedValue({ data: { id: "we-1" }, error: null });
+    const { useSaveRating } = loadHooks();
+    const { wrapper } = createWrapper();
+
+    const { result } = await renderHook(() => useSaveRating(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({
+        groupId: "group-1",
+        watchlistEntryId: "we-1",
+        movieId: "movie-1",
+        memberId: "user-1",
+        rating: null,
+        liked: false,
+        seenAt: null,
+        now: NOW,
+        skipRating: true,
+        payment: { paidByMemberId: "user-2", explicitPaidAt: null, existingPaidAt: null },
+      });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockSaveRating).not.toHaveBeenCalled();
+    expect(mockSavePayment).toHaveBeenCalledTimes(1);
+  });
+
   it("surfaces a rating-save error through React Query's error channel and never attempts the payment write", async () => {
     const fakeError = { message: "rls denied" };
     mockSaveRating.mockResolvedValue({ data: null, error: fakeError });
@@ -214,6 +246,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -241,6 +274,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -254,7 +288,7 @@ describe("useSaveRating", () => {
     expect(result.current.error).toEqual(fakeError);
   });
 
-  it("invalidates the group's watchlist cache on success", async () => {
+  it("invalidates ALL group watchlists on success (ADR 0014)", async () => {
     mockSaveRating.mockResolvedValue({ data: { id: "r1" }, error: null });
     const { useSaveRating } = loadHooks();
     const { wrapper, queryClient } = createWrapper();
@@ -266,6 +300,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -275,7 +310,8 @@ describe("useSaveRating", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.myDiary.all });
   });
 
   it("does not invalidate the cache when the save errors", async () => {
@@ -290,6 +326,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -314,6 +351,7 @@ describe("useSaveRating", () => {
       result.current.mutate({
         groupId: "group-1",
         watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         rating: 4,
         liked: false,
@@ -335,7 +373,7 @@ describe("useResetRating", () => {
     jest.clearAllMocks();
   });
 
-  it("resets the targeted rating row and invalidates the group's watchlist cache on success", async () => {
+  it("resets the targeted rating row and invalidates ALL group watchlists on success (ADR 0014)", async () => {
     mockResetRating.mockResolvedValue({ data: { id: "r1", rating: null, liked: false }, error: null });
     const { useResetRating } = loadHooks();
     const { wrapper, queryClient } = createWrapper();
@@ -344,12 +382,13 @@ describe("useResetRating", () => {
     const { result } = await renderHook(() => useResetRating(), { wrapper });
 
     await act(async () => {
-      result.current.mutate({ groupId: "group-1", ratingId: "r1" });
+      result.current.mutate({ groupId: "group-1", userId: "user-1", movieId: "movie-1" });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockResetRating).toHaveBeenCalledWith({ ratingId: "r1" });
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+    expect(mockResetRating).toHaveBeenCalledWith({ userId: "user-1", movieId: "movie-1" });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.myDiary.all });
   });
 
   it("surfaces a reset error through React Query's error channel without invalidating the cache", async () => {
@@ -362,7 +401,7 @@ describe("useResetRating", () => {
     const { result } = await renderHook(() => useResetRating(), { wrapper });
 
     await act(async () => {
-      result.current.mutate({ groupId: "group-1", ratingId: "r1" });
+      result.current.mutate({ groupId: "group-1", userId: "user-1", movieId: "movie-1" });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

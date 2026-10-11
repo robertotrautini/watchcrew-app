@@ -18,49 +18,34 @@ import { upsertMovie } from "./tmdbProxy";
 // log.
 
 export interface ToggleLikeParams {
-  watchlistEntryId: string;
+  /** `movies.id` -- ADR 0014: the rating belongs to (user, movie), not to a group entry. */
+  movieId: string;
   memberId: string;
   nextLiked: boolean;
-  /**
-   * The current member's existing `ratings` row id for this
-   * watchlist_entry, if one is already known (e.g. from the entry's nested
-   * `ratings` array). When given, only the `liked` column is updated on
-   * that row via `.update()`, leaving `rating`/`seen_at`/`rated_at`
-   * untouched. When omitted, an `.upsert()` is used instead (there is no
-   * DELETE policy on `ratings`, so like-toggle is always an upsert/update,
-   * never a delete) -- see docs/interim-decisions.md for the reasoning on
-   * why both paths exist instead of always upserting.
-   */
-  existingRatingId?: string;
 }
 
 /**
- * Flips `liked` on a group member's `ratings` row for a watchlist entry,
- * without clobbering that row's `rating`/`seen_at`/`rated_at` fields.
- *
- * `ratings` has no DELETE policy at all, and INSERT/UPDATE are restricted to
- * `member_id = auth.uid()` -- so this is always an insert-or-update on the
- * caller's own row, keyed by the `(watchlist_entry_id, member_id)` unique
- * constraint.
+ * Flips `liked` on the caller's own `user_movie_ratings` row for a movie,
+ * without clobbering `rating`/`seen_at`/`rated_at`. Liking upserts only the
+ * `liked` column (creates the row if missing); un-liking only UPDATEs an
+ * existing row (never creates an empty one).
  */
 export async function toggleLike(params: ToggleLikeParams) {
-  const { watchlistEntryId, memberId, nextLiked, existingRatingId } = params;
+  const { movieId, memberId, nextLiked } = params;
 
-  if (existingRatingId) {
+  if (!nextLiked) {
     return supabase
-      .from("ratings")
-      .update({ liked: nextLiked })
-      .eq("id", existingRatingId)
+      .from("user_movie_ratings")
+      .update({ liked: false })
+      .eq("user_id", memberId)
+      .eq("movie_id", movieId)
       .select()
-      .single();
+      .maybeSingle();
   }
 
   return supabase
-    .from("ratings")
-    .upsert(
-      { watchlist_entry_id: watchlistEntryId, member_id: memberId, liked: nextLiked },
-      { onConflict: "watchlist_entry_id,member_id" }
-    )
+    .from("user_movie_ratings")
+    .upsert({ user_id: memberId, movie_id: movieId, liked: true }, { onConflict: "user_id,movie_id" })
     .select()
     .single();
 }
@@ -170,49 +155,45 @@ export async function addToWatchlist(params: AddToWatchlistParams) {
 // task's explicit deliverable list.
 
 /**
- * Upserts the acting member's own `ratings` row for a watchlist entry.
+ * Upserts the acting user's own `user_movie_ratings` row (ADR 0014: one row
+ * per user and movie, valid in ALL groups). `payload` is expected to already
+ * be shaped by `buildRatingUpsertPayload` (src/lib/ratingLogic.ts).
  *
- * Deliberately a real UPSERT (never a delete-then-reinsert) so a future
- * server-side NULL->value push trigger (ADR 0006's push-behavior design,
- * out of scope for this client-side task) can correctly observe a
- * NULL->value vs. value->value transition on `rating` later. `payload` is
- * expected to already be shaped by `buildRatingUpsertPayload`
- * (src/lib/ratingLogic.ts) -- this function does no further shaping itself.
- *
- * RLS (`ratings_insert_own_row_only`/`ratings_update_own_row_only`)
- * restricts both the insert and update path of this upsert to
- * `member_id = auth.uid()`, so this can only ever write the CALLING
- * member's own rating row -- exactly the "Direkt Bewerten only rates for
- * the acting user" business rule, enforced at the database layer, not just
- * assumed client-side.
+ * A row exists only while it has content (rating > 0, like or `seen_at`): a
+ * payload without any of them deletes the own row instead of storing an empty
+ * one. Still a real UPSERT otherwise, so the push trigger can observe the
+ * NULL->value transition of `rating`. RLS (`umr_insert_own`/`umr_update_own`)
+ * limits writes to `user_id = auth.uid()`.
  */
 export async function saveRating(payload: RatingUpsertPayload) {
+  const hasContent = (payload.rating != null && payload.rating > 0) || payload.liked || payload.seen_at != null;
+  if (!hasContent) {
+    return resetRating({ userId: payload.user_id, movieId: payload.movie_id });
+  }
   return supabase
-    .from("ratings")
-    .upsert(payload, { onConflict: "watchlist_entry_id,member_id" })
+    .from("user_movie_ratings")
+    .upsert(payload, { onConflict: "user_id,movie_id" })
     .select()
     .single();
 }
 
 export interface ResetRatingParams {
-  ratingId: string;
+  userId: string;
+  movieId: string;
 }
 
 /**
- * Resets a rating row's `rating` back to NULL and its `liked` back to
- * `false` -- per the known rule "deleting a rating also resets the like".
- * Only `rating`/`liked` are touched: `seen_at`/`rated_at` are left exactly
- * as they were (resetting a rating value isn't itself a new "rating
- * event", so `rated_at` is intentionally NOT bumped here -- an interim
- * decision, see docs/interim-decisions.md "M7 Teil 2b").
- *
- * An `.update()` targeting the existing row's id, not a delete -- `ratings`
- * has no DELETE policy at all (see the M6-part-2a `toggleLike` doc comment
- * above), and this keeps the same "never delete-then-reinsert" guarantee
- * `saveRating` relies on.
+ * Deletes the caller's own `user_movie_ratings` row (ADR 0014 decision 2:
+ * delete instead of reset). The movie then counts as not seen/not rated in
+ * ALL groups. Group entries (`watchlist_entries`) are untouched. RLS:
+ * `umr_delete_own`.
  */
 export async function resetRating(params: ResetRatingParams) {
-  return supabase.from("ratings").update({ rating: null, liked: false }).eq("id", params.ratingId).select().single();
+  return supabase
+    .from("user_movie_ratings")
+    .delete()
+    .eq("user_id", params.userId)
+    .eq("movie_id", params.movieId);
 }
 
 export interface SavePaymentParams {

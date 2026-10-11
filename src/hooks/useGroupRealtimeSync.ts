@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import type { GroupWatchlistData } from "@/hooks/useGroupWatchlist";
-import { extractWatchlistEntryId } from "@/lib/realtimeSync";
+import { extractMovieId, extractUserId } from "@/lib/realtimeSync";
 import { supabase } from "@/lib/supabase";
 import { queryKeys } from "@/lib/queryKeys";
 
@@ -29,23 +29,23 @@ import { queryKeys } from "@/lib/queryKeys";
  * comment for the full reasoning):
  *  - `watchlist_entries` has its own `group_id` column, so the Realtime
  *    subscription itself is server-side filtered: `group_id=eq.<groupId>`.
- *  - `ratings` has NO `group_id` column (see the M1 schema) — a `ratings`
- *    row only carries `watchlist_entry_id`. Realtime's `filter` option only
+ *  - `user_movie_ratings` (ADR 0014, replaces `ratings`) has NO `group_id`
+ *    column -- a row only carries `user_id`/`movie_id`. Realtime's `filter` option only
  *    supports a fixed column-comparison string, not a join, so there is no
  *    way to filter this subscription to "ratings belonging to group X" at
- *    the server. Instead this hook subscribes to ALL `ratings` changes
+ *    the server. Instead this hook subscribes to ALL visible `user_movie_ratings` changes (RLS filters)
  *    (every group, every user of the app) and checks membership
- *    CLIENT-SIDE: does the changed row's `watchlist_entry_id` appear in the
+ *    CLIENT-SIDE: does the changed row's `movie_id` appear in the
  *    already-fetched `["watchlist", groupId]` cache for the active group?
  *    If the cache isn't populated yet (screen hasn't finished its first
  *    fetch), the event is dropped rather than guessed at — a normal app
  *    session always fetches the watchlist before rendering any of the
  *    three tabs, so this window is effectively just "before first paint".
- *    An alternative (a `watchlist_entry_id=in.(id1,id2,...)` filter, which
+ *    An alternative (a `movie_id=in.(id1,id2,...)` filter, which
  *    Realtime DOES support) was considered and rejected: it would need the
  *    channel's filter re-created every time the group's entry list changes
  *    (a new movie added/removed), which is significantly more moving parts
- *    for a small, chatty group app where an unfiltered `ratings` stream is
+ *    for a small, chatty group app where an unfiltered `user_movie_ratings` stream is
  *    cheap. See docs/interim-decisions.md "M10 — Realtime-Filterung für
  *    `ratings`".
  *
@@ -107,12 +107,19 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
         )
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "ratings" },
+          { event: "*", schema: "public", table: "user_movie_ratings" },
           (payload) => {
-            const watchlistEntryId = extractWatchlistEntryId(payload);
+            // Phase 5: the user's own "Mein Tagebuch" (all groups, also movies in no group). Invalidating a
+            // key without a cached query is a no-op, so rows of OTHER users cost nothing here.
+            const changedUserId = extractUserId(payload);
+            if (changedUserId) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.byUser(changedUserId) });
+            }
+            // ADR 0014: ratings are per (user, movie); relevant when the movie is in the active group's cache.
+            const movieId = extractMovieId(payload);
             const cached = queryClient.getQueryData<GroupWatchlistData>(queryKeys.watchlist.byGroup(groupId));
             const belongsToActiveGroup =
-              watchlistEntryId != null && (cached?.entries ?? []).some((entry) => entry.id === watchlistEntryId);
+              movieId != null && (cached?.entries ?? []).some((entry) => entry.movie_id === movieId);
             if (!belongsToActiveGroup) {
               return;
             }

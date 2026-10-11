@@ -119,7 +119,7 @@ describe("shouldPersistQuery JSON-safety guard", () => {
 
 describe("cache schema version", () => {
   it("is bumped to 2 so previously persisted Map-as-{} shapes are dropped", () => {
-    expect(PERSIST_BUSTER.endsWith("-2")).toBe(true);
+    expect(PERSIST_BUSTER.endsWith("-3")).toBe(true);
   });
 });
 

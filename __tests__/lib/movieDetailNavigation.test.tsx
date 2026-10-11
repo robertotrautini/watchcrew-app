@@ -7,6 +7,7 @@ import {
   navigateToCollection,
   navigateToDirectorFilmography,
   navigateToMovieDetail,
+  navigateToMovieDetailWithoutGroup,
 } from "@/lib/movieDetailNavigation";
 
 function MovieStub() {
@@ -75,6 +76,18 @@ describe("navigateToMovieDetail", () => {
     expect(router.push).toHaveBeenCalledWith({
       pathname: "/movie/[tmdbId]",
       params: { tmdbId: "603", groupId: "g1", source: "diary", watchlistEntryId: "e1" },
+    });
+  });
+});
+
+describe("navigateToMovieDetailWithoutGroup", () => {
+  it("pushes the overlay with only tmdbId and the movie as movieJson (no group params)", () => {
+    const router = { push: jest.fn() } as unknown as Parameters<typeof navigateToMovieDetail>[0];
+    const movie = { id: "m1", name: "Matrix" };
+    navigateToMovieDetailWithoutGroup(router, 603, movie);
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: "/movie/[tmdbId]",
+      params: { tmdbId: "603", movieJson: encodeURIComponent(JSON.stringify(movie)) },
     });
   });
 });

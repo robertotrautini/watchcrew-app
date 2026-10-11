@@ -7,6 +7,7 @@ import React from "react";
 
 const mockGetGroupWatchlistEntries = jest.fn();
 const mockGetStreamingAvailabilityForTmdbIds = jest.fn();
+const mockGetGroupMemberRatings = jest.fn();
 
 const mockGetMoviesProvidersBatch = jest.fn();
 const mockRefreshReleaseDates = jest.fn();
@@ -18,6 +19,7 @@ jest.mock("@/lib/tmdbProxy", () => ({
 
 jest.mock("@/lib/watchlist", () => ({
   getGroupWatchlistEntries: mockGetGroupWatchlistEntries,
+  getGroupMemberRatings: mockGetGroupMemberRatings,
   getStreamingAvailabilityForTmdbIds: mockGetStreamingAvailabilityForTmdbIds,
 }));
 
@@ -31,6 +33,7 @@ function loadUseGroupWatchlist() {
 describe("useGroupWatchlist", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetGroupMemberRatings.mockResolvedValue({ data: [], error: null });
     mockGetMoviesProvidersBatch.mockResolvedValue({ data: {}, error: null });
     mockRefreshReleaseDates.mockResolvedValue({ data: {}, error: null });
   });
@@ -250,6 +253,39 @@ describe("useGroupWatchlist", () => {
     await renderHook(() => useGroupWatchlist(undefined), { wrapper: createQueryWrapper() });
 
     expect(mockGetGroupWatchlistEntries).not.toHaveBeenCalled();
+  });
+
+  it("merges the member ratings (user_movie_ratings, by movie_id) into entry.ratings", async () => {
+    mockGetGroupWatchlistEntries.mockResolvedValue({
+      data: [
+        { id: "e1", movie_id: "m1", movie: { tmdb_id: 1, release_date: "2020-01-01" }, ratings: [] },
+        { id: "e2", movie_id: "m2", movie: { tmdb_id: 2, release_date: "2020-01-01" }, ratings: [] },
+      ],
+      error: null,
+    });
+    mockGetStreamingAvailabilityForTmdbIds.mockResolvedValue({ data: [], error: null });
+    mockGetGroupMemberRatings.mockResolvedValue({
+      data: [{ user_id: "u1", movie_id: "m1", rating: 4, liked: true, seen_at: "2026-01-01", rated_at: "t" }],
+      error: null,
+    });
+    const useGroupWatchlist = loadUseGroupWatchlist();
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(mockGetGroupMemberRatings).toHaveBeenCalledWith("group-1");
+    expect(result.current.data.entries[0].ratings).toEqual([
+      { member_id: "u1", rating: 4, liked: true, seen_at: "2026-01-01", rated_at: "t" },
+    ]);
+    expect(result.current.data.entries[1].ratings).toEqual([]);
+  });
+
+  it("surfaces a member-ratings RPC error through React Query's error channel", async () => {
+    mockGetGroupWatchlistEntries.mockResolvedValue({ data: [], error: null });
+    const fakeError = { message: "rpc failed" };
+    mockGetGroupMemberRatings.mockResolvedValue({ data: null, error: fakeError });
+    const useGroupWatchlist = loadUseGroupWatchlist();
+    const { result } = await renderHook(() => useGroupWatchlist("group-1"), { wrapper: createQueryWrapper() });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error).toEqual(fakeError);
   });
 
   it("keeps a JSON-safe shape in the query cache and rebuilds the Map in select", async () => {

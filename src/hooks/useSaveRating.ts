@@ -23,9 +23,12 @@ export interface SaveRatingPaymentParams {
 }
 
 export interface SaveRatingMutationParams {
-  /** Needed purely to invalidate the right `["watchlist", groupId]` cache entry on success. */
+  /** The group the dialog was opened from (kept for call-site symmetry; ALL group watchlists are invalidated, ADR 0014). */
   groupId: string;
+  /** Needed for the payment write (payment stays per group entry). */
   watchlistEntryId: string;
+  /** `movies.id` -- the rating row is keyed by (user, movie). */
+  movieId: string;
   memberId: string;
   rating: number | null;
   liked: boolean;
@@ -39,6 +42,11 @@ export interface SaveRatingMutationParams {
    * then left completely untouched, rather than being cleared.
    */
   payment?: SaveRatingPaymentParams;
+  /**
+   * Payment-only save (e.g. after a rating delete): skips the rating write so
+   * no empty/new `user_movie_ratings` row is created.
+   */
+  skipRating?: boolean;
 }
 
 /**
@@ -57,18 +65,22 @@ export function useSaveRating() {
     mutationFn: async (params: SaveRatingMutationParams) => {
       const now = params.now ?? new Date();
 
-      const payload = buildRatingUpsertPayload({
-        watchlistEntryId: params.watchlistEntryId,
-        memberId: params.memberId,
-        rating: params.rating,
-        liked: params.liked,
-        seenAt: params.seenAt,
-        now,
-      });
+      let ratingData: unknown = null;
+      if (!params.skipRating) {
+        const payload = buildRatingUpsertPayload({
+          movieId: params.movieId,
+          memberId: params.memberId,
+          rating: params.rating,
+          liked: params.liked,
+          seenAt: params.seenAt,
+          now,
+        });
 
-      const { data: ratingData, error: ratingError } = await saveRating(payload);
-      if (ratingError) {
-        throw ratingError;
+        const { data, error: ratingError } = await saveRating(payload);
+        if (ratingError) {
+          throw ratingError;
+        }
+        ratingData = data;
       }
 
       if (params.payment) {
@@ -90,22 +102,23 @@ export function useSaveRating() {
 
       return ratingData;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
+    onSuccess: () => {
+      // ADR 0014: the rating is valid in every group that has the movie.
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
     },
   });
 }
 
 export interface ResetRatingMutationParams {
-  /** Needed purely to invalidate the right `["watchlist", groupId]` cache entry on success. */
+  /** The group the dialog was opened from (all group watchlists are invalidated). */
   groupId: string;
-  ratingId: string;
+  userId: string;
+  movieId: string;
 }
 
 /**
- * Resets an existing rating back to "not rated" (rating=null, liked=false --
- * see src/lib/movieDetailMutations.ts's `resetRating` doc comment for why
- * `liked` is included). The dialog is expected to disable the reset button
+ * Resets an existing rating back to "not rated" (ADR 0014: deletes the own user_movie_ratings row -- not seen in ANY group). The dialog is expected to disable the reset button
  * entirely when there's no existing rating row/id to reset, rather than
  * this hook guarding against a missing id.
  */
@@ -114,14 +127,15 @@ export function useResetRating() {
 
   return useMutation({
     mutationFn: async (params: ResetRatingMutationParams) => {
-      const { data, error } = await resetRating({ ratingId: params.ratingId });
+      const { data, error } = await resetRating({ userId: params.userId, movieId: params.movieId });
       if (error) {
         throw error;
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(variables.groupId) });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
     },
   });
 }

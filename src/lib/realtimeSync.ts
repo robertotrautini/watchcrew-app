@@ -66,9 +66,7 @@ export function classifyWatchlistEntriesChange(
 
 /**
  * ADR 0006 / feature-inventory 2.6: notify only on the NULL -> value
- * transition (an INSERT, since `ratings` rows are upserted once per
- * (watchlist_entry_id, member_id) and never re-inserted -- see the M1
- * schema's unique constraint), never on a correction (an UPDATE of an
+ * transition (an INSERT of the `user_movie_ratings` row (user_id, movie_id)), never on a correction (an UPDATE of an
  * existing rating row).
  */
 export function classifyRatingsChange(
@@ -78,19 +76,26 @@ export function classifyRatingsChange(
 }
 
 /**
- * `ratings` has no `group_id` column (see the M1 schema) -- callers can't
- * filter the Realtime subscription itself to "this group's ratings only"
- * the way they can for `watchlist_entries` (`filter: group_id=eq.<id>`).
- * This helper reads the one column ratings DOES carry
- * (`watchlist_entry_id`) off whichever row is present (`new` for
- * INSERT/UPDATE, `old` for DELETE) so the caller can check membership
- * client-side against the already-fetched watchlist entries for the active
- * group (see useGroupRealtimeSync.ts).
+ * `user_movie_ratings` (ADR 0014) has no `group_id` column -- callers can't
+ * filter the Realtime subscription to "this group's ratings only". This
+ * helper reads the column the table does carry (`movie_id`) off whichever row
+ * is present (`new` for INSERT/UPDATE, `old` for DELETE; DELETE carries it
+ * thanks to REPLICA IDENTITY FULL) so the caller can check client-side
+ * whether the movie is in the active group's already-fetched watchlist.
  */
-export function extractWatchlistEntryId(
+export function extractMovieId(
   payload: PostgresChangeLike | RealtimePostgresChangesPayload<Record<string, unknown>>,
 ): string | undefined {
-  const fromNew = (payload.new as Record<string, unknown> | null)?.watchlist_entry_id;
-  const fromOld = (payload.old as Record<string, unknown> | null)?.watchlist_entry_id;
+  const fromNew = (payload.new as Record<string, unknown> | null)?.movie_id;
+  const fromOld = (payload.old as Record<string, unknown> | null)?.movie_id;
+  return (fromNew ?? fromOld) as string | undefined;
+}
+
+/** `user_id` of a `user_movie_ratings` change (new row, else old row for DELETE). */
+export function extractUserId(
+  payload: PostgresChangeLike | RealtimePostgresChangesPayload<Record<string, unknown>>,
+): string | undefined {
+  const fromNew = (payload.new as Record<string, unknown> | null)?.user_id;
+  const fromOld = (payload.old as Record<string, unknown> | null)?.user_id;
   return (fromNew ?? fromOld) as string | undefined;
 }

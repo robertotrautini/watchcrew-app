@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 
 import { loadStreamingRows } from "@/lib/streamingAvailability";
 import { refreshReleaseDates } from "@/lib/tmdbProxy";
-import { getGroupWatchlistEntries } from "@/lib/watchlist";
+import { attachMemberRatings, type MemberRatingRow } from "@/lib/entrySelectors";
+import { getGroupMemberRatings, getGroupWatchlistEntries } from "@/lib/watchlist";
 import { buildStreamingAvailabilityLookup, getEffectiveReleaseDate } from "@/lib/watchlistLogic";
 import type { StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
 import { queryKeys } from "@/lib/queryKeys";
@@ -59,14 +60,24 @@ export function useGroupWatchlist(groupId: string | undefined) {
   return useQuery({
     queryKey: queryKeys.watchlist.byGroup(groupId),
     queryFn: async (): Promise<CachedGroupWatchlistData> => {
-      const { data: entries, error: entriesError } = await getGroupWatchlistEntries(
-        groupId as string
-      );
+      // ADR 0014: entries and member ratings are two requests (no FK between
+      // the tables, so no PostgREST embed); merged below into `entry.ratings`.
+      const [
+        { data: entries, error: entriesError },
+        { data: ratingRows, error: ratingsError },
+      ] = await Promise.all([
+        getGroupWatchlistEntries(groupId as string),
+        getGroupMemberRatings(groupId as string),
+      ]);
       if (entriesError) {
         throw entriesError;
       }
+      if (ratingsError) {
+        throw ratingsError;
+      }
+      const memberRatings = (ratingRows ?? []) as MemberRatingRow[];
 
-      let safeEntries = (entries ?? []) as unknown as WatchlistEntry[];
+      let safeEntries = attachMemberRatings((entries ?? []) as unknown as WatchlistEntry[], memberRatings);
 
       const tmdbIds = Array.from(
         new Set(
@@ -104,7 +115,7 @@ export function useGroupWatchlist(groupId: string | undefined) {
           groupId as string
         );
         if (!rereadError && reread) {
-          safeEntries = reread as unknown as WatchlistEntry[];
+          safeEntries = attachMemberRatings(reread as unknown as WatchlistEntry[], memberRatings);
         }
       }
 

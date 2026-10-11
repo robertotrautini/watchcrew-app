@@ -73,7 +73,8 @@ export function resolveSeenAtDate(
 }
 
 export interface BuildRatingUpsertPayloadArgs {
-  watchlistEntryId: string;
+  /** `movies.id` (ADR 0014: ratings are per user and movie). */
+  movieId: string;
   memberId: string;
   /** `null` = no rating yet (e.g. a fresh "direct rate" row before the first tap). */
   rating: number | null;
@@ -84,8 +85,8 @@ export interface BuildRatingUpsertPayloadArgs {
 }
 
 export interface RatingUpsertPayload {
-  watchlist_entry_id: string;
-  member_id: string;
+  user_id: string;
+  movie_id: string;
   rating: number | null;
   liked: boolean;
   seen_at: string | null;
@@ -93,15 +94,15 @@ export interface RatingUpsertPayload {
 }
 
 /**
- * Shapes the `ratings` table upsert payload. `seen_at` (when watched,
+ * Shapes the `user_movie_ratings` upsert payload. `seen_at` (when watched,
  * user-editable) and `rated_at` (when the rating was entered, system-set to
  * "now" on every save) are kept as two independent fields per the M1 schema
  * -- never conflated, per the project's explicit non-negotiable rule.
  */
 export function buildRatingUpsertPayload(args: BuildRatingUpsertPayloadArgs): RatingUpsertPayload {
   return {
-    watchlist_entry_id: args.watchlistEntryId,
-    member_id: args.memberId,
+    user_id: args.memberId,
+    movie_id: args.movieId,
     rating: args.rating,
     liked: args.liked,
     seen_at: args.seenAt,

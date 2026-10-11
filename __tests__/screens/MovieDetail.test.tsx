@@ -227,6 +227,48 @@ describe("MovieDetailScreen", () => {
     expect(getByTestId("movie-detail-action-loeschen")).toBeTruthy();
   });
 
+  it("tapping 'Löschen' on the screen opens the ConfirmDialog; confirm triggers exactly one delete mutation", async () => {
+    mockUseLocalSearchParams.mockReturnValue({ tmdbId: "42" });
+    mockUseActiveGroup.mockReturnValue({
+      activeGroupId: "active-group-1",
+      setActiveGroup: jest.fn(),
+      groupsQuery: { data: [] },
+    });
+    mockUseGroupWatchlist.mockImplementation((groupId: string | undefined) => ({
+      data:
+        groupId === "active-group-1"
+          ? {
+              entries: [
+                {
+                  id: "entry-new",
+                  group_id: "active-group-1",
+                  movie_id: "movie-1",
+                  added_at: "2026-01-01T00:00:00Z",
+                  added_by: "user-1",
+                  paid_by_member_id: null,
+                  paid_at: null,
+                  movie: { id: "movie-1", tmdb_id: 42, name: "Test Movie", release_date: null, poster: null, overview: null, runtime: null, director: null, director_id: null, vote_average: null },
+                  ratings: [],
+                },
+              ],
+              streamingAvailability: new Map(),
+            }
+          : undefined,
+    }));
+    const deleteMutate = jest.fn();
+    mockUseDeleteWatchlistEntry.mockReturnValue({ mutate: deleteMutate, isPending: false });
+
+    const MovieDetailScreen = loadMovieDetailScreen();
+    const { getByTestId, queryByTestId } = await render(<MovieDetailScreen />);
+
+    expect(queryByTestId("movie-detail-delete-dialog")).toBeNull();
+    await fireEvent.press(getByTestId("movie-detail-action-loeschen"));
+    expect(getByTestId("movie-detail-delete-dialog")).toBeTruthy();
+    await fireEvent.press(getByTestId("movie-detail-delete-confirm-button"));
+    expect(deleteMutate).toHaveBeenCalledTimes(1);
+    expect(deleteMutate.mock.calls[0][0]).toEqual({ watchlistEntryId: "entry-new", groupId: "active-group-1" });
+  });
+
   describe("live TMDB details when the movie is not stored locally (opened from search)", () => {
     function mockLiveDetails() {
       mockUseMovieDetail.mockReturnValue({

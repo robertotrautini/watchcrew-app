@@ -44,7 +44,7 @@ describe("resolveDetailEntryContext", () => {
 
   it("resolves to diary when the current user has a rating > 0", () => {
     const rated = entry(42, [
-      { id: "r", watchlist_entry_id: "e1", member_id: "u1", rating: 4, liked: false, seen_at: null, rated_at: null },
+      { member_id: "u1", rating: 4, liked: false, seen_at: null, rated_at: null },
     ]);
     expect(resolveDetailEntryContext({ ...base, activeGroupEntries: [rated] }).source).toBe("diary");
   });

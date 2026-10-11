@@ -204,7 +204,8 @@ export default function TrackerScreen() {
                     entry.paid_by_member_id,
                     displayNameById.get(entry.paid_by_member_id),
                   )
-                : "–";
+                : // Tracker rows always have paid_at; a NULL payer means the paying account was deleted (ADR 0014).
+                  "Ehemaliges Mitglied";
               const payerColor = entry.paid_by_member_id
                 ? memberColors.get(entry.paid_by_member_id)
                 : undefined;

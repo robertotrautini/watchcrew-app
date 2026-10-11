@@ -54,45 +54,35 @@ describe("toggleLike", () => {
     jest.clearAllMocks();
   });
 
-  it("upserts a ratings row (watchlist_entry_id, member_id, liked) with onConflict when no existingRatingId is given", async () => {
-    const fakeResult = { data: { id: "r1", liked: true }, error: null };
+  it("liking upserts only the liked column on user_movie_ratings keyed (user_id, movie_id)", async () => {
+    const fakeResult = { data: { liked: true }, error: null };
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
     const { toggleLike } = require("../../src/lib/movieDetailMutations");
-    const result = await toggleLike({
-      watchlistEntryId: "we-1",
-      memberId: "user-1",
-      nextLiked: true,
-    });
+    const result = await toggleLike({ movieId: "movie-1", memberId: "user-1", nextLiked: true });
 
-    expect(mockFrom).toHaveBeenCalledWith("ratings");
+    expect(mockFrom).toHaveBeenCalledWith("user_movie_ratings");
     expect(chain.upsert).toHaveBeenCalledWith(
-      { watchlist_entry_id: "we-1", member_id: "user-1", liked: true },
-      { onConflict: "watchlist_entry_id,member_id" }
+      { user_id: "user-1", movie_id: "movie-1", liked: true },
+      { onConflict: "user_id,movie_id" },
     );
     expect(chain.update).not.toHaveBeenCalled();
     expect(result).toBe(fakeResult);
   });
 
-  it("updates only the liked field on the existing rating row when existingRatingId is given, without touching rating/seen_at", async () => {
-    const fakeResult = { data: { id: "r1", liked: false }, error: null };
+  it("un-liking only UPDATEs the own existing row (never creates one), leaving rating/seen_at untouched", async () => {
+    const fakeResult = { data: { liked: false }, error: null };
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
     const { toggleLike } = require("../../src/lib/movieDetailMutations");
-    const result = await toggleLike({
-      watchlistEntryId: "we-1",
-      memberId: "user-1",
-      nextLiked: false,
-      existingRatingId: "r1",
-    });
+    const result = await toggleLike({ movieId: "movie-1", memberId: "user-1", nextLiked: false });
 
-    expect(mockFrom).toHaveBeenCalledWith("ratings");
+    expect(mockFrom).toHaveBeenCalledWith("user_movie_ratings");
     expect(chain.update).toHaveBeenCalledWith({ liked: false });
-    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("rating");
-    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("seen_at");
-    expect(chain.eq).toHaveBeenCalledWith("id", "r1");
+    expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(chain.eq).toHaveBeenCalledWith("movie_id", "movie-1");
     expect(chain.upsert).not.toHaveBeenCalled();
     expect(result).toBe(fakeResult);
   });
@@ -102,11 +92,7 @@ describe("toggleLike", () => {
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
     const { toggleLike } = require("../../src/lib/movieDetailMutations");
-    const result = await toggleLike({
-      watchlistEntryId: "we-1",
-      memberId: "user-1",
-      nextLiked: true,
-    });
+    const result = await toggleLike({ movieId: "movie-1", memberId: "user-1", nextLiked: true });
 
     expect(result).toBe(fakeResult);
   });
@@ -226,36 +212,58 @@ describe("addToWatchlist", () => {
   });
 });
 
-// M7 part 2b (Rating-Dialog): the ratings/payment writes. `saveRating` is a
-// real UPSERT (never a delete-then-reinsert) so a future server-side
-// NULL->value push trigger (ADR 0006, out of scope here) can still correctly
-// observe the transition -- see docs/interim-decisions.md "M7 Teil 2b".
+// ADR 0014: rating writes go to user_movie_ratings (one row per user and
+// movie, valid in all groups). saveRating is a real UPSERT (push trigger needs
+// the NULL->value transition); a payload without content deletes the own row.
 describe("saveRating", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  it("upserts the full ratings payload keyed on (watchlist_entry_id, member_id)", async () => {
-    const fakeResult = { data: { id: "r1" }, error: null };
+  const payload = {
+    user_id: "user-1",
+    movie_id: "movie-1",
+    rating: 4.5,
+    liked: true,
+    seen_at: "2026-09-10",
+    rated_at: "2026-09-20T12:00:00.000Z",
+  };
+
+  it("upserts the full payload on user_movie_ratings keyed (user_id, movie_id)", async () => {
+    const fakeResult = { data: { rating: 4.5 }, error: null };
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
     const { saveRating } = require("../../src/lib/movieDetailMutations");
-    const payload = {
-      watchlist_entry_id: "we-1",
-      member_id: "user-1",
-      rating: 4.5,
-      liked: true,
-      seen_at: "2026-09-10",
-      rated_at: "2026-09-20T12:00:00.000Z",
-    };
     const result = await saveRating(payload);
 
-    expect(mockFrom).toHaveBeenCalledWith("ratings");
-    expect(chain.upsert).toHaveBeenCalledWith(payload, {
-      onConflict: "watchlist_entry_id,member_id",
-    });
+    expect(mockFrom).toHaveBeenCalledWith("user_movie_ratings");
+    expect(chain.upsert).toHaveBeenCalledWith(payload, { onConflict: "user_id,movie_id" });
+    expect(chain.delete).not.toHaveBeenCalled();
     expect(result).toBe(fakeResult);
+  });
+
+  it("deletes the own row instead of storing an empty one (no rating, no like, no seen_at)", async () => {
+    const chain = makeChain({ data: null, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { saveRating } = require("../../src/lib/movieDetailMutations");
+    await saveRating({ ...payload, rating: 0, liked: false, seen_at: null });
+
+    expect(chain.upsert).not.toHaveBeenCalled();
+    expect(chain.delete).toHaveBeenCalled();
+    expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(chain.eq).toHaveBeenCalledWith("movie_id", "movie-1");
+  });
+
+  it("still upserts a row that only has seen_at ('gesehen' without a rating)", async () => {
+    const chain = makeChain({ data: {}, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    const { saveRating } = require("../../src/lib/movieDetailMutations");
+    await saveRating({ ...payload, rating: null, liked: false });
+
+    expect(chain.upsert).toHaveBeenCalled();
   });
 
   it("returns the { data, error } shape unchanged on failure, instead of throwing", async () => {
@@ -263,16 +271,7 @@ describe("saveRating", () => {
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
     const { saveRating } = require("../../src/lib/movieDetailMutations");
-    const result = await saveRating({
-      watchlist_entry_id: "we-1",
-      member_id: "user-1",
-      rating: 3,
-      liked: false,
-      seen_at: null,
-      rated_at: "2026-09-20T12:00:00.000Z",
-    });
-
-    expect(result).toBe(fakeResult);
+    expect(await saveRating(payload)).toBe(fakeResult);
   });
 });
 
@@ -281,19 +280,20 @@ describe("resetRating", () => {
     jest.clearAllMocks();
   });
 
-  it("updates only rating and liked on the existing row (also resets the like, per the known rule), leaving seen_at/rated_at untouched", async () => {
-    const fakeResult = { data: { id: "r1", rating: null, liked: false }, error: null };
+  it("deletes the own user_movie_ratings row (movie counts as not seen in ALL groups); never touches watchlist_entries", async () => {
+    const fakeResult = { data: null, error: null };
     const chain = makeChain(fakeResult);
     mockFrom.mockReturnValue(chain);
 
     const { resetRating } = require("../../src/lib/movieDetailMutations");
-    const result = await resetRating({ ratingId: "r1" });
+    const result = await resetRating({ userId: "user-1", movieId: "movie-1" });
 
-    expect(mockFrom).toHaveBeenCalledWith("ratings");
-    expect(chain.update).toHaveBeenCalledWith({ rating: null, liked: false });
-    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("seen_at");
-    expect(chain.update.mock.calls[0][0]).not.toHaveProperty("rated_at");
-    expect(chain.eq).toHaveBeenCalledWith("id", "r1");
+    expect(mockFrom).toHaveBeenCalledTimes(1);
+    expect(mockFrom).toHaveBeenCalledWith("user_movie_ratings");
+    expect(chain.delete).toHaveBeenCalled();
+    expect(chain.eq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(chain.eq).toHaveBeenCalledWith("movie_id", "movie-1");
+    expect(chain.update).not.toHaveBeenCalled();
     expect(result).toBe(fakeResult);
   });
 
@@ -302,9 +302,7 @@ describe("resetRating", () => {
     mockFrom.mockReturnValue(makeChain(fakeResult));
 
     const { resetRating } = require("../../src/lib/movieDetailMutations");
-    const result = await resetRating({ ratingId: "r1" });
-
-    expect(result).toBe(fakeResult);
+    expect(await resetRating({ userId: "user-1", movieId: "movie-1" })).toBe(fakeResult);
   });
 });
 

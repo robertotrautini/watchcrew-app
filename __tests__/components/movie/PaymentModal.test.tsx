@@ -42,8 +42,6 @@ function makeMovie(overrides: Partial<WatchlistEntry["movie"]> = {}): WatchlistE
 
 function makeRating(overrides: Partial<Rating> = {}): Rating {
   return {
-    id: "r1",
-    watchlist_entry_id: "we-1",
     member_id: "u1",
     rating: null,
     liked: false,

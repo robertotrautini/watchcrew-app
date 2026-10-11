@@ -203,9 +203,9 @@ describe("MovieDetailActionsBar", () => {
     );
 
     const onSuccess = mockAddMutate.mock.calls[0][1].onSuccess;
-    onSuccess({ id: "new-entry-id" });
+    onSuccess({ id: "new-entry-id", movie_id: "movie-9" });
 
-    expect(onDirectRateEntryCreated).toHaveBeenCalledWith("new-entry-id");
+    expect(onDirectRateEntryCreated).toHaveBeenCalledWith("new-entry-id", "movie-9");
   });
 
   it("'filmreihe' navigates to the collection", async () => {
@@ -260,5 +260,41 @@ describe("MovieDetailActionsBar", () => {
     await fireEvent.press(getByTestId("movie-detail-action-bearbeiten"));
 
     expect(onOpenRatingDialog).not.toHaveBeenCalled();
+  });
+});
+
+describe("MovieDetailActionsBar inside a SheetHost (as in the movie screen)", () => {
+  it("'loeschen' opens the ConfirmDialog, confirm mutates exactly once", async () => {
+    mockDeleteMutate.mockClear();
+    const { SheetHost } = require("@/components/ui/Sheet");
+    const router = createMockRouter();
+    const { getByTestId, queryByTestId } = await render(
+      <SheetHost>
+        <MovieDetailActionsBar
+          actions={["loeschen"]}
+          router={router}
+          tmdbId={42}
+          groupId="group-1"
+          watchlistEntryId="entry-1"
+        />
+      </SheetHost>,
+    );
+    expect(queryByTestId("movie-detail-delete-dialog")).toBeNull();
+    await fireEvent.press(getByTestId("movie-detail-action-loeschen"));
+    expect(getByTestId("movie-detail-delete-dialog")).toBeTruthy();
+    await fireEvent.press(getByTestId("movie-detail-delete-confirm-button"));
+    expect(mockDeleteMutate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("MovieDetailActionsBar delete tile touch handling", () => {
+  it("inner tint view never takes touches and carries no active: variant (outer Pressable owns the press)", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailActionsBar actions={["aehnliche", "loeschen"]} router={createMockRouter()} tmdbId={42} />,
+    );
+    const tint = getByTestId("movie-detail-action-loeschen-tint");
+    expect(tint.props.pointerEvents).toBe("none");
+    expect(tint.props.className).not.toContain("active:");
+    expect(getByTestId("movie-detail-action-loeschen").props.className).toContain("active:bg-danger/25");
   });
 });

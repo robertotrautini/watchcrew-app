@@ -77,6 +77,26 @@ export function navigateToMovieDetail(router: Router, target: MovieDetailTarget)
 }
 
 /**
+ * Opens the overlay WITHOUT group params (Tagebuch "Mein Tagebuch" item that
+ * is not in the active group): the screen then resolves the group context
+ * itself from the active group's watchlist (none -> "Zur Watchlist" /
+ * "Direkt bewerten"). `movie` is passed as `movieJson` for instant paint.
+ */
+export function navigateToMovieDetailWithoutGroup(
+  router: Router,
+  tmdbId: number,
+  movie?: unknown,
+): void {
+  router.push({
+    pathname: "/movie/[tmdbId]",
+    params: {
+      tmdbId: String(tmdbId),
+      ...(movie ? { movieJson: encodeURIComponent(JSON.stringify(movie)) } : {}),
+    },
+  });
+}
+
+/**
  * Real M6-part-2b route: `src/app/(app)/(modals)/similar/[tmdbId].tsx`.
  */
 export function navigateToSimilarMovies(router: Router, tmdbId: number): void {

@@ -93,7 +93,7 @@ describe("useGroupRealtimeSync", () => {
     expect(mockChannelFn).not.toHaveBeenCalled();
   });
 
-  it("opens a channel and subscribes to watchlist_entries filtered by the active group, and to ratings unfiltered", async () => {
+  it("opens a channel and subscribes to watchlist_entries filtered by the active group, and to user_movie_ratings unfiltered", async () => {
     const { useGroupRealtimeSync } = loadHook();
     await renderHook(() => useGroupRealtimeSync("group-1"));
 
@@ -107,8 +107,8 @@ describe("useGroupRealtimeSync", () => {
       filter: "group_id=eq.group-1",
     });
 
-    const ratingsCall = mockOn.mock.calls.find((c) => c[1].table === "ratings");
-    expect(ratingsCall[1]).toMatchObject({ schema: "public", table: "ratings" });
+    const ratingsCall = mockOn.mock.calls.find((c) => c[1].table === "user_movie_ratings");
+    expect(ratingsCall[1]).toMatchObject({ schema: "public", table: "user_movie_ratings" });
     expect(ratingsCall[1].filter).toBeUndefined();
 
     expect(mockSubscribe).toHaveBeenCalled();
@@ -310,14 +310,14 @@ describe("useGroupRealtimeSync", () => {
     });
   });
 
-  describe("ratings change handling (no group_id column -- client-side membership check)", () => {
+  describe("user_movie_ratings change handling (no group_id column -- client-side membership check)", () => {
     it("ignores a ratings change for an entry NOT in the active group's cached watchlist", async () => {
-      mockGetQueryData.mockReturnValue({ entries: [{ id: "we-other-group" }], streamingAvailability: new Map() });
+      mockGetQueryData.mockReturnValue({ entries: [{ id: "e-x", movie_id: "m-other" }], streamingAvailability: new Map() });
 
       const { useGroupRealtimeSync } = loadHook();
       await renderHook(() => useGroupRealtimeSync("group-1"));
 
-      await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
+      await fireChange("user_movie_ratings", { eventType: "INSERT", new: { id: "r-1", movie_id: "we-1" }, old: null });
 
       expect(mockInvalidateQueries).not.toHaveBeenCalled();
       expect(mockShowToast).not.toHaveBeenCalled();
@@ -329,43 +329,74 @@ describe("useGroupRealtimeSync", () => {
       const { useGroupRealtimeSync } = loadHook();
       await renderHook(() => useGroupRealtimeSync("group-1"));
 
-      await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
+      await fireChange("user_movie_ratings", { eventType: "INSERT", new: { id: "r-1", movie_id: "we-1" }, old: null });
 
       expect(mockInvalidateQueries).not.toHaveBeenCalled();
     });
 
     it("handles a ratings change for an entry that DOES belong to the active group's cached watchlist", async () => {
-      mockGetQueryData.mockReturnValue({ entries: [{ id: "we-1" }], streamingAvailability: new Map() });
+      mockGetQueryData.mockReturnValue({ entries: [{ id: "e-1", movie_id: "we-1" }], streamingAvailability: new Map() });
       AppState.currentState = "active";
 
       const { useGroupRealtimeSync } = loadHook();
       await renderHook(() => useGroupRealtimeSync("group-1"));
 
-      await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
+      await fireChange("user_movie_ratings", { eventType: "INSERT", new: { id: "r-1", movie_id: "we-1" }, old: null });
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 
     it("does not toast a rating CORRECTION (UPDATE) even for a matching entry, but does invalidate", async () => {
-      mockGetQueryData.mockReturnValue({ entries: [{ id: "we-1" }], streamingAvailability: new Map() });
+      mockGetQueryData.mockReturnValue({ entries: [{ id: "e-1", movie_id: "we-1" }], streamingAvailability: new Map() });
       AppState.currentState = "active";
 
       const { useGroupRealtimeSync } = loadHook();
       await renderHook(() => useGroupRealtimeSync("group-1"));
 
-      await fireChange("ratings", {
+      await fireChange("user_movie_ratings", {
         eventType: "UPDATE",
-        new: { id: "r-1", watchlist_entry_id: "we-1", rating: 5 },
-        old: { id: "r-1", watchlist_entry_id: "we-1", rating: 4 },
+        new: { id: "r-1", movie_id: "we-1", rating: 5 },
+        old: { id: "r-1", movie_id: "we-1", rating: 4 },
       });
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 
+    it("invalidates the group watchlist on a DELETE (rating removed) using movie_id from the old row", async () => {
+      mockGetQueryData.mockReturnValue({ entries: [{ id: "e-1", movie_id: "we-1" }], streamingAvailability: new Map() });
+
+      const { useGroupRealtimeSync } = loadHook();
+      await renderHook(() => useGroupRealtimeSync("group-1"));
+
+      await fireChange("user_movie_ratings", { eventType: "DELETE", new: null, old: { user_id: "u2", movie_id: "we-1" } });
+
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+    });
+
+    it("invalidates the OWN 'Mein Tagebuch' cache on a rating change even when the movie is in no cached group list", async () => {
+      mockGetQueryData.mockReturnValue(undefined);
+
+      const { useGroupRealtimeSync } = loadHook();
+      await renderHook(() => useGroupRealtimeSync("group-1"));
+
+      await fireChange("user_movie_ratings", { eventType: "INSERT", new: { user_id: "u1", movie_id: "m-x" }, old: null });
+      expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.myDiary.byUser("u1") });
+      expect(mockInvalidateQueries).not.toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+
+      await fireChange("user_movie_ratings", { eventType: "DELETE", new: null, old: { user_id: "u1", movie_id: "m-x" } });
+      expect(mockInvalidateQueries).toHaveBeenCalledTimes(2);
+    });
+
+    it("no longer subscribes to the legacy ratings table", async () => {
+      const { useGroupRealtimeSync } = loadHook();
+      await renderHook(() => useGroupRealtimeSync("group-1"));
+      expect(mockOn.mock.calls.some((c) => c[1].table === "ratings")).toBe(false);
+    });
+
     it("silently updates (no toast) for a matching entry's rating when the user is on the affected screen", async () => {
-      mockGetQueryData.mockReturnValue({ entries: [{ id: "we-1" }], streamingAvailability: new Map() });
+      mockGetQueryData.mockReturnValue({ entries: [{ id: "e-1", movie_id: "we-1" }], streamingAvailability: new Map() });
       const { useFocusedGroupScreen } = require("@/stores/useFocusedGroupScreen");
       useFocusedGroupScreen.setState({ focusedGroupId: "group-1" });
       AppState.currentState = "active";
@@ -373,7 +404,7 @@ describe("useGroupRealtimeSync", () => {
       const { useGroupRealtimeSync } = loadHook();
       await renderHook(() => useGroupRealtimeSync("group-1"));
 
-      await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
+      await fireChange("user_movie_ratings", { eventType: "INSERT", new: { id: "r-1", movie_id: "we-1" }, old: null });
 
       expect(mockInvalidateQueries).toHaveBeenCalled();
       expect(mockShowToast).not.toHaveBeenCalled();

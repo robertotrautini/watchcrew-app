@@ -120,7 +120,7 @@ const PAID_BETA = makeEntry({
 const UNPAID_GAMMA = makeEntry({
   id: "e3",
   paid_at: null,
-  ratings: [{ id: "r1", watchlist_entry_id: "e3", member_id: "u1", rating: 4, liked: false, seen_at: null, rated_at: null }],
+  ratings: [{ member_id: "u1", rating: 4, liked: false, seen_at: null, rated_at: null }],
   movie: makeMovie({ name: "Gamma Movie (unbezahlt)", tmdb_id: 3 }),
 });
 
@@ -211,6 +211,20 @@ describe("TrackerScreen", () => {
     const rows = getAllByTestId(/^tracker-row-e\d$/);
     // Beta (Sep 15) is newer than Alpha (Sep 1) -> Beta first.
     expect(rows.map((r) => r.props.testID)).toEqual(["tracker-row-e2", "tracker-row-e1"]);
+  });
+
+  it("shows 'Ehemaliges Mitglied' as payer when the paying account was deleted (paid_by_member_id NULL)", async () => {
+    const FORMER = makeEntry({
+      id: "e9",
+      paid_at: "2026-09-20T00:00:00.000Z",
+      paid_by_member_id: null,
+      added_by: null,
+      movie: makeMovie({ name: "Delta Movie", tmdb_id: 9 }),
+    });
+    setUpHappyPath([FORMER]);
+    const TrackerScreen = loadTrackerScreen();
+    const { getByText } = await render(<TrackerScreen />);
+    expect(getByText("Ehemaliges Mitglied")).toBeTruthy();
   });
 
   it("draws a separator only BETWEEN rows, none after the last row", async () => {

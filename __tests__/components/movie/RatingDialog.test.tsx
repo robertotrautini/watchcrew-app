@@ -34,8 +34,6 @@ const NOW = new Date("2026-09-20T12:00:00.000Z");
 
 function makeRating(overrides: Partial<Rating>): Rating {
   return {
-    id: "r1",
-    watchlist_entry_id: "we-1",
     member_id: "user-1",
     rating: null,
     liked: false,
@@ -70,6 +68,7 @@ function baseProps(overrides: Partial<Parameters<typeof RatingDialog>[0]> = {}) 
     movieTitle: "Der Pate",
     movieReleaseDate: null as string | null,
     watchlistEntryId: "we-1",
+    movieId: "movie-1",
     paidByMemberId: null as string | null,
     paidAt: null as string | null,
     ratings: [] as Rating[],
@@ -109,7 +108,7 @@ describe("RatingDialog", () => {
   });
 
   it("pre-fills the star rating, like-heart, and Gesehen-am date from an existing own rating (Diary-edit context)", async () => {
-    const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 3.5, liked: true, seen_at: "2026-09-10" })];
+    const ratings = [makeRating({ member_id: "user-1", rating: 3.5, liked: true, seen_at: "2026-09-10" })];
     const { getByTestId } = await render(
       <RatingDialog {...baseProps({ mode: "diary", ratings })} />,
     );
@@ -125,8 +124,8 @@ describe("RatingDialog", () => {
 
   it("shows only OTHER members' ratings, never the current user's own row, in the read-only section", async () => {
     const ratings = [
-      makeRating({ id: "r1", member_id: "user-1", rating: 4 }),
-      makeRating({ id: "r2", member_id: "user-2", rating: 2.5 }),
+      makeRating({ member_id: "user-1", rating: 4 }),
+      makeRating({ member_id: "user-2", rating: 2.5 }),
     ];
     const { getByTestId } = await render(<RatingDialog {...baseProps({ ratings })} />);
 
@@ -195,7 +194,7 @@ describe("RatingDialog", () => {
     });
 
     it("is enabled when there IS a real existing rating; pressing it only marks a draft (no mutation, stars empty)", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const { getByTestId } = await render(<RatingDialog {...baseProps({ ratings })} />);
 
       expect(getByTestId("rating-dialog-reset-button").props.accessibilityState.disabled).toBe(false);
@@ -208,7 +207,7 @@ describe("RatingDialog", () => {
     });
 
     it("reset + Abbrechen: nothing is deleted or saved", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const props = baseProps({ ratings });
       const { getByTestId } = await render(<RatingDialog {...props} />);
 
@@ -221,7 +220,7 @@ describe("RatingDialog", () => {
     });
 
     it("reset + Speichern asks for confirmation first, then deletes exactly once", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const { getByTestId, getByText } = await render(
         <RatingDialog {...baseProps({ ratings })} />,
       );
@@ -237,14 +236,14 @@ describe("RatingDialog", () => {
 
       expect(mockResetMutate).toHaveBeenCalledTimes(1);
       expect(mockResetMutate).toHaveBeenCalledWith(
-        { groupId: "group-1", ratingId: "r1" },
+        { groupId: "group-1", userId: "user-1", movieId: "movie-1" },
         expect.objectContaining({ onSuccess: expect.any(Function) }),
       );
       expect(mockSaveMutate).not.toHaveBeenCalled();
     });
 
     it("reset + Speichern + confirm-Abbrechen: nothing deleted, dialog stays open", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const props = baseProps({ ratings });
       const { getByTestId, queryByTestId } = await render(<RatingDialog {...props} />);
 
@@ -258,7 +257,7 @@ describe("RatingDialog", () => {
     });
 
     it("on successful delete: toast, onSaved and onClose", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const props = baseProps({ ratings, onSaved: jest.fn() });
       const { getByTestId } = await render(<RatingDialog {...props} />);
 
@@ -272,7 +271,7 @@ describe("RatingDialog", () => {
     });
 
     it("re-rating after reset cancels the delete draft: Speichern saves, no delete", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const { getByTestId, getAllByLabelText } = await render(<RatingDialog {...baseProps({ ratings })} />);
 
       await fireEvent.press(getByTestId("rating-dialog-reset-button"));
@@ -284,7 +283,7 @@ describe("RatingDialog", () => {
     });
 
     it("delete draft is discarded when the dialog is reopened", async () => {
-      const ratings = [makeRating({ id: "r1", member_id: "user-1", rating: 4, liked: true })];
+      const ratings = [makeRating({ member_id: "user-1", rating: 4, liked: true })];
       const props = baseProps({ ratings });
       const { getByTestId, rerender } = await render(<RatingDialog {...props} />);
 
@@ -473,6 +472,7 @@ describe("RatingDialog", () => {
         {
           groupId: "group-1",
           watchlistEntryId: "we-1",
+    movieId: "movie-1",
           memberId: "user-1",
           rating: 4,
           liked: false,

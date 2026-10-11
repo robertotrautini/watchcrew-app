@@ -43,6 +43,7 @@ describe("default 'today' uses the local date", () => {
         movieTitle="X"
         movieReleaseDate={null}
         watchlistEntryId="we"
+        movieId="movie-1"
         paidByMemberId={null}
         paidAt={null}
         ratings={[]}

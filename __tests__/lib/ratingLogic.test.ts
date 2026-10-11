@@ -93,7 +93,7 @@ describe("buildRatingUpsertPayload", () => {
 
   it("shapes the full payload, keeping seen_at and rated_at as separate, independent fields", () => {
     const payload = buildRatingUpsertPayload({
-      watchlistEntryId: "we-1",
+      movieId: "movie-1",
       memberId: "user-1",
       rating: 4.5,
       liked: true,
@@ -102,8 +102,8 @@ describe("buildRatingUpsertPayload", () => {
     });
 
     expect(payload).toEqual({
-      watchlist_entry_id: "we-1",
-      member_id: "user-1",
+      user_id: "user-1",
+      movie_id: "movie-1",
       rating: 4.5,
       liked: true,
       seen_at: "2026-09-10",
@@ -113,7 +113,7 @@ describe("buildRatingUpsertPayload", () => {
 
   it("always sets rated_at to the given 'now', even when seen_at is null ('Weiß nicht')", () => {
     const payload = buildRatingUpsertPayload({
-      watchlistEntryId: "we-1",
+      movieId: "movie-1",
       memberId: "user-1",
       rating: 3,
       liked: false,
@@ -127,7 +127,7 @@ describe("buildRatingUpsertPayload", () => {
 
   it("passes rating=null through unchanged (e.g. a not-yet-rated direct-rate row before the user taps a star)", () => {
     const payload = buildRatingUpsertPayload({
-      watchlistEntryId: "we-1",
+      movieId: "movie-1",
       memberId: "user-1",
       rating: null,
       liked: false,

@@ -12,13 +12,7 @@ import {
   isUpcoming,
   withEffectiveReleaseDate,
   searchEntries,
-  sortByAddedAtDesc,
-  sortByAverageRatingDesc,
-  sortByTmdbScoreDesc,
   filterByMyStreaming,
-  sortDiary,
-  sortMyDiary,
-  sortWatchlist,
   splitWatchlistAndDiary,
 } from "@/lib/watchlistLogic";
 import type { Movie, Rating, StreamingAvailabilityLookup, WatchlistEntry } from "@/lib/watchlistTypes";
@@ -49,8 +43,6 @@ function makeMovie(overrides: Partial<Movie> & Pick<Movie, "tmdb_id" | "name">):
 
 function makeRating(overrides: Partial<Rating> & Pick<Rating, "member_id">): Rating {
   return {
-    id: `rating-${overrides.member_id}-${Math.random()}`,
-    watchlist_entry_id: "entry",
     rating: null,
     liked: false,
     seen_at: null,
@@ -134,17 +126,6 @@ describe("splitWatchlistAndDiary", () => {
   });
 });
 
-describe("sortByAddedAtDesc", () => {
-  it("orders entries by added_at descending", () => {
-    const older = makeEntry({ id: "old", movie: makeMovie({ tmdb_id: 1, name: "A" }), added_at: "2026-01-01T00:00:00Z" });
-    const newer = makeEntry({ id: "new", movie: makeMovie({ tmdb_id: 2, name: "B" }), added_at: "2026-03-01T00:00:00Z" });
-
-    const result = sortByAddedAtDesc([older, newer]);
-
-    expect(result.map((e) => e.id)).toEqual(["new", "old"]);
-  });
-});
-
 describe("isUpcoming (Kommt noch)", () => {
   const now = new Date("2026-06-15T12:00:00Z");
 
@@ -188,7 +169,7 @@ describe("isUpcoming (Kommt noch)", () => {
 });
 
 describe("filterUpcoming", () => {
-  it("filters to only upcoming entries and orders soonest dated release first, undated last", () => {
+  it("keeps only upcoming entries and does not reorder them", () => {
     const now = new Date("2026-06-15T12:00:00Z");
     const soon = makeEntry({ id: "soon", movie: makeMovie({ tmdb_id: 1, name: "Soon", release_date: "2026-07-01" }) });
     const later = makeEntry({ id: "later", movie: makeMovie({ tmdb_id: 2, name: "Later", release_date: "2026-09-01" }) });
@@ -202,7 +183,7 @@ describe("filterUpcoming", () => {
 
     const result = filterUpcoming([later, undated, alreadyStreaming, past, soon], availability, now);
 
-    expect(result.map((e) => e.id)).toEqual(["soon", "later", "undated"]);
+    expect(result.map((e) => e.id)).toEqual(["later", "undated", "soon"]);
   });
 });
 
@@ -227,18 +208,6 @@ describe("filterUnrated / filterHasRatings", () => {
   it("filterHasRatings keeps entries where at least one member rated (>0), regardless of who", () => {
     const result = filterHasRatings([noRatings, zeroRatingOnly, oneRealRating]);
     expect(result.map((e) => e.id)).toEqual(["one"]);
-  });
-});
-
-describe("sortByTmdbScoreDesc", () => {
-  it("sorts by vote_average descending, with nulls last", () => {
-    const low = makeEntry({ id: "low", movie: makeMovie({ tmdb_id: 1, name: "A", vote_average: 5.5 }) });
-    const high = makeEntry({ id: "high", movie: makeMovie({ tmdb_id: 2, name: "B", vote_average: 8.2 }) });
-    const noScore = makeEntry({ id: "none", movie: makeMovie({ tmdb_id: 3, name: "C", vote_average: null }) });
-
-    const result = sortByTmdbScoreDesc([low, noScore, high]);
-
-    expect(result.map((e) => e.id)).toEqual(["high", "low", "none"]);
   });
 });
 
@@ -337,35 +306,6 @@ describe("filterByYear", () => {
   });
 });
 
-describe("sortMyDiary (diary default)", () => {
-  it("keeps only entries the current user rated, sorted by own seen_at descending, nulls last", () => {
-    const notRatedByMe = makeEntry({
-      id: "not-mine",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u2", rating: 5, seen_at: "2026-01-01" })],
-    });
-    const seenEarlier = makeEntry({
-      id: "earlier",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-01-01" })],
-    });
-    const seenLater = makeEntry({
-      id: "later",
-      movie: makeMovie({ tmdb_id: 3, name: "C" }),
-      ratings: [makeRating({ member_id: "u1", rating: 3, seen_at: "2026-05-01" })],
-    });
-    const noSeenAt = makeEntry({
-      id: "no-seen-at",
-      movie: makeMovie({ tmdb_id: 4, name: "D" }),
-      ratings: [makeRating({ member_id: "u1", rating: 2, seen_at: null })],
-    });
-
-    const result = sortMyDiary([notRatedByMe, seenEarlier, seenLater, noSeenAt], "u1");
-
-    expect(result.map((e) => e.id)).toEqual(["later", "earlier", "no-seen-at"]);
-  });
-});
-
 describe("filterAllRated / filterMissing", () => {
   const members = ["u1", "u2", "u3"];
 
@@ -414,38 +354,16 @@ describe("filterAllRated / filterMissing", () => {
     zeroRatingCountsAsRatedHere,
   ];
 
-  it("filterAllRated keeps only entries where every member has a non-null rating row, sorted by average desc", () => {
+  it("filterAllRated keeps only entries where every member has a non-null rating row (order unchanged)", () => {
     const result = filterAllRated(allEntries, members);
 
     expect(result.map((e) => e.id)).toEqual(["all-rated", "zero-rating-all-rated"]);
-    // all-rated avg = (4+3+5)/3 = 4.0; zero-rating avg = (0+3+5)/3 = 2.67 -> all-rated first.
-    expect(result[0].id).toBe("all-rated");
   });
 
   it("filterMissing keeps entries where at least one member lacks a non-null rating (null row or no row at all)", () => {
     const result = filterMissing(allEntries, members);
 
     expect(result.map((e) => e.id).sort()).toEqual(["missing-member", "null-rating"]);
-  });
-});
-
-describe("sortByAverageRatingDesc", () => {
-  it("orders by average of non-null ratings descending, entries with no ratings last", () => {
-    const highAvg = makeEntry({
-      id: "high",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u1", rating: 5 }), makeRating({ member_id: "u2", rating: 4 })],
-    });
-    const lowAvg = makeEntry({
-      id: "low",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u1", rating: 2 })],
-    });
-    const noRatings = makeEntry({ id: "none", movie: makeMovie({ tmdb_id: 3, name: "C" }) });
-
-    const result = sortByAverageRatingDesc([lowAvg, noRatings, highAvg]);
-
-    expect(result.map((e) => e.id)).toEqual(["high", "low", "none"]);
   });
 });
 
@@ -519,130 +437,6 @@ describe("buildStreamingAvailabilityLookup", () => {
   });
 });
 
-describe("sortWatchlist dispatcher", () => {
-  it("dispatches 'added' to sortByAddedAtDesc", () => {
-    const older = makeEntry({ id: "old", movie: makeMovie({ tmdb_id: 1, name: "A" }), added_at: "2026-01-01T00:00:00Z" });
-    const newer = makeEntry({ id: "new", movie: makeMovie({ tmdb_id: 2, name: "B" }), added_at: "2026-02-01T00:00:00Z" });
-
-    expect(sortWatchlist([older, newer], "added").map((e) => e.id)).toEqual(["new", "old"]);
-  });
-
-  it("dispatches 'upcoming' using context.streamingAvailability and context.now", () => {
-    const now = new Date("2026-06-15T00:00:00Z");
-    const future = makeEntry({ id: "future", movie: makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-12-01" }) });
-    const past = makeEntry({ id: "past", movie: makeMovie({ tmdb_id: 2, name: "B", release_date: "2020-01-01" }) });
-
-    const result = sortWatchlist([future, past], "upcoming", { streamingAvailability: new Map(), now });
-
-    expect(result.map((e) => e.id)).toEqual(["future"]);
-  });
-
-  it("dispatches 'genre' using context.genreIds", () => {
-    const withGenre = makeEntry({
-      id: "with",
-      movie: makeMovie({ tmdb_id: 1, name: "A", movie_genres: [{ genre_id: GENRE_ACTION }] }),
-    });
-    const without = makeEntry({ id: "without", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
-
-    expect(
-      sortWatchlist([withGenre, without], "genre", { genreIds: [GENRE_ACTION] }).map((e) => e.id)
-    ).toEqual(["with"]);
-  });
-});
-
-describe("sortDiary dispatcher", () => {
-  it("dispatches 'my_diary' (default) to the current user's own rated entries", () => {
-    const mine = makeEntry({
-      id: "mine",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-01-01" })],
-    });
-    const notMine = makeEntry({
-      id: "not-mine",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u2", rating: 5, seen_at: "2026-01-01" })],
-    });
-
-    expect(sortDiary([mine, notMine], "my_diary", "u1").map((e) => e.id)).toEqual(["mine"]);
-  });
-
-  it("dispatches 'all_rated' using context.groupMemberIds", () => {
-    const entry = makeEntry({
-      id: "all-rated",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4 }), makeRating({ member_id: "u2", rating: 3 })],
-    });
-    const incomplete = makeEntry({
-      id: "incomplete",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4 })],
-    });
-
-    const result = sortDiary([entry, incomplete], "all_rated", "u1", { groupMemberIds: ["u1", "u2"] });
-
-    expect(result.map((e) => e.id)).toEqual(["all-rated"]);
-  });
-
-  it("dispatches 'year' using the CURRENT USER's own seen_at (context.year)", () => {
-    const seen2026 = makeEntry({
-      id: "2026",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4, seen_at: "2026-03-01" })],
-    });
-    const seen2020 = makeEntry({
-      id: "2020",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u1", rating: 3, seen_at: "2020-03-01" })],
-    });
-
-    expect(sortDiary([seen2026, seen2020], "year", "u1", { year: 2026 }).map((e) => e.id)).toEqual([
-      "2026",
-    ]);
-  });
-
-  it("dispatches 'liked' to the current user's own liked entries", () => {
-    const liked = makeEntry({
-      id: "liked",
-      movie: makeMovie({ tmdb_id: 1, name: "A" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4, liked: true })],
-    });
-    const notLiked = makeEntry({
-      id: "not-liked",
-      movie: makeMovie({ tmdb_id: 2, name: "B" }),
-      ratings: [makeRating({ member_id: "u1", rating: 4, liked: false })],
-    });
-
-    expect(sortDiary([liked, notLiked], "liked", "u1").map((e) => e.id)).toEqual(["liked"]);
-  });
-
-  it("sortWatchlist dispatches 'my_streaming' to filterByMyStreaming too", () => {
-    const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
-    const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
-    const providersByTmdbId = new Map([
-      [1, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
-    ]);
-
-    expect(
-      sortWatchlist([b, a], "my_streaming", { providersByTmdbId, myProviderIds: [8] }).map((e) => e.id)
-    ).toEqual(["a"]);
-  });
-
-  it("dispatches 'my_streaming' to filterByMyStreaming (default category: flatrate)", () => {
-    const a = makeEntry({ id: "a", movie: makeMovie({ tmdb_id: 1, name: "A" }) });
-    const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B" }) });
-    const providersByTmdbId = new Map([
-      [1, { flatrate: [{ provider_id: 8, provider_name: "N" }], rent: [], buy: [] }],
-      [2, { flatrate: [], rent: [{ provider_id: 8, provider_name: "N" }], buy: [] }],
-    ]);
-    const context = { providersByTmdbId, myProviderIds: [8] };
-
-    expect(sortDiary([b, a], "my_streaming", "u1", context).map((e) => e.id)).toEqual(["a"]);
-    expect(
-      sortDiary([b, a], "my_streaming", "u1", { ...context, providerCategories: ["rent"] }).map((e) => e.id)
-    ).toEqual(["b"]);
-  });
-});
-
 describe("release_date_override (per-group effective release date)", () => {
   const now = new Date("2026-06-01T12:00:00Z");
 
@@ -679,14 +473,14 @@ describe("release_date_override (per-group effective release date)", () => {
     expect(isUpcoming(entry, new Map(), now)).toBe(false);
   });
 
-  it("filterUpcoming orders by the effective date", () => {
+  it("filterUpcoming uses the effective date (override), keeps the order", () => {
     const a = makeEntry({
       id: "a",
       movie: makeMovie({ tmdb_id: 1, name: "A", release_date: "2026-07-01" }),
       release_date_override: "2026-12-01",
     });
     const b = makeEntry({ id: "b", movie: makeMovie({ tmdb_id: 2, name: "B", release_date: "2026-09-01" }) });
-    expect(filterUpcoming([a, b], new Map(), now).map((e) => e.id)).toEqual(["b", "a"]);
+    expect(filterUpcoming([a, b], new Map(), now).map((e) => e.id)).toEqual(["a", "b"]);
   });
 
   it("filterByYear('release_date') uses the override", () => {

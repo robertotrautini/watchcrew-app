@@ -31,7 +31,7 @@ export const PERSIST_THROTTLE_MS = 1000;
  * changes; the app version is part of the buster too, so every release
  * starts with a clean cache instead of stale shapes.
  */
-const CACHE_SCHEMA_VERSION = "2";
+const CACHE_SCHEMA_VERSION = "3";
 export const PERSIST_BUSTER = `${Constants.expoConfig?.version ?? "0"}-${CACHE_SCHEMA_VERSION}`;
 
 /** Transient lookup queries that make no sense to restore. */

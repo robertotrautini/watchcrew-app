@@ -5,8 +5,12 @@
 // `src/lib/watchlist.ts`/`src/hooks/useGroupWatchlist.ts`:
 //
 //   watchlist_entries.select(
-//     "*, movie:movies(*, movie_genres(genre_id, genres(name))), ratings(*)"
+//     "*, movie:movies(*, movie_genres(genre_id, genres(name)))"
 //   )
+//
+// ADR 0014: `ratings` is NOT embedded any more -- ratings live per user and
+// movie in `user_movie_ratings` and are merged into `entry.ratings` on the
+// client (`attachMemberRatings` in `src/lib/entrySelectors.ts`).
 //
 // The `genres(name)` nested join (M5 fast-follow) resolves the flagged gap
 // where genre pills only had a raw genre_id to show, no display name.
@@ -16,8 +20,6 @@
 // "a Watchlist item" or "a Diary item" — that split is computed per current
 // user by `splitWatchlistAndDiary` in `src/lib/watchlistLogic.ts`.
 
-import type { ProviderCategory } from "./movieProviderFilter";
-import type { TmdbMovieProviders } from "./tmdbProxy";
 
 export interface MovieGenreLink {
   genre_id: string;
@@ -46,8 +48,7 @@ export interface Movie {
 }
 
 export interface Rating {
-  id: string;
-  watchlist_entry_id: string;
+  /** `user_movie_ratings.user_id` (ADR 0014: one row per user and movie). */
   member_id: string;
   // Postgres `numeric(2,1)`, nullable. 0 and null both mean "current user
   // has not really rated it yet" for the Watchlist/Diary split — see
@@ -63,7 +64,8 @@ export interface WatchlistEntry {
   group_id: string;
   movie_id: string;
   added_at: string;
-  added_by: string;
+  /** NULL once the adding account was deleted (ADR 0014, ON DELETE SET NULL) -- show "Ehemaliges Mitglied". */
+  added_by: string | null;
   paid_by_member_id: string | null;
   paid_at: string | null;
   /**
@@ -93,53 +95,5 @@ export interface StreamingAvailabilityCacheRow {
  */
 export type StreamingAvailabilityLookup = Map<number, boolean>;
 
-export type WatchlistSortOption =
-  | "added"
-  | "upcoming"
-  | "unrated"
-  | "has_ratings"
-  | "tmdb_score"
-  | "my_streaming"
-  | "genre"
-  | "year";
-
-export type DiarySortOption =
-  | "my_diary"
-  | "all_rated"
-  | "missing"
-  | "rating"
-  | "tmdb_score"
-  | "my_streaming"
-  | "genre"
-  | "year"
-  | "liked";
-
 export type YearFilterValue = number | "no_date";
 
-/**
- * Extra data a given sort/filter option needs beyond `entries` (and, for
- * diary options, `currentUserId`). Every field is optional because most
- * options only need a subset; `sortWatchlist`/`sortDiary` default missing
- * fields to sensible empty values (see their implementations).
- */
-export interface SortContext {
-  streamingAvailability?: StreamingAvailabilityLookup;
-  /** Genre ids the user has multi-selected (AND logic, option 'genre'). */
-  genreIds?: string[];
-  /** Single year selection (or the "Kein Datum" pseudo-value), option 'year'. */
-  year?: YearFilterValue;
-  /**
-   * Full current membership of the group (all user ids), needed by diary's
-   * 'all_rated'/'missing' options to know whether EVERY member has rated,
-   * not just whether every rating row present happens to be non-null.
-   */
-  groupMemberIds?: string[];
-  /** tmdb_id -> DE watch providers, for option 'my_streaming'. */
-  providersByTmdbId?: ReadonlyMap<number, TmdbMovieProviders>;
-  /** The user's saved "Meine Streaming-Dienste" provider ids, option 'my_streaming'. */
-  myProviderIds?: number[];
-  /** Active Flatrate/Leihen/Kaufen pills for 'my_streaming' (default: flatrate only). */
-  providerCategories?: ProviderCategory[];
-  /** Injectable "now" for deterministic tests of date-relative logic. */
-  now?: Date;
-}

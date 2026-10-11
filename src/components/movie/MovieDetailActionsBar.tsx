@@ -62,7 +62,7 @@ export interface MovieDetailActionsBarProps {
     mode: "watchlist" | "diary",
   ) => void;
   /** "direkt_bewerten": called once the add-to-watchlist mutation succeeds, with the newly-created entry's id. */
-  onDirectRateEntryCreated?: (watchlistEntryId: string) => void;
+  onDirectRateEntryCreated?: (watchlistEntryId: string, movieId: string) => void;
 }
 
 /**
@@ -144,14 +144,18 @@ function ActionIconButton({
       disabled={loading}
       onPress={onPress}
       className={`min-h-touch-comfortable ${widthClass} ${
-        danger ? `rounded-xl bg-black` : ACTION_TILE_CLASSNAME
+        danger
+          ? `rounded-xl bg-black ${DANGER_PRESSED_CLASSNAME}`
+          : ACTION_TILE_CLASSNAME
       }${loading ? " opacity-50" : ""}`}
     >
       <View
         testID={danger ? `${testID}-tint` : undefined}
+        // Visual layer only: the outer Pressable must receive every touch.
+        pointerEvents="none"
         className={`min-h-touch-comfortable flex-1 items-center justify-center gap-1 px-2 py-3 ${
           danger
-            ? `rounded-xl ${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`
+            ? `rounded-xl ${DANGER_SURFACE_CLASSNAME}`
             : ""
         }`}
       >
@@ -237,7 +241,7 @@ export function MovieDetailActionsBar({
     addToWatchlistMutation.mutate(
       { tmdbId, groupId: activeGroupId, addedBy: currentUserId },
       {
-        onSuccess: (data) => onDirectRateEntryCreated?.(data.id),
+        onSuccess: (data) => onDirectRateEntryCreated?.(data.id, data.movie_id),
         onError: handleAddToWatchlistError,
       },
     );

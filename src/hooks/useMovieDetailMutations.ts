@@ -48,23 +48,17 @@ export function useToggleLike() {
       // Destructured (not `toggleLike(params)` directly) so `groupId` --
       // a mutation-only variable, not part of `ToggleLikeParams` -- never
       // reaches the underlying lib call.
-      const { watchlistEntryId, memberId, nextLiked, existingRatingId } =
-        params;
-      const { data, error } = await toggleLike({
-        watchlistEntryId,
-        memberId,
-        nextLiked,
-        existingRatingId,
-      });
+      const { movieId, memberId, nextLiked } = params;
+      const { data, error } = await toggleLike({ movieId, memberId, nextLiked });
       if (error) {
         throw error;
       }
       return data;
     },
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.watchlist.byGroup(variables.groupId),
-      });
+    onSuccess: () => {
+      // ADR 0014: a like belongs to (user, movie) and shows in every group.
+      queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.myDiary.all });
     },
   });
 }

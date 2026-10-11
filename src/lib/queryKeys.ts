@@ -31,6 +31,11 @@ export const queryKeys = {
     all: ["watchlist"] as const,
     byGroup: (groupId: string | undefined) => ["watchlist", groupId] as const,
   },
+  /** ADR 0014 / Phase 5: all of one user's rated/seen movies across groups (Tagebuch "Mein Tagebuch"). */
+  myDiary: {
+    all: ["myDiary"] as const,
+    byUser: (userId: string | undefined) => ["myDiary", userId] as const,
+  },
   pushSubscription: {
     byGroupUser: (groupId: string | undefined, userId: string | undefined) =>
       ["pushSubscription", groupId, userId] as const,

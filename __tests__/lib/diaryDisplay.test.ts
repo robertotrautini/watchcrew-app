@@ -26,8 +26,6 @@ function makeMovie(overrides: Partial<Movie> & Pick<Movie, "tmdb_id" | "name">):
 
 function makeRating(overrides: Partial<Rating> & Pick<Rating, "member_id">): Rating {
   return {
-    id: `rating-${overrides.member_id}-${Math.random()}`,
-    watchlist_entry_id: "entry",
     rating: null,
     liked: false,
     seen_at: null,

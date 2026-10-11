@@ -54,7 +54,7 @@ export function MovieDetailRatingsSection({
         <View testID="movie-detail-ratings-content">
           {ratings.map((rating) => (
             <MemberRatingRow
-              key={rating.id}
+              key={rating.member_id}
               memberLabel={memberDisplayLabel(
                 rating.member_id,
                 displayNameById.get(rating.member_id),

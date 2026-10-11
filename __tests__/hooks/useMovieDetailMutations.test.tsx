@@ -60,7 +60,7 @@ describe("useToggleLike", () => {
 
     await act(async () => {
       result.current.mutate({
-        watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         nextLiked: true,
         groupId: "group-1",
@@ -69,37 +69,11 @@ describe("useToggleLike", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockToggleLike).toHaveBeenCalledWith({
-      watchlistEntryId: "we-1",
+      movieId: "movie-1",
       memberId: "user-1",
       nextLiked: true,
     });
     expect(result.current.data).toEqual({ id: "r1", liked: true });
-  });
-
-  it("passes existingRatingId through so the underlying call updates rather than upserts blind", async () => {
-    mockToggleLike.mockResolvedValue({ data: { id: "r1", liked: false }, error: null });
-    const { useToggleLike } = loadHooks();
-    const { wrapper } = createWrapper();
-
-    const { result } = await renderHook(() => useToggleLike(), { wrapper });
-
-    await act(async () => {
-      result.current.mutate({
-        watchlistEntryId: "we-1",
-        memberId: "user-1",
-        nextLiked: false,
-        existingRatingId: "r1",
-        groupId: "group-1",
-      });
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockToggleLike).toHaveBeenCalledWith({
-      watchlistEntryId: "we-1",
-      memberId: "user-1",
-      nextLiked: false,
-      existingRatingId: "r1",
-    });
   });
 
   it("surfaces an error from toggleLike through React Query's native error channel", async () => {
@@ -112,7 +86,7 @@ describe("useToggleLike", () => {
 
     await act(async () => {
       result.current.mutate({
-        watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         nextLiked: true,
         groupId: "group-1",
@@ -123,7 +97,7 @@ describe("useToggleLike", () => {
     expect(result.current.error).toEqual(fakeError);
   });
 
-  it("invalidates the group's watchlist cache on success (fixes the missing-refresh bug)", async () => {
+  it("invalidates ALL group watchlists on success (ADR 0014: a like shows in every group)", async () => {
     mockToggleLike.mockResolvedValue({ data: { id: "r1", liked: true }, error: null });
     const { useToggleLike } = loadHooks();
     const { wrapper, queryClient } = createWrapper();
@@ -133,7 +107,7 @@ describe("useToggleLike", () => {
 
     await act(async () => {
       result.current.mutate({
-        watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         nextLiked: true,
         groupId: "group-1",
@@ -141,7 +115,8 @@ describe("useToggleLike", () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.all });
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: queryKeys.myDiary.all });
   });
 
   it("does not invalidate the cache when the like-toggle errors", async () => {
@@ -155,7 +130,7 @@ describe("useToggleLike", () => {
 
     await act(async () => {
       result.current.mutate({
-        watchlistEntryId: "we-1",
+        movieId: "movie-1",
         memberId: "user-1",
         nextLiked: true,
         groupId: "group-1",

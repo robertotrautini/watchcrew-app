@@ -70,6 +70,8 @@ export interface RatingDialogProps {
   /** The movie's theatrical release date (YYYY-MM-DD), or null if unknown -- gates the "Release Date" checkbox. */
   movieReleaseDate: string | null;
   watchlistEntryId: string;
+  /** `movies.id` -- ratings are stored per user and movie (ADR 0014). */
+  movieId: string;
   /** `watchlist_entries.paid_by_member_id` -- pre-selects that payer chip on open. */
   paidByMemberId: string | null;
   /** `watchlist_entries.paid_at` -- NEVER silently overwritten, see `resolvePaymentDate`. */
@@ -132,6 +134,7 @@ export function RatingDialog({
   movieTitle,
   movieReleaseDate,
   watchlistEntryId,
+  movieId,
   paidByMemberId,
   paidAt,
   ratings,
@@ -209,7 +212,7 @@ export function RatingDialog({
               null,
           }))
       : otherRatings.map((r) => ({
-          key: r.id,
+          key: r.member_id,
           label: memberDisplayLabel(
             r.member_id,
             displayNameById.get(r.member_id),
@@ -267,6 +270,7 @@ export function RatingDialog({
       {
         groupId,
         watchlistEntryId,
+        movieId,
         memberId: currentUserId,
         rating,
         liked,
@@ -289,7 +293,7 @@ export function RatingDialog({
     }
     const payment = buildPayment();
     resetMutation.mutate(
-      { groupId, ratingId: ownRating.id },
+      { groupId, userId: currentUserId, movieId },
       {
         onSuccess: () => {
           setDeleteConfirmVisible(false);
@@ -301,11 +305,13 @@ export function RatingDialog({
             {
               groupId,
               watchlistEntryId,
+              movieId,
               memberId: currentUserId,
               rating: null,
               liked: false,
               seenAt: currentSeenAt(),
               payment,
+              skipRating: true,
             },
             {
               onSuccess: () => finishSaved(DELETE_SUCCESS_TOAST),

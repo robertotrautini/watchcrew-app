@@ -22,14 +22,7 @@ import { formatPlainDate } from "@/lib/dateFormat";
 
 import type { WatchlistEntry } from "./watchlistTypes";
 
-/** Same "average of non-null ratings" definition as watchlistLogic.ts's sort options — recomputed here since that internal helper isn't exported. */
-export function computeAverageRating(entry: WatchlistEntry): number | null {
-  const values = entry.ratings.map((r) => r.rating).filter((r): r is number => r != null);
-  if (values.length === 0) {
-    return null;
-  }
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
+export { getAverageRating as computeAverageRating } from "./entrySelectors";
 
 /** "Gesehen am DD.MM.YYYY" date part, or the "Kein Datum" fallback copy for a null seen_at. */
 export function formatSeenAtDate(dateStr: string | null): string {
