@@ -7,16 +7,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
 import { WatchlistFilterPanel } from "@/components/watchlist/WatchlistFilterPanel";
-import { WatchlistSortSheet } from "@/components/watchlist/WatchlistSortSheet";
+import { EntryFilterFlyout } from "@/components/entries/EntryFilterFlyout";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { useWatchlistScreen } from "@/hooks/useWatchlistScreen";
 import { getNoResultsMessage } from "@/lib/listFilters";
 
 /**
  * Watchlist tab (M5 part 2). View state lives in `useWatchlistScreen`; the
- * filter panel, entry list and sort sheet are in src/components/watchlist/.
- * See docs/feature-inventory.md for the card/grid/list spec and the sort/
- * filter rules (implemented in src/lib/watchlistLogic.ts).
+ * filter panel and entry list are in src/components/watchlist/, the filter
+ * flyout in src/components/entries/. See docs/feature-inventory.md for the
+ * card/grid/list spec; sort/filter rules live in src/lib/entrySorting.ts,
+ * entryFiltering.ts and watchlistLogic.ts.
  */
 export default function WatchlistScreen() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function WatchlistScreen() {
         onAddMovie={() => router.push("/add-movie")}
       />
 
-      {filters.sortOption === "my_streaming" && screen.providersLoading ? (
+      {screen.providersLoading ? (
         <View
           className="flex-1 items-center justify-center px-8"
           testID="watchlist-providers-loading"
@@ -103,16 +104,21 @@ export default function WatchlistScreen() {
           totalMembers={screen.totalMembers}
           showTitlesInGrid={screen.showTitlesInGrid}
           onOpenEntry={screen.openEntry}
-          columnSort={screen.columnSort}
-          onSortColumn={screen.toggleColumn}
+          sort={filters.sort}
+          onSortField={filters.toggleHeaderSort}
         />
       )}
 
-      <WatchlistSortSheet
-        visible={filters.sortSheetVisible}
-        sortOption={filters.sortOption}
-        onClose={() => filters.setSortSheetVisible(false)}
-        onSelect={filters.selectSortOption}
+      <EntryFilterFlyout
+        tab="watchlist"
+        testIDPrefix="watchlist"
+        visible={filters.flyoutVisible}
+        filters={filters.filters}
+        genreIds={screen.genrePillIds}
+        genreNamesById={screen.genreNamesById}
+        years={screen.yearPillValues}
+        onClose={() => filters.setFlyoutVisible(false)}
+        onApply={filters.setFilters}
       />
     </SafeAreaView>
   );

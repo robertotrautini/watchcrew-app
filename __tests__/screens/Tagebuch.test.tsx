@@ -31,6 +31,15 @@ jest.mock("@/hooks/useMyStreamingProviders", () => ({
   useMyStreamingProviders: (...args: unknown[]) => mockUseMyStreamingProviders(...args),
 }));
 
+// Phase 5: "Mein Tagebuch" comes from useMyDiary (all groups), the own profile name from useOwnProfile.
+const mockUseMyDiary = jest.fn();
+jest.mock("@/hooks/useMyDiary", () => ({
+  useMyDiary: (...args: unknown[]) => mockUseMyDiary(...args),
+}));
+jest.mock("@/hooks/useOwnProfile", () => ({
+  useOwnProfile: () => ({ data: { display_name: "Robin" } }),
+}));
+
 const mockUseGroupMembers = jest.fn();
 jest.mock("@/hooks/useGroupMembers", () => ({
   useGroupMembers: mockUseGroupMembers,
@@ -84,8 +93,6 @@ function makeMovie(overrides: Partial<Movie> & Pick<Movie, "tmdb_id" | "name">):
 
 function makeRating(overrides: Partial<Rating> & Pick<Rating, "member_id">): Rating {
   return {
-    id: `rating-${overrides.member_id}-${Math.random()}`,
-    watchlist_entry_id: "entry",
     rating: null,
     liked: false,
     seen_at: null,
@@ -107,8 +114,25 @@ function makeEntry(overrides: Partial<WatchlistEntry> & Pick<WatchlistEntry, "id
   };
 }
 
-function mockHappyPath(entries: WatchlistEntry[], groupMembers?: Record<string, unknown>[]) {
+/** Per-member rows and "Alle bewertet"/"Fehlt noch" belong to the group scope. */
+function useGroupScope() {
+  loadPreferencesStore().setState({ diaryScope: "group" });
+}
+
+function mockHappyPath(
+  entries: WatchlistEntry[],
+  groupMembers?: Record<string, unknown>[],
+  myDiaryEntries?: WatchlistEntry[],
+) {
   mockCurrentUserId.mockReturnValue(CURRENT_USER);
+  // Default "Mein Tagebuch" = the group's entries I rated (same ids), unless given explicitly.
+  mockUseMyDiary.mockReturnValue({
+    data:
+      myDiaryEntries ??
+      entries.filter((e) => e.ratings.some((r) => r.member_id === CURRENT_USER && (r.rating ?? 0) > 0)),
+    isLoading: false,
+    isError: false,
+  });
   mockUseActiveGroup.mockReturnValue({
     activeGroupId: "g1",
     setActiveGroup: jest.fn(),
@@ -132,18 +156,33 @@ function mockHappyPath(entries: WatchlistEntry[], groupMembers?: Record<string, 
   });
 }
 
+async function selectSortField(getByTestId: any, field: string) {
+  await fireEvent.press(getByTestId("tagebuch-sort-field"));
+  await fireEvent.press(getByTestId(`tagebuch-sort-field-option-${field}`));
+}
+
+/** Opens the "+ Filter" flyout, runs `pick` on the draft, applies. */
+async function applyFilters(getByTestId: any, pick: () => Promise<void>) {
+  await fireEvent.press(getByTestId("tagebuch-filter-add"));
+  await pick();
+  await fireEvent.press(getByTestId("tagebuch-filter-apply"));
+}
+
 describe("TagebuchScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     const usePreferencesStore = loadPreferencesStore();
     usePreferencesStore.setState({
       diaryViewMode: "cards",
+      // Most tests were written for "Mein Tagebuch"; the app default ("group") has its own test.
+      diaryScope: "my_diary",
       listFilters: {},
       selectedStreamingProviderIds: [],
       filterPanelOpen: { watchlist: false, diary: true },
     });
     mockUseMyStreamingProviders.mockReturnValue({ data: undefined, isLoading: false });
     mockUseGroupMembers.mockReturnValue({ data: [], isLoading: false, isError: false, error: null });
+    mockUseMyDiary.mockReturnValue({ data: [], isLoading: false, isError: false });
   });
 
   describe("loading / error / empty states", () => {
@@ -243,6 +282,7 @@ describe("TagebuchScreen", () => {
     });
 
     it("renders the entry with a per-member rating row for every group member, including '–' for a member with no real rating", async () => {
+      useGroupScope();
       mockHappyPath([entry]);
       const TagebuchScreen = loadTagebuchScreen();
 
@@ -256,6 +296,7 @@ describe("TagebuchScreen", () => {
     });
 
     it("renders a '–' row for a real group member who has no rating row at all", async () => {
+      useGroupScope();
       mockHappyPath(
         [entry],
         [
@@ -276,6 +317,7 @@ describe("TagebuchScreen", () => {
     });
 
     it("shows the real profile display_name (joined via useGroupMembers) for a member row, falling back to the uuid-prefix placeholder when a profile is missing", async () => {
+      useGroupScope();
       mockHappyPath(
         [entry],
         [
@@ -482,7 +524,7 @@ describe("TagebuchScreen", () => {
 
       expect(getByTestId("tagebuch-search-input")).toBeTruthy();
       expect(queryByTestId("tagebuch-filter-panel")).toBeNull();
-      expect(queryByTestId("tagebuch-sort-button")).toBeNull();
+      expect(queryByTestId("tagebuch-sort-field")).toBeNull();
       expect(queryByTestId("tagebuch-filter-active-dot")).toBeNull();
 
       await fireEvent.press(getByTestId("tagebuch-filter-toggle"));
@@ -490,8 +532,9 @@ describe("TagebuchScreen", () => {
       expect(getByTestId("tagebuch-view-mode-toggle")).toBeTruthy();
       expect(loadPreferencesStore().getState().filterPanelOpen.diary).toBe(true);
 
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-tmdb_score"));
+      expect(getByTestId("tagebuch-sort-field")).toBeTruthy();
+      expect(getByTestId("tagebuch-filter-add")).toBeTruthy();
+      await fireEvent.press(getByTestId("tagebuch-sort-direction"));
       await fireEvent.press(getByTestId("tagebuch-filter-toggle"));
       expect(queryByTestId("tagebuch-filter-panel")).toBeNull();
       expect(getByTestId("tagebuch-filter-active-dot")).toBeTruthy();
@@ -519,7 +562,7 @@ describe("TagebuchScreen", () => {
       await fireEvent.press(getByTestId("tagebuch-view-mode-list"));
       expect(getByTestId(`tagebuch-list-title-${entry.id}`).props.children).toBe("Alpha");
       expect(getByTestId("tagebuch-table-header-like").props.accessibilityLabel).toBe("Favorit");
-      expect(getByTestId("tagebuch-table-header-average").props.accessibilityLabel).toBe("Durchschnitt");
+      expect(getByTestId("tagebuch-table-header-average").props.accessibilityLabel).toContain("Durchschnitt");
       expect(getByTestId("tagebuch-table-header-tmdb").props.accessibilityLabel).toBe("TMDB");
       expect(queryAllByTestId(`tagebuch-list-year-${entry.id}`)).toHaveLength(0);
       expect(queryAllByTestId(`tagebuch-list-like-${entry.id}`)).toHaveLength(0);
@@ -559,7 +602,7 @@ describe("TagebuchScreen", () => {
     });
   });
 
-  describe("sort dropdown", () => {
+  describe("filter flyout (rating state, liked)", () => {
     const memberIds = ["u1", "u2", "u3"];
 
     const fullyRated = makeEntry({
@@ -583,46 +626,94 @@ describe("TagebuchScreen", () => {
       ratings: [makeRating({ member_id: "u1", rating: 3, liked: false })],
     });
 
-    async function openSortSheetAndSelect(getByTestId: any, optionValue: string) {
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId(`tagebuch-sort-option-${optionValue}`));
+    async function applyFlag(getByTestId: any, flag: string) {
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId(`tagebuch-filter-${flag}`));
+      });
     }
 
-    it("'Von allen bewertet' shows only entries where every group member has a non-null rating", async () => {
+    it("'Alle bewertet' shows only entries where every group member has a non-null rating", async () => {
+      useGroupScope();
       mockHappyPath([fullyRated, missingSome]);
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      await openSortSheetAndSelect(getByTestId, "all_rated");
+      await applyFlag(getByTestId, "all_rated");
 
       expect(getByTestId(`tagebuch-entry-${fullyRated.id}`)).toBeTruthy();
       expect(queryByTestId(`tagebuch-entry-${missingSome.id}`)).toBeNull();
     });
 
-    it("'Fehlende Bewertungen' shows only entries where at least one group member is missing a rating", async () => {
+    it("'Fehlt noch' shows only entries where at least one group member is missing a rating", async () => {
+      useGroupScope();
       mockHappyPath([fullyRated, missingSome]);
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      await openSortSheetAndSelect(getByTestId, "missing");
+      await applyFlag(getByTestId, "missing");
 
       expect(getByTestId(`tagebuch-entry-${missingSome.id}`)).toBeTruthy();
       expect(queryByTestId(`tagebuch-entry-${fullyRated.id}`)).toBeNull();
     });
 
-    it("'Mag ich' shows only entries the current user has liked", async () => {
+    it("'Mag ich' filter shows only entries the current user has liked", async () => {
       mockHappyPath([likedEntry, notLikedEntry]);
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      await openSortSheetAndSelect(getByTestId, "liked");
+      await applyFlag(getByTestId, "liked");
 
       expect(getByTestId(`tagebuch-entry-${likedEntry.id}`)).toBeTruthy();
       expect(queryByTestId(`tagebuch-entry-${notLikedEntry.id}`)).toBeNull();
     });
+  
+    it("a flag chip appears after applying and removes the filter again when tapped", async () => {
+      mockHappyPath([likedEntry, notLikedEntry]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+      await applyFlag(getByTestId, "liked");
+      expect(queryByTestId(`tagebuch-entry-${notLikedEntry.id}`)).toBeNull();
+
+      await fireEvent.press(getByTestId("tagebuch-filter-chip-liked"));
+
+      expect(queryByTestId("tagebuch-filter-chip-liked")).toBeNull();
+      expect(getByTestId(`tagebuch-entry-${notLikedEntry.id}`)).toBeTruthy();
+    });
+
+    it("the flyout works on a draft: closing without 'Anwenden' changes nothing, 'Zurücksetzen' clears the draft", async () => {
+      mockHappyPath([likedEntry, notLikedEntry]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
+      await fireEvent.press(getByTestId("tagebuch-filter-liked"));
+      await fireEvent.press(getByTestId("sheet-close-button"));
+      expect(getByTestId(`tagebuch-entry-${notLikedEntry.id}`)).toBeTruthy();
+      expect(queryByTestId("tagebuch-filter-chip-liked")).toBeNull();
+
+      await applyFlag(getByTestId, "liked");
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
+      await fireEvent.press(getByTestId("tagebuch-filter-reset"));
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
+      expect(queryByTestId("tagebuch-filter-chip-liked")).toBeNull();
+      expect(getByTestId(`tagebuch-entry-${notLikedEntry.id}`)).toBeTruthy();
+    });
+
+    it("'Alle bewertet' and 'Fehlt noch' exclude each other in the flyout", async () => {
+      useGroupScope();
+      mockHappyPath([fullyRated, missingSome]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
+      await fireEvent.press(getByTestId("tagebuch-filter-all_rated"));
+      await fireEvent.press(getByTestId("tagebuch-filter-missing"));
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
+      expect(getByTestId("tagebuch-filter-chip-missing")).toBeTruthy();
+      expect(() => getByTestId("tagebuch-filter-chip-all_rated")).toThrow();
+    });
   });
 
-  describe("genre/year pills", () => {
+  describe("genre/year in the filter flyout", () => {
     const entryWithGenre = makeEntry({
       id: "e1",
       movie: makeMovie({
@@ -647,27 +738,25 @@ describe("TagebuchScreen", () => {
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, getByText } = await render(<TagebuchScreen />);
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-genre"));
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
 
       expect(getByText("Action")).toBeTruthy();
     });
 
-    it("shows genre pills only when 'Nach Genre' is the active sort option", async () => {
+    it("shows genre and year pills inside the flyout, independent of the sort field", async () => {
       mockHappyPath([entryWithGenre]);
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
       expect(queryByTestId("tagebuch-genre-pills")).toBeNull();
 
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-genre"));
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
 
       expect(getByTestId("tagebuch-genre-pills")).toBeTruthy();
-      expect(queryByTestId("tagebuch-year-pills")).toBeNull();
+      expect(getByTestId("tagebuch-year-pills")).toBeTruthy();
     });
 
-    it("shows year pills only when 'Nach Jahr' is the active sort option, with a 'Kein Datum' pill when applicable", async () => {
+    it("offers a 'Kein Datum' year pill when an entry has no own seen date", async () => {
       const entryNoDate = makeEntry({
         id: "e2",
         movie: makeMovie({ tmdb_id: 2, name: "Beta" }),
@@ -676,17 +765,14 @@ describe("TagebuchScreen", () => {
       mockHappyPath([entryWithGenre, entryNoDate]);
       const TagebuchScreen = loadTagebuchScreen();
 
-      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-year"));
+      const { getByTestId } = await render(<TagebuchScreen />);
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
 
-      expect(getByTestId("tagebuch-year-pills")).toBeTruthy();
       expect(getByTestId("tagebuch-year-pill-2026")).toBeTruthy();
       expect(getByTestId("tagebuch-year-pill-no_date")).toBeTruthy();
-      expect(queryByTestId("tagebuch-genre-pills")).toBeNull();
     });
 
-    it("selecting a genre pill filters the visible entries via filterByGenre semantics", async () => {
+    it("applying a genre pill filters the visible entries and shows a removable chip", async () => {
       const entryOtherGenre = makeEntry({
         id: "e3",
         movie: makeMovie({ tmdb_id: 3, name: "Gamma", movie_genres: [{ genre_id: "genre-drama" }] }),
@@ -696,12 +782,50 @@ describe("TagebuchScreen", () => {
       const TagebuchScreen = loadTagebuchScreen();
 
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-genre"));
-      await fireEvent.press(getByTestId("tagebuch-genre-pill-genre-action"));
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId("tagebuch-genre-pill-genre-action"));
+      });
 
       expect(getByTestId(`tagebuch-entry-${entryWithGenre.id}`)).toBeTruthy();
       expect(queryByTestId(`tagebuch-entry-${entryOtherGenre.id}`)).toBeNull();
+      expect(getByTestId("tagebuch-filter-chip-genre-genre-action")).toBeTruthy();
+    });
+
+    it("Genre filter combines with a descending rating sort (filter and sort are independent)", async () => {
+      const horrorLow = makeEntry({
+        id: "h-low",
+        movie: makeMovie({ tmdb_id: 31, name: "HorrorLow", movie_genres: [{ genre_id: "genre-horror" }] }),
+        ratings: [makeRating({ member_id: "u1", rating: 2 })],
+      });
+      const horrorHigh = makeEntry({
+        id: "h-high",
+        movie: makeMovie({ tmdb_id: 32, name: "HorrorHigh", movie_genres: [{ genre_id: "genre-horror" }] }),
+        ratings: [makeRating({ member_id: "u1", rating: 5 })],
+      });
+      const dramaTop = makeEntry({
+        id: "d-top",
+        movie: makeMovie({ tmdb_id: 33, name: "DramaTop", movie_genres: [{ genre_id: "genre-drama" }] }),
+        ratings: [makeRating({ member_id: "u1", rating: 5 })],
+      });
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([horrorLow, dramaTop, horrorHigh]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, getAllByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId("tagebuch-genre-pill-genre-horror"));
+      });
+
+      expect(queryByTestId("tagebuch-entry-d-top")).toBeNull();
+      expect(getAllByTestId(/^tagebuch-entry-(h|d)-/).map((n) => n.props.testID)).toEqual([
+        "tagebuch-entry-h-high",
+        "tagebuch-entry-h-low",
+      ]);
+      await fireEvent.press(getByTestId("tagebuch-sort-direction"));
+      expect(getAllByTestId(/^tagebuch-entry-(h|d)-/).map((n) => n.props.testID)).toEqual([
+        "tagebuch-entry-h-low",
+        "tagebuch-entry-h-high",
+      ]);
     });
   });
 
@@ -752,48 +876,43 @@ describe("TagebuchScreen", () => {
       ratings: [makeRating({ member_id: "u1", rating: 3 })],
     });
 
-    it("persists the chosen sort option per group and restores it on mount", async () => {
+    it("persists the chosen sort field + direction per group and restores them on mount", async () => {
       mockHappyPath([alpha, beta]);
       const TagebuchScreen = loadTagebuchScreen();
       const first = await render(<TagebuchScreen />);
 
-      await fireEvent.press(first.getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(first.getByTestId("tagebuch-sort-option-tmdb_score"));
+      await selectSortField(first.getByTestId, "tmdb");
+      await fireEvent.press(first.getByTestId("tagebuch-sort-direction"));
 
-      expect(loadPreferencesStore().getState().listFilters["diary:g1"].sortOption).toBe("tmdb_score");
+      expect(loadPreferencesStore().getState().listFilters["diary"].sort).toEqual({
+        field: "tmdb",
+        direction: "asc",
+      });
       await first.unmount();
 
       const second = await render(<TagebuchScreen />);
-      expect(second.getByTestId("tagebuch-sort-button").props.accessibilityLabel).toBe("Sortieren, aktuell: TMDB Score");
+      expect(second.getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach TMDB");
+      expect(second.getByTestId("tagebuch-sort-direction").props.accessibilityLabel).toMatch(/aufsteigend/);
     });
 
-    it("persists genre selection and year per group, but not the search text", async () => {
+    it("persists filters (genre/year) per tab and the global scope, but not the search text", async () => {
       mockHappyPath([alpha, beta]);
       const TagebuchScreen = loadTagebuchScreen();
       const { getByTestId } = await render(<TagebuchScreen />);
 
       await fireEvent.changeText(getByTestId("tagebuch-search-input"), "Alpha");
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-year"));
-      await fireEvent.press(getByTestId("tagebuch-year-pill-no_date"));
+      await fireEvent.press(getByTestId("tagebuch-scope-group"));
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId("tagebuch-year-pill-no_date"));
+      });
 
-      const filters = loadPreferencesStore().getState().listFilters;
-      expect(filters["diary:g1"].year).toBe("no_date");
-      expect(JSON.stringify(filters)).not.toContain("Alpha");
+      const stored = loadPreferencesStore().getState().listFilters;
+      expect(stored["diary"].filters.year).toBe("no_date");
+      expect(loadPreferencesStore().getState().diaryScope).toBe("group");
+      expect(JSON.stringify(stored)).not.toContain("Alpha");
     });
 
-    it("labels the sort option 'Meine Streaming-Dienste' without '(bald verfügbar)'", async () => {
-      mockHappyPath([alpha, beta]);
-      const TagebuchScreen = loadTagebuchScreen();
-      const { getByTestId, queryByText } = await render(<TagebuchScreen />);
-
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-
-      expect(queryByText(/bald verfügbar/)).toBeNull();
-      expect(queryByText("Meine Streaming-Dienste")).toBeTruthy();
-    });
-
-    it("'Meine Streaming-Dienste': filters to own services per category pill (min. 1 active)", async () => {
+    it("'Meine Dienste': filters to own services per category pill (min. 1 active); providers load only while active", async () => {
       mockHappyPath([alpha, beta]);
       loadPreferencesStore().setState({ selectedStreamingProviderIds: [8] });
       mockUseMyStreamingProviders.mockImplementation((_ids: number[], enabled: boolean) => ({
@@ -808,20 +927,26 @@ describe("TagebuchScreen", () => {
       const TagebuchScreen = loadTagebuchScreen();
       const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
 
+      expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([11, 12], false);
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
       expect(queryByTestId("tagebuch-provider-categories")).toBeNull();
-      await fireEvent.press(getByTestId("tagebuch-sort-button"));
-      await fireEvent.press(getByTestId("tagebuch-sort-option-my_streaming"));
+      await fireEvent.press(getByTestId("tagebuch-streaming-mine"));
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
 
       expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([11, 12], true);
       expect(getByTestId("tagebuch-entry-p1")).toBeTruthy();
       expect(queryByTestId("tagebuch-entry-p2")).toBeNull();
 
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
       await fireEvent.press(getByTestId("tagebuch-provider-category-rent"));
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
       expect(getByTestId("tagebuch-entry-p2")).toBeTruthy();
 
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
       await fireEvent.press(getByTestId("tagebuch-provider-category-flatrate"));
       await fireEvent.press(getByTestId("tagebuch-provider-category-rent"));
-      expect(loadPreferencesStore().getState().listFilters["diary:g1"].providerCategories).toEqual(["rent"]);
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
+      expect(loadPreferencesStore().getState().listFilters["diary"].filters.providerCategories).toEqual(["rent"]);
     });
 
     it("shows a search-specific text when a search matches nothing (distinct from the empty-diary text)", async () => {
@@ -856,32 +981,40 @@ describe("TagebuchScreen", () => {
     const order = (nodes: { props: { testID?: string } }[]) =>
       nodes.map((n) => n.props.testID);
 
-    it("defaults to average rating descending (not 'Mein Tagebuch'), stored 'my_diary' still works", async () => {
+    it("defaults to average rating descending without filters; the panel shows field and direction", async () => {
       loadPreferencesStore().setState({ diaryViewMode: "list" });
       mockHappyPath([low, high, mid]);
       const TagebuchScreen = loadTagebuchScreen();
-      const { getAllByTestId, getByTestId, unmount } = await render(<TagebuchScreen />);
+      const { getAllByTestId, getByTestId } = await render(<TagebuchScreen />);
       expect(order(getAllByTestId(/^tagebuch-entry-d-/))).toEqual([
         "tagebuch-entry-d-high",
         "tagebuch-entry-d-mid",
         "tagebuch-entry-d-low",
       ]);
-      expect(getByTestId("tagebuch-sort-button")).toBeTruthy();
-      await unmount();
-
-      loadPreferencesStore().setState({
-        listFilters: { "diary:g1": { sortOption: "my_diary", genreIds: [], year: null, providerCategories: ["flatrate"] } },
-      });
-      const second = await render(<TagebuchScreen />);
-      // my_diary: by own seen_at desc
-      expect(order(second.getAllByTestId(/^tagebuch-entry-d-/))).toEqual([
-        "tagebuch-entry-d-low",
-        "tagebuch-entry-d-mid",
-        "tagebuch-entry-d-high",
-      ]);
+      expect(getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach Bewertung Ø");
+      expect(getByTestId("tagebuch-sort-direction").props.accessibilityLabel).toMatch(/absteigend/);
     });
 
-    it("header tap cycles asc -> desc -> panel sort, with indicator and a11y state", async () => {
+    it("panel sort row and table headers share ONE sort (field select updates the header indicator)", async () => {
+      loadPreferencesStore().setState({ diaryViewMode: "list" });
+      mockHappyPath([low, high, mid]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getAllByTestId, getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+      const rows = () => order(getAllByTestId(/^tagebuch-entry-d-/));
+
+      await selectSortField(getByTestId, "seen_at");
+      // own seen_at desc: low (03-01), mid (02-01), high (01-01)
+      expect(rows()).toEqual(["tagebuch-entry-d-low", "tagebuch-entry-d-mid", "tagebuch-entry-d-high"]);
+
+      await selectSortField(getByTestId, "title");
+      expect(getByTestId("tagebuch-table-header-title-sort-desc")).toBeTruthy();
+      await fireEvent.press(getByTestId("tagebuch-sort-direction"));
+      expect(getByTestId("tagebuch-table-header-title-sort-asc")).toBeTruthy();
+      expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
+      expect(queryByTestId("tagebuch-table-header-average-sort-desc")).toBeNull();
+    });
+
+    it("header tap cycles asc -> desc -> default sort, with indicator and a11y state", async () => {
       loadPreferencesStore().setState({ diaryViewMode: "list" });
       mockHappyPath([low, high, mid]);
       const TagebuchScreen = loadTagebuchScreen();
@@ -892,6 +1025,7 @@ describe("TagebuchScreen", () => {
       expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-low", "tagebuch-entry-d-mid"]);
       expect(getByTestId("tagebuch-table-header-title-sort-asc")).toBeTruthy();
       expect(getByTestId("tagebuch-table-header-title").props.accessibilityState).toMatchObject({ selected: true });
+      expect(getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach Titel");
 
       await fireEvent.press(getByTestId("tagebuch-table-header-title"));
       expect(rows()).toEqual(["tagebuch-entry-d-mid", "tagebuch-entry-d-low", "tagebuch-entry-d-high"]);
@@ -901,6 +1035,7 @@ describe("TagebuchScreen", () => {
       expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
       expect(queryByTestId("tagebuch-table-header-title-sort-asc")).toBeNull();
       expect(queryByTestId("tagebuch-table-header-title-sort-desc")).toBeNull();
+      expect(getByTestId("tagebuch-table-header-average-sort-desc")).toBeTruthy();
     });
 
     it("TMDB / heart / average columns sort; null TMDB stays last", async () => {
@@ -919,22 +1054,237 @@ describe("TagebuchScreen", () => {
       await fireEvent.press(getByTestId("tagebuch-table-header-like"));
       expect(rows()[0]).toBe("tagebuch-entry-d-mid");
 
+      // average is the default: first tap flips to asc, second back to desc
       await fireEvent.press(getByTestId("tagebuch-table-header-average"));
       await fireEvent.press(getByTestId("tagebuch-table-header-average"));
       expect(rows()).toEqual(["tagebuch-entry-d-high", "tagebuch-entry-d-mid", "tagebuch-entry-d-low"]);
     });
 
-    it("column sort is not persisted and resets when the screen goes away", async () => {
-      loadPreferencesStore().setState({ diaryViewMode: "list" });
+    it("all view modes use the same persisted sort", async () => {
       mockHappyPath([low, high, mid]);
       const TagebuchScreen = loadTagebuchScreen();
-      const first = await render(<TagebuchScreen />);
-      await fireEvent.press(first.getByTestId("tagebuch-table-header-title"));
-      expect(loadPreferencesStore().getState().listFilters).toEqual({});
-      await first.unmount();
+      const { getAllByTestId, getByTestId } = await render(<TagebuchScreen />);
+      await selectSortField(getByTestId, "title");
+      await fireEvent.press(getByTestId("tagebuch-sort-direction"));
+      for (const mode of ["cards", "grid", "list"]) {
+        await fireEvent.press(getByTestId(`tagebuch-view-mode-${mode}`));
+        expect(order(getAllByTestId(/^tagebuch-entry-d-/))).toEqual([
+          "tagebuch-entry-d-high",
+          "tagebuch-entry-d-low",
+          "tagebuch-entry-d-mid",
+        ]);
+      }
+    });
+  });
 
-      const second = await render(<TagebuchScreen />);
-      expect(second.queryByTestId("tagebuch-table-header-title-sort-asc")).toBeNull();
+  describe("scope switch (Mein Tagebuch | Gruppe)", () => {
+    const mine = makeEntry({
+      id: "s-mine",
+      movie: makeMovie({ tmdb_id: 41, name: "Mine" }),
+      ratings: [makeRating({ member_id: "u1", rating: 4 })],
+    });
+    const others = makeEntry({
+      id: "s-others",
+      movie: makeMovie({ tmdb_id: 42, name: "Others" }),
+      ratings: [makeRating({ member_id: "u2", rating: 5 })],
+    });
+
+    it("defaults to 'Gruppe' (app default), not 'Mein Tagebuch'", async () => {
+      loadPreferencesStore().setState({ diaryScope: "group" });
+      mockHappyPath([mine, others]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-scope-group").props.accessibilityState).toMatchObject({ selected: true });
+      expect(getByTestId("tagebuch-entry-s-others")).toBeTruthy();
+    });
+
+    it("a chosen scope stays when the active group changes", async () => {
+      mockHappyPath([mine, others]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, rerender } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-scope-my_diary").props.accessibilityState).toMatchObject({ selected: true });
+      mockUseActiveGroup.mockReturnValue({ activeGroupId: "g2", groupsQuery: { isLoading: false, isError: false } });
+      await rerender(<TagebuchScreen />);
+      expect(getByTestId("tagebuch-scope-my_diary").props.accessibilityState).toMatchObject({ selected: true });
+
+      await fireEvent.press(getByTestId("tagebuch-scope-group"));
+      mockUseActiveGroup.mockReturnValue({ activeGroupId: "g1", groupsQuery: { isLoading: false, isError: false } });
+      await rerender(<TagebuchScreen />);
+      expect(getByTestId("tagebuch-scope-group").props.accessibilityState).toMatchObject({ selected: true });
+    });
+
+    it("starts on 'Mein Tagebuch' when chosen; 'Gruppe' also lists movies only other members rated, sort/filters stay", async () => {
+      mockHappyPath([mine, others]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-scope-my_diary").props.accessibilityState).toMatchObject({ selected: true });
+      expect(queryByTestId("tagebuch-entry-s-others")).toBeNull();
+
+      await fireEvent.press(getByTestId("tagebuch-scope-group"));
+
+      expect(getByTestId("tagebuch-entry-s-others")).toBeTruthy();
+      expect(getByTestId("tagebuch-entry-s-mine")).toBeTruthy();
+      expect(getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach Bewertung Ø");
+      expect(loadPreferencesStore().getState().diaryScope).toBe("group");
+    });
+  });
+
+  describe("global sort/filter across group switches", () => {
+    const rated = (id: string, tmdb: number, groupId: string, liked: boolean) =>
+      makeEntry({
+        id,
+        group_id: groupId,
+        movie: makeMovie({ tmdb_id: tmdb, name: id }),
+        ratings: [makeRating({ member_id: "u1", rating: 4, liked })],
+      });
+    const g1Liked = rated("g1-liked", 61, "g1", true);
+    const g1Plain = rated("g1-plain", 62, "g1", false);
+    const g2Liked = rated("g2-liked", 63, "g2", true);
+    const g2Plain = rated("g2-plain", 64, "g2", false);
+
+    function useGroup(groupId: string) {
+      mockUseActiveGroup.mockReturnValue({
+        activeGroupId: groupId,
+        setActiveGroup: jest.fn(),
+        groupsQuery: { data: [], isLoading: false, isError: false },
+      });
+    }
+
+    it("applies sort 'Likes' + filter 'Mag ich' to the data of the NEW group after a switch", async () => {
+      loadPreferencesStore().setState({ diaryScope: "group" });
+      mockHappyPath([g1Liked, g1Plain]);
+      mockUseGroupWatchlist.mockImplementation((groupId: string) => ({
+        data: {
+          entries: groupId === "g2" ? [g2Liked, g2Plain] : [g1Liked, g1Plain],
+          streamingAvailability: new Map(),
+        },
+        isLoading: false,
+        isError: false,
+        error: null,
+      }));
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId, rerender } = await render(<TagebuchScreen />);
+
+      await selectSortField(getByTestId, "likes");
+      await applyFilters(getByTestId, async () => {
+        await fireEvent.press(getByTestId("tagebuch-filter-liked"));
+      });
+      expect(getByTestId("tagebuch-entry-g1-liked")).toBeTruthy();
+      expect(queryByTestId("tagebuch-entry-g1-plain")).toBeNull();
+
+      useGroup("g2");
+      await rerender(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-entry-g2-liked")).toBeTruthy();
+      expect(queryByTestId("tagebuch-entry-g2-plain")).toBeNull();
+      expect(getByTestId("tagebuch-sort-field").props.accessibilityLabel).toBe("Sortieren nach Likes");
+      expect(getByTestId("tagebuch-filter-chip-liked")).toBeTruthy();
+      expect(Object.keys(loadPreferencesStore().getState().listFilters)).toEqual(["diary"]);
+    });
+
+    it("sort 'Likes' alone only reorders, it does not hide entries without a heart", async () => {
+      loadPreferencesStore().setState({
+        diaryScope: "group",
+        listFilters: { diary: { sort: { field: "likes", direction: "desc" }, filters: require("@/lib/listFilters").DEFAULT_ENTRY_FILTERS } },
+      });
+      mockHappyPath([g1Plain, g1Liked]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-entry-g1-liked")).toBeTruthy();
+      expect(getByTestId("tagebuch-entry-g1-plain")).toBeTruthy();
+    });
+  });
+
+  describe("Mein Tagebuch across all groups (ADR 0014, Phase 5)", () => {
+    const inGroup = makeEntry({
+      id: "g-in",
+      movie: makeMovie({ tmdb_id: 51, name: "InGroup" }),
+      ratings: [makeRating({ member_id: "u1", rating: 3, seen_at: "2025-05-05" })],
+    });
+    const noGroupMovie = makeMovie({ tmdb_id: 52, name: "Elsewhere" });
+    const elsewhere = makeEntry({
+      id: "my-movie-52",
+      group_id: "",
+      added_by: null,
+      movie: noGroupMovie,
+      ratings: [makeRating({ member_id: "u1", rating: 5, seen_at: "2024-04-04" })],
+    });
+
+    it("lists movies from my diary that lie in no group of the active group, next to the group ones", async () => {
+      mockHappyPath([inGroup], [], [inGroup, elsewhere]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-entry-g-in")).toBeTruthy();
+      expect(getByTestId("tagebuch-entry-my-movie-52")).toBeTruthy();
+    });
+
+    it("shows a loading state while my diary loads", async () => {
+      mockHappyPath([inGroup]);
+      mockUseMyDiary.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-loading")).toBeTruthy();
+    });
+
+    it("hides the group-only 'Bewertungsstand' flags in 'Mein Tagebuch' but offers them in 'Gruppe'", async () => {
+      mockHappyPath([inGroup], [], [inGroup, elsewhere]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
+      expect(queryByTestId("tagebuch-section-rating-state")).toBeNull();
+      expect(queryByTestId("tagebuch-filter-all_rated")).toBeNull();
+      await fireEvent.press(getByTestId("tagebuch-filter-apply"));
+
+      await fireEvent.press(getByTestId("tagebuch-scope-group"));
+      await fireEvent.press(getByTestId("tagebuch-filter-add"));
+      expect(getByTestId("tagebuch-section-rating-state")).toBeTruthy();
+      expect(getByTestId("tagebuch-filter-all_rated")).toBeTruthy();
+    });
+
+    it("ignores a stored 'Alle bewertet' filter in 'Mein Tagebuch' (no chip, nothing hidden)", async () => {
+      loadPreferencesStore().setState({
+        diaryScope: "my_diary",
+        listFilters: { "diary": { sort: null, filters: { ...require("@/lib/listFilters").DEFAULT_ENTRY_FILTERS, allRated: true } } },
+      });
+      mockHappyPath([inGroup], [], [inGroup, elsewhere]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId, queryByTestId } = await render(<TagebuchScreen />);
+
+      expect(getByTestId("tagebuch-entry-my-movie-52")).toBeTruthy();
+      expect(queryByTestId("tagebuch-filter-chip-all_rated")).toBeNull();
+    });
+
+    it("opens a movie of the active group in its group context", async () => {
+      mockHappyPath([inGroup], [], [inGroup]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.press(getByTestId("tagebuch-entry-press-g-in"));
+
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        pathname: "/movie/[tmdbId]",
+        params: { tmdbId: "51", groupId: "g1", source: "diary", watchlistEntryId: "g-in" },
+      });
+    });
+
+    it("opens a movie that is not in the active group WITHOUT group params (detail works without a group entry)", async () => {
+      mockHappyPath([inGroup], [], [inGroup, elsewhere]);
+      const TagebuchScreen = loadTagebuchScreen();
+      const { getByTestId } = await render(<TagebuchScreen />);
+
+      await fireEvent.press(getByTestId("tagebuch-entry-press-my-movie-52"));
+
+      expect(mockRouter.push).toHaveBeenCalledWith({
+        pathname: "/movie/[tmdbId]",
+        params: { tmdbId: "52", movieJson: encodeURIComponent(JSON.stringify(noGroupMovie)) },
+      });
     });
   });
 

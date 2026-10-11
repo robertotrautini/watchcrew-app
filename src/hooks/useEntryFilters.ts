@@ -1,69 +1,74 @@
 import { useState } from "react";
 
 import {
+  nextHeaderSort,
+  type SortField,
+  type SortState,
+} from "@/lib/entrySorting";
+import {
   DEFAULT_LIST_FILTERS,
+  defaultSortFor,
   listFiltersKey,
+  removeFilterKey,
+  resolveSort,
+  type DiaryScope,
+  type EntryFilters,
+  type FilterKey,
   type ListFiltersTab,
 } from "@/lib/listFilters";
-import { toggleGenreId } from "@/lib/entryFilters";
-import type { YearFilterValue } from "@/lib/watchlistTypes";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
- * Shared filter/sort/search state of the Tagebuch ("diary") and Watchlist
- * tabs. Sort/genre/year/provider-category choices persist per group (MMKV,
- * see usePreferencesStore `listFilters`); the search text and the sort sheet
- * visibility are session-local.
+ * Shared sort / filter / search state of the Tagebuch ("diary") and Watchlist
+ * tabs. Two independent persisted parts per tab, global across groups (MMKV, see
+ * usePreferencesStore `listFilters`): `sort` ({field, direction}) and `filters`
+ * (all combinable). The Tagebuch `scope` is one GLOBAL setting (store
+ * `diaryScope`), kept across group switches. The search text is session-local.
  */
-export function useEntryFilters<TSort extends string>(
-  tab: ListFiltersTab,
-  activeGroupId: string | null | undefined,
-  defaultSort: TSort,
-) {
-  const storedFilters = usePreferencesStore((s) =>
-    activeGroupId ? s.listFilters[listFiltersKey(tab, activeGroupId)] : undefined,
-  );
+export function useEntryFilters(tab: ListFiltersTab) {
+  const stored = usePreferencesStore((s) => s.listFilters[listFiltersKey(tab)]);
   const setListFilters = usePreferencesStore((s) => s.setListFilters);
+  // Global (not per group): stays when the active group changes.
+  const scope = usePreferencesStore((s) => s.diaryScope);
+  const setDiaryScope = usePreferencesStore((s) => s.setDiaryScope);
   const filterPanelOpen = usePreferencesStore((s) => s.filterPanelOpen[tab]);
   const setFilterPanelOpen = usePreferencesStore((s) => s.setFilterPanelOpen);
   const myProviderIds = usePreferencesStore(
     (s) => s.selectedStreamingProviderIds,
   );
 
-  const filters = storedFilters ?? DEFAULT_LIST_FILTERS;
-  const sortOption = (filters.sortOption ?? defaultSort) as TSort;
-  const selectedGenreIds = filters.genreIds;
-  const selectedYear: YearFilterValue | undefined = filters.year ?? undefined;
-  const providerCategories = filters.providerCategories;
+  const list = stored ?? DEFAULT_LIST_FILTERS;
+  const sort = resolveSort(stored, tab);
+  const defaultSort = defaultSortFor(tab);
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortSheetVisible, setSortSheetVisible] = useState(false);
+  const [flyoutVisible, setFlyoutVisible] = useState(false);
 
-  function updateFilters(patch: Partial<typeof DEFAULT_LIST_FILTERS>) {
-    if (activeGroupId) {
-      setListFilters(tab, activeGroupId, patch);
-    }
+  function persist(patch: Partial<typeof DEFAULT_LIST_FILTERS>) {
+    setListFilters(tab, patch);
   }
 
   return {
-    filters,
-    sortOption,
-    selectedGenreIds,
-    selectedYear,
-    providerCategories,
+    stored,
+    sort,
+    defaultSort,
+    filters: list.filters,
+    scope,
     myProviderIds,
     filterPanelOpen,
     toggleFilterPanel: () => setFilterPanelOpen(tab, !filterPanelOpen),
     searchQuery,
     setSearchQuery,
-    sortSheetVisible,
-    setSortSheetVisible,
-    updateFilters,
-    toggleGenre: (genreId: string) =>
-      updateFilters({ genreIds: toggleGenreId(selectedGenreIds, genreId) }),
-    selectSortOption: (option: TSort) => {
-      updateFilters({ sortOption: option });
-      setSortSheetVisible(false);
-    },
+    /** Visibility of the "+ Filter" flyout (session-local, rendered at screen root). */
+    flyoutVisible,
+    setFlyoutVisible,
+    setSort: (next: SortState) => persist({ sort: next }),
+    /** Table-header tap: asc -> desc -> back to the default sort. */
+    toggleHeaderSort: (field: SortField) =>
+      persist({ sort: nextHeaderSort(sort, field, defaultSort) }),
+    setFilters: (next: EntryFilters) => persist({ filters: next }),
+    removeFilter: (key: FilterKey) =>
+      persist({ filters: removeFilterKey(list.filters, key) }),
+    setScope: (next: DiaryScope) => setDiaryScope(next),
   };
 }

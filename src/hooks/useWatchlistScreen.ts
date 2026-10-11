@@ -1,9 +1,8 @@
 import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { useColumnSort } from "@/hooks/useColumnSort";
 import { useEntryFilters } from "@/hooks/useEntryFilters";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
@@ -11,21 +10,14 @@ import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
 import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
 import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import { deriveGenreNamesById } from "@/lib/diaryDisplay";
-import {
-  sortWatchlistByColumn,
-  type WatchlistColumn,
-} from "@/lib/columnSort";
+import { filterWatchlist } from "@/lib/entryFiltering";
+import { sortEntries } from "@/lib/entrySorting";
 import { deriveReleaseYears, getDistinctGenreIds } from "@/lib/entryFilters";
 import { navigateToMovieDetail } from "@/lib/movieDetailNavigation";
-import {
-  searchEntries,
-  sortWatchlist,
-  splitWatchlistAndDiary,
-} from "@/lib/watchlistLogic";
+import { searchEntries, splitWatchlistAndDiary } from "@/lib/watchlistLogic";
 import type {
   StreamingAvailabilityLookup,
   WatchlistEntry,
-  WatchlistSortOption,
 } from "@/lib/watchlistTypes";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
@@ -59,14 +51,8 @@ export function useWatchlistScreen() {
   // WatchlistPosterCard's `showTitle` prop doc comment.
   const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
 
-  const filters = useEntryFilters<WatchlistSortOption>(
-    "watchlist",
-    activeGroupId,
-    "added",
-  );
-  const { sortOption } = filters;
-  // Header-cell sort (local, resets on blur); re-orders the panel result.
-  const { columnSort, toggleColumn } = useColumnSort<WatchlistColumn>();
+  const filters = useEntryFilters("watchlist");
+  const { sort } = filters;
 
   const isLoading =
     userGroupsQuery.isLoading ||
@@ -108,55 +94,51 @@ export function useWatchlistScreen() {
   );
 
   // Providers are only loaded (cache-backed, one batch call) while the
-  // "Meine Streaming-Dienste" sort is active.
+  // streaming filter is active.
+  const streamingFilterActive = filters.filters.myStreaming;
   const providersQuery = useMyStreamingProviders(
     baseWatchlistEntries.map((entry) => entry.movie.tmdb_id),
-    sortOption === "my_streaming",
+    streamingFilterActive,
   );
   const providersByTmdbId = providersQuery.data;
 
-  const { selectedGenreIds, selectedYear, myProviderIds, providerCategories } =
-    filters;
-  const sortedEntries = useMemo(() => {
-    return sortWatchlist(baseWatchlistEntries, sortOption, {
+  // Pipeline: filters (all AND) -> fuzzy search -> sort (one sort for cards,
+  // grid and list; panel sort row and table headers).
+  const searchedEntries = useMemo(() => {
+    const filtered = filterWatchlist(baseWatchlistEntries, filters.filters, {
+      userId: currentUserId ?? "",
       streamingAvailability,
-      genreIds: selectedGenreIds,
-      year: selectedYear,
       providersByTmdbId,
-      myProviderIds,
-      providerCategories,
+      myProviderIds: filters.myProviderIds,
+    });
+    return sortEntries(searchEntries(filtered, filters.searchQuery), sort, {
+      userId: currentUserId ?? "",
     });
   }, [
     baseWatchlistEntries,
-    sortOption,
+    filters.filters,
+    filters.searchQuery,
+    filters.myProviderIds,
+    currentUserId,
     streamingAvailability,
-    selectedGenreIds,
-    selectedYear,
     providersByTmdbId,
-    myProviderIds,
-    providerCategories,
+    sort,
   ]);
 
-  const searchedEntries = useMemo(
-    () =>
-      sortWatchlistByColumn(
-        searchEntries(sortedEntries, filters.searchQuery),
-        columnSort,
-      ),
-    [sortedEntries, filters.searchQuery, columnSort],
+  const openEntry = useCallback(
+    (entry: WatchlistEntry) => {
+      if (!activeGroupId) {
+        return;
+      }
+      navigateToMovieDetail(router, {
+        tmdbId: entry.movie.tmdb_id,
+        groupId: activeGroupId,
+        source: "watchlist",
+        watchlistEntryId: entry.id,
+      });
+    },
+    [activeGroupId, router],
   );
-
-  function openEntry(entry: WatchlistEntry) {
-    if (!activeGroupId) {
-      return;
-    }
-    navigateToMovieDetail(router, {
-      tmdbId: entry.movie.tmdb_id,
-      groupId: activeGroupId,
-      source: "watchlist",
-      watchlistEntryId: entry.id,
-    });
-  }
 
   return {
     filters,
@@ -171,10 +153,8 @@ export function useWatchlistScreen() {
     genrePillIds,
     genreNamesById,
     yearPillValues,
-    providersLoading: providersQuery.isLoading,
+    providersLoading: streamingFilterActive && providersQuery.isLoading,
     searchedEntries,
-    columnSort,
-    toggleColumn,
     openEntry,
   };
 }

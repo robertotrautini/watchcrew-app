@@ -2,10 +2,14 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 import {
+  type DiaryScope,
   type ListFilters,
   type ListFiltersTab,
+  DEFAULT_DIARY_SCOPE,
   DEFAULT_LIST_FILTERS,
   listFiltersKey,
+  collapseListFiltersPerTab,
+  migrateListFiltersRecord,
 } from "@/lib/listFilters";
 import { mmkvStorage } from "@/lib/mmkvStorage";
 
@@ -87,11 +91,20 @@ interface PreferencesState {
    */
   trackerEnabled: boolean;
   setTrackerEnabled: (value: boolean) => void;
-  /** Persisted sort/filter choices, keyed `${tab}:${groupId}`. Read via `?? DEFAULT_LIST_FILTERS`. */
+  /**
+   * Tagebuch scope ("Mein Tagebuch" | "Gruppe"): ONE global choice, not per
+   * group; survives switching the active group. Default "group".
+   */
+  diaryScope: DiaryScope;
+  setDiaryScope: (scope: DiaryScope) => void;
+  /**
+   * Persisted sort / filters (two independent parts), ONE entry per tab
+   * (`watchlist` | `diary`), shared by all groups. Read via
+   * `?? DEFAULT_LIST_FILTERS`.
+   */
   listFilters: Record<string, ListFilters>;
   setListFilters: (
     tab: ListFiltersTab,
-    groupId: string,
     patch: Partial<ListFilters>,
   ) => void;
   /** Collapsible filter panel open/closed per tab (default closed, per-device). */
@@ -122,10 +135,12 @@ export const usePreferencesStore = create<PreferencesState>()(
         set((state) => ({
           filterPanelOpen: { ...state.filterPanelOpen, [tab]: open },
         })),
+      diaryScope: DEFAULT_DIARY_SCOPE,
+      setDiaryScope: (scope) => set({ diaryScope: scope }),
       listFilters: {},
-      setListFilters: (tab, groupId, patch) =>
+      setListFilters: (tab, patch) =>
         set((state) => {
-          const key = listFiltersKey(tab, groupId);
+          const key = listFiltersKey(tab);
           return {
             listFilters: {
               ...state.listFilters,
@@ -141,6 +156,44 @@ export const usePreferencesStore = create<PreferencesState>()(
     {
       name: "watchcrew-preferences",
       storage: createJSONStorage(() => mmkvStorage),
+      // v1: sort and filters were decoupled (old `sortOption` doubled as the
+      // filter mode); see migrateListFilters in src/lib/listFilters.ts.
+      // v2: the Tagebuch scope moved out of the list filters into the global
+      // `diaryScope`; old values are dropped (-> "group").
+      // v3: sort/filters are one entry per tab instead of per tab+group (the
+      // active group's entry wins, else the first stored one).
+      version: 3,
+      migrate: (persisted, version) => {
+        let state = (persisted ?? {}) as Record<string, unknown>;
+        if (version < 1) {
+          state = {
+            ...state,
+            listFilters: migrateListFiltersRecord(state.listFilters),
+          };
+        }
+        if (version < 2) {
+          const old = (state.listFilters ?? {}) as Record<
+            string,
+            Record<string, unknown>
+          >;
+          const listFilters: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(old)) {
+            const { scope: _scope, ...rest } = value ?? {};
+            listFilters[key] = rest;
+          }
+          state = { ...state, listFilters, diaryScope: DEFAULT_DIARY_SCOPE };
+        }
+        if (version < 3) {
+          state = {
+            ...state,
+            listFilters: collapseListFiltersPerTab(
+              state.listFilters,
+              state.activeGroupId,
+            ),
+          };
+        }
+        return state as unknown as PreferencesState;
+      },
     },
   ),
 );

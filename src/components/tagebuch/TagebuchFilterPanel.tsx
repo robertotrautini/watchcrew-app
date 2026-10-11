@@ -1,36 +1,27 @@
-import { View } from "react-native";
 import { TextInput } from "@/components/ui/Text";
 
-import {
-  GenrePills,
-  ProviderCategoryPills,
-  YearPills,
-} from "@/components/entries/EntryFilterPills";
+import { EntryFilterBar } from "@/components/entries/EntryFilterBar";
+import { EntrySortRow } from "@/components/entries/EntrySortRow";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
 import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
-import { SortButton } from "@/components/ui/SortButton";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import type { useTagebuchScreen } from "@/hooks/useTagebuchScreen";
-import { sortOptionLabel } from "@/lib/entryFilters";
-import {
-  DEFAULT_DIARY_SORT,
-  DIARY_SORT_SHORT_LABELS,
-  hasActiveListFilters,
-  toggleProviderCategory,
-} from "@/lib/listFilters";
-import { TAGEBUCH_SORT_OPTIONS } from "./TagebuchSortSheet";
+import { DIARY_SORT_FIELDS, isSameSort } from "@/lib/entrySorting";
+import { activeFilterKeys } from "@/lib/listFilters";
 
 type Screen = ReturnType<typeof useTagebuchScreen>;
 
 export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
   const f = screen.filters;
-  const sortOption = f.sortOption;
+  const filterKeys = activeFilterKeys(screen.activeFilters, "diary");
+  const hasActiveFilters =
+    !isSameSort(f.sort, f.defaultSort) || filterKeys.length > 0;
   return (
     <CollapsibleFilterPanel
       testID="tagebuch-filter"
       open={f.filterPanelOpen}
       onToggle={f.toggleFilterPanel}
-      hasActiveFilters={hasActiveListFilters(f.filters, DEFAULT_DIARY_SORT)}
+      hasActiveFilters={hasActiveFilters}
       search={
         <TextInput
           testID="tagebuch-search-input"
@@ -42,55 +33,28 @@ export function TagebuchFilterPanel({ screen }: { screen: Screen }) {
         />
       }
     >
-      <View className="flex-row items-center gap-2">
-        <SortButton
-          testID="tagebuch-sort-button"
-          shortLabel={
-            DIARY_SORT_SHORT_LABELS[sortOption] ??
-            sortOptionLabel(TAGEBUCH_SORT_OPTIONS, sortOption)
-          }
-          fullLabel={sortOptionLabel(TAGEBUCH_SORT_OPTIONS, sortOption)}
-          onPress={() => f.setSortSheetVisible(true)}
-        />
-        <ViewModeToggle
-          testID="tagebuch-view-mode-toggle"
-          value={screen.diaryViewMode}
-          onChange={screen.setDiaryViewMode}
-          buttonTestID={(mode) => `tagebuch-view-mode-${mode}`}
-        />
-      </View>
-      {sortOption === "genre" ? (
-        <GenrePills
-          testIDPrefix="tagebuch"
-          genreIds={screen.availableGenreIds}
-          selectedGenreIds={f.selectedGenreIds}
-          genreNamesById={screen.genreNamesById}
-          onToggle={f.toggleGenre}
-        />
-      ) : null}
-      {sortOption === "year" ? (
-        <YearPills
-          testIDPrefix="tagebuch"
-          years={screen.availableYears}
-          selectedYear={f.selectedYear}
-          showNoDate={screen.hasNoDateYear}
-          onSelect={(year) => f.updateFilters({ year })}
-        />
-      ) : null}
-      {sortOption === "my_streaming" ? (
-        <ProviderCategoryPills
-          testIDPrefix="tagebuch"
-          active={f.providerCategories}
-          onToggle={(category) =>
-            f.updateFilters({
-              providerCategories: toggleProviderCategory(
-                f.providerCategories,
-                category,
-              ),
-            })
-          }
-        />
-      ) : null}
+      <EntrySortRow
+        testIDPrefix="tagebuch"
+        fields={DIARY_SORT_FIELDS}
+        sort={f.sort}
+        onChange={f.setSort}
+      />
+      <EntryFilterBar
+        testIDPrefix="tagebuch"
+        keys={filterKeys}
+        filters={screen.activeFilters}
+        genreNamesById={screen.genreNamesById}
+        onRemove={f.removeFilter}
+        onAdd={() => f.setFlyoutVisible(true)}
+        trailing={
+          <ViewModeToggle
+                testID="tagebuch-view-mode-toggle"
+                value={screen.diaryViewMode}
+                onChange={screen.setDiaryViewMode}
+                buttonTestID={(mode) => `tagebuch-view-mode-${mode}`}
+              />
+        }
+      />
     </CollapsibleFilterPanel>
   );
 }

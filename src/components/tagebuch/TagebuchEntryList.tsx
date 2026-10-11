@@ -1,5 +1,5 @@
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { FlatList, Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
@@ -10,6 +10,8 @@ import {
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { useSortRemountKey } from "@/hooks/useSortRemountKey";
+import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
   GlassTableHeader,
   GlassTableHeaderCell,
@@ -22,7 +24,7 @@ import {
 } from "@/components/ui/GlassTable";
 import { Icon } from "@/components/ui/Icon";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
-import type { ColumnSortState, DiaryColumn } from "@/lib/columnSort";
+import type { SortField, SortState } from "@/lib/entrySorting";
 import { isGridPlaceholder, padToFullRows, type GridPlaceholder } from "@/lib/gridPadding";
 import { formatPlainDate } from "@/lib/dateFormat";
 import { computeAverageRating, memberDisplayLabel } from "@/lib/diaryDisplay";
@@ -46,9 +48,9 @@ export interface TagebuchEntryListProps {
   groupMemberIds: string[];
   displayNameById: Map<string, string>;
   onOpenEntry: (entry: WatchlistEntry) => void;
-  /** Active header-cell sort (list mode only); `null` = none. */
-  columnSort: ColumnSortState<DiaryColumn> | null;
-  onSortColumn: (column: DiaryColumn) => void;
+  /** The one active sort (shared with the panel); table headers show/set it. */
+  sort: SortState;
+  onSortField: (field: SortField) => void;
 }
 
 const GRID_COLUMNS = 4;
@@ -94,6 +96,7 @@ function findOwnRating(entry: WatchlistEntry, userId: string | undefined) {
 interface RowBaseProps {
   entry: WatchlistEntry;
   index: number;
+  skipFade: boolean;
   userId: string | undefined;
   onOpenEntry: (entry: WatchlistEntry) => void;
 }
@@ -101,6 +104,7 @@ interface RowBaseProps {
 const GridRow = memo(function GridRow({
   entry,
   index,
+  skipFade,
   userId,
   starColor,
   showTitlesInGrid,
@@ -110,6 +114,7 @@ const GridRow = memo(function GridRow({
     <FadeInItem
       replayTab="tagebuch"
       index={index}
+      skipInitialFade={skipFade}
       testID={`tagebuch-entry-${entry.id}`}
       className="flex-1"
     >
@@ -139,19 +144,19 @@ const GridRow = memo(function GridRow({
       </Pressable>
     </FadeInItem>
   );
-});
+}, propsEqualIgnoringIndex);
 
 function ListHeader({
   starColor,
-  columnSort,
-  onSortColumn,
+  sort,
+  onSortField,
 }: {
   starColor: string;
-  columnSort: ColumnSortState<DiaryColumn> | null;
-  onSortColumn: (column: DiaryColumn) => void;
+  sort: SortState;
+  onSortField: (field: SortField) => void;
 }) {
-  const stateOf = (column: DiaryColumn) =>
-    columnSort?.column === column ? columnSort.direction : null;
+  const stateOf = (field: SortField) =>
+    sort.field === field ? sort.direction : null;
   return (
     <GlassTableHeader testID="tagebuch-table-header">
       <GlassTableHeaderCell
@@ -159,7 +164,7 @@ function ListHeader({
         className="flex-1"
         accessibilityLabel="Film"
         sortState={stateOf("title")}
-        onPress={() => onSortColumn("title")}
+        onPress={() => onSortField("title")}
       >
         Film
       </GlassTableHeaderCell>
@@ -167,8 +172,8 @@ function ListHeader({
         testID="tagebuch-table-header-like"
         label="Favorit"
         className={TABLE_ICON_CELL}
-        sortState={stateOf("liked")}
-        onPress={() => onSortColumn("liked")}
+        sortState={stateOf("likes")}
+        onPress={() => onSortField("likes")}
       >
         <Icon name="heart" size="SM" color={LIKE_HEART_COLOR} />
       </GlassTableHeaderIconCell>
@@ -177,7 +182,7 @@ function ListHeader({
         label="Durchschnitt"
         className={TABLE_SCORE_STRONG_CELL}
         sortState={stateOf("average")}
-        onPress={() => onSortColumn("average")}
+        onPress={() => onSortField("average")}
       >
         <Icon name="star" size="SM" color={starColor} />
       </GlassTableHeaderIconCell>
@@ -186,7 +191,7 @@ function ListHeader({
         label="TMDB"
         className={TABLE_SCORE_CELL}
         sortState={stateOf("tmdb")}
-        onPress={() => onSortColumn("tmdb")}
+        onPress={() => onSortField("tmdb")}
       >
         <TmdbBadge
           testID="tagebuch-table-header-tmdb-logo"
@@ -204,7 +209,7 @@ const ListRow = memo(function ListRow({
   isLast,
   userId,
   onOpenEntry,
-}: Omit<RowBaseProps, "index"> & { isLast: boolean }) {
+}: Omit<RowBaseProps, "index" | "skipFade"> & { isLast: boolean }) {
   const liked = findOwnRating(entry, userId)?.liked === true;
   const average = computeAverageRating(entry);
   return (
@@ -252,6 +257,7 @@ const ListRow = memo(function ListRow({
 const CardRow = memo(function CardRow({
   entry,
   index,
+  skipFade,
   userId,
   starColor,
   groupMemberIds,
@@ -263,6 +269,16 @@ const CardRow = memo(function CardRow({
   displayNameById: Map<string, string>;
 }) {
   const own = findOwnRating(entry, userId);
+  const members = useMemo(
+    () =>
+      groupMemberIds.map((memberId) => ({
+        id: memberId,
+        label: memberDisplayLabel(memberId, displayNameById.get(memberId)),
+        rating:
+          entry.ratings.find((r) => r.member_id === memberId)?.rating ?? null,
+      })),
+    [groupMemberIds, displayNameById, entry],
+  );
   const seenLabel = own?.seen_at
     ? `Gesehen am ${formatPlainDate(own.seen_at, "Kein Datum")}`
     : "Kein Datum";
@@ -270,6 +286,7 @@ const CardRow = memo(function CardRow({
     <FadeInItem
       replayTab="tagebuch"
       index={index}
+      skipInitialFade={skipFade}
       testID={`tagebuch-entry-${entry.id}`}
     >
       <Pressable
@@ -286,18 +303,12 @@ const CardRow = memo(function CardRow({
           averageRating={computeAverageRating(entry)}
           liked={own?.liked === true}
           tmdbScore={entry.movie.vote_average}
-          members={groupMemberIds.map((memberId) => ({
-            id: memberId,
-            label: memberDisplayLabel(memberId, displayNameById.get(memberId)),
-            rating:
-              entry.ratings.find((r) => r.member_id === memberId)?.rating ??
-              null,
-          }))}
+          members={members}
         />
       </Pressable>
     </FadeInItem>
   );
-});
+}, propsEqualIgnoringIndex);
 
 export function TagebuchEntryList({
   entries,
@@ -308,18 +319,19 @@ export function TagebuchEntryList({
   groupMemberIds,
   displayNameById,
   onOpenEntry,
-  columnSort,
-  onSortColumn,
+  sort,
+  onSortField,
 }: TagebuchEntryListProps) {
   // Empty today (see parallaxContext); kept so any future scroll handler is
   // spread onto the list unchanged (must stay a UI-thread worklet handler).
   const parallaxScroll = useParallaxScroll();
+  const { listKey, skipFade } = useSortRemountKey(mode, sort);
 
   if (mode === "grid") {
     return (
       <FlatList
         {...parallaxScroll}
-        key="grid"
+        key={listKey}
         testID="tagebuch-entry-list"
         data={padToFullRows(entries, GRID_COLUMNS)}
         keyExtractor={keyOfGridItem}
@@ -336,6 +348,7 @@ export function TagebuchEntryList({
             <GridRow
               entry={item}
               index={index}
+              skipFade={skipFade}
               userId={userId}
               starColor={starColor}
               showTitlesInGrid={showTitlesInGrid}
@@ -351,15 +364,15 @@ export function TagebuchEntryList({
     return (
       <FlatList
         {...parallaxScroll}
-        key="list"
+        key={listKey}
         testID="tagebuch-entry-list"
         data={entries}
         keyExtractor={keyOf}
         ListHeaderComponent={
           <ListHeader
             starColor={starColor}
-            columnSort={columnSort}
-            onSortColumn={onSortColumn}
+            sort={sort}
+            onSortField={onSortField}
           />
         }
         contentContainerClassName="px-4 pb-8 pt-3"
@@ -380,7 +393,7 @@ export function TagebuchEntryList({
   return (
     <FlatList
       {...parallaxScroll}
-      key="cards"
+      key={listKey}
       testID="tagebuch-entry-list"
       data={entries}
       keyExtractor={keyOf}
@@ -392,6 +405,7 @@ export function TagebuchEntryList({
         <CardRow
           entry={item}
           index={index}
+          skipFade={skipFade}
           userId={userId}
           starColor={starColor}
           groupMemberIds={groupMemberIds}

@@ -51,7 +51,7 @@ jest.mock("@/hooks/useRegisterFocusedGroupScreen", () => ({
 jest.mock("@/hooks/useMyStreamingProviders", () => ({
   useMyStreamingProviders: (...args: unknown[]) => mockUseMyStreamingProviders(...args),
 }));
-// A real (non-persisted) zustand store, so the per-group persistence wiring
+// A real (non-persisted) zustand store, so the per-tab persistence wiring
 // (listFilters / setListFilters) is exercised for real.
 jest.mock("@/stores/usePreferencesStore", () => {
   const { create } = jest.requireActual("zustand");
@@ -65,9 +65,9 @@ jest.mock("@/stores/usePreferencesStore", () => {
     setFilterPanelOpen: (tab: string, open: boolean) =>
       set((state: any) => ({ filterPanelOpen: { ...state.filterPanelOpen, [tab]: open } })),
     listFilters: {},
-    setListFilters: (tab: string, groupId: string, patch: object) =>
+    setListFilters: (tab: string, patch: object) =>
       set((state: any) => {
-        const key = listFiltersKey(tab, groupId);
+        const key = listFiltersKey(tab);
         return {
           listFilters: { ...state.listFilters, [key]: { ...DEFAULT_LIST_FILTERS, ...state.listFilters[key], ...patch } },
         };
@@ -77,15 +77,13 @@ jest.mock("@/stores/usePreferencesStore", () => {
 });
 
 // Real logic underneath (don't reimplement/alter watchlistLogic semantics),
-// but spy on sortWatchlist/searchEntries so wiring can be asserted directly.
+// but spy on searchEntries so wiring can be asserted directly.
 const actualWatchlistLogic = jest.requireActual("@/lib/watchlistLogic");
-const mockSortWatchlist = jest.fn(actualWatchlistLogic.sortWatchlist);
 const mockSearchEntries = jest.fn(actualWatchlistLogic.searchEntries);
 jest.mock("@/lib/watchlistLogic", () => {
   const actual = jest.requireActual("@/lib/watchlistLogic");
   return {
     ...actual,
-    sortWatchlist: (...args: unknown[]) => mockSortWatchlist(...args),
     searchEntries: (...args: unknown[]) => mockSearchEntries(...args),
   };
 });
@@ -93,6 +91,10 @@ jest.mock("@/lib/watchlistLogic", () => {
 // Lazily required (rather than statically imported) to dodge Babel's CJS
 // hoisting of the `jest.mock` factories above, matching the convention in
 // __tests__/screens/Login.test.tsx.
+function DEFAULT_LIST_FILTERS_FOR_TEST() {
+  return jest.requireActual("@/lib/listFilters").DEFAULT_LIST_FILTERS;
+}
+
 function loadWatchlistScreen() {
   return require("@/app/(app)/(tabs)/watchlist").default;
 }
@@ -208,10 +210,21 @@ function setUpPreferencesStore(
   });
 }
 
+async function selectSortField(getByTestId: any, field: string) {
+  await fireEvent.press(getByTestId("watchlist-sort-field"));
+  await fireEvent.press(getByTestId(`watchlist-sort-field-option-${field}`));
+}
+
+/** Opens the "+ Filter" flyout, runs `pick` on the draft, applies. */
+async function applyFilters(getByTestId: any, pick: () => Promise<void>) {
+  await fireEvent.press(getByTestId("watchlist-filter-add"));
+  await pick();
+  await fireEvent.press(getByTestId("watchlist-filter-apply"));
+}
+
 describe("WatchlistScreen", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockSortWatchlist.mockImplementation(actualWatchlistLogic.sortWatchlist);
     mockSearchEntries.mockImplementation(actualWatchlistLogic.searchEntries);
     mockUseMyStreamingProviders.mockReturnValue({ data: undefined, isLoading: false });
     setUpPreferencesStore("cards");
@@ -306,26 +319,33 @@ describe("WatchlistScreen", () => {
     expect(getByTestId("watchlist-search-input")).toBeTruthy();
     expect(getByTestId("watchlist-add-movie-button")).toBeTruthy();
     expect(queryByTestId("watchlist-filter-panel")).toBeNull();
-    expect(queryByTestId("watchlist-sort-button")).toBeNull();
+    expect(queryByTestId("watchlist-sort-field")).toBeNull();
     expect(queryByTestId("watchlist-view-mode-toggle")).toBeNull();
 
     await fireEvent.press(getByTestId("watchlist-filter-toggle"));
 
     expect(getByTestId("watchlist-filter-panel")).toBeTruthy();
-    expect(getByTestId("watchlist-sort-button")).toBeTruthy();
+    expect(getByTestId("watchlist-sort-field")).toBeTruthy();
+    expect(getByTestId("watchlist-filter-add")).toBeTruthy();
     expect(getByTestId("watchlist-view-mode-toggle")).toBeTruthy();
     expect(require("@/stores/usePreferencesStore").usePreferencesStore.getState().filterPanelOpen.watchlist).toBe(true);
   });
 
-  it("shows the active dot for a non-default sort", async () => {
+  it("shows the active dot for a non-default sort and for an active filter", async () => {
     setUpHappyPath();
     const WatchlistScreen = loadWatchlistScreen();
     const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
     expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-tmdb_score"));
+    await selectSortField(getByTestId, "tmdb");
+    expect(getByTestId("watchlist-filter-active-dot")).toBeTruthy();
 
+    await selectSortField(getByTestId, "added");
+    expect(queryByTestId("watchlist-filter-active-dot")).toBeNull();
+
+    await applyFilters(getByTestId, async () => {
+      await fireEvent.press(getByTestId("watchlist-filter-upcoming"));
+    });
     expect(getByTestId("watchlist-filter-active-dot")).toBeTruthy();
   });
 
@@ -402,33 +422,36 @@ describe("WatchlistScreen", () => {
     expect(queryByTestId("watchlist-entry-e1")).toBeNull();
   });
 
-  it("reorders entries when selecting the 'TMDB Score' sort option", async () => {
+  it("reorders entries when selecting the TMDB sort field, direction toggles", async () => {
     setUpHappyPath();
 
     const WatchlistScreen = loadWatchlistScreen();
     const { getByTestId, getAllByTestId } = await render(<WatchlistScreen />);
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-tmdb_score"));
+    await selectSortField(getByTestId, "tmdb");
 
-    await waitFor(() =>
-      expect(mockSortWatchlist).toHaveBeenCalledWith(
-        expect.anything(),
-        "tmdb_score",
-        expect.anything(),
-      ),
-    );
-
-    const cards = getAllByTestId(/^watchlist-entry-e\d$/);
+    const cards = () => getAllByTestId(/^watchlist-entry-e\d$/).map((c) => c.props.testID);
     // vote_average desc: Beta(9), Alpha(5), Gamma(3).
-    expect(cards.map((c) => c.props.testID)).toEqual([
-      "watchlist-entry-e2",
-      "watchlist-entry-e1",
-      "watchlist-entry-e3",
-    ]);
+    expect(cards()).toEqual(["watchlist-entry-e2", "watchlist-entry-e1", "watchlist-entry-e3"]);
+
+    await fireEvent.press(getByTestId("watchlist-sort-direction"));
+    expect(cards()).toEqual(["watchlist-entry-e3", "watchlist-entry-e1", "watchlist-entry-e2"]);
   });
 
-  it("shows genre filter pills only when 'Nach Genre' is the active sort option", async () => {
+  it("offers exactly Hinzugefügt, TMDB, Titel, Erscheinungsdatum as sort fields", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId } = await render(<WatchlistScreen />);
+
+    await fireEvent.press(getByTestId("watchlist-sort-field"));
+
+    const labels = { added: "Hinzugefügt", tmdb: "TMDB", title: "Titel", release: "Erscheinungsdatum" };
+    for (const [key, label] of Object.entries(labels)) {
+      expect(getByTestId(`watchlist-sort-field-option-${key}`).props.accessibilityLabel).toBe(label);
+    }
+  });
+
+  it("shows genre and year pills inside the flyout (not tied to the sort field)", async () => {
     setUpHappyPath();
 
     const WatchlistScreen = loadWatchlistScreen();
@@ -436,26 +459,32 @@ describe("WatchlistScreen", () => {
 
     expect(queryByTestId("watchlist-genre-pill-genre-1")).toBeNull();
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-genre"));
+    await fireEvent.press(getByTestId("watchlist-filter-add"));
 
     expect(getByTestId("watchlist-genre-pill-genre-1")).toBeTruthy();
     expect(getByTestId("watchlist-genre-pill-genre-2")).toBeTruthy();
-    expect(queryByTestId("watchlist-year-pill-2020")).toBeNull();
-  });
-
-  it("shows year filter pills only when 'Nach Jahr' is the active sort option", async () => {
-    setUpHappyPath();
-
-    const WatchlistScreen = loadWatchlistScreen();
-    const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
-
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-year"));
-
     expect(getByTestId("watchlist-year-pill-2020")).toBeTruthy();
     expect(getByTestId("watchlist-year-pill-2022")).toBeTruthy();
-    expect(queryByTestId("watchlist-genre-pill-genre-1")).toBeNull();
+  });
+
+  it("applying a genre filter keeps the chosen sort (filter + sort combine) and shows a removable chip", async () => {
+    setUpHappyPath();
+    const WatchlistScreen = loadWatchlistScreen();
+    const { getByTestId, getAllByTestId, queryByTestId } = await render(<WatchlistScreen />);
+    await selectSortField(getByTestId, "tmdb");
+
+    await applyFilters(getByTestId, async () => {
+      await fireEvent.press(getByTestId("watchlist-genre-pill-genre-1"));
+    });
+
+    expect(getByTestId("watchlist-filter-chip-genre-genre-1")).toBeTruthy();
+    const ids = getAllByTestId(/^watchlist-entry-e\d$/).map((c) => c.props.testID);
+    expect(ids.length).toBeLessThan(3);
+    expect(getByTestId("watchlist-sort-field").props.accessibilityLabel).toBe("Sortieren nach TMDB");
+
+    await fireEvent.press(getByTestId("watchlist-filter-chip-genre-genre-1"));
+    expect(queryByTestId("watchlist-filter-chip-genre-genre-1")).toBeNull();
+    expect(getAllByTestId(/^watchlist-entry-e\d$/)).toHaveLength(3);
   });
 
   it("filters the displayed list via the search field", async () => {
@@ -472,22 +501,24 @@ describe("WatchlistScreen", () => {
     expect(queryByTestId("watchlist-entry-e3")).toBeNull();
   });
 
-  it("persists the chosen sort option per group in the preferences store", async () => {
+  it("persists the chosen sort per group in the preferences store", async () => {
     setUpHappyPath();
     const WatchlistScreen = loadWatchlistScreen();
     const { getByTestId } = await render(<WatchlistScreen />);
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-tmdb_score"));
+    await selectSortField(getByTestId, "tmdb");
 
     const { usePreferencesStore } = require("@/stores/usePreferencesStore");
-    expect(usePreferencesStore.getState().listFilters["watchlist:g1"].sortOption).toBe("tmdb_score");
+    expect(usePreferencesStore.getState().listFilters["watchlist"].sort).toEqual({
+      field: "tmdb",
+      direction: "desc",
+    });
   });
 
-  it("restores a persisted sort option on mount", async () => {
+  it("restores a persisted sort on mount", async () => {
     setUpHappyPath();
     require("@/stores/usePreferencesStore").usePreferencesStore.setState({
-      listFilters: { "watchlist:g1": { sortOption: "tmdb_score", genreIds: [], year: null, providerCategories: ["flatrate"] } },
+      listFilters: { "watchlist": { ...DEFAULT_LIST_FILTERS_FOR_TEST(), sort: { field: "tmdb", direction: "desc" } } },
     });
     const WatchlistScreen = loadWatchlistScreen();
     const { getAllByTestId } = await render(<WatchlistScreen />);
@@ -506,15 +537,13 @@ describe("WatchlistScreen", () => {
     const { getByTestId } = await render(<WatchlistScreen />);
     const store = require("@/stores/usePreferencesStore").usePreferencesStore;
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-genre"));
-    await fireEvent.press(getByTestId("watchlist-genre-pill-genre-1"));
-    expect(store.getState().listFilters["watchlist:g1"].genreIds).toEqual(["genre-1"]);
+    await applyFilters(getByTestId, async () => {
+      await fireEvent.press(getByTestId("watchlist-genre-pill-genre-1"));
+      await fireEvent.press(getByTestId("watchlist-year-pill-2020"));
+    });
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-year"));
-    await fireEvent.press(getByTestId("watchlist-year-pill-2020"));
-    expect(store.getState().listFilters["watchlist:g1"].year).toBe(2020);
+    expect(store.getState().listFilters["watchlist"].filters.genreIds).toEqual(["genre-1"]);
+    expect(store.getState().listFilters["watchlist"].filters.year).toBe(2020);
   });
 
   it("does not persist the search text", async () => {
@@ -528,18 +557,7 @@ describe("WatchlistScreen", () => {
     expect(JSON.stringify(filters)).not.toContain("Alpha");
   });
 
-  it("offers 'Meine Streaming-Dienste' without the old '(bald verfügbar)' label", async () => {
-    setUpHappyPath();
-    const WatchlistScreen = loadWatchlistScreen();
-    const { getByTestId, queryByText } = await render(<WatchlistScreen />);
-
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-
-    expect(queryByText(/bald verfügbar/)).toBeNull();
-    expect(getByTestId("watchlist-sort-option-my_streaming")).toBeTruthy();
-  });
-
-  it("'Meine Streaming-Dienste': loads providers, filters to own services and shows the category pills (min. 1 active)", async () => {
+  it("streaming filter 'Meine Dienste': loads providers only while active, filters to own services and shows the category pills (min. 1 active)", async () => {
     setUpHappyPath();
     require("@/stores/usePreferencesStore").usePreferencesStore.setState({ selectedStreamingProviderIds: [8] });
     mockUseMyStreamingProviders.mockImplementation((_ids: number[], enabled: boolean) => ({
@@ -554,25 +572,37 @@ describe("WatchlistScreen", () => {
     const WatchlistScreen = loadWatchlistScreen();
     const { getByTestId, queryByTestId } = await render(<WatchlistScreen />);
 
-    expect(queryByTestId("watchlist-provider-categories")).toBeNull();
     expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([1, 2, 3], false);
 
-    await fireEvent.press(getByTestId("watchlist-sort-button"));
-    await fireEvent.press(getByTestId("watchlist-sort-option-my_streaming"));
+    await fireEvent.press(getByTestId("watchlist-filter-add"));
+    expect(queryByTestId("watchlist-provider-categories")).toBeNull();
+    await fireEvent.press(getByTestId("watchlist-streaming-mine"));
+    expect(getByTestId("watchlist-provider-categories")).toBeTruthy();
+    await fireEvent.press(getByTestId("watchlist-filter-apply"));
 
     expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([1, 2, 3], true);
     expect(getByTestId("watchlist-entry-e1")).toBeTruthy();
     expect(queryByTestId("watchlist-entry-e2")).toBeNull();
+    expect(getByTestId("watchlist-filter-chip-streaming")).toBeTruthy();
 
     // activate "Leihen" -> e2 (rent at own service) appears
+    await fireEvent.press(getByTestId("watchlist-filter-add"));
     await fireEvent.press(getByTestId("watchlist-provider-category-rent"));
+    await fireEvent.press(getByTestId("watchlist-filter-apply"));
     expect(getByTestId("watchlist-entry-e2")).toBeTruthy();
 
     // deactivating both would leave none active: the last one stays on
+    await fireEvent.press(getByTestId("watchlist-filter-add"));
     await fireEvent.press(getByTestId("watchlist-provider-category-flatrate"));
     await fireEvent.press(getByTestId("watchlist-provider-category-rent"));
+    await fireEvent.press(getByTestId("watchlist-filter-apply"));
     const store = require("@/stores/usePreferencesStore").usePreferencesStore;
-    expect(store.getState().listFilters["watchlist:g1"].providerCategories).toEqual(["rent"]);
+    expect(store.getState().listFilters["watchlist"].filters.providerCategories).toEqual(["rent"]);
+
+    // removing the chip turns the filter (and the provider loading) off again
+    await fireEvent.press(getByTestId("watchlist-filter-chip-streaming"));
+    expect(mockUseMyStreamingProviders).toHaveBeenLastCalledWith([1, 2, 3], false);
+    expect(getByTestId("watchlist-entry-e3")).toBeTruthy();
   });
 
   it("shows a search-specific text when a search matches nothing, and the empty-list text only for an empty watchlist", async () => {
@@ -587,7 +617,7 @@ describe("WatchlistScreen", () => {
     expect(queryByTestId("watchlist-empty")).toBeNull();
   });
 
-  describe("column-header sort (list mode)", () => {
+  describe("table-header sort (list mode, same sort as the panel)", () => {
     const early = makeEntry({
       id: "c1",
       added_at: "2026-01-03T00:00:00Z",
@@ -606,7 +636,7 @@ describe("WatchlistScreen", () => {
     const order = (nodes: { props: { testID?: string } }[]) =>
       nodes.map((n) => n.props.testID?.replace("watchlist-list-row-", ""));
 
-    it("title and release columns cycle asc/desc/none; missing dates last; indicator shown", async () => {
+    it("title and release columns cycle asc/desc/default; missing dates last; indicator shown; panel follows", async () => {
       setUpPreferencesStore("list");
       setUpHappyPath([early, late, none]);
       const WatchlistScreen = loadWatchlistScreen();
@@ -617,6 +647,7 @@ describe("WatchlistScreen", () => {
       await fireEvent.press(getByTestId("watchlist-table-header-title"));
       expect(rows()).toEqual(["c2", "c3", "c1"]);
       expect(getByTestId("watchlist-table-header-title-sort-asc")).toBeTruthy();
+      expect(getByTestId("watchlist-sort-field").props.accessibilityLabel).toBe("Sortieren nach Titel");
       await fireEvent.press(getByTestId("watchlist-table-header-title"));
       expect(rows()).toEqual(["c1", "c3", "c2"]);
       await fireEvent.press(getByTestId("watchlist-table-header-title"));

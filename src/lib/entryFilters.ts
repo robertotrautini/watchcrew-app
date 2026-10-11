@@ -1,27 +1,18 @@
+import { getOwnSeenAt } from "@/lib/entrySelectors";
+import { genreDisplayLabel } from "@/lib/diaryDisplay";
+import type { EntryFilters, FilterKey } from "@/lib/listFilters";
 import { getYearFromDate } from "@/lib/dateFormat";
 import type { ProviderCategory } from "@/lib/movieProviderFilter";
 import { getEffectiveReleaseDate } from "@/lib/watchlistLogic";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
 
-// Genre/year/sort helpers shared by the Tagebuch and Watchlist screens.
+// Genre/year helpers shared by the Tagebuch and Watchlist screens.
 
 export const PROVIDER_CATEGORY_LABELS: Record<ProviderCategory, string> = {
   flatrate: "Flatrate",
   rent: "Leihen",
   buy: "Kaufen",
 };
-
-export interface SortOptionItem<T extends string> {
-  key: T;
-  label: string;
-}
-
-export function sortOptionLabel<T extends string>(
-  options: ReadonlyArray<SortOptionItem<T>>,
-  option: T,
-): string {
-  return options.find((o) => o.key === option)?.label ?? option;
-}
 
 /** Distinct genre ids across the entries (first-seen order, or sorted). */
 export function getDistinctGenreIds(
@@ -58,8 +49,7 @@ export function deriveSeenYears(
   const years = new Set<number>();
   let hasNoDate = false;
   for (const entry of entries) {
-    const ownSeenAt =
-      entry.ratings.find((r) => r.member_id === currentUserId)?.seen_at ?? null;
+    const ownSeenAt = getOwnSeenAt(entry, currentUserId);
     if (ownSeenAt == null) {
       hasNoDate = true;
     } else {
@@ -73,4 +63,34 @@ export function toggleGenreId(selected: string[], genreId: string): string[] {
   return selected.includes(genreId)
     ? selected.filter((id) => id !== genreId)
     : [...selected, genreId];
+}
+
+const FLAG_LABELS: Record<string, string> = {
+  liked: "Mag ich",
+  upcoming: "Kommt noch",
+  unrated: "Keine Bewertung",
+  has_ratings: "Mit Bewertungen",
+  all_rated: "Alle bewertet",
+  missing: "Fehlt noch",
+};
+
+/** Visible text of a filter chip. */
+export function filterChipLabel(
+  key: FilterKey,
+  filters: EntryFilters,
+  genreNamesById: ReadonlyMap<string, string>,
+): string {
+  if (key.startsWith("genre:")) {
+    const id = key.slice("genre:".length);
+    return genreDisplayLabel(id, genreNamesById.get(id));
+  }
+  if (key === "year") {
+    return filters.year === "no_date" ? "Kein Datum" : String(filters.year);
+  }
+  if (key === "streaming") {
+    return `Streaming: ${filters.providerCategories
+      .map((c) => PROVIDER_CATEGORY_LABELS[c])
+      .join(", ")}`;
+  }
+  return FLAG_LABELS[key] ?? key;
 }

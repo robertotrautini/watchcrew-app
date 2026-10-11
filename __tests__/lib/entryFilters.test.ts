@@ -2,8 +2,8 @@ import {
   deriveReleaseYears,
   deriveSeenYears,
   getDistinctGenreIds,
+  filterChipLabel,
   PROVIDER_CATEGORY_LABELS,
-  sortOptionLabel,
   toggleGenreId,
 } from "@/lib/entryFilters";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
@@ -86,18 +86,36 @@ describe("toggleGenreId", () => {
   });
 });
 
-describe("sortOptionLabel", () => {
-  const options = [{ key: "x", label: "Ex" }];
-  it("finds the label", () => {
-    expect(sortOptionLabel(options, "x")).toBe("Ex");
-  });
-  it("falls back to the key", () => {
-    expect(sortOptionLabel(options, "y")).toBe("y");
-  });
-});
-
 describe("PROVIDER_CATEGORY_LABELS", () => {
   it("labels all categories", () => {
     expect(PROVIDER_CATEGORY_LABELS).toEqual({ flatrate: "Flatrate", rent: "Leihen", buy: "Kaufen" });
+  });
+});
+
+describe("filterChipLabel", () => {
+  const base = {
+    genreIds: [],
+    year: null,
+    myStreaming: false,
+    providerCategories: ["flatrate", "rent"] as ("flatrate" | "rent")[],
+    liked: false,
+    upcoming: false,
+    unrated: false,
+    hasRatings: false,
+    allRated: false,
+    missing: false,
+  };
+  const names = new Map([["g1", "Horror"]]);
+  it("labels each chip kind", () => {
+    expect(filterChipLabel("genre:g1", base, names)).toBe("Horror");
+    expect(filterChipLabel("year", { ...base, year: 2020 }, names)).toBe("2020");
+    expect(filterChipLabel("year", { ...base, year: "no_date" }, names)).toBe("Kein Datum");
+    expect(filterChipLabel("streaming", base, names)).toBe("Streaming: Flatrate, Leihen");
+    expect(filterChipLabel("liked", base, names)).toBe("Mag ich");
+    expect(filterChipLabel("all_rated", base, names)).toBe("Alle bewertet");
+    expect(filterChipLabel("missing", base, names)).toBe("Fehlt noch");
+    expect(filterChipLabel("upcoming", base, names)).toBe("Kommt noch");
+    expect(filterChipLabel("unrated", base, names)).toBe("Keine Bewertung");
+    expect(filterChipLabel("has_ratings", base, names)).toBe("Mit Bewertungen");
   });
 });

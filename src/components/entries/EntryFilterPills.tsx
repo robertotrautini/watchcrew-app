@@ -26,7 +26,10 @@ export function GenrePills({
   onToggle: (genreId: string) => void;
 }) {
   return (
-    <View className="flex-row flex-wrap gap-2" testID={`${testIDPrefix}-genre-pills`}>
+    <View
+      className="flex-row flex-wrap gap-2"
+      testID={`${testIDPrefix}-genre-pills`}
+    >
       {genreIds.map((genreId) => (
         <Chip
           key={genreId}
@@ -55,7 +58,10 @@ export function YearPills({
   onSelect: (year: YearFilterValue) => void;
 }) {
   return (
-    <View className="flex-row flex-wrap gap-2" testID={`${testIDPrefix}-year-pills`}>
+    <View
+      className="flex-row flex-wrap gap-2"
+      testID={`${testIDPrefix}-year-pills`}
+    >
       {years.map((year) => (
         <Chip
           key={year}

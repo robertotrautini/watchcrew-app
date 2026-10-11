@@ -5,6 +5,8 @@ import { Text } from "@/components/ui/Text";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { FadeInItem } from "@/components/ui/FadeInItem";
+import { useSortRemountKey } from "@/hooks/useSortRemountKey";
+import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
   GlassTableHeader,
   GlassTableHeaderCell,
@@ -12,7 +14,7 @@ import {
   TABLE_DATE_CELL,
   TABLE_TITLE_CELL,
 } from "@/components/ui/GlassTable";
-import type { ColumnSortState, WatchlistColumn } from "@/lib/columnSort";
+import type { SortField, SortState } from "@/lib/entrySorting";
 import { formatPlainDate } from "@/lib/dateFormat";
 import {
   isGridPlaceholder,
@@ -79,14 +81,14 @@ const WatchlistListRow = memo(function WatchlistListRow({
 });
 
 function WatchlistListHeader({
-  columnSort,
-  onSortColumn,
+  sort,
+  onSortField,
 }: {
-  columnSort: ColumnSortState<WatchlistColumn> | null;
-  onSortColumn: (column: WatchlistColumn) => void;
+  sort: SortState;
+  onSortField: (field: SortField) => void;
 }) {
-  const stateOf = (column: WatchlistColumn) =>
-    columnSort?.column === column ? columnSort.direction : null;
+  const stateOf = (field: SortField) =>
+    sort.field === field ? sort.direction : null;
   return (
     <GlassTableHeader testID="watchlist-table-header">
       <GlassTableHeaderCell
@@ -94,7 +96,7 @@ function WatchlistListHeader({
         className="flex-1"
         accessibilityLabel="Film"
         sortState={stateOf("title")}
-        onPress={() => onSortColumn("title")}
+        onPress={() => onSortField("title")}
       >
         Film
       </GlassTableHeaderCell>
@@ -104,7 +106,7 @@ function WatchlistListHeader({
         align="end"
         accessibilityLabel="Erscheint"
         sortState={stateOf("release")}
-        onPress={() => onSortColumn("release")}
+        onPress={() => onSortField("release")}
       >
         Erscheint
       </GlassTableHeaderCell>
@@ -115,6 +117,7 @@ function WatchlistListHeader({
 const WatchlistPosterRow = memo(function WatchlistPosterRow({
   item,
   index,
+  skipFade,
   isGrid,
   streamingAvailability,
   totalMembers,
@@ -123,6 +126,7 @@ const WatchlistPosterRow = memo(function WatchlistPosterRow({
 }: {
   item: WatchlistEntry;
   index: number;
+  skipFade: boolean;
   isGrid: boolean;
   streamingAvailability: StreamingAvailabilityLookup;
   totalMembers: number;
@@ -133,6 +137,7 @@ const WatchlistPosterRow = memo(function WatchlistPosterRow({
     <FadeInItem
       replayTab="watchlist"
       index={index}
+      skipInitialFade={skipFade}
       className={isGrid ? "flex-1" : undefined}
     >
       <WatchlistPosterCard
@@ -147,7 +152,7 @@ const WatchlistPosterRow = memo(function WatchlistPosterRow({
       />
     </FadeInItem>
   );
-});
+}, propsEqualIgnoringIndex);
 
 const GRID_PLACEHOLDER = <View className="flex-1" />;
 
@@ -166,8 +171,8 @@ export function WatchlistEntryList({
   totalMembers,
   showTitlesInGrid,
   onOpenEntry,
-  columnSort,
-  onSortColumn,
+  sort,
+  onSortField,
 }: {
   entries: WatchlistEntry[];
   viewMode: WatchlistViewMode;
@@ -175,24 +180,23 @@ export function WatchlistEntryList({
   totalMembers: number;
   showTitlesInGrid: boolean;
   onOpenEntry: (entry: WatchlistEntry) => void;
-  /** Active header-cell sort (list mode only); `null` = none. */
-  columnSort: ColumnSortState<WatchlistColumn> | null;
-  onSortColumn: (column: WatchlistColumn) => void;
+  /** The one active sort (shared with the panel); table headers show/set it. */
+  sort: SortState;
+  onSortField: (field: SortField) => void;
 }) {
   const parallaxScroll = useParallaxScroll();
+  const { listKey, skipFade } = useSortRemountKey(viewMode, sort);
 
   if (viewMode === "list") {
     return (
       <FlatList
         {...parallaxScroll}
+        key={listKey}
         testID="watchlist-list"
         data={entries}
         keyExtractor={keyOfListEntry}
         ListHeaderComponent={
-          <WatchlistListHeader
-            columnSort={columnSort}
-            onSortColumn={onSortColumn}
-          />
+          <WatchlistListHeader sort={sort} onSortField={onSortField} />
         }
         contentContainerClassName="px-4 pb-3 pt-3"
         initialNumToRender={20}
@@ -213,7 +217,7 @@ export function WatchlistEntryList({
     <FlatList
       {...parallaxScroll}
       testID="watchlist-grid-or-cards"
-      key={viewMode}
+      key={listKey}
       data={padToFullRows(entries, isGrid ? 4 : 1)}
       keyExtractor={keyOfGridEntry}
       numColumns={isGrid ? 4 : 1}
@@ -228,6 +232,7 @@ export function WatchlistEntryList({
           <WatchlistPosterRow
             item={item}
             index={index}
+            skipFade={skipFade}
             isGrid={isGrid}
             streamingAvailability={streamingAvailability}
             totalMembers={totalMembers}
