@@ -40,7 +40,7 @@ export const SURFACE_FILL = "bg-bg-card-flat";
  */
 export const TAB_BAR_STYLE = {
   backgroundColor: "rgba(10,10,12,0.95)",
-  borderTopColor: "rgba(255,255,255,0.1)",
+  borderTopColor: "rgba(255,255,255,0.16)",
   borderTopWidth: 1,
 } as const;
 

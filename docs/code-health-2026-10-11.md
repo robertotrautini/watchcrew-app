@@ -264,3 +264,118 @@ Danach optional: M5 (große Komponenten aufteilen), N3 (Logos), N4 (Ordner/Theme
 - **Gemessen:** Dateigrößen (`wc`), Zirkel (madge), Klone (jscpd), tote Exporte/Dependencies (knip, depcheck), ESLint-Lauf, grep-Zählungen (Hex, Inline-Style, any, disable, showToast, Navigation, select), Asset-Größen und -Referenzen, Test-Dateizählung, Doku-Pfadprüfung.
 - **Geschätzt:** alle Zeileneinsparungen, Performance-Aussagen (MovieGrid-Default-Fenster, Provider-Array-Neubildung), Bundle-Potenzial, "indirekt getestet"-Einschätzung, Aufwand S/M/L.
 - **Nicht ausgeführt:** `tsc`, `jest`, Maestro, Profiling; knip-Ergebnisse für Supabase-/Skript-Ordner wurden nicht weiter verifiziert (Deno/CLI-Entrypoints).
+
+## Status 2026-10-11 (nach Refactoring-Paketen)
+
+Abgleich gegen Git-Stand und Code (git log, ls, grep), nicht nur gegen die Doku. Nicht gelaufen: tsc, jest, eslint, Maestro. Spalte V: **C** = im Code/Git geprueft, **D** = aus Doku/Bericht uebernommen, **C+D** = teils geprueft. Grundlage der Punkte: Maßnahmenliste (Abschnitt 9), Pakete 1-6 (Abschnitt 10), `docs/refactoring-plan-2026-10-11.md`, `docs/code-health-r-items.md`, `docs/backlog.md`, `docs/component-inventory-2026-10-11.json`. Visuelle Fassung: Artifact 'Refactoring Status'.
+
+**Kennzahlen:** 21 umgesetzt, 6 bewusst gestrichen/so gelassen, 35 offen (davon 4 Hoch, 11 Mittel, 20 Niedrig; 3 davon nur teilweise erledigt).
+
+Wichtig: Das Ziel 'weniger Code' wurde in P-B (-2), P-C (+126), P-E (+151) und P-G (ca. +465 Zeilen) nicht erreicht. Gewinn ist je ein Muster statt driftender Kopien, nicht weniger Zeilen. Nur P-A sparte (-220).
+
+### A. Umgesetzt
+
+| ID | Bereich | Punkt | Beleg | V |
+|---|---|---|---|---|
+| A01 | Pakete | P-H Glass wird Surface, GlassTable wird DataTable | 4b3efd1 | C |
+| A02 | Pakete | P-H Lint 22 auf 0, ungenutzte Exporte weg | 4b3efd1 | C+D |
+| A03 | Pakete | P-H Doku-Kopfhinweise und Backlog abgehakt | 4b3efd1, 49b3038 | C |
+| A04 | Pakete | P-A Modal-Screens auf MovieGridScreen | 8319a5b | C |
+| A05 | Pakete | P-E DraftSheet fuer Entwurf/Abbrechen/Speichern | b8ced63 | C |
+| A06 | Pakete | P-B EntryFilterPanel und PillRow | a8a0ca5 | C |
+| A07 | Pakete | P-C useEntryScreen, EntryList, EntryScreenFrame | daf3947 | C |
+| A08 | Pakete | P-G Grosse Seiten aufgeteilt, useAppMutation, Navigation | 487a57b, 04e63b4 | C |
+| A09 | Pakete | useAppMutation und einheitliche Toast-Stelle | 487a57b, 04e63b4 | C |
+| A10 | Pakete | Detail-Navigation an einer Stelle | 8319a5b, 04e63b4 | C |
+| A11 | Tokens | Hex-Duplikate zentral in src/lib/colors.ts | b014fcc | C |
+| A12 | Aufraeumen | expo-blur und Blur-Flaechen entfernt | b50fc3a | C |
+| A13 | Aufraeumen | Skeletons durch LoadingArea ersetzt | 90ab8bc | C |
+| A14 | Aufraeumen | Toast-Helfer showSuccessToast/showErrorToast gelöscht | b014fcc | C |
+| A15 | Aufraeumen | expo-web-browser entfernt | b014fcc | C |
+| A16 | Aufraeumen | Template-Assets und Alias-Konstanten entfernt | b014fcc | C |
+| A17 | Aufraeumen | Tote Module, Template-Dateien, Zyklus-/any-Hygiene | R1 2026-10-05 | D |
+| A18 | Tests | Tests fuer Flyout, Pills, CreateGroupSheet, passwordRules, homeRoute | 3e41250 | C |
+| A19 | Tooling | R2 ESLint, R4 gemeinsame Filter-Logik, R5 Test-Setup, R6 Query-Keys | 2026-10-05 (Protokoll in code-health-r-items.md) | D |
+| A20 | Tooling | R7 Teil 1: Sentry angebunden | 69f5a6f | C |
+| A21 | Backlog | Backlog-Punkte expo-blur / expo-web-browser (Code) | 4b3efd1 | C |
+
+### A. Bewusst gestrichen / so gelassen
+
+| ID | Punkt | Begruendung | V |
+|---|---|---|---|
+| A22 | P-D Karten und Badges zusammenlegen: gestrichen | User-Entscheidung. DiaryEntryCard, WatchlistPosterCard, DiaryPosterTile haben verschiedene Inhalte; PosterTmdbBadge ist schon ein duenner Wrapper. Zusammenlegen gaebe viele Modus-Props bei 0-40 Zeilen Ersparnis. (Entscheidung 4.6, User) | D |
+| A23 | P-F Tracker-Tabelle auf DataTable: gestrichen | User-Entscheidung. Tracker baut die Tabelle selbst (nicht virtualisiert, kleine Datenmenge, dynamische Zahlerfarbe); Nutzen nur Konsistenz, Optikrisiko. Code unveraendert. (Entscheidung 4.5, User) | D |
+| A24 | P-G: add-movie-Modi, Rating-Draft, settings-Gruppen nicht weiter zerlegt | Modi-Panels teilen State und Pick-Raster-Muster; useRatingDraft wuerde nur verschieben; Leave-Abschnitt waere ein Wrapper ohne Verantwortung. Nur Hook-Auslagerung. (Begruendung im Plan, P-G) | D |
+| A25 | Inline-Styles in ui-Primitives belassen | 31 style={} fast nur in Primitives (Reanimated, gemessene Geometrie, dynamische Werte); NativeWind kann das nicht. Projektregel eingehalten. (Bericht 4.2: kein Handlungsbedarf) | D |
+| A26 | Select / SegmentedControl / Chip, Sheet / ConfirmDialog: Rollen so lassen | Rollen sind unterscheidbar (viele Optionen / 2-4 Optionen / Mehrfachfilter). Nur ein RN-Modal (Select, bewusst). Query-Key-Stile (Objekt vs Funktion) nur dokumentieren. (Bericht 5: nur dokumentieren) | D |
+| A27 | Tracker nutzt keine GlassTable-Header (Zell-Konstanten reichen) | Abweichung als vertretbar bewertet, Einsparung 0. (Bericht 2.2) | D |
+
+### B. Noch offen
+
+
+**Hoch**
+
+| ID | Punkt | Aufwand | Nutzen | Risiko | Naechster Schritt | V |
+|---|---|---|---|---|---|---|
+| B01 | Handy-/Maestro-Pruefung aller Pakete (Vollauf) | M | Sieben Commits ohne Geraetebeleg; Regression bei Scroll-Performance oder Dialogen waere unbemerkt. | Niedrig (nur Pruefung) | scripts/maestro-all.sh (Vollauf) auf dem Pixel 6 Pro, Screenshots ansehen, danach Handy-Scrolltest auf grosser Liste. | D |
+| B02 | Phase-2-SQL (Push-Trigger) und Phase-0-Migrationen auf DEV anwenden | S | Push fuer neue Bewertungen funktioniert nur mit dem Umzug; Voraussetzung fuer Phase 3. | Mittel (DEV-DB, idempotentes SQL) | Robin: SQL im Dev-SQL-Editor ausfuehren (phase0, dann phase2) oder Token mit database_write bereitstellen; danach Push-Test. | D |
+| B03 | Rechte-Entziehen-SQL, Token loeschen (IMPORT-SCHRITTE.md) | S | Verhindert dauerhaft zu weite service_role-Rechte auf DEV. | Niedrig | Schritte 1-5 aus IMPORT-SCHRITTE.md ausfuehren, nach dem Import Schritt 6 (revoke) und Token loeschen; Datei danach loeschen oder committen. | C |
+| B04 | Phase 3: Legacy-Import auf neue Rating-Struktur umstellen | L | Ohne Umbau fuehrt der Import auf die Alt-Tabelle, die kein Client mehr liest. | Mittel (Datenimport, DEV-only, Dry-run zuerst) | Plan Phase 3 umsetzen (TDD, Dry-run), Trigger deaktivieren, erst dann --apply nach Freigabe. | D |
+
+**Mittel**
+
+| ID | Punkt | Aufwand | Nutzen | Risiko | Naechster Schritt | V |
+|---|---|---|---|---|---|---|
+| B05 | MovieGrid an Entry-Grid-Konventionen angleichen (Report M6) | S | Fluessigeres Scrollen in Filmografie/Aehnliche/Suche. | Niedrig | VIRTUALIZATION-Konstante aus EntryList wiederverwenden, Scrolltest am Geraet. | C |
+| B06 | MovieGridItem-Typ nach lib/ verschieben | S | Schichten sauber, R8-Vorarbeit. | Niedrig (Typ-Umzug) | Typ nach lib/movieGridTypes.ts (Name zu bestaetigen), vier Importe anpassen, tsc. | C |
+| B07 | Wrap-Rows mit className-Gap ohne Screenshot-Beleg (teilweise) | S | Kein Layoutbruch auf dem Handy, falls Gap fehlt. | Mittel (visuell) | Per Handy-Screenshot pruefen; nur bei Abweichung auf mr-/mb- umstellen (Regel 4.8: nur mit Beleg). | C |
+| B08 | ScreenState / CenteredMessage / ErrorText fuer Lade-, Fehler-, Leerzustaende | M | Einheitliche Texte und Farben, weniger Duplikat. | Niedrig-Mittel (Texte in Tests/Maestro) | Pruefen, ob die zwei Basen (MovieGridScreen, EntryScreenFrame) reichen; sonst gemeinsame Komponente, Texte vorher abstimmen. | C |
+| B09 | R7: ErrorBoundary und zentrale Fehlerbehandlung | M | Abstuerze zeigen sich in Sentry statt im Nichts. | Mittel | Entscheidung Verhalten, dann Expo-Router-ErrorBoundary im Root-Layout plus duenner Logger. | C |
+| B10 | 'Film bereits gesehen'-Warnung im Detail/Hinzufuegen | M | Schutz vor Doppelt-Hinzufuegen bereits bewerteter Filme. | Niedrig | Entscheiden, ob zurueck (Detail-Ansicht statt Add-Movie?), dann Dialog ueber DraftSheet/ConfirmDialog. | C |
+| B11 | Direkt-Bewerten: Speichern ohne Sterne, Vorbefuellung aus anderer Gruppe | S | Klares Verhalten statt stiller Annahme. | Niedrig | Beide Fragen an Robin stellen und im interim-decisions.md festhalten (Harte Regel). | D |
+| B12 | Edge Function send-push: Dedupe pro Empfaenger | M | Keine doppelten Pushes. | Mittel (Deploy, kein Test lokal) | Aenderung nach SQL-Beschreibung umsetzen, nach Phase-2-SQL, auf DEV deployen (Standing-Approval fuer DEV). | D |
+| B13 | Journal persistent machen (Pi) | S | Absturzursachen nachvollziehbar. | Niedrig | Robin: Datei anlegen (Inhalt in working-process.md), journald neu starten. | D |
+| B14 | Fehlende Einzel-Tests | S | Netz fuer spaetere Umbauten. | Niedrig | TrackerEntrySheet-Test zuerst; Rest nur wenn die Dateien angefasst werden. | C |
+| B15 | Doku-Altlasten bereinigen | S | Docs bleiben vertrauenswuerdig. | Keins | R3-Zeile auf erledigt (P-C/P-G), Scorecard datieren, interim-decisions Archivteil anlegen. | C |
+
+**Niedrig**
+
+| ID | Punkt | Aufwand | Nutzen | Risiko | Naechster Schritt | V |
+|---|---|---|---|---|---|---|
+| B16 | Restliche grosse Dateien teilen (Report M5 Rest) | L | Wartbarkeit, kein Zeilengewinn. | Mittel-Hoch | Nur bei Bedarf; zuerst MovieDetailActionsBar (Aktionen + Mutationen + Dialoge). | C |
+| B17 | useDirectRate / useGroupPushSubscription bewusst nicht auf useAppMutation (teilweise) | S | Einheitlicheres Gerüst. | Mittel (Verhalten) | Entscheiden: onSettled-Option in useAppMutation oder so lassen und im Style-Guide begruenden. | C |
+| B18 | 3 verbleibende eslint-disable set-state-in-effect (teilweise) | S | Letzte Disables weg. | Mittel (stille Zustandsfehler) | Nur angehen mit Test; Namens-Sync evtl. per key-Remount wie DraftSheet. | C |
+| B19 | Jest-Teardown-Warnung 'worker failed to exit gracefully' | S | Sauberer CI-Lauf. | Niedrig | Verdaechtige Tests einzeln mit --detectOpenHandles laufen lassen (nie parallel zu tsc). | C |
+| B20 | Restliche Hex-Literale und Grau-Icon-Token | S | Ein Wahrheitspunkt fuer Icon-Farben. | Niedrig | ICON_COLORS in colors.ts, Allowlist im Guard-Test anpassen; Branding-Frage Splash-Hintergrund an Robin. | C |
+| B21 | R8 lib/ umstrukturieren, src/theme anlegen | M | Navigierbarkeit. | Mittel (viele Importe, mechanisch) | Nach MovieGridItem-Umzug; Namensschema abstimmen (Harte Regel). | C |
+| B22 | Logo-PNGs (12 x ca. 100 KB) durch SVG/Laufzeit-Tint ersetzen | M | ca. 1 MB weniger Bundle [Schaetzung]. | Mittel (Branding/Splash) | Nur nach Branding-Entscheidung. | C |
+| B23 | select('*') durch Spaltenlisten ersetzen | S | Minimal. | Niedrig | Spalten je Stelle festlegen, Typen pruefen. | C |
+| B24 | toTime(iso)-Helper | S | Weniger Boilerplate. | Niedrig | Helper in dateFormat.ts, Stellen ersetzen. | C |
+| B25 | Quick Wins QW3 und QW8 | S | Kleine Hygiene. | Niedrig | Kommentare korrigieren, getSession hinter lib-Helper. | C |
+| B26 | R9 i18n-Vorbereitung | L | Spaetere Mehrsprachigkeit. | Mittel | ADR zu Bibliothek/Konvention vorbereiten. | D |
+| B27 | expo-blur / expo-web-browser noch im nativen Binary | S | Kleineres Binary. | Niedrig | Mit dem naechsten nativen Build (lokal ca. 4 h oder EAS ab 2026-11-01) erledigt sich das von selbst. | D |
+| B28 | Tab-Swipe-Pager | M | UX. | Mittel | Mit naechstem nativen Build bewerten. | D |
+| B29 | Tracker-Spaltensortierung | M | UX. | Niedrig | Erst Entscheidung, ob P-F-Tabelle dafuer noetig ist. | D |
+| B30 | Maestro-Flows 'Bewertung in mehreren Gruppen' | S | Abdeckung der gruppenuebergreifenden Bewertungen. | Niedrig | Zweite Testgruppe anlegen (Test-Gruppe ist mit dem Handy geteilt). | D |
+| B31 | Phase 4: alte ratings-Tabelle entfernen | M | Aufraeumen der DB. | Hoch (destruktiv) | Erst nach Phase 3 und Vollauf; separate Freigabe. | D |
+| B32 | Feature-Flags pro Nutzer (ADR 0015, zurueckgestellt) | L | Premium/Freischaltungen spaeter. | Mittel | Erst wieder aufgreifen, wenn ein konkretes Gate feststeht. | D |
+| B33 | Meilenstein-Reste M12 / User-Konten | L | Release. | Hoch (extern) | Vor Release Stand pruefen. | D |
+| B34 | Auth-Screens: Gemeinsamkeiten pruefen (Inventar-Gruppe 9) | S | Moeglicher gemeinsamer Auth-Rahmen. | Niedrig-Mittel (Auth-Flows) | Erst lesen und bewerten, ob echte Duplikate; Ergebnis ist evtl. 'so lassen'. | D |
+| B35 | BackSwipeView / TabSwipeView pruefen (Inventar-Gruppe 10) | S | Evtl. gemeinsame Gesten-Basis. | Mittel (Gesten, nur am Geraet testbar) | Zusammen mit dem Tab-Swipe-Pager bewerten. | D |
+
+### Komponenten-Kandidatengruppen (10)
+
+Gruppierung aus dem Inventar abgeleitet (similarPairs, clusters, tagebuchWatchlistPairs); das Inventar-Artifact selbst war nicht lesbar.
+
+| # | Gruppe | Stand | Beleg | V |
+|---|---|---|---|---|
+| 1 | Filmografie-/Sammlung-/Aehnliche-Modals (5 Screens) | umgesetzt | P-A 8319a5b | C |
+| 2 | Tagebuch-/Watchlist-Filterpanel | umgesetzt | P-B a8a0ca5 | C |
+| 3 | Filter-Pillen (Genre, Jahr, Anbieter) | umgesetzt | P-B a8a0ca5, PillRow | C |
+| 4 | Tagebuch-/Watchlist-Hooks, Listen, Screens | umgesetzt | P-C daf3947 (Handy-Scrolltest offen) | C |
+| 5 | Sheets mit Entwurf (Rating, Payment, Tracker, Release, CreateGroup) | umgesetzt | P-E b8ced63 | C |
+| 6 | Karten und Kacheln (DiaryEntryCard, WatchlistPosterCard, DiaryPosterTile) | gestrichen | P-D, User-Entscheidung | D |
+| 7 | Badges (PosterCornerBadge, PosterTmdbBadge, TmdbBadge) | gestrichen | P-D, bewusst Wrapper | D |
+| 8 | Tracker-Tabelle vs DataTable | gestrichen | P-F, User-Entscheidung | D |
+| 9 | Auth-Screens (login, register, forgot-password, auth/callback, Aehnlichkeit 0,61-0,83) | offen | In keinem Plan-Paket; Inventar-Treffer, nicht bewertet | C |
+| 10 | BackSwipeView / TabSwipeView (Aehnlichkeit 0,83) | offen | In keinem Plan-Paket; Inventar-Treffer, nicht bewertet | C |
