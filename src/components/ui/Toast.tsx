@@ -25,16 +25,9 @@ interface ToastVariantStyle {
 /**
  * Variant look (docs/style-guide.md "Toasts"): same flat glass surface + ONE 1px border for all;
  * success = green, error = red (tinted fill 15% + coloured border 40% + coloured text/icon,
- * analogous to the danger tokens), info = neutral accent border without tint/icon.
+ * analogous to the danger tokens).
  */
 export const TOAST_VARIANT_STYLES: Record<ToastVariant, ToastVariantStyle> = {
-  info: {
-    surface: "border-accent",
-    tint: null,
-    text: "text-text-primary",
-    icon: null,
-    iconColor: null,
-  },
   success: {
     surface: "border-success/40",
     tint: "bg-success/15",
@@ -96,7 +89,7 @@ const TOAST_ENTRANCE_TRANSLATE_Y = 12;
  */
 export function ToastHost() {
   const [message, setMessage] = useState<string | null>(null);
-  const [variant, setVariant] = useState<ToastVariant>("info");
+  const [variant, setVariant] = useState<ToastVariant>("success");
   const [onPress, setOnPress] = useState<(() => void) | null>(null);
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [opacity] = useState(() => new Animated.Value(0));
@@ -111,7 +104,7 @@ export function ToastHost() {
           clearTimeout(dismissTimer.current);
         }
         setMessage(nextMessage);
-        setVariant(options?.variant ?? "info");
+        setVariant(options?.variant ?? "success");
         // Functional-updater form: a bare function value would be invoked by setState.
         setOnPress(
           options?.onPress ? () => options.onPress as () => void : null,

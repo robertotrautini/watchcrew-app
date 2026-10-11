@@ -9,7 +9,6 @@ import {
   classifyRatingsChange,
   classifyWatchlistEntriesChange,
   extractWatchlistEntryId,
-  REALTIME_TOAST_COPY,
 } from "@/lib/realtimeSync";
 
 function payload(eventType: "INSERT" | "UPDATE" | "DELETE", newRow: Record<string, unknown> | null, oldRow: Record<string, unknown> | null) {
@@ -97,14 +96,5 @@ describe("extractWatchlistEntryId", () => {
 
   it("returns undefined when neither row carries the field", () => {
     expect(extractWatchlistEntryId(payload("DELETE", null, null))).toBeUndefined();
-  });
-});
-
-describe("REALTIME_TOAST_COPY", () => {
-  it("has German copy for every kind that should ever toast, and null for the silent-only 'other' kind", () => {
-    expect(REALTIME_TOAST_COPY.watchlist_entry_added).toBe("Neuer Film zur Watchlist hinzugefügt");
-    expect(REALTIME_TOAST_COPY.rating_first).toBe("Jemand hat einen Film bewertet");
-    expect(REALTIME_TOAST_COPY.payment_recorded).toBe("Eine Zahlung wurde erfasst");
-    expect(REALTIME_TOAST_COPY.other).toBeNull();
   });
 });

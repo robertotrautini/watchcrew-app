@@ -1,18 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { AppState } from "react-native";
 
 import type { GroupWatchlistData } from "@/hooks/useGroupWatchlist";
-import {
-  classifyRatingsChange,
-  classifyWatchlistEntriesChange,
-  extractWatchlistEntryId,
-  REALTIME_TOAST_COPY,
-  type RealtimeChangeKind,
-} from "@/lib/realtimeSync";
+import { extractWatchlistEntryId } from "@/lib/realtimeSync";
 import { supabase } from "@/lib/supabase";
-import { showToast } from "@/lib/toast";
-import { useFocusedGroupScreen } from "@/stores/useFocusedGroupScreen";
 import { queryKeys } from "@/lib/queryKeys";
 
 /**
@@ -101,18 +92,8 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
       return;
     }
 
-    function handleRelevantChange(kind: RealtimeChangeKind) {
+    function handleRelevantChange() {
       queryClient.invalidateQueries({ queryKey: queryKeys.watchlist.byGroup(groupId) });
-
-      const isOnAffectedScreen = useFocusedGroupScreen.getState().focusedGroupId === groupId;
-      const isAppForeground = AppState.currentState === "active";
-      const toastMessage = REALTIME_TOAST_COPY[kind];
-
-      if (!isOnAffectedScreen && isAppForeground && toastMessage) {
-        showToast(toastMessage);
-      }
-      // Background/closed: intentionally nothing further happens here —
-      // that's the parallel Push-infrastructure task's delivery path.
     }
 
     let entry = activeGroupSyncs.get(groupId);
@@ -122,7 +103,7 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "watchlist_entries", filter: `group_id=eq.${groupId}` },
-          (payload) => handleRelevantChange(classifyWatchlistEntriesChange(payload)),
+          () => handleRelevantChange(),
         )
         .on(
           "postgres_changes",
@@ -135,7 +116,7 @@ export function useGroupRealtimeSync(groupId: string | undefined): void {
             if (!belongsToActiveGroup) {
               return;
             }
-            handleRelevantChange(classifyRatingsChange(payload));
+            handleRelevantChange();
           },
         )
         .subscribe();

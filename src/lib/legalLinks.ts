@@ -39,17 +39,14 @@ export function isPlaceholderLegalUrl(url: string | null | undefined): boolean {
 
 import * as Linking from "expo-linking";
 
-import { showToast } from "@/lib/toast";
-
 /**
  * Opens `url` in the system browser (per this task's brief: simplest
- * reliable approach, no in-app WebView), or shows a "Wird bald ergänzt"
- * toast instead of a broken link when `url` is still the placeholder
+ * reliable approach, no in-app WebView), or does nothing
+ * instead of opening a broken link when `url` is still the placeholder
  * default (see `isPlaceholderLegalUrl` above).
  */
 export async function openLegalUrl(url: string | null | undefined): Promise<void> {
   if (isPlaceholderLegalUrl(url)) {
-    showToast("Wird bald ergänzt");
     return;
   }
   await Linking.openURL(url as string);

@@ -94,18 +94,3 @@ export function extractWatchlistEntryId(
   const fromOld = (payload.old as Record<string, unknown> | null)?.watchlist_entry_id;
   return (fromNew ?? fromOld) as string | undefined;
 }
-
-/**
- * German toast copy per trigger kind (concise, per the task brief) -- `null`
- * means "never toast for this kind" (still silently refreshes the cache,
- * see useGroupRealtimeSync.ts). Deliberately generic/no-name-included copy
- * (e.g. not "Robin hat X bewertet") since resolving a display name here
- * would require an extra network round-trip inside the realtime handler;
- * out of scope for this task, see docs/interim-decisions.md.
- */
-export const REALTIME_TOAST_COPY: Record<RealtimeChangeKind, string | null> = {
-  watchlist_entry_added: "Neuer Film zur Watchlist hinzugefügt",
-  rating_first: "Jemand hat einen Film bewertet",
-  payment_recorded: "Eine Zahlung wurde erfasst",
-  other: null,
-};

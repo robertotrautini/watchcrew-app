@@ -3,7 +3,6 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupNames } from "@/hooks/useGroupDetails";
 import { groupDisplayLabel } from "@/lib/diaryDisplay";
 import { nextGroupId } from "@/lib/groupCycle";
-import { showToast } from "@/lib/toast";
 
 /**
  * Header logo quick-switch: cycles the active group through the user's groups (wrap-around) via
@@ -21,14 +20,10 @@ export function useGroupQuickSwitch() {
   const activeGroupName = activeGroupId ? nameOf(activeGroupId) : null;
 
   function switchToNext() {
-    if (groupIds.length < 2) {
-      showToast("Nur eine Gruppe", { variant: "info" });
-      return;
-    }
+    if (groupIds.length < 2) return;
     const next = nextGroupId(groupIds, activeGroupId);
     if (next == null) return;
     setActiveGroup(next);
-    showToast(nameOf(next), { variant: "info" });
   }
 
   return { activeGroupName, activeGroupId, groupCount: groupIds.length, switchToNext };

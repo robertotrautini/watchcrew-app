@@ -37,11 +37,11 @@ describe("useGroupQuickSwitch", () => {
     expect(result.current.activeGroupName).toBe("Eins");
   });
 
-  it("switches to the next group and toasts its name", async () => {
+  it("switches to the next group without a toast", async () => {
     const { result } = await renderHook(() => useGroupQuickSwitch());
     await act(async () => result.current.switchToNext());
     expect(mockSetActiveGroup).toHaveBeenCalledWith("g2");
-    expect(showToast).toHaveBeenCalledWith("Zwei", { variant: "info" });
+    expect(showToast).not.toHaveBeenCalled();
   });
 
   it("wraps around from the last group", async () => {
@@ -51,11 +51,11 @@ describe("useGroupQuickSwitch", () => {
     expect(mockSetActiveGroup).toHaveBeenCalledWith("g1");
   });
 
-  it("single group: no switch, toast 'Nur eine Gruppe'", async () => {
+  it("single group: no switch, no toast", async () => {
     mockGroups = [{ group_id: "g1" }];
     const { result } = await renderHook(() => useGroupQuickSwitch());
     await act(async () => result.current.switchToNext());
     expect(mockSetActiveGroup).not.toHaveBeenCalled();
-    expect(showToast).toHaveBeenCalledWith("Nur eine Gruppe", { variant: "info" });
+    expect(showToast).not.toHaveBeenCalled();
   });
 });

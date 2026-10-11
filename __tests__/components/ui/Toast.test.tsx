@@ -54,8 +54,7 @@ describe("ToastHost", () => {
 
     const className = getByTestId("toast-surface").props.className as string;
     expect(className).toContain("border");
-    // blurred glass: translucent tint over a BlurView (fallback fill is bg-bg-sheet)
-    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-sheet-blur");
+    expect(className).toContain("bg-bg-card-flat");
   });
 
   it("plays a fade+slide-in entrance animation when a toast is shown (M11 animation polish)", async () => {
@@ -190,15 +189,13 @@ describe("ToastHost", () => {
   });
 
   describe("variants", () => {
-    it("plain showToast renders the neutral info look (accent border, no tint, no icon)", async () => {
-      const { getByTestId, queryByTestId } = await render(<ToastHost />);
+    it("plain showToast without a variant falls back to success (green)", async () => {
+      const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
         showToast("Hallo");
       });
-      expect(getByTestId("toast-surface").props.className).toContain("border-accent");
-      expect(queryByTestId("toast-tint")).toBeNull();
-      expect(queryByTestId("toast-icon")).toBeNull();
-      expect(getByTestId("toast-message").props.className).toContain("text-text-primary");
+      expect(getByTestId("toast-surface").props.className).toContain("border-success/40");
+      expect(getByTestId("toast-icon").props.name).toBe("check-circle");
     });
 
     it("success variant is green: green border, green tint, green text and check icon", async () => {
@@ -226,8 +223,8 @@ describe("ToastHost", () => {
       expect(getByTestId("toast-icon").props.color).toBe("#e5675a");
     });
 
-    it("accepts the variant through showToast options and falls back to info afterwards", async () => {
-      const { getByTestId, queryByTestId } = await render(<ToastHost />);
+    it("accepts the variant through showToast options and falls back to success afterwards", async () => {
+      const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
         showToast("Oh nein", { variant: "error" });
       });
@@ -235,7 +232,7 @@ describe("ToastHost", () => {
       await act(async () => {
         showToast("Neutral");
       });
-      expect(queryByTestId("toast-tint")).toBeNull();
+      expect(getByTestId("toast-tint").props.className).toContain("bg-success/15");
     });
 
     it("announces error toasts assertively and others politely (accessibility live region)", async () => {

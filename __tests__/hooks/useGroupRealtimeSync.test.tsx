@@ -159,7 +159,7 @@ describe("useGroupRealtimeSync", () => {
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 
-    it("ADR-0006 branch 2: foreground + on a DIFFERENT screen -> toast with the new-entry copy", async () => {
+    it("ADR-0006 branch 2: foreground + on a DIFFERENT screen -> invalidates, no toast", async () => {
       const { useFocusedGroupScreen } = require("@/stores/useFocusedGroupScreen");
       useFocusedGroupScreen.setState({ focusedGroupId: null });
       AppState.currentState = "active";
@@ -169,10 +169,11 @@ describe("useGroupRealtimeSync", () => {
 
       await fireChange("watchlist_entries", { eventType: "INSERT", new: { id: "we-1", group_id: "group-1" }, old: null });
 
-      expect(mockShowToast).toHaveBeenCalledWith("Neuer Film zur Watchlist hinzugefügt");
+      expect(mockInvalidateQueries).toHaveBeenCalled();
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
 
-    it("ADR-0006 branch 2, focused on a DIFFERENT group's screen still toasts for this group", async () => {
+    it("ADR-0006 branch 2, focused on a DIFFERENT group's screen still no toast", async () => {
       const { useFocusedGroupScreen } = require("@/stores/useFocusedGroupScreen");
       useFocusedGroupScreen.setState({ focusedGroupId: "some-other-group" });
       AppState.currentState = "active";
@@ -182,7 +183,8 @@ describe("useGroupRealtimeSync", () => {
 
       await fireChange("watchlist_entries", { eventType: "INSERT", new: { id: "we-1", group_id: "group-1" }, old: null });
 
-      expect(mockShowToast).toHaveBeenCalledWith("Neuer Film zur Watchlist hinzugefügt");
+      expect(mockInvalidateQueries).toHaveBeenCalled();
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
 
     it("ADR-0006 branch 3: app backgrounded -> no toast at all (parallel push task's job), but still invalidates", async () => {
@@ -199,7 +201,7 @@ describe("useGroupRealtimeSync", () => {
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 
-    it("toasts the payment-recorded copy when paid_at transitions null -> value, even off-screen", async () => {
+    it("invalidates without toast when paid_at transitions null -> value", async () => {
       AppState.currentState = "active";
 
       const { useGroupRealtimeSync } = loadHook();
@@ -211,7 +213,8 @@ describe("useGroupRealtimeSync", () => {
         old: { id: "we-1", group_id: "group-1", paid_at: null },
       });
 
-      expect(mockShowToast).toHaveBeenCalledWith("Eine Zahlung wurde erfasst");
+      expect(mockInvalidateQueries).toHaveBeenCalled();
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
 
     it("does not toast for a change classified as 'other' (e.g. a DELETE), even off-screen and foregrounded", async () => {
@@ -341,7 +344,7 @@ describe("useGroupRealtimeSync", () => {
       await fireChange("ratings", { eventType: "INSERT", new: { id: "r-1", watchlist_entry_id: "we-1" }, old: null });
 
       expect(mockInvalidateQueries).toHaveBeenCalledWith({ queryKey: queryKeys.watchlist.byGroup("group-1") });
-      expect(mockShowToast).toHaveBeenCalledWith("Jemand hat einen Film bewertet");
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
 
     it("does not toast a rating CORRECTION (UPDATE) even for a matching entry, but does invalidate", async () => {

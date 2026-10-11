@@ -16,11 +16,10 @@
  */
 
 /**
- * Toast look: `success` = green (saved / added), `error` = red (failures),
- * `info` = neutral accent (default, e.g. realtime hints, "coming soon").
+ * Toast look: `success` = green (saved / added, default), `error` = red (failures).
  * See docs/style-guide.md "Toasts".
  */
-export type ToastVariant = "success" | "error" | "info";
+export type ToastVariant = "success" | "error";
 
 export interface ToastOptions {
   variant?: ToastVariant;

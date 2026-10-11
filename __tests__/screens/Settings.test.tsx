@@ -291,14 +291,14 @@ describe("SettingsScreen", () => {
       expect(mockShowToast).not.toHaveBeenCalled();
     });
 
-    it("shows a 'Wird bald ergänzt' toast instead of opening a URL when the config still has the placeholder value", async () => {
+    it("does nothing (no URL, no toast) when the config still has the placeholder value", async () => {
       const SettingsScreen = loadSettingsScreen();
       const { getByTestId } = await render(<SettingsScreen />);
 
       await fireEvent.press(getByTestId("settings-section-privacy-policy"));
 
       expect(mockOpenURL).not.toHaveBeenCalled();
-      expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
 
     it("also gates the terms-of-service row on its own placeholder value", async () => {
@@ -308,7 +308,7 @@ describe("SettingsScreen", () => {
       await fireEvent.press(getByTestId("settings-section-terms-of-service"));
 
       expect(mockOpenURL).not.toHaveBeenCalled();
-      expect(mockShowToast).toHaveBeenCalledWith("Wird bald ergänzt");
+      expect(mockShowToast).not.toHaveBeenCalled();
     });
   });
   // Inventory 2.7 — data-source attributions: TMDB + Trakt with logos (JustWatch credit inside the TMDB text).
