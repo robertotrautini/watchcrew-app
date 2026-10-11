@@ -37,6 +37,10 @@
 //     that refilled NULL release dates (ADR 0005): batch re-check (24h TTL)
 //     of date-less films, writes `movies.release_date`; see
 //     ./release-date-refresh.ts.
+//   - kind: "refresh_movie" — fills gaps in (or force-refreshes) an EXISTING
+//     `movies` row from TMDB (de-DE + en-US title rule); service-role callers
+//     only; never creates rows. See ./movie-refresh.ts and
+//     docs/tmdb-proxy-refresh-contract.md.
 //
 // The freshness/TTL DECISION lives in ./freshness.ts as pure functions,
 // unit-tested separately with Deno.test. The actual TMDB/Trakt fetch calls
@@ -71,6 +75,8 @@ import {
 import { fetchTraktRelated } from "./trakt-client.ts";
 import { enrichRelatedWithPosters } from "./related-posters.ts";
 import { createSupabaseMovieUpsertDb, upsertMovie } from "./movie-upsert.ts";
+import { createSupabaseMovieRefreshDb, refreshMovie } from "./movie-refresh.ts";
+import { isServiceRoleRequest } from "./service-auth.ts";
 import { MAX_PROVIDERS_BATCH_SIZE, resolveProvidersBatch } from "./providers-cache.ts";
 import {
   MAX_RELEASE_DATE_BATCH_SIZE,
@@ -96,7 +102,8 @@ type ProxyKind =
   | "search_company"
   | "studio_movies"
   | "upsert_movie"
-  | "refresh_release_dates";
+  | "refresh_release_dates"
+  | "refresh_movie";
 
 interface ProxyRequestBody {
   kind: ProxyKind;
@@ -116,6 +123,8 @@ interface ProxyRequestBody {
    * real TMDB date" safety rule.
    */
   manualReleaseDate?: string;
+  /** `kind: "refresh_movie"` only: default true = fill empty fields only; false = force. */
+  fillGapsOnly?: boolean;
 }
 
 const VALID_KINDS: ProxyKind[] = [
@@ -138,6 +147,7 @@ const VALID_KINDS: ProxyKind[] = [
   "studio_movies",
   "upsert_movie",
   "refresh_release_dates",
+  "refresh_movie",
 ];
 
 function getSupabaseClient(): SupabaseClient {
@@ -534,6 +544,32 @@ Deno.serve(async (req: Request) => {
           },
         });
         return jsonResponse({ data }, 200);
+      }
+
+      case "refresh_movie": {
+        if (!isServiceRoleRequest(req, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"))) {
+          return jsonResponse({ error: "Service role required", code: "forbidden" }, 403);
+        }
+        if (typeof body.tmdbId !== "number" || !Number.isInteger(body.tmdbId) || body.tmdbId <= 0) {
+          return badRequest(
+            "Expected { tmdbId: number, kind: 'refresh_movie', fillGapsOnly?: boolean }",
+          );
+        }
+        if (body.fillGapsOnly !== undefined && typeof body.fillGapsOnly !== "boolean") {
+          return badRequest("Expected fillGapsOnly to be a boolean when provided");
+        }
+        const result = await refreshMovie(
+          body.tmdbId,
+          { db: createSupabaseMovieRefreshDb(supabase) },
+          { fillGapsOnly: body.fillGapsOnly },
+        );
+        if (result.status === "movie_not_found") {
+          return jsonResponse({ error: "Movie not found", code: "movie_not_found" }, 404);
+        }
+        if (result.status === "tmdb_not_found") {
+          return jsonResponse({ error: "TMDB does not know this id", code: "tmdb_not_found" }, 404);
+        }
+        return jsonResponse({ data: result }, 200);
       }
 
       default: {

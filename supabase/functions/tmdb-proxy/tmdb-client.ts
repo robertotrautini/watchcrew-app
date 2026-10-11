@@ -92,11 +92,22 @@ const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 /** Injectable JSON fetcher — tests supply a fake, production uses the default. */
 export type FetchJson = (url: string) => Promise<unknown>;
 
+/** Error for a non-2xx TMDB response; `status` lets callers tell "unknown id" (404) apart. */
+export class TmdbHttpError extends Error {
+  constructor(public readonly status: number, message: string) {
+    super(message);
+    this.name = "TmdbHttpError";
+  }
+}
+
 async function defaultFetchJson(url: string): Promise<unknown> {
   const res = await fetch(url);
   if (!res.ok) {
-    throw new Error(
-      `TMDB request failed: ${res.status} ${res.statusText} (${url})`,
+    // The URL contains the api_key query param -- keep it out of the message/logs.
+    const safeUrl = url.replace(/([?&])api_key=[^&]*/, "$1api_key=***");
+    throw new TmdbHttpError(
+      res.status,
+      `TMDB request failed: ${res.status} ${res.statusText} (${safeUrl})`,
     );
   }
   return res.json();
@@ -301,8 +312,12 @@ export interface TmdbCollectionRef {
   backdrop_path?: string | null;
 }
 
-interface RawTmdbMovieDetails {
+export interface RawTmdbMovieDetails {
   id: number;
+  // Needed for the title rule (isTranslatedTitle): TMDB answers a request in a
+  // language it has no translation for with the ORIGINAL title in `title`.
+  original_title?: string;
+  original_language?: string;
   // Added in M7 part 1 (see docs/interim-decisions.md) — title/overview/
   // poster_path/release_date were not needed by M6's "details" action
   // consumers (they already had these fields from elsewhere: the search
@@ -341,33 +356,95 @@ export interface NormalizedMovieDetails {
   genreIds: number[];
 }
 
-export async function fetchMovieDetails(
+// ---------------------------------------------------------------------------
+// Title rule (docs/tmdb-proxy-refresh-contract.md): German if TMDB has a real
+// German translation, else English, else the original title.
+//
+// TMDB behaviour (same signal the search merge uses, see mergeSearchResults):
+// when asked with `language=de-DE` for a movie without a German translation,
+// TMDB does not leave `title` empty -- it returns the ORIGINAL title. A title
+// is therefore "really translated" if it differs from `original_title`, or if
+// the movie's original language IS the requested language.
+// ---------------------------------------------------------------------------
+
+export type TitleSource = "de" | "en" | "original" | "none";
+
+/** Pure: true if `raw.title` is a genuine `lang` ("de" | "en") title, not TMDB's original-title fallback. */
+export function isTranslatedTitle(
+  raw: Pick<RawTmdbMovieDetails, "title" | "original_title" | "original_language"> | null | undefined,
+  lang: "de" | "en",
+): boolean {
+  const title = raw?.title?.trim();
+  if (!title) return false;
+  const original = raw?.original_title?.trim();
+  // No original info (older fixtures / partial responses): trust the title.
+  if (!original) return true;
+  return title !== original || raw?.original_language === lang;
+}
+
+/** Pure: German > English > original title. `en` may be null (not fetched/failed). */
+export function resolveMovieTitle(
+  de: Partial<RawTmdbMovieDetails> | null | undefined,
+  en: Partial<RawTmdbMovieDetails> | null | undefined,
+): { title: string | null; source: TitleSource } {
+  if (isTranslatedTitle(de, "de")) return { title: de!.title!.trim(), source: "de" };
+  if (isTranslatedTitle(en, "en")) return { title: en!.title!.trim(), source: "en" };
+  const original = [de?.original_title, de?.title, en?.original_title, en?.title]
+    .map((t) => t?.trim())
+    .find((t) => !!t);
+  return original ? { title: original, source: "original" } : { title: null, source: "none" };
+}
+
+/** Raw `/movie/{id}` response in the given TMDB language (e.g. "de-DE", "en-US"). */
+export async function fetchRawMovieDetails(
   tmdbId: number,
+  language: string,
   fetchJson: FetchJson = defaultFetchJson,
-): Promise<NormalizedMovieDetails> {
-  // M7 part 1 (see docs/interim-decisions.md): `language: "de-DE"` added so
-  // the new title/overview fields come back German-first, consistent with
-  // every other German-preferring action in this file (search, release
-  // dates, genre names). This was NOT previously set (M6 left it unset,
-  // i.e. whatever TMDB's default is) — the only observable effect on the
-  // existing `details` action is that `belongs_to_collection.name` may now
-  // read in German instead of the previous default language; runtime,
-  // genre IDs (mapped via the static table regardless of language), and
-  // vote_average are unaffected.
-  const url = buildUrl(`/movie/${tmdbId}`, { language: "de-DE" });
-  const raw = (await fetchJson(url)) as RawTmdbMovieDetails;
+): Promise<RawTmdbMovieDetails> {
+  const url = buildUrl(`/movie/${tmdbId}`, { language });
+  return (await fetchJson(url)) as RawTmdbMovieDetails;
+}
+
+/** Pure: maps a raw de-DE details response onto the normalized shape (title overridable). */
+export function normalizeMovieDetails(
+  raw: RawTmdbMovieDetails,
+  title: string | null = raw.title ?? null,
+): NormalizedMovieDetails {
   return {
     id: raw.id,
     runtime: raw.runtime ?? null,
     genres: mapGenreIds((raw.genres ?? []).map((g) => g.id)),
     belongs_to_collection: raw.belongs_to_collection ?? null,
     vote_average: raw.vote_average ?? null,
-    title: raw.title ?? null,
+    title,
     overview: raw.overview ?? null,
     posterPath: raw.poster_path ?? null,
     releaseDate: raw.release_date ?? null,
     genreIds: (raw.genres ?? []).map((g) => g.id),
   };
+}
+
+export async function fetchMovieDetails(
+  tmdbId: number,
+  fetchJson: FetchJson = defaultFetchJson,
+): Promise<NormalizedMovieDetails> {
+  // M7 part 1 (see docs/interim-decisions.md): `language: "de-DE"` so the
+  // title/overview fields come back German-first.
+  //
+  // EN fallback (2026-10-10, docs/interim-decisions.md): if TMDB has no real
+  // German title, a second request in en-US supplies the English title; if
+  // that has none either (or fails), the original title is used. Only `title`
+  // is affected -- the response shape is unchanged.
+  const de = await fetchRawMovieDetails(tmdbId, "de-DE", fetchJson);
+  let en: RawTmdbMovieDetails | null = null;
+  if (!isTranslatedTitle(de, "de")) {
+    try {
+      en = await fetchRawMovieDetails(tmdbId, "en-US", fetchJson);
+    } catch (error) {
+      console.warn(`en-US title fallback failed for tmdb_id ${tmdbId}`, (error as Error).message);
+    }
+  }
+  return normalizeMovieDetails(de, resolveMovieTitle(de, en).title);
 }
 
 // ---------------------------------------------------------------------------
