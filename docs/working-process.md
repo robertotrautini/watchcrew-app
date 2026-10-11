@@ -21,6 +21,13 @@ Wie wir an WatchCrew arbeiten. Zu Sitzungsbeginn lesen. Jede Änderung am Prozes
 10. **Meta-Regel:** Jede Prozessänderung wird sofort in `docs/working-process.md`, im Memory und (falls nötig) im Pointer in `CLAUDE.md` nachgezogen.
 11. **Reports:** Analyse-/Code-Health-Reports gehören ins Projekt (docs/), nicht nur nach /tmp: docs/code-health-report.html, docs/code-health-r-items.md. Fortschritt und Abschluss von Code-Health-Punkten (R1–R10) wird laufend in docs/code-health-r-items.md ("Fortschritt & Abschluss") dokumentiert; jede Charge aktualisiert Status-Tabelle und Protokoll.
 
+12. **Ressourcen (Pi, 8 GB RAM):** `jest` und `tsc` nie gleichzeitig starten (nacheinander). Pro Session höchstens ein Gesamtlauf parallel (kein zweiter jest-/tsc-/Maestro-Gesamtlauf, solange einer läuft). Jest läuft mit `maxWorkers: 2` und `workerIdleMemoryLimit: "700MB"` (package.json), weil der Pi sonst bei 3 Workern + tsc + Metro in den zram-Swap kippt. Speicher-/Lastverlauf: `~/logs/health-logger.sh`.
+
+## Pi-Stabilität
+
+- Offener User-Schritt: Journal persistent machen (`Storage=persistent`, siehe Abschnitt Autostart: `/etc/systemd/journald.conf.d/90-persistent.conf`, braucht einmalig sudo), damit nach Abstürzen die Logs des Vorgänger-Boots lesbar sind.
+- Health-Logger: `~/logs/health-logger.sh` protokolliert Speicher/Swap/Last; bei Reboots/Hängern zusammen mit `~/logs/crash-reports/` prüfen.
+
 ## Autostart after reboot
 
 - `~/.config/autostart/watchcrew.desktop` startet `scripts/boot-watchcrew.sh` (ersetzt den alten `filmkritiker.desktop`; Backup in `~/.config/autostart-backup/`).

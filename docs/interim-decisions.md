@@ -2597,6 +2597,8 @@ Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
 
 ## Spaltenkopf-Sortierung (Tagebuch/Watchlist Liste) und neuer Tagebuch-Default
 
+**UEBERHOLT (2026-10-11):** Die Spaltenkopf-Sortierung wurde wieder entfernt; der Tabellenkopf ist statisch, Sortierung nur ueber das Panel (siehe style-guide). Der Tagebuch-Default bleibt.
+
 **Entscheidung (Nutzerwunsch, 2026-10-10):** Tippen auf einen Spaltenkopf der Listenansicht sortiert: 1. Tipp aufsteigend, 2. absteigend, 3. aus (zurueck zur Sortierung des Filter-Panels); Pfeil-Icon (`sortAsc`/`sortDesc`, MaterialIcons arrow-upward/-downward) an der aktiven Spalte. Tagebuch-Default ist jetzt `rating` ("Beste Bewertung": Durchschnitt absteigend) statt `my_diary`; gespeicherte Werte (auch `my_diary`) bleiben gueltig, nur "nichts gespeichert" bekommt den neuen Default.
 
 **Details/Annahmen (von mir umgesetzt, Nutzer kann widersprechen):**

@@ -34,7 +34,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Settings: Streaming-Dienste | `settings-edit`, `tabs-tour` | settings, navigation | `settings-edit/11..14` | covered |
 | Settings: Darstellung | `settings-edit` | settings | `07..10` | covered |
 | Settings: Benachrichtigungen | `settings-edit` | settings | `15-notifications-screen` | partial (Screen ja, Toggle nein, s. unten) |
-| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-dialog` (ConfirmDialog-Flyout in den Einstellungen) | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
+| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-dialog` (Button unten neben Abmelden, ConfirmDialog-Flyout) | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
 | Gruppen-Einstellungen `group-settings` | `group-settings-edit`, `tabs-tour` | group-settings, navigation | `group-settings-edit/01..16` | covered |
 | Highlight-Farbe (Theme Rot-Tour, Blau-Stichprobe, Gold-Restore) | `theme-tour` | theme, design-system | `theme-tour/00..24` | covered (Gold-Restore via `onFlowComplete`) |
 | Datenquellen/Attributions (im Settings-Hub) | `tabs-tour` | navigation | `04-settings-hub` | partial (Anzeige; Links öffnen externen Browser) |
@@ -74,14 +74,14 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Filter-Leiste: Chips mit x (entfernbar) + "+ Filter"-Flyout (Genre mehrfach, Jahr, Streaming Meine Dienste + Flatrate/Leihen/Kaufen, Mag ich, Bewertungsstand), Entwurf bis "Anwenden", "Zurücksetzen" | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `11..21` / `15..26` | covered |
 | Kombination Filter + Sortierung (z. B. Genre-Chip + TMDB-/Titel-Sortierung) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `14` / `18` | covered (Reihenfolge der Liste nur visuell; Logik Jest-abgedeckt) |
 | Tagebuch-Scope "Mein Tagebuch" bzw. "Gruppe" | `tagebuch-filter-sort` | tagebuch | `05`, `06` | covered (Scope-Umschaltung; "Mein Tagebuch" = alle Gruppen inkl. Filme ohne Gruppen-Eintrag: nur Jest, kein Flow mit Zweitgruppe/gruppenlosem Film, offen) |
-| Listenkopf-Sortierung (Tippen auf Spaltenkopf: auf/ab/Standard, Pfeil; gleicher Zustand wie die Sortierzeile) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `24`, `25` / `29`, `30` | covered |
+| Listenkopf statisch (keine Sortierung per Spaltenkopf, Sortierung nur ueber das Panel; Tabelle = ein Container wie Tracker) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `24` / `29` | covered |
 | Ansichtsmodi Karten/Grid/Liste | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `22,23,26` / `27,28,31` | covered |
 | Detail: Bewertungen auf/zuklappen, Beschreibung, Besetzung | `movie-detail-full` | movie-detail | `02..04`, `07` | covered |
 | Detail: Anbieter-Liste (Provider) | `movie-detail-full` | movie-detail | `05`, `06` | partial (nur wenn Film Anbieter hat, sonst bedingt übersprungen) |
 | Detail: Trailer abspielen | - | - | - | not automatable (WebView/YouTube, externer Inhalt) |
 | Ähnliche Filme / Filmreihe / Regisseur- und Schauspieler-Filmografie | `movie-detail-full`, `movie-collection` | movie-detail | siehe oben | covered |
-| Anzeigename ändern (speichern + zurücksetzen) | `settings-edit` | settings | `02..04` | covered |
-| Darstellung-Toggles (Titel im Grid, Tracker aktiv) | `settings-edit` | settings | `07..10` | covered |
+| Anzeigename ändern per Flyout (Stift-Button, speichern + zurücksetzen) | `settings-edit` | settings | `02..04` | covered |
+| Darstellung-Toggles (Titel im Grid, Tracker aktiv) + Raster-Spalten 3\|4 (Tagebuch/Watchlist, Aehnliche/Filmsuche; Ende Standard 4 bzw. 3) | `settings-edit` | settings | `07..10`, `08b-display-grid-columns-3-4` | covered (Wirkung im Raster nur per Unit-Test + manuell) |
 | Streaming-Dienste wählen/Suche (Netflix an/aus) | `settings-edit` | settings | `11..14` | covered |
 | Benachrichtigungen an/aus | - | - | `settings-edit/15` | not automatable (OS-Permission-Dialog + Push-Token-Registrierung) |
 | Push-Benachrichtigungen empfangen/Tippen | - | - | - | not automatable (braucht Push-Auslöser von 2. Account) |
@@ -94,6 +94,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Mitglied entfernen (Icon-Button rechts in einzeiliger Mitgliederzeile; Kopfblock Name/Farbe oben entfernt, oben steht 'Deine Gruppen') | - | - | `group-settings-edit/01`, `14` (Mitgliederliste) | not automatable (2. Mitglied nötig, destruktiv) |
 | Einladungslink neu generieren (ConfirmDialog `group-settings-invite-regenerate-*`, invalidiert alten Link) | - | - | - | not automatable (invalidiert echten Link, destruktiv) |
 | Gruppe verlassen | `group-settings-edit` | group-settings | `15-leave-confirm`, `16-leave-cancelled` | partial (Bestätigung gezeigt, abgebrochen, destruktiv; Owner-Text mit Nachfolger-Name) |
+| Neue Gruppe anlegen (IconButton `group-settings-create-button` rechts vom Dropdown, Flyout `group-settings-create-dialog`) | `group-settings-edit` (nur Flyout öffnen + abbrechen) | group-settings | `01c-group-create-flyout` | partial (Anlegen nicht automatisiert, würde Testdaten verändern) |
 | Gruppe wechseln (Select-Dropdown) | `group-settings-edit` (nur auf/zu) | group-settings | `01`, `01b-group-dropdown-open` | partial (Auswahl nicht automatisierbar, nur 1 Gruppe) |
 | Konto löschen | `settings-edit` | settings | `05`, `06` | partial (nie bestätigt, destruktiv) |
 | Offline-Banner / Offline-Cache | `offline-banner` | offline-deeplinks | `01..03` | covered (Flugmodus an/aus) |
@@ -116,7 +117,7 @@ Bekannte Restspuren der Rating-Zyklen: Das flow-eigene Matrix (wird am Ende gel�
 Hinweis Flow-Technik: `scrollUntilVisible` stoppt bei teilweise verdecktem Element (feste Aktionsleiste unten im Filmdetail); Flows nutzen dort `centerElement: true` (movie-detail-full: Regie/Besetzung). Seed-Zustand der Testgruppe: siehe `.maestro/README.md` (Prerequisites).
 
 
-Hinweis Header (2026-10-10): `app-header-title` zeigt jetzt den Gruppennamen (Fallback Ansichtsname ohne Gruppe); `app-header-group` entfaellt (Platzhalter `app-header-spacer`). Kein Flow in `.maestro/flows` referenziert diese testIDs oder den Ansichtsnamen im Header; nicht per Maestro verifiziert.
+Hinweis Header (2026-10-11): Logo links (`app-header-brand-button`, Tap = naechste Gruppe), Gruppenname als reine Anzeige in der Mitte (`app-header-group`/`app-header-title`), Zahnrad rechts; `app-header-spacer` entfaellt. Einstellungen: Zeile "Aktuelle Gruppe" mit Dropdown `settings-active-group-select` (nicht per Maestro getappt: wuerde persistierte aktive Gruppe aendern). tabs-tour assertet weiterhin `app-header-brand-button` (unveraendert gueltig). Nicht per Maestro verifiziert.
 
 ## ADR 0014 Phase 1+2 (Bewertungen pro Nutzer und Film)
 

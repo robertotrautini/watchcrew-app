@@ -5,8 +5,8 @@ appId: com.watchcrew.app
 #   2. restore name "Robin" (second green toast)
 #   3. error toast (red): a 55-char name is rejected server-side by the
 #      set_display_name RPC (1..50 chars) -> nothing is written -> red toast
-#      "Anzeigename konnte nicht gespeichert werden."; the unsaved draft is
-#      then reset to "Robin" (never saved).
+#      "Anzeigename konnte nicht gespeichert werden."; the sheet stays open, the unsaved draft is
+#      then reset and the sheet cancelled to "Robin" (never saved).
 # Nothing is left changed. Screenshots show the toast (4 s visible).
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-tracker.yaml
@@ -19,12 +19,14 @@ appId: com.watchcrew.app
 
 # --- success (green) ---
 - tapOn:
-    id: "settings-user-display-name"
+    id: "settings-display-name-edit-button"
+- tapOn:
+    id: "settings-display-name-input"
 - eraseText
 - inputText: "Robin Toast"
 - hideKeyboard
 - tapOn:
-    id: "settings-display-name-save"
+    id: "settings-display-name-confirm-button"
 - extendedWaitUntil:
     visible:
       id: "toast-message"
@@ -34,31 +36,37 @@ appId: com.watchcrew.app
 
 # --- restore ---
 - tapOn:
-    id: "settings-user-display-name"
+    id: "settings-display-name-edit-button"
+- tapOn:
+    id: "settings-display-name-input"
 - eraseText
 - inputText: "Robin"
 - hideKeyboard
 - tapOn:
-    id: "settings-display-name-save"
+    id: "settings-display-name-confirm-button"
 - extendedWaitUntil:
     visible: "Anzeigename gespeichert"
     timeout: 10000
 
 # --- error (red): too long, rejected by the RPC, nothing written ---
 - tapOn:
-    id: "settings-user-display-name"
+    id: "settings-display-name-edit-button"
+- tapOn:
+    id: "settings-display-name-input"
 - eraseText
 - inputText: "Maestro Fehler Maestro Fehler Maestro Fehler Maestro Fe"
 - hideKeyboard
 - tapOn:
-    id: "settings-display-name-save"
+    id: "settings-display-name-confirm-button"
 - extendedWaitUntil:
     visible: "Anzeigename konnte nicht gespeichert werden."
     timeout: 15000
 - takeScreenshot: 02-toast-error-red
 - tapOn:
-    id: "settings-user-display-name"
+    id: "settings-display-name-input"
 - eraseText
 - inputText: "Robin"
 - hideKeyboard
 - takeScreenshot: 03-draft-reset
+- tapOn:
+    id: "settings-display-name-cancel-button"

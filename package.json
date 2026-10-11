@@ -70,6 +70,8 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "maxWorkers": 2,
+    "workerIdleMemoryLimit": "700MB",
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/__mocks__/styleMock.js"
     },
