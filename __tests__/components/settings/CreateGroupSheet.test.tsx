@@ -66,6 +66,9 @@ describe("CreateGroupSheet", () => {
     await fireEvent.changeText(r.getByTestId(`${P}-name-input`), "Weg");
     await fireEvent.press(r.getByTestId(`${P}-cancel-button`));
     expect(onCancel).toHaveBeenCalledTimes(1);
+    // The parent closes the sheet; reopening mounts a fresh draft.
+    await r.rerender(<CreateGroupSheet visible={false} onCancel={onCancel} onCreate={jest.fn()} />);
+    await r.rerender(<CreateGroupSheet visible onCancel={onCancel} onCreate={jest.fn()} />);
     expect(r.getByTestId(`${P}-name-input`).props.value).toBe("");
   });
 

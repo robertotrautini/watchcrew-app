@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { DateField } from "@/components/ui/DateField";
-import { Sheet } from "@/components/ui/Sheet";
+import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import type { GroupMemberRow } from "@/lib/groups";
 import {
@@ -58,37 +57,32 @@ function todayIso(now: Date): string {
   return toLocalIsoDate(now);
 }
 
-export function PaymentModal({
-  visible,
+export function PaymentModal({ visible, onClose, ...formProps }: PaymentModalProps) {
+  return (
+    <DraftSheet visible={visible} onCancel={onClose} title="Zahlung erfassen">
+      <PaymentForm onClose={onClose} {...formProps} />
+    </DraftSheet>
+  );
+}
+
+function PaymentForm({
   onClose,
   groupId,
   entries,
   groupMembers,
-  displayNameById,
   now,
   onSaved,
-}: PaymentModalProps) {
+}: Omit<PaymentModalProps, "visible"> & { onClose: () => void }) {
   const effectiveNow = now ?? new Date();
 
+  // The draft starts fresh on every open (DraftSheet mounts this form anew).
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
-  const [selectedPayerId, setSelectedPayerId] = useState<string | null>(null);
+  const [selectedPayerId, setSelectedPayerId] = useState<string | null>(() =>
+    computeNextPayer(groupMembers, entries),
+  );
   const [dateInput, setDateInput] = useState<string>(todayIso(effectiveNow));
 
   const setPaymentMutation = useSetPayment();
-
-  // Re-derive the draft every time the modal transitions to visible --
-  // same "don't leak a stale draft across open/close cycles" convention as
-  // RatingDialog.tsx.
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
-    setSelectedEntryId(null);
-    setSelectedPayerId(computeNextPayer(groupMembers, entries));
-    setDateInput(todayIso(effectiveNow));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
 
   const unpaidEntries = getUnpaidDiaryEntries(entries);
   const movieOptions = unpaidEntries.map((entry) => ({
@@ -140,56 +134,52 @@ export function PaymentModal({
   }
 
   return (
-    <Sheet visible={visible} onClose={onClose} title="Zahlung erfassen">
-      <View testID="payment-modal" className="gap-3">
-        <View className="gap-2">
-          <Text className="text-text-secondary">Film</Text>
-          <Select
-            testID="payment-modal-movie-select"
-            searchable
-            autoFocusSearch={false}
-            defaultOptions={recentMovieOptions}
-            options={movieOptions}
-            value={selectedEntryId}
-            onChange={setSelectedEntryId}
-            placeholder="Film wählen"
-            searchPlaceholder="Film suchen…"
-            emptyText="Keine unbezahlten Filme gefunden."
-          />
-        </View>
-
-        <View className="gap-2">
-          <Text className="text-text-secondary">Wer hat bezahlt?</Text>
-          <Select
-            testID="payment-modal-payer-select"
-            accessibilityLabel="Wer hat bezahlt?"
-            options={payerOptions}
-            value={selectedPayerId}
-            onChange={setSelectedPayerId}
-            placeholder="Person wählen"
-          />
-        </View>
-
-        <View className="gap-2">
-          <Text className="text-text-secondary">Bezahlt am</Text>
-          <DateField
-            testID="payment-modal-date-field"
-            valueIso={dateInput || null}
-            displayText={formatDateForInput(dateInput)}
-            placeholder="Datum wählen"
-            onChangeIso={setDateInput}
-          />
-        </View>
-
-        <Button
-          testID="payment-modal-save-button"
-          label="Speichern"
-          icon="save"
-          disabled={!canSave}
-          loading={setPaymentMutation.isPending}
-          onPress={handleSave}
+    <DraftSheetForm
+      testID="payment-modal"
+      cancelLabel={null}
+      confirmTestID="payment-modal-save-button"
+      onSave={handleSave}
+      saveDisabled={!canSave}
+      loading={setPaymentMutation.isPending}
+    >
+      <View className="gap-2">
+        <Text className="text-text-secondary">Film</Text>
+        <Select
+          testID="payment-modal-movie-select"
+          searchable
+          autoFocusSearch={false}
+          defaultOptions={recentMovieOptions}
+          options={movieOptions}
+          value={selectedEntryId}
+          onChange={setSelectedEntryId}
+          placeholder="Film wählen"
+          searchPlaceholder="Film suchen…"
+          emptyText="Keine unbezahlten Filme gefunden."
         />
       </View>
-    </Sheet>
+
+      <View className="gap-2">
+        <Text className="text-text-secondary">Wer hat bezahlt?</Text>
+        <Select
+          testID="payment-modal-payer-select"
+          accessibilityLabel="Wer hat bezahlt?"
+          options={payerOptions}
+          value={selectedPayerId}
+          onChange={setSelectedPayerId}
+          placeholder="Person wählen"
+        />
+      </View>
+
+      <View className="gap-2">
+        <Text className="text-text-secondary">Bezahlt am</Text>
+        <DateField
+          testID="payment-modal-date-field"
+          valueIso={dateInput || null}
+          displayText={formatDateForInput(dateInput)}
+          placeholder="Datum wählen"
+          onChangeIso={setDateInput}
+        />
+      </View>
+    </DraftSheetForm>
   );
 }

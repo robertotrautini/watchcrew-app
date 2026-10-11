@@ -2,10 +2,9 @@ import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
-import { Button } from "@/components/ui/Button";
 import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Icon } from "@/components/ui/Icon";
-import { Sheet } from "@/components/ui/Sheet";
+import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
 import { Text, TextInput } from "@/components/ui/Text";
 import {
   DEFAULT_GROUP_THEME,
@@ -32,88 +31,79 @@ export function CreateGroupSheet({
   onCancel,
   onCreate,
 }: CreateGroupSheetProps) {
+  return (
+    <DraftSheet visible={visible} onCancel={onCancel} title="Neue Gruppe anlegen">
+      <CreateGroupForm loading={loading} onCreate={onCreate} />
+    </DraftSheet>
+  );
+}
+
+function CreateGroupForm({
+  loading,
+  onCreate,
+}: Pick<CreateGroupSheetProps, "onCreate"> & { loading: boolean }) {
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<GroupThemeName>(DEFAULT_GROUP_THEME);
   const selectedAccent = resolveGroupTheme(theme).colors.accent;
   const isValid = name.trim().length > 0;
 
-  function reset() {
-    setName("");
-    setTheme(DEFAULT_GROUP_THEME);
-  }
-
-  function handleCancel() {
-    reset();
-    onCancel();
-  }
-
   function handleCreate() {
     if (!isValid || loading) {
       return;
     }
+    // The caller closes the sheet on success; on error the draft (input) stays.
     onCreate({ name: name.trim(), theme });
-    // Draft survives until the caller closes the sheet (error keeps input).
   }
 
   return (
-    <Sheet visible={visible} onClose={handleCancel} title="Neue Gruppe anlegen">
-      <View testID={`${TEST_ID}-dialog`} className="gap-4">
-        <TextInput
-          testID={`${TEST_ID}-name-input`}
-          value={name}
-          onChangeText={setName}
-          placeholder="Gruppenname"
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
-        />
-        <Text className="text-text-secondary">Farbthema</Text>
-        <View className="flex-row flex-wrap gap-3">
-          {GROUP_THEME_OPTIONS.map((themeName) => {
-            const { colors } = resolveGroupTheme(themeName);
-            const isSelected = theme === themeName;
-            return (
-              <Pressable
-                key={themeName}
-                testID={`${TEST_ID}-theme-${themeName}`}
-                accessibilityRole="button"
-                accessibilityLabel={GROUP_THEME_LABELS[themeName]}
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => setTheme(themeName)}
-                className="h-touch-comfortable w-touch-comfortable items-center justify-center"
-              >
-                <Icon name="swatch" size="L" color={colors.accent} />
-                {isSelected ? (
-                  <Icon
-                    name="selected"
-                    size="S"
-                    color={selectedAccent}
-                    className="absolute -right-1 -top-1"
-                  />
-                ) : null}
-              </Pressable>
-            );
-          })}
-        </View>
-        <View testID={`${TEST_ID}-actions`} className="flex-row gap-3">
-          <Button
-            testID={`${TEST_ID}-cancel-button`}
-            label="Abbrechen"
-            icon="close"
-            variant="secondary"
-            className="flex-1"
-            onPress={handleCancel}
-          />
-          <Button
-            testID={`${TEST_ID}-confirm-button`}
-            label="Anlegen"
-            icon="add"
-            className="flex-1"
-            loading={loading}
-            disabled={!isValid}
-            onPress={handleCreate}
-          />
-        </View>
+    <DraftSheetForm
+      testID={`${TEST_ID}-dialog`}
+      className="gap-4"
+      actionsTestID={`${TEST_ID}-actions`}
+      cancelTestID={`${TEST_ID}-cancel-button`}
+      confirmTestID={`${TEST_ID}-confirm-button`}
+      saveLabel="Anlegen"
+      saveIcon="add"
+      saveDisabled={!isValid}
+      loading={loading}
+      onSave={handleCreate}
+    >
+      <TextInput
+        testID={`${TEST_ID}-name-input`}
+        value={name}
+        onChangeText={setName}
+        placeholder="Gruppenname"
+        placeholderTextColor={PLACEHOLDER_COLOR}
+        className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+      />
+      <Text className="text-text-secondary">Farbthema</Text>
+      <View className="flex-row flex-wrap gap-3">
+        {GROUP_THEME_OPTIONS.map((themeName) => {
+          const { colors } = resolveGroupTheme(themeName);
+          const isSelected = theme === themeName;
+          return (
+            <Pressable
+              key={themeName}
+              testID={`${TEST_ID}-theme-${themeName}`}
+              accessibilityRole="button"
+              accessibilityLabel={GROUP_THEME_LABELS[themeName]}
+              accessibilityState={{ selected: isSelected }}
+              onPress={() => setTheme(themeName)}
+              className="h-touch-comfortable w-touch-comfortable items-center justify-center"
+            >
+              <Icon name="swatch" size="L" color={colors.accent} />
+              {isSelected ? (
+                <Icon
+                  name="selected"
+                  size="S"
+                  color={selectedAccent}
+                  className="absolute -right-1 -top-1"
+                />
+              ) : null}
+            </Pressable>
+          );
+        })}
       </View>
-    </Sheet>
+    </DraftSheetForm>
   );
 }

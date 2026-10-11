@@ -99,6 +99,14 @@ Gemeinsame Tokens in `Button.tsx`: `DANGER_SURFACE_CLASSNAME` (`bg-danger/15 bor
 - testIDs aus dem Prefix `testID`: `<id>-dialog`, `<id>-description`, `<id>-actions`, `<id>-cancel-button`, `<id>-confirm-button`. Optionale `children` (z. B. Eingabe 'LOESCHEN' beim Konto loeschen, mit `confirmDisabled`).
 - Einsatz: Film aus Watchlist/Tagebuch entfernen (`movie-detail-delete`), Zahlung loeschen (`tracker-entry-sheet-delete`), Bewertung loeschen (`rating-dialog-delete`, erst beim Speichern), Mitglied entfernen (`group-settings-member-<id>-remove`), Gruppe verlassen (`group-settings-leave`), Einladungslink neu generieren (`group-settings-invite-regenerate`), Konto loeschen (`delete-account`).
 - Flyouts halten ALLE Aenderungen als lokalen Entwurf; erst `Speichern` persistiert, `Abbrechen`/Backdrop/Zurueck verwerfen (Rating-Dialog inkl. Reset, Tracker-Eintrag, Zahlung, Erscheinungsdatum).
+
+## Sheets mit Entwurf: immer `DraftSheet`
+
+- Jedes Flyout mit Entwurf (Eingaben aendern nur lokalen Zustand, `Speichern` persistiert, `Abbrechen`/Backdrop/Zurueck verwerfen) nutzt `src/components/ui/DraftSheet.tsx` (Basis `ui/Sheet`, gerade Oberkante, schwarz). Kein eigenes Sheet + Button-Reihe, kein Effekt zum Zuruecksetzen (`react-hooks/set-state-in-effect`).
+- Zwei Teile: `DraftSheet` (Huelle: `visible`, `title`, `onCancel`, optional `resetKey`) und darin `DraftSheetForm` (Formularcontainer + Fusszeile: `onSave`, `saveDisabled`, `loading`, `saveLabel`/`saveIcon`, `cancelLabel` (`null` = ohne Abbrechen), `error`/`errorTestID`, `cancelTestID`/`confirmTestID`/`actionsTestID`, `extraAction` ganz rechts fuer Destruktives). Reihenfolge: `Abbrechen` links, `Speichern` rechts, Destruktives zuletzt.
+- Der Entwurf (`useState`) lebt in einer eigenen Form-Komponente als Kind von `DraftSheet`. Sie wird bei jedem Oeffnen frisch gemountet (`Sheet` rendert im geschlossenen Zustand nichts) und bei `resetKey`-Wechsel per `key` neu; wer Zustand ausserhalb braucht (z. B. ConfirmDialog), mountet die ganze Komponente nur bei `visible` bzw. per `key` (Beispiele: `RatingDialog`, `TrackerEntrySheet`).
+- `onSave` liefert `true` (oder Promise<true>) = Erfolg: `onCancel` schliesst. `false`/`undefined`/Fehler = bleibt offen (Mutation mit eigenen Callbacks schliesst selbst). `loading` kommt aus der Mutation, die Form trackt zusaetzlich ein haengendes Promise.
+- Nutzer: `RatingDialog`, `PaymentModal`, `TrackerEntrySheet`, `MovieDetailReleaseDateSheet`, `CreateGroupSheet`, `DisplayNameSheet` (`src/components/settings/`). `ConfirmDialog` und `EntryFilterFlyout` (Anwenden/Zuruecksetzen) sind andere Muster.
 - Maestro: ConfirmDialogs werden gescreenshottet und abgebrochen (ausser bei flow-eigenen Daten).
 
 ## Aktionsreihen: Löschen immer rechts/zuletzt

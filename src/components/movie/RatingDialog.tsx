@@ -1,14 +1,14 @@
 import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
 
 import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { DateField } from "@/components/ui/DateField";
-import { Sheet } from "@/components/ui/Sheet";
+import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
 import { StarRating } from "@/components/ui/StarRating";
 import { useDirectRate } from "@/hooks/useDirectRate";
 import { useResetRating, useSaveRating } from "@/hooks/useSaveRating";
@@ -26,7 +26,6 @@ import { toLocalIsoDate } from "@/lib/localDate";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { Button } from "@/components/ui/Button";
 
 /**
  * M7 part 2b: the shared Rating-Dialog, used for all three contexts named
@@ -135,8 +134,20 @@ function initialManualDateInput(ownRating: Rating | null): string {
   return formatDateForInput(toLocalIsoDate(new Date()));
 }
 
-export function RatingDialog({
-  visible,
+/**
+ * The draft is mounted only while the dialog is open (and per entry), so every open starts from
+ * the current props -- interim decision (docs/interim-decisions.md "M7 Teil 2b"): the local
+ * draft is NOT preserved across open/close cycles (opening it for another movie right after
+ * closing it for one must not leak the previous draft).
+ */
+export function RatingDialog(props: RatingDialogProps) {
+  if (!props.visible) {
+    return null;
+  }
+  return <RatingDialogBody key={props.watchlistEntryId} {...props} />;
+}
+
+function RatingDialogBody({
   onClose,
   mode,
   groupId,
@@ -185,27 +196,6 @@ export function RatingDialog({
   const saveMutation = useSaveRating();
   const resetMutation = useResetRating();
   const directMutation = useDirectRate();
-
-  // Re-sync the draft to the current props every time the dialog transitions
-  // to visible -- interim decision (docs/interim-decisions.md "M7 Teil
-  // 2b"): the dialog's local draft state is NOT preserved across
-  // open/close cycles (e.g. opening it for a different movie right after
-  // closing it for another must not leak the previous draft).
-  useEffect(() => {
-    if (!visible) {
-      return;
-    }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- draft reset on open must stay effect-timed
-    setRating(ownRating?.rating ?? null);
-    setLiked(ownRating?.liked ?? false);
-    setSeenAtMode(initialSeenAtMode(ownRating));
-    setManualDateInput(initialManualDateInput(ownRating));
-    setSelectedPayerId(paidByMemberId);
-    setPaymentDateInput(initialPaymentDateInput(paidAt));
-    setMarkedForDelete(false);
-    setDeleteConfirmVisible(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, watchlistEntryId]);
 
   // Group section: every OTHER member (also those who have not rated yet, shown with empty
   // stars like the legacy dialog); falls back to the raw rating rows when no member list is given.
@@ -391,8 +381,19 @@ export function RatingDialog({
 
   return (
     <>
-      <Sheet visible={visible} onClose={onClose} title={SHEET_TITLES[mode]}>
-        <View testID="rating-dialog" className="gap-4">
+      <DraftSheet visible onCancel={onClose} title={SHEET_TITLES[mode]}>
+        <DraftSheetForm
+          testID="rating-dialog"
+          className="gap-4"
+          cancelTestID="rating-dialog-cancel-button"
+          confirmTestID="rating-dialog-save-button"
+          saveClassName="flex-[1.6]"
+          loading={
+            (saveMutation.isPending || directMutation.isPending) &&
+            !deleteConfirmVisible
+          }
+          onSave={handleSave}
+        >
           <Text className={`text-lg ${MOVIE_TITLE_FONT} text-accent-light`}>
             {movieTitle}
           </Text>
@@ -524,28 +525,8 @@ export function RatingDialog({
               ) : null}
             </View>
           ) : null}
-
-          <View className="flex-row gap-3">
-            <Button
-              testID="rating-dialog-cancel-button"
-              variant="secondary"
-              className="flex-1"
-              label="Abbrechen"
-              icon="close"
-              onPress={onClose}
-            />
-            <Button
-              testID="rating-dialog-save-button"
-              variant="primary"
-              className="flex-[1.6]"
-              loading={(saveMutation.isPending || directMutation.isPending) && !deleteConfirmVisible}
-              label="Speichern"
-              icon="save"
-              onPress={handleSave}
-            />
-          </View>
-        </View>
-      </Sheet>
+        </DraftSheetForm>
+      </DraftSheet>
       <ConfirmDialog
         visible={deleteConfirmVisible}
         testID="rating-dialog-delete"

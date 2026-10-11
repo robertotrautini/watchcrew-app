@@ -1,4 +1,3 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import Constants from "expo-constants";
 import { useParallaxScroll } from "@/components/parallaxContext";
@@ -9,26 +8,24 @@ import { View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
 
 import { DataSourceAttributions } from "@/components/settings/DataSourceAttributions";
+import { DisplayNameSheet } from "@/components/settings/DisplayNameSheet";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import {
   Button,
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SURFACE_INPUT_CLASSNAME, SURFACE_EDGE } from "@/components/ui/Surface";
+import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Select } from "@/components/ui/Select";
-import { Sheet } from "@/components/ui/Sheet";
 import { SettingsRow } from "@/components/ui/SettingsRow";
 import { useGroupQuickSwitch } from "@/hooks/useGroupQuickSwitch";
 import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
-import { useUpdateDisplayName } from "@/hooks/useUpdateDisplayName";
 import { signOut } from "@/lib/auth";
 import { deleteOwnAccount } from "@/lib/deleteAccount";
 import * as Haptics from "expo-haptics";
 import { openLegalUrl } from "@/lib/legalLinks";
-import { showToast } from "@/lib/toast";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
@@ -97,40 +94,13 @@ export default function SettingsScreen() {
   const currentUserId = useCurrentUserId();
   const email = useCurrentUserEmail();
   const ownProfileQuery = useOwnProfile(currentUserId);
-  const updateDisplayName = useUpdateDisplayName();
   const { activeGroupId, groups, selectGroup } = useGroupQuickSwitch();
 
   const [displaySheetVisible, setDisplaySheetVisible] = useState(false);
-  const [displayNameDraft, setDisplayNameDraft] = useState("");
-  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
-
   const storedDisplayName = ownProfileQuery.data?.display_name ?? "";
-  const displayNameTrimmed = displayNameDraft.trim();
-  const displayNameChanged =
-    displayNameTrimmed.length > 0 && displayNameTrimmed !== storedDisplayName;
 
   function openDisplayNameSheet() {
-    setDisplayNameDraft(storedDisplayName);
-    setDisplayNameError(null);
     setDisplaySheetVisible(true);
-  }
-
-  async function handleSaveDisplayName() {
-    if (displayNameTrimmed.length === 0) {
-      setDisplayNameError("Bitte gib einen Anzeigenamen ein.");
-      return;
-    }
-    setDisplayNameError(null);
-    try {
-      await updateDisplayName.mutateAsync(displayNameTrimmed);
-      setDisplaySheetVisible(false);
-      showToast("Anzeigename gespeichert", { variant: "success" });
-    } catch {
-      setDisplayNameError("Anzeigename konnte nicht gespeichert werden.");
-      showToast("Anzeigename konnte nicht gespeichert werden.", {
-        variant: "error",
-      });
-    }
   }
 
   const selectedStreamingProviderIds = usePreferencesStore(
@@ -312,51 +282,11 @@ export default function SettingsScreen() {
         </Text>
       </KeyboardAwareScrollView>
 
-      <Sheet
+      <DisplayNameSheet
         visible={displaySheetVisible}
         onClose={() => setDisplaySheetVisible(false)}
-        title="Anzeigename bearbeiten"
-      >
-        <View testID="settings-display-name-sheet" className="gap-3">
-          <Text className="text-sm text-text-secondary">Anzeigename</Text>
-          <TextInput
-            testID="settings-display-name-input"
-            value={displayNameDraft}
-            onChangeText={setDisplayNameDraft}
-            autoCapitalize="words"
-            placeholder="Anzeigename"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={SURFACE_INPUT_CLASSNAME}
-          />
-          {displayNameError ? (
-            <Text
-              className="text-sm text-danger"
-              testID="settings-display-name-error"
-            >
-              {displayNameError}
-            </Text>
-          ) : null}
-          <View className="flex-row gap-3">
-            <Button
-              testID="settings-display-name-cancel-button"
-              label="Abbrechen"
-              icon="close"
-              variant="secondary"
-              className="flex-1"
-              onPress={() => setDisplaySheetVisible(false)}
-            />
-            <Button
-              testID="settings-display-name-confirm-button"
-              label="Speichern"
-              icon="save"
-              className="flex-1"
-              disabled={!displayNameChanged}
-              loading={updateDisplayName.isPending}
-              onPress={handleSaveDisplayName}
-            />
-          </View>
-        </View>
-      </Sheet>
+        storedDisplayName={storedDisplayName}
+      />
 
       <ConfirmDialog
         visible={deleteDialogVisible}

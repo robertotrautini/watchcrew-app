@@ -108,7 +108,6 @@ export default function GroupSettingsScreen() {
   const leaveGroupMutation = useLeaveGroup();
   const createGroupMutation = useCreateGroup();
   const [createVisible, setCreateVisible] = useState(false);
-  const [createSheetKey, setCreateSheetKey] = useState(0);
 
   const [switchOpen, setSwitchOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -214,7 +213,6 @@ export default function GroupSettingsScreen() {
     createGroupMutation.mutate(params, {
       onSuccess: (result) => {
         setCreateVisible(false);
-        setCreateSheetKey((key) => key + 1); // fresh draft next time
         if (result?.groupId) {
           setActiveGroup(result.groupId);
         }
@@ -604,7 +602,6 @@ export default function GroupSettingsScreen() {
         onConfirm={handleConfirmLeave}
       />
       <CreateGroupSheet
-        key={createSheetKey}
         visible={createVisible}
         loading={createGroupMutation.isPending}
         onCancel={() => setCreateVisible(false)}

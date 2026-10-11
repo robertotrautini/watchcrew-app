@@ -88,6 +88,8 @@ Aufwand: S < 0,5 Tag, M ca. 1 Tag, L > 1 Tag. Testrisiko: Hoch/Mittel/Niedrig. "
 
 ### P-E Gemeinsames DraftSheet (Entwurf/Abbrechen/Speichern)
 
+**Status: erledigt 2026-10-11.** `ui/DraftSheet.tsx` (180 Z., `DraftSheet` + `DraftSheetForm`, Remount statt Effekt-Reset, Entscheidung 4: `key`). Umgestellt: RatingDialog, PaymentModal, TrackerEntrySheet, MovieDetailReleaseDateSheet, CreateGroupSheet; neu `settings/DisplayNameSheet.tsx` (84 Z.) aus `settings.tsx`. `EntryFilterFlyout` geprueft, anderes Muster (Anwenden/Zuruecksetzen), nicht umgestellt. Zeilen vorher/nachher der betroffenen Dateien: 1554 auf 1525 (-29; Rating 560 auf 541, Payment 195 auf 185, Tracker 174 auf 187, Release 109 auf 92, Create 119 auf 109, settings 397 auf 327, plus DisplayNameSheet 84), `group-settings.tsx` -3 (`createSheetKey` entfallen). Mit der neuen Basis (180) netto +151: die Plan-Schaetzung 60-100 Zeilen Ersparnis wurde nicht erreicht, Gewinn ist ein Muster und kein Effekt-Reset mehr. 4 `eslint-disable react-hooks/set-state-in-effect` entfernt (Rating, Payment, Tracker, Release); 3 bleiben bewusst (`group-settings.tsx` x2: Namens-Sync, kein Sheet; `usePushPermissionStatus.ts`: async Lookup). Neuer Test `DraftSheet.test.tsx` (15 Tests). Payment/Tracker haben unveraendert KEIN Abbrechen (Optik identisch).
+
 | Feld | Inhalt |
 |---|---|
 | Ziel | Das Muster "Entwurf beim Öffnen zurücksetzen, Footer Abbrechen/Speichern, Loading, Fehler-Toast" einmal bauen; 8 `eslint-disable` fallen weg |
