@@ -23,7 +23,7 @@ function makeMovie(overrides: Partial<Movie> = {}): Movie {
   };
 }
 
-function lookup(entries: Array<[number, boolean]> = []): StreamingAvailabilityLookup {
+function lookup(entries: [number, boolean][] = []): StreamingAvailabilityLookup {
   return new Map(entries);
 }
 
@@ -139,7 +139,7 @@ describe("WatchlistPosterCard", () => {
         />,
       );
 
-      // Only the content dims; the glass surface (blur + tint) stays untouched.
+      // Only the content dims; the surface (blur + tint) stays untouched.
       expect(getByTestId("watchlist-poster-card").props.className).not.toContain("opacity-50");
       expect(getByTestId("watchlist-poster-card-content").props.className).toContain("opacity-50");
     });

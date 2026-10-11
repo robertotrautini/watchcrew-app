@@ -5,7 +5,7 @@
 // unit-testable as a navigator (that's the interim web visual check's job),
 // but the exported TAB_SCREENS data it renders from is a plain, testable
 // regression guard for "exactly these tabs, no more, no less".
-import { TAB_SCREENS } from "../../src/app/(app)/(tabs)/_layout";
+import { TAB_SCREENS, getTabScreens, getInitialTabName } from "../../src/app/(app)/(tabs)/_layout";
 
 describe("(app)/(tabs) TAB_SCREENS", () => {
   it("contains exactly Tracker, Watchlist, Tagebuch, in that order", () => {
@@ -36,7 +36,6 @@ describe("(app)/(tabs) tab icons", () => {
 
 // Per-device "Tracker aktiv" flag (inventory 4.12): hidden tab stays a
 // registered route (href: null) so deep links / the file route don't break.
-import { getTabScreens, getInitialTabName } from "../../src/app/(app)/(tabs)/_layout";
 
 describe("(app)/(tabs) tracker feature flag", () => {
   it("shows all three tabs when the tracker is enabled", () => {

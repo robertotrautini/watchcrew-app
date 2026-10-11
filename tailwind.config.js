@@ -23,21 +23,21 @@ module.exports = {
       colors: {
         // Static (non-group-dependent) colors.
         "bg-primary": "#0a0a0a",
-        // Glass tokens (flat dark glass, no blur): LIGHTENED
+        // Surface tokens (flat dark surface, no blur): LIGHTENED
         // translucent fills + a clearly visible hairline border so surfaces
         // stand off from the dark background photo. Single source of truth.
         "bg-card": "rgba(10,10,12,.72)",
-        "bg-glass": "rgba(10,10,12,.78)",
-        "bg-glass-strong": "rgba(10,10,12,.82)",
+        "bg-surface": "rgba(10,10,12,.78)",
+        "bg-surface-strong": "rgba(10,10,12,.82)",
         // Sheet / bottom bars / tab bar / toast: translucent panel, dark tint
         // keeps text legible, photo still shows through.
         "bg-sheet": "rgba(12,12,14,.96)",
         "bg-tab-bar": "rgba(12,12,14,.96)",
-        // Flat dark list-item fill (`GLASS_FLAT_FILL` in Glass.tsx, used by every glass surface, no blur).
+        // Flat dark list-item fill (`SURFACE_FILL` in Surface.tsx, used by every surface, no blur).
         "bg-card-flat": "rgba(10,10,12,.95)",
         // Flat Material border (docs/style-guide.md): one uniform, subtle
         // 1px hairline for every surface (cards, buttons, inputs, sheets).
-        "glass-border": "rgba(255,255,255,.10)",
+        "surface-border": "rgba(255,255,255,.10)",
         "danger-text": "#e5675a",
         "bg-autocomplete": "rgba(12,12,12,.97)",
         "text-primary": "#e8e8e8",

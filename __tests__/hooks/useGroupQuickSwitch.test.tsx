@@ -5,7 +5,7 @@ import { showToast } from "@/lib/toast";
 
 const mockSetActiveGroup = jest.fn();
 let mockActive: string | undefined = "g1";
-let mockGroups: Array<{ group_id: string }> = [{ group_id: "g1" }, { group_id: "g2" }];
+let mockGroups: { group_id: string }[] = [{ group_id: "g1" }, { group_id: "g2" }];
 
 jest.mock("@/hooks/useCurrentUserId", () => ({ useCurrentUserId: () => "u1" }));
 jest.mock("@/hooks/useActiveGroup", () => ({

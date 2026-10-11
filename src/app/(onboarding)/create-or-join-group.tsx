@@ -9,7 +9,7 @@ import { router } from "expo-router";
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
 import { Card } from "@/components/ui/Card";
-import { GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import {
   DEFAULT_GROUP_THEME,
   GROUP_THEME_LABELS,
@@ -212,7 +212,7 @@ export default function CreateOrJoinGroupScreen() {
             onChangeText={setGroupName}
             placeholder="Gruppenname"
             placeholderTextColor={PLACEHOLDER_COLOR}
-            className={GLASS_INPUT_CLASSNAME}
+            className={SURFACE_INPUT_CLASSNAME}
           />
 
           <Text className="text-text-secondary">Farbthema</Text>
@@ -288,7 +288,7 @@ export default function CreateOrJoinGroupScreen() {
             onChangeText={setGroupCode}
             placeholder="Einladungscode / Gruppen-ID"
             placeholderTextColor={PLACEHOLDER_COLOR}
-            className={GLASS_INPUT_CLASSNAME}
+            className={SURFACE_INPUT_CLASSNAME}
           />
 
           {joinError ? (

@@ -11,7 +11,7 @@ import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { useProvidersList } from "@/hooks/useProvidersList";
 import type { TmdbProviderRef } from "@/lib/tmdbProxy";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
-import { GLASS_EDGE, GLASS_INSET_EDGE } from "@/components/ui/Glass";
+import { SURFACE_EDGE } from "@/components/ui/Surface";
 import {
   CHIP_ACTIVE_CLASSNAME,
   CHIP_INACTIVE_CLASSNAME,
@@ -102,7 +102,7 @@ export default function SettingsStreamingServicesScreen() {
       <View className="px-4 pt-4">
         <TextInput
           testID="settings-streaming-search-input"
-          className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+          className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
           placeholder="Suchen…"
           placeholderTextColor={PLACEHOLDER_COLOR}
           value={searchQuery}
@@ -141,7 +141,7 @@ export default function SettingsStreamingServicesScreen() {
                   className="h-10 w-10 rounded-lg"
                 />
               ) : (
-                <View className="h-10 w-10 rounded-lg bg-bg-glass-strong" />
+                <View className="h-10 w-10 rounded-lg bg-bg-surface-strong" />
               )}
               <Text
                 className={chipTextClassName(selected, "shrink")}

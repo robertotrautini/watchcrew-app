@@ -64,14 +64,14 @@ describe("Button", () => {
     expect(getByTestId("save-button").props.className).toContain("bg-accent");
   });
 
-  it("applies the secondary variant's card/glass background and subtle border className", async () => {
+  it("applies the secondary variant's card/surface background and subtle border className", async () => {
     const { getByTestId } = await render(
       <Button label="Save" onPress={() => {}} variant="secondary" testID="save-button" />,
     );
 
     const { className } = getByTestId("save-button").props;
     expect(className).toContain("bg-white/10");
-    expect(className).toContain("border-glass-border");
+    expect(className).toContain("border-surface-border");
     expect(className).not.toMatch(/border-[tb]-/);
     expect(className).toContain("active:bg-white/20");
   });

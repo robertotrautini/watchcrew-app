@@ -24,7 +24,7 @@ export function resetMockRouter(): void {
 }
 
 export function createExpoRouterMock(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- must be required lazily inside the jest.mock factory
+   
   const React = require("react");
   return {
     useRouter: () => mockRouter,

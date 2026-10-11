@@ -21,6 +21,22 @@ import { toLocalIsoDate } from "./localDate";
 import type { WatchlistEntry } from "./watchlistTypes";
 
 // ============================================================================
+// Per-member payer-button colors
+// ============================================================================
+//
+// RESOLVED interim decision (see docs/interim-decisions.md "M8"): the
+// legacy app hardcoded a fixed 3-color array for payer buttons -- a real
+// limitation once a group has more than 3 members. Instead, this reuses
+// this repo's existing group-THEME color derivation pattern
+// (src/lib/groupTheme.ts): the 6 named theme accent colors double as a
+// payer-button color palette, assigned to members by stable index (sorted
+// by `joined_at`, wrapping around via modulo once a group has more than 6
+// members). This is a deliberate improvement over the legacy hardcoded
+// limit, not a literal port.
+
+import { resolveGroupTheme, type GroupThemeName } from "./groupTheme";
+
+// ============================================================================
 // Paid entries (the Tracker table itself)
 // ============================================================================
 
@@ -209,22 +225,6 @@ export function lastPaidHint(
   }
   return `zuletzt bezahlt: ${daysSincePayment(lastPaidAt, now)}`;
 }
-
-// ============================================================================
-// Per-member payer-button colors
-// ============================================================================
-//
-// RESOLVED interim decision (see docs/interim-decisions.md "M8"): the
-// legacy app hardcoded a fixed 3-color array for payer buttons -- a real
-// limitation once a group has more than 3 members. Instead, this reuses
-// this repo's existing group-THEME color derivation pattern
-// (src/lib/groupTheme.ts): the 6 named theme accent colors double as a
-// payer-button color palette, assigned to members by stable index (sorted
-// by `joined_at`, wrapping around via modulo once a group has more than 6
-// members). This is a deliberate improvement over the legacy hardcoded
-// limit, not a literal port.
-
-import { resolveGroupTheme, type GroupThemeName } from "./groupTheme";
 
 const MEMBER_COLOR_THEME_NAMES: GroupThemeName[] = [
   "gold",

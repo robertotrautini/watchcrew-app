@@ -7,7 +7,7 @@ describe("ScreenBackdrop", () => {
   it("renders a flat dark layer (no blur)", async () => {
     await render(<ScreenBackdrop />);
     expect(screen.getByTestId("screen-backdrop")).toBeTruthy();
-    expect(screen.getByTestId("screen-backdrop-glass").props.className).toContain("bg-bg-card-flat");
+    expect(screen.getByTestId("screen-backdrop-surface").props.className).toContain("bg-bg-card-flat");
   });
 
   it("layout wrapper renders backdrop behind the children", async () => {

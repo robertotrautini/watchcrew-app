@@ -7,7 +7,7 @@ import type { GroupThemeName } from "@/lib/groupTheme";
  * SVG masters in docs/logo-concepts/final/ by `scripts/generate-logo-assets.js`.
  * PNG instead of SVG because `react-native-svg` is not part of the current dev-client binary.
  */
-/* eslint-disable @typescript-eslint/no-require-imports */
+ 
 export const LOGO_HORIZONTAL: Record<GroupThemeName, number> = {
   gold: require("../../../assets/images/logo/watchcrew-logo-gold.png"),
   red: require("../../../assets/images/logo/watchcrew-logo-red.png"),
@@ -24,7 +24,7 @@ export const LOGO_ICON: Record<GroupThemeName, number> = {
   purple: require("../../../assets/images/logo/watchcrew-logo-icon-purple.png"),
   orange: require("../../../assets/images/logo/watchcrew-logo-icon-orange.png"),
 };
-/* eslint-enable @typescript-eslint/no-require-imports */
+ 
 
 /** Horizontal logo aspect ratio (260 x 64 design space). */
 const HORIZONTAL_ASPECT = 260 / 64;

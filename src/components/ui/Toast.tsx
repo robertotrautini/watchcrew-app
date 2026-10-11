@@ -5,7 +5,7 @@ import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { DANGER_ICON_COLOR } from "@/components/ui/Button";
-import { Glass } from "@/components/ui/Glass";
+import { Surface } from "@/components/ui/Surface";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import {
   subscribeToToasts,
@@ -25,7 +25,7 @@ interface ToastVariantStyle {
 }
 
 /**
- * Variant look (docs/style-guide.md "Toasts"): same flat glass surface + ONE 1px border for all;
+ * Variant look (docs/style-guide.md "Toasts"): same flat surface + ONE 1px border for all;
  * success = green, error = red (tinted fill 15% + coloured border 40% + coloured text/icon,
  * analogous to the danger tokens).
  */
@@ -174,7 +174,7 @@ export function ToastHost() {
       className="absolute bottom-24 left-4 right-4"
       style={{ opacity, transform: [{ translateY }] }}
     >
-      <Glass
+      <Surface
         variant="panel"
         testID="toast-surface"
         className={`rounded-xl px-4 py-3 ${look.surface}`}
@@ -222,7 +222,7 @@ export function ToastHost() {
             }}
           />
         </View>
-      </Glass>
+      </Surface>
     </Animated.View>
   );
 }

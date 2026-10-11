@@ -5,7 +5,7 @@ import { BrandLogo, LOGO_HORIZONTAL, LOGO_ICON } from "@/components/ui/BrandLogo
 import { GROUP_THEME_OPTIONS } from "@/lib/groupTheme";
 
 // expo-image normalises `source` to an array.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const src = (node: { props: Record<string, any> }) => [node.props.source].flat()[0];
 
 describe("BrandLogo", () => {

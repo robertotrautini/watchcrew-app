@@ -50,7 +50,7 @@ jest.mock("@/hooks/useMovieDetailMutations", () => ({
   useAddToWatchlist: () => ({ mutate: jest.fn(), isPending: false }),
 }));
 
-const SCREENS: Array<[string, string]> = [
+const SCREENS: [string, string][] = [
   ["add-movie", "@/app/(app)/(modals)/add-movie"],
   ["similar", "@/app/(app)/(modals)/similar/[tmdbId]"],
   ["collection", "@/app/(app)/(modals)/collection/[collectionId]"],

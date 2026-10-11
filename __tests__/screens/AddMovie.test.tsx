@@ -1,6 +1,6 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
-import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 // --- Hook/router mocks, matching __tests__/screens/StudioFilmography.test.tsx's convention ---
 jest.mock("expo-router", () => require("../helpers/mockRouter").createExpoRouterMock());

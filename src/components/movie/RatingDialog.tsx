@@ -473,7 +473,7 @@ export function RatingDialog({
           {groupRatingRows.length > 0 ? (
             <View
               testID="rating-dialog-other-ratings"
-              className="gap-1 border-t border-glass-border pt-3"
+              className="gap-1 border-t border-surface-border pt-3"
             >
               <Text className="text-text-secondary">
                 Bewertungen der Gruppe

@@ -8,7 +8,7 @@ import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import {
   establishSessionFromTokens,
   exchangeAuthCode,
@@ -136,7 +136,7 @@ export default function AuthCallbackScreen() {
         testID="auth-callback-screen"
       >
         <Brand />
-        <Glass variant="strong" className="gap-4 p-5">
+        <Surface variant="strong" className="gap-4 p-5">
           <Text
             testID="auth-callback-error"
             className="text-center text-base text-danger"
@@ -156,7 +156,7 @@ export default function AuthCallbackScreen() {
             onPress={() => router.replace("/(auth)/login")}
             testID="auth-callback-login-button"
           />
-        </Glass>
+        </Surface>
       </KeyboardAvoidingView>
     );
   }
@@ -168,7 +168,7 @@ export default function AuthCallbackScreen() {
       testID="auth-callback-screen"
     >
       <Brand />
-      <Glass variant="strong" className="gap-4 p-5">
+      <Surface variant="strong" className="gap-4 p-5">
         <Text className="font-title text-2xl text-text-primary">
           Neues Passwort setzen
         </Text>
@@ -180,7 +180,7 @@ export default function AuthCallbackScreen() {
           autoCapitalize="none"
           placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
           placeholderTextColor={PLACEHOLDER_COLOR}
-          className={GLASS_INPUT_CLASSNAME}
+          className={SURFACE_INPUT_CLASSNAME}
         />
         <TextInput
           testID="auth-callback-confirm-input"
@@ -190,7 +190,7 @@ export default function AuthCallbackScreen() {
           autoCapitalize="none"
           placeholder="Passwort wiederholen"
           placeholderTextColor={PLACEHOLDER_COLOR}
-          className={GLASS_INPUT_CLASSNAME}
+          className={SURFACE_INPUT_CLASSNAME}
         />
         {validationError ? (
           <Text
@@ -216,7 +216,7 @@ export default function AuthCallbackScreen() {
           disabled={loading}
           testID="auth-callback-submit-button"
         />
-      </Glass>
+      </Surface>
     </KeyboardAvoidingView>
   );
 }

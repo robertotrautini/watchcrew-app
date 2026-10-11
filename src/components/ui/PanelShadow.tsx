@@ -4,7 +4,7 @@ import {
   PANEL_RADIUS,
   PANEL_RADIUS_CLASSNAME,
   panelShadowOpacities,
-} from "@/components/ui/Glass";
+} from "@/components/ui/Surface";
 
 const OPACITIES = panelShadowOpacities();
 

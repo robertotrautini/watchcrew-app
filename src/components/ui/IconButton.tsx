@@ -9,7 +9,7 @@ import {
 import { Icon, type IconRole } from "@/components/ui/Icon";
 
 /**
- * neutral = glass fill (secondary), accent = group accent fill, danger = red tint (destructive),
+ * neutral = surface fill (secondary), accent = group accent fill, danger = red tint (destructive),
  * ghost = no fill/border (toast/header chrome), overlay = dark scrim for use on top of images/video.
  */
 type IconButtonVariant = "neutral" | "accent" | "danger" | "ghost" | "overlay";

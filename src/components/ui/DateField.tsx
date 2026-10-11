@@ -7,7 +7,7 @@ import DateTimePicker, {
 
 import { isoDateToLocalDate, toLocalIsoDate } from "@/lib/localDate";
 import { cn } from "@/lib/utils";
-import { GLASS_EDGE } from "@/components/ui/Glass";
+import { SURFACE_EDGE } from "@/components/ui/Surface";
 
 /**
  * M7 consolidation (Item 3, see docs/interim-decisions.md): shared native
@@ -86,7 +86,7 @@ export function DateField({
         disabled={!editable}
         onPress={handlePress}
         className={cn(
-          `rounded-lg ${GLASS_EDGE} bg-white/10 px-4 py-3`,
+          `rounded-lg ${SURFACE_EDGE} bg-white/10 px-4 py-3`,
           !editable && "opacity-50",
           className,
         )}

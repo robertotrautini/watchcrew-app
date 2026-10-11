@@ -8,12 +8,12 @@ import { FadeInItem } from "@/components/ui/FadeInItem";
 import { useSortRemountKey } from "@/hooks/useSortRemountKey";
 import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
-  GlassTableHeader,
-  GlassTableHeaderCell,
-  GlassTableRow,
+  DataTableHeader,
+  DataTableHeaderCell,
+  DataTableRow,
   TABLE_DATE_CELL,
   TABLE_TITLE_CELL,
-} from "@/components/ui/GlassTable";
+} from "@/components/ui/DataTable";
 import type { SortState } from "@/lib/entrySorting";
 import { formatPlainDate } from "@/lib/dateFormat";
 import {
@@ -34,7 +34,7 @@ import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePrefere
 import {
   PANEL_LIST_CONTENT_PT_CLASSNAME,
   PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
-} from "@/components/ui/Glass";
+} from "@/components/ui/Surface";
 
 function ratedCountFor(entry: WatchlistEntry): number {
   return entry.ratings.filter((r) => r.rating != null && r.rating > 0).length;
@@ -43,7 +43,7 @@ function ratedCountFor(entry: WatchlistEntry): number {
 /**
  * Virtualization tuning shared by all modes (counts are rows, not items).
  * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
- * too heavy. Cards/rows use the flat glass (no blur), which is
+ * too heavy. Cards/rows use the flat surface (no blur), which is
  * what makes a wider window affordable; clipping stays off (blanks on Android).
  * See docs/performance-scroll-analysis.md "Nachtrag 2".
  */
@@ -70,7 +70,7 @@ const WatchlistListRow = memo(function WatchlistListRow({
   onOpenEntry: (entry: WatchlistEntry) => void;
 }) {
   return (
-    <GlassTableRow
+    <DataTableRow
       testID={`watchlist-list-row-${item.id}`}
       isLast={isLast}
       onPress={() => onOpenEntry(item)}
@@ -81,26 +81,26 @@ const WatchlistListRow = memo(function WatchlistListRow({
       <Text numberOfLines={1} className={TABLE_DATE_CELL}>
         {formatPlainDate(getEffectiveReleaseDate(item), "Kein Datum")}
       </Text>
-    </GlassTableRow>
+    </DataTableRow>
   );
 });
 
 function WatchlistListHeader() {
   return (
-    <GlassTableHeader testID="watchlist-table-header">
-      <GlassTableHeaderCell
+    <DataTableHeader testID="watchlist-table-header">
+      <DataTableHeaderCell
         testID="watchlist-table-header-title"
         className="flex-1"
       >
         Film
-      </GlassTableHeaderCell>
-      <GlassTableHeaderCell
+      </DataTableHeaderCell>
+      <DataTableHeaderCell
         testID="watchlist-table-header-release"
         className="w-28 text-right"
       >
         Erscheint
-      </GlassTableHeaderCell>
-    </GlassTableHeader>
+      </DataTableHeaderCell>
+    </DataTableHeader>
   );
 }
 

@@ -30,7 +30,7 @@ export interface DiaryEntryCardProps {
 }
 
 /**
- * Legacy Tagebuch row card (docs/reference-screenshots/05-tagebuch.jpg): glass
+ * Legacy Tagebuch row card (docs/reference-screenshots/05-tagebuch.jpg): surface
  * card, small poster left, gold serif title, "Gesehen am ...", one labelled
  * star row per group member, average-rating corner badge flush top-right (+ like heart inside it),
  * TMDB badge flush in the bottom-right corner (radius on the inner corner only). Press handling lives in the caller's wrapper.

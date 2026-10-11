@@ -2,21 +2,21 @@ import { Text } from "react-native";
 import { fireEvent, render } from "@testing-library/react-native";
 
 import {
-  GlassTableHeader,
-  GlassTableHeaderCell,
-  GlassTableHeaderIconCell,
-  GlassTableRow,
+  DataTableHeader,
+  DataTableHeaderCell,
+  DataTableHeaderIconCell,
+  DataTableRow,
   TABLE_ICON_CELL,
   TABLE_SCORE_CELL,
   TABLE_SCORE_STRONG_CELL,
-} from "@/components/ui/GlassTable";
+} from "@/components/ui/DataTable";
 
-describe("GlassTable", () => {
+describe("DataTable", () => {
   it("renders header cells under the given testID", async () => {
     const { getByTestId, getByText } = await render(
-      <GlassTableHeader testID="hdr">
-        <GlassTableHeaderCell>Film</GlassTableHeaderCell>
-      </GlassTableHeader>,
+      <DataTableHeader testID="hdr">
+        <DataTableHeaderCell>Film</DataTableHeaderCell>
+      </DataTableHeader>,
     );
     expect(getByTestId("hdr")).toBeTruthy();
     expect(getByText("Film")).toBeTruthy();
@@ -25,9 +25,9 @@ describe("GlassTable", () => {
   it("row is a pressable button that fires onPress", async () => {
     const onPress = jest.fn();
     const { getByTestId } = await render(
-      <GlassTableRow testID="row" isLast={false} onPress={onPress}>
+      <DataTableRow testID="row" isLast={false} onPress={onPress}>
         <Text>Alpha</Text>
-      </GlassTableRow>,
+      </DataTableRow>,
     );
     await fireEvent.press(getByTestId("row"));
     expect(onPress).toHaveBeenCalledTimes(1);
@@ -36,15 +36,15 @@ describe("GlassTable", () => {
   it("rows are square slices of one container: only the last row is rounded (bottom)", async () => {
     const { getByTestId, toJSON } = await render(
       <>
-        <GlassTableHeader testID="h">
+        <DataTableHeader testID="h">
           <Text>H</Text>
-        </GlassTableHeader>
-        <GlassTableRow testID="a" isLast={false} onPress={() => {}}>
+        </DataTableHeader>
+        <DataTableRow testID="a" isLast={false} onPress={() => {}}>
           <Text>A</Text>
-        </GlassTableRow>
-        <GlassTableRow testID="b" isLast onPress={() => {}}>
+        </DataTableRow>
+        <DataTableRow testID="b" isLast onPress={() => {}}>
           <Text>B</Text>
-        </GlassTableRow>
+        </DataTableRow>
       </>,
     );
     const json = JSON.stringify(toJSON());
@@ -58,12 +58,12 @@ describe("GlassTable", () => {
   it("only non-last rows get the separator border", async () => {
     const { getByTestId } = await render(
       <>
-        <GlassTableRow testID="a" isLast={false} onPress={() => {}}>
+        <DataTableRow testID="a" isLast={false} onPress={() => {}}>
           <Text>A</Text>
-        </GlassTableRow>
-        <GlassTableRow testID="b" isLast onPress={() => {}}>
+        </DataTableRow>
+        <DataTableRow testID="b" isLast onPress={() => {}}>
           <Text>B</Text>
-        </GlassTableRow>
+        </DataTableRow>
       </>,
     );
     expect(getByTestId("a").props.className).toContain("border-b");
@@ -72,9 +72,9 @@ describe("GlassTable", () => {
 
   it("header content is vertically centred: symmetric pt-3/pb-3, items-center", async () => {
     const { getByTestId, toJSON } = await render(
-      <GlassTableHeader testID="h">
+      <DataTableHeader testID="h">
         <Text>H</Text>
-      </GlassTableHeader>,
+      </DataTableHeader>,
     );
     const cls = getByTestId("h").props.className;
     expect(cls).toContain("items-center");
@@ -85,12 +85,12 @@ describe("GlassTable", () => {
   describe("static header cells", () => {
     it("text and icon cells are plain (no button, no sort chevron)", async () => {
       const { getByTestId } = await render(
-        <GlassTableHeader>
-          <GlassTableHeaderCell testID="c">Film</GlassTableHeaderCell>
-          <GlassTableHeaderIconCell testID="i" label="Favorit">
+        <DataTableHeader>
+          <DataTableHeaderCell testID="c">Film</DataTableHeaderCell>
+          <DataTableHeaderIconCell testID="i" label="Favorit">
             <Text>*</Text>
-          </GlassTableHeaderIconCell>
-        </GlassTableHeader>,
+          </DataTableHeaderIconCell>
+        </DataTableHeader>,
       );
       expect(getByTestId("c").props.accessibilityRole).not.toBe("button");
       expect(getByTestId("i").props.accessibilityRole).not.toBe("button");
@@ -106,18 +106,18 @@ describe("GlassTable", () => {
     });
   });
 
-  it("header and rows use the flat dark glass (no live BlurView per row)", async () => {
+  it("header and rows use the flat dark surface (no live BlurView per row)", async () => {
     const { queryAllByTestId, toJSON } = await render(
       <>
-        <GlassTableHeader>
+        <DataTableHeader>
           <Text>H</Text>
-        </GlassTableHeader>
-        <GlassTableRow isLast={false} onPress={() => {}}>
+        </DataTableHeader>
+        <DataTableRow isLast={false} onPress={() => {}}>
           <Text>A</Text>
-        </GlassTableRow>
+        </DataTableRow>
       </>,
     );
-    expect(queryAllByTestId("glass-blur-view")).toHaveLength(0);
+    expect(queryAllByTestId("surface-blur-view")).toHaveLength(0);
     expect(JSON.stringify(toJSON()).match(/bg-bg-card-flat/g)).toHaveLength(2);
   });
 });

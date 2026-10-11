@@ -11,15 +11,15 @@ import { FadeInItem } from "@/components/ui/FadeInItem";
 import { useSortRemountKey } from "@/hooks/useSortRemountKey";
 import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
-  GlassTableHeader,
-  GlassTableHeaderCell,
-  GlassTableRow,
-  GlassTableHeaderIconCell,
+  DataTableHeader,
+  DataTableHeaderCell,
+  DataTableRow,
+  DataTableHeaderIconCell,
   TABLE_ICON_CELL,
   TABLE_SCORE_CELL,
   TABLE_SCORE_STRONG_CELL,
   TABLE_TITLE_CELL,
-} from "@/components/ui/GlassTable";
+} from "@/components/ui/DataTable";
 import { Icon } from "@/components/ui/Icon";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
 import type { SortState } from "@/lib/entrySorting";
@@ -32,7 +32,7 @@ import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferences
 import {
   PANEL_LIST_CONTENT_PT_CLASSNAME,
   PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
-} from "@/components/ui/Glass";
+} from "@/components/ui/Surface";
 
 /**
  * Virtualized Tagebuch list (FlatList): only the rows near the viewport are
@@ -57,7 +57,7 @@ export interface TagebuchEntryListProps {
 /**
  * Virtualization tuning shared by all modes (counts are rows, not items).
  * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
- * too heavy. Cards/rows use the flat glass (no blur), which is
+ * too heavy. Cards/rows use the flat surface (no blur), which is
  * what makes a wider window affordable; clipping stays off (blanks on Android).
  * See docs/performance-scroll-analysis.md "Nachtrag 2".
  */
@@ -147,28 +147,28 @@ const GridRow = memo(function GridRow({
 
 function ListHeader({ starColor }: { starColor: string }) {
   return (
-    <GlassTableHeader testID="tagebuch-table-header">
-      <GlassTableHeaderCell
+    <DataTableHeader testID="tagebuch-table-header">
+      <DataTableHeaderCell
         testID="tagebuch-table-header-title"
         className="flex-1"
       >
         Film
-      </GlassTableHeaderCell>
-      <GlassTableHeaderIconCell
+      </DataTableHeaderCell>
+      <DataTableHeaderIconCell
         testID="tagebuch-table-header-like"
         label="Favorit"
         className={TABLE_ICON_CELL}
       >
         <Icon name="heart" size="SM" color={LIKE_HEART_COLOR} />
-      </GlassTableHeaderIconCell>
-      <GlassTableHeaderIconCell
+      </DataTableHeaderIconCell>
+      <DataTableHeaderIconCell
         testID="tagebuch-table-header-average"
         label="Durchschnitt"
         className={TABLE_SCORE_STRONG_CELL}
       >
         <Icon name="star" size="SM" color={starColor} />
-      </GlassTableHeaderIconCell>
-      <GlassTableHeaderIconCell
+      </DataTableHeaderIconCell>
+      <DataTableHeaderIconCell
         testID="tagebuch-table-header-tmdb"
         label="TMDB"
         className={TABLE_SCORE_CELL}
@@ -179,8 +179,8 @@ function ListHeader({ starColor }: { starColor: string }) {
           hideScore
           largeLogo
         />
-      </GlassTableHeaderIconCell>
-    </GlassTableHeader>
+      </DataTableHeaderIconCell>
+    </DataTableHeader>
   );
 }
 
@@ -193,7 +193,7 @@ const ListRow = memo(function ListRow({
   const liked = findOwnRating(entry, userId)?.liked === true;
   const average = computeAverageRating(entry);
   return (
-    <GlassTableRow
+    <DataTableRow
       testID={`tagebuch-entry-${entry.id}`}
       isLast={isLast}
       onPress={() => onOpenEntry(entry)}
@@ -230,7 +230,7 @@ const ListRow = memo(function ListRow({
           ? entry.movie.vote_average.toFixed(1)
           : "–"}
       </Text>
-    </GlassTableRow>
+    </DataTableRow>
   );
 });
 

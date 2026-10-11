@@ -1,6 +1,5 @@
 import { createQueryWrapper } from "../helpers/renderWithProviders";
 import { renderHook, waitFor } from "@testing-library/react-native";
-import React from "react";
 
 const mockGetMovieProviders = jest.fn();
 

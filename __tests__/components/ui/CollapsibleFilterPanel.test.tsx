@@ -68,7 +68,7 @@ describe("CollapsibleFilterPanel", () => {
 
 describe("CollapsibleFilterPanel shadow", () => {
   it("renders stacked rounded layers behind an opaque black panel, no elevation", async () => {
-    const G = require("@/components/ui/Glass");
+    const G = require("@/components/ui/Surface");
     const { getByTestId } = await render(
       <CollapsibleFilterPanel testID="fp" open={false} onToggle={jest.fn()} hasActiveFilters={false} search={<Text>s</Text>}>
         <Text>c</Text>
@@ -94,7 +94,7 @@ describe("CollapsibleFilterPanel shadow", () => {
   });
 
   it("constants stay consistent", () => {
-    const G = require("@/components/ui/Glass");
+    const G = require("@/components/ui/Surface");
     expect(G.PANEL_RADIUS).toBe(12);
     expect(G.PANEL_LIST_OVERLAP).toBeGreaterThanOrEqual(G.PANEL_RADIUS);
     expect(G.PANEL_LIST_START_GAP).toBe(12);
@@ -110,7 +110,7 @@ describe("CollapsibleFilterPanel shadow", () => {
   });
 
   it("panelShadowOpacities: falling per layer, compounded peak at the panel edge, ~0 at the end", () => {
-    const { panelShadowOpacities, PANEL_SHADOW_PEAK_OPACITY } = require("@/components/ui/Glass");
+    const { panelShadowOpacities, PANEL_SHADOW_PEAK_OPACITY } = require("@/components/ui/Surface");
     const o: number[] = panelShadowOpacities();
     expect(o.every((v) => v >= 0 && v <= 1)).toBe(true);
     // compounded darkness at depth 1 = all layers cover it
@@ -121,10 +121,10 @@ describe("CollapsibleFilterPanel shadow", () => {
   });
 });
 
-describe("Glass solid variant", () => {
+describe("Surface solid variant", () => {
   it("is fully opaque black, not the 95% flat fill", async () => {
-    const { Glass } = require("@/components/ui/Glass");
-    const { getByTestId } = await render(<Glass variant="solid" testID="g" />);
+    const { Surface } = require("@/components/ui/Surface");
+    const { getByTestId } = await render(<Surface variant="solid" testID="g" />);
     expect(getByTestId("g").props.className).toContain("bg-black");
     expect(getByTestId("g").props.className).not.toContain("bg-bg-card-flat");
   });

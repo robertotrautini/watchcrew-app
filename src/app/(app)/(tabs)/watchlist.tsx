@@ -6,7 +6,7 @@ import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Glass";
+import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Surface";
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
 import { WatchlistFilterPanel } from "@/components/watchlist/WatchlistFilterPanel";
 import { EntryFilterFlyout } from "@/components/entries/EntryFilterFlyout";

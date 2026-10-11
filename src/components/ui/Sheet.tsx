@@ -74,7 +74,7 @@ export interface SheetProps {
 }
 
 /**
- * Generic bottom-sheet overlay (in-window, glass) — the shared dialog primitive
+ * Generic bottom-sheet overlay (in-window, surface) — the shared dialog primitive
  * referenced in docs/planning-report.html ("Ein wiederverwendetes
  * Sheet/Modal-System treibt jeden Dialog an"). Callers supply the actual
  * dialog content as `children`; this component only owns the backdrop, the
@@ -176,7 +176,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
             <Pressable
               testID="sheet-surface"
               style={surfaceStyle}
-              className={`overflow-hidden border-t border-glass-border bg-black`}
+              className={`overflow-hidden border-t border-surface-border bg-black`}
               onPress={() => {
                 // Swallow the tap so it doesn't bubble to the backdrop.
               }}
@@ -187,7 +187,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
                 className="shrink"
               >
                 {title ? (
-                  <View className="flex-row items-center justify-between border-b border-glass-border px-4 py-3">
+                  <View className="flex-row items-center justify-between border-b border-surface-border px-4 py-3">
                     <Text className="font-title text-lg text-text-primary">
                       {title}
                     </Text>

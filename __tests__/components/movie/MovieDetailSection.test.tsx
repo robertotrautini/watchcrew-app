@@ -37,7 +37,7 @@ describe("MovieDetailSection", () => {
     );
     const cls = getByTestId("movie-detail-section-info").props.className as string;
     expect(cls).toContain("border-t");
-    expect(cls).toContain("border-glass-border");
+    expect(cls).toContain("border-surface-border");
   });
 
   it("uses the shared spacing constants (py-4, gap-2)", async () => {

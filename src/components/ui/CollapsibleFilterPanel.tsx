@@ -2,7 +2,7 @@ import { IconButton } from "@/components/ui/IconButton";
 import type { ReactNode } from "react";
 import { LayoutAnimation, View } from "react-native";
 
-import { Glass } from "@/components/ui/Glass";
+import { Surface } from "@/components/ui/Surface";
 import { PanelShadow } from "@/components/ui/PanelShadow";
 
 export interface CollapsibleFilterPanelProps {
@@ -21,7 +21,7 @@ export interface CollapsibleFilterPanelProps {
 }
 
 /**
- * Glass card with an always-visible row (search, optional actions, filter toggle)
+ * Surface card with an always-visible row (search, optional actions, filter toggle)
  * and a collapsible panel below it (sort, view mode, chips). Shared by the
  * Watchlist and Tagebuch tabs. Open state is owned by the caller (persisted per
  * tab in usePreferencesStore); the expand/collapse animates via LayoutAnimation.
@@ -43,7 +43,7 @@ export function CollapsibleFilterPanel({
   return (
     <View testID={`${testID}-wrapper`} className="z-10 mx-4 mt-3">
       <PanelShadow testID={`${testID}-shadow`} />
-      <Glass variant="solid" className="gap-3 p-3">
+      <Surface variant="solid" className="gap-3 p-3">
         <View className="flex-row items-center gap-3">
           {search}
           {actions}
@@ -70,7 +70,7 @@ export function CollapsibleFilterPanel({
             {children}
           </View>
         ) : null}
-      </Glass>
+      </Surface>
     </View>
   );
 }

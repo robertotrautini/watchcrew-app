@@ -8,7 +8,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_BAR_CLASSNAME } from "@/components/ui/Surface";
 import { SheetHost } from "@/components/ui/Sheet";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import { LoadingArea } from "@/components/ui/LoadingArea";
@@ -536,7 +536,7 @@ export default function MovieDetailScreen() {
         </View>
 
         <View
-          className={`absolute bottom-0 left-0 right-0 overflow-hidden ${GLASS_BAR_CLASSNAME} bg-black`}
+          className={`absolute bottom-0 left-0 right-0 overflow-hidden ${SURFACE_BAR_CLASSNAME} bg-black`}
         >
           <SafeAreaView edges={["bottom"]} testID="movie-detail-action-bar">
             <MovieDetailActionsBar

@@ -80,7 +80,7 @@ describe("resolveGroupTheme", () => {
     expect(resolved.colors).toEqual(GOLD);
   });
 
-  it.each(Object.keys(DERIVED_NON_GOLD) as Array<Exclude<GroupThemeName, "gold">>)(
+  it.each(Object.keys(DERIVED_NON_GOLD) as Exclude<GroupThemeName, "gold">[])(
     "maps the %s theme to its exact accent and correctly derived light/gradient colors",
     (themeName) => {
       const expected = DERIVED_NON_GOLD[themeName];

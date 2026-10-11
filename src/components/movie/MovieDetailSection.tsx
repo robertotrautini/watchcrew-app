@@ -35,7 +35,7 @@ export function MovieDetailSection({
     <View
       testID={`movie-detail-section-${name}`}
       className={`items-start ${MOVIE_DETAIL_SECTION_GAP_CLASSNAME} ${MOVIE_DETAIL_SECTION_PADDING_CLASSNAME}${
-        withDivider ? " border-t border-glass-border" : ""
+        withDivider ? " border-t border-surface-border" : ""
       }`}
     >
       {title ? (

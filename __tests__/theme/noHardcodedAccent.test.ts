@@ -1,6 +1,6 @@
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const fs = require("fs");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const path = require("path");
 
 /**
@@ -29,7 +29,7 @@ const ALLOWLIST = new Set([
 ]);
 
 function walk(dir: string, out: string[] = []): string[] {
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true }) as Array<{ name: string; isDirectory(): boolean }>) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true }) as { name: string; isDirectory(): boolean }[]) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walk(full, out);
     else if (/\.(ts|tsx|css|js)$/.test(entry.name)) out.push(full);
@@ -51,6 +51,35 @@ describe("no hard-coded gold accent outside the theme definitions", () => {
       // comments may mention the legacy values
       .filter(({ line }) => !/^\s*(\/\/|\*|\/\*)/.test(line))
       .filter(({ line }) => FORBIDDEN.some((re) => re.test(line)))
+      .map(({ n, line }) => `${file}:${n}: ${line.trim()}`);
+    expect(offenders).toEqual([]);
+  });
+});
+
+/**
+ * Token duplicates: these hex values exist as named tokens (tailwind.config.js)
+ * and as constants in src/lib/colors.ts. Elsewhere in src they must not be
+ * repeated as literals; use the token class or the constant instead.
+ */
+const TOKEN_DUPLICATES = [
+  /#e05c6e/i, // like-heart -> LIKE_HEART_COLOR
+  /#888888/i, // placeholder -> PLACEHOLDER_COLOR
+  /#8b8b8b/i,
+  /#0a0a0a/i, // bg-primary -> BG_PRIMARY_COLOR
+  /#e8e8e8/i, // text-primary -> TEXT_PRIMARY_COLOR
+];
+
+const DUPLICATE_ALLOWLIST = new Set(["src/lib/colors.ts", "src/lib/groupTheme.ts", "src/global.css"]);
+
+describe("no hex duplicates of existing color tokens outside colors.ts/groupTheme.ts/global.css", () => {
+  const files = walk("src").filter((f) => !DUPLICATE_ALLOWLIST.has(f));
+
+  it.each(files)("%s", (file) => {
+    const lines = fs.readFileSync(file, "utf8").split("\n") as string[];
+    const offenders = lines
+      .map((line, i) => ({ line, n: i + 1 }))
+      .filter(({ line }) => !/^\s*(\/\/|\*|\/\*)/.test(line))
+      .filter(({ line }) => TOKEN_DUPLICATES.some((re) => re.test(line)))
       .map(({ n, line }) => `${file}:${n}: ${line.trim()}`);
     expect(offenders).toEqual([]);
   });

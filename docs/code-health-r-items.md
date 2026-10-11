@@ -14,10 +14,10 @@ Quelle: `docs/code-health-report.html` (Branch main, ca. 151 uncommitted Änderu
 | R4 | Gemeinsame Filter/Sort-Logik Tagebuch & Watchlist | erledigt | 2026-10-05 | lib/entryFilters.ts, lib/dateFormat.ts, hooks/useEntryFilters.ts | tsc sauber, jest 175/1709 grün; kein Maestro (Geraet belegt) |
 | R5 | Zentrale Test-Setup-Datei + Mock-Helfer | erledigt | 2026-10-05 | globaler vector-icons-Mock, __tests__/helpers/ (mockRouter, mockCurrentUser, renderWithProviders), 68 Tests nach src-Struktur verschoben, Jest-Devdeps gepinnt | tsc sauber, jest 171/1672 grün; kein Maestro (nur Tests) |
 | R6 | Query-Key-Factory | erledigt 2026-10-05 | - | - | - |
-| R7 | Fehlerbehandlung & Sentry-Anbindung | offen | - | - | - |
+| R7 | Fehlerbehandlung & Sentry-Anbindung | teilweise (Sentry) | 2026-10-11 | Sentry via @sentry/react-native (`src/lib/sentry.ts`, Commit 69f5a6f); zentrale Fehlerbehandlung offen | - |
 | R8 | lib/ umstrukturieren | offen | - | - | - |
 | R9 | i18n-Vorbereitung | offen | - | - | - |
-| R10 | Farb- und Style-Konsolidierung | offen | - | - | - |
+| R10 | Farb- und Style-Konsolidierung | teilweise | 2026-10-11 | zentrale Farben `src/lib/colors.ts` (Commit b014fcc); Glass->Surface-Umbenennung (P-H); Hex-Dubletten-Guard in `noHardcodedAccent.test.ts` | - |
 | QW | Quick Wins (Gruppe, 8 Punkte) | offen | - | - | - |
 
 ### Protokoll
@@ -136,3 +136,4 @@ Hinweis aus dem Report: Refactorings vorzugsweise erst nach Commit/Merge des dam
 ## Log 2026-10-05 — Sign-out-Crash (Android)
 `auth-screens` scheiterte beim Abmelden an `ScreenStackFragment added into a non-stack container`. Bisect: Root-/Modal-`screenLayout` unschuldig (Hypothese verworfen, Layouts unveraendert). Fix: in `settings.tsx` erst `router.replace("/(auth)/login")`, dann `signOut()`. Details: `docs/interim-decisions.md` (Abmelden-Eintrag). Verifiziert: tsc, jest 1709 gruen, Maestro `--area auth` + `--smoke` gruen.
 Delete-Account: gleiche Reihenfolge (replace login, dann signOut; Loeschung vorher abgeschlossen). Nicht auf Geraet verifiziert; tsc/jest gruen.
+- 2026-10-11 P-H (refactoring-plan): `Glass`->`Surface`, `GlassTable`->`DataTable`, `GLASS_*`->`SURFACE_*`, Tailwind `glass-border`/`bg-glass*` -> `surface-border`/`bg-surface*`; `GLASS_INSET_EDGE` entfernt (= `SURFACE_EDGE`); ESLint 0 Warnungen; ungenutzte addMovieLogic-Exporte und Typen entfernt.

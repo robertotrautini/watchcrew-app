@@ -71,10 +71,10 @@ export interface MovieGridProps<T extends MovieGridItem = MovieGridItem> {
   columns?: number;
 }
 
-const STREAMING_FILTER_OPTIONS: Array<{
+const STREAMING_FILTER_OPTIONS: {
   value: StreamingFilterValue;
   label: string;
-}> = [
+}[] = [
   { value: "flatrate", label: "Flatrate" },
   { value: "rent", label: "Leihen" },
   { value: "buy", label: "Kaufen" },

@@ -7,7 +7,7 @@ import { Text, TextInput } from "@/components/ui/Text";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import { signUpWithEmail } from "@/lib/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/passwordRules";
 import { openLegalUrl } from "@/lib/legalLinks";
@@ -15,7 +15,7 @@ import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const INPUT_CLASSNAME = GLASS_INPUT_CLASSNAME;
+const INPUT_CLASSNAME = SURFACE_INPUT_CLASSNAME;
 
 function validate(
   displayName: string,
@@ -100,7 +100,7 @@ export default function RegisterScreen() {
     return (
       <View className="flex-1 justify-center px-6" testID="register-screen">
         <Brand />
-        <Glass variant="strong" className="items-stretch gap-4 p-5">
+        <Surface variant="strong" className="items-stretch gap-4 p-5">
           <Text
             className="text-center font-title text-2xl text-text-primary"
             testID="register-success-heading"
@@ -119,7 +119,7 @@ export default function RegisterScreen() {
             onPress={goToLogin}
             testID="register-back-to-login-button"
           />
-        </Glass>
+        </Surface>
       </View>
     );
   }
@@ -136,7 +136,7 @@ export default function RegisterScreen() {
       testID="register-screen"
     >
       <Brand />
-      <Glass variant="strong" className="gap-4 p-5">
+      <Surface variant="strong" className="gap-4 p-5">
         <Text className="font-title text-2xl text-text-primary">
           Registrieren
         </Text>
@@ -250,7 +250,7 @@ export default function RegisterScreen() {
           onPress={goToLogin}
           testID="register-login-link"
         />
-      </Glass>
+      </Surface>
     </KeyboardAvoidingView>
   );
 }

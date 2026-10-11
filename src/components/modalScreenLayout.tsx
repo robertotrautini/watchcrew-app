@@ -4,7 +4,7 @@ import { BackSwipeView } from "@/components/BackSwipeView";
 import { screenBackdropLayout } from "@/components/ui/ScreenBackdrop";
 
 /**
- * (modals) navigator `screenLayout`: glass backdrop per route plus the
+ * (modals) navigator `screenLayout`: surface backdrop per route plus the
  * Android back swipe (iOS gets the native full-screen swipe via screenOptions).
  */
 export function modalScreenLayout({

@@ -11,7 +11,7 @@ jest.mock("@expo/vector-icons", () => {
   return { MaterialIcons };
 });
 
-// eslint-disable-next-line import/first
+ 
 import { MaterialIcons } from "@expo/vector-icons";
 
 describe("Icon", () => {

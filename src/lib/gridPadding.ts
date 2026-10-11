@@ -12,7 +12,7 @@ export function isGridPlaceholder(value: unknown): value is GridPlaceholder {
   return typeof value === "object" && value !== null && (value as GridPlaceholder).placeholder === true;
 }
 
-export function padToFullRows<T>(items: T[], columns: number): Array<T | GridPlaceholder> {
+export function padToFullRows<T>(items: T[], columns: number): (T | GridPlaceholder)[] {
   if (columns <= 1 || items.length === 0) {
     return items;
   }

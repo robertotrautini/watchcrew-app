@@ -3,7 +3,7 @@ import { render } from "@testing-library/react-native";
 import {
   PANEL_LIST_CONTENT_PT_CLASSNAME,
   PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
-} from "@/components/ui/Glass";
+} from "@/components/ui/Surface";
 
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
 

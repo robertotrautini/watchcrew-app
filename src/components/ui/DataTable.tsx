@@ -3,16 +3,16 @@ import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { GLASS_FLAT_FILL } from "@/components/ui/Glass";
+import { SURFACE_FILL } from "@/components/ui/Surface";
 import { cn } from "@/lib/utils";
 
 /**
  * Shared "table" look of the list views (Tracker, Watchlist "Liste",
- * Tagebuch "Liste"). The Tracker renders one `Glass` card around a plain
+ * Tagebuch "Liste"). The Tracker renders one `Surface` card around a plain
  * header + rows; virtualized lists (FlatList) cannot wrap all rows in one
  * surface, so header and every row are their own slice with the same fill,
  * a shared side border and the same inner padding. Slices are SQUARE (no
- * default Glass rounding): header rounds the top, the last row the bottom,
+ * default Surface rounding): header rounds the top, the last row the bottom,
  * so the stack reads as one card with thin straight row dividers.
  *
  * Cell classes below are the single source for column typography/widths.
@@ -33,10 +33,10 @@ export const TABLE_SCORE_CELL = "w-16 text-center text-text-secondary";
 export const TABLE_SCORE_STRONG_CELL = "w-12 text-center font-sans-semibold text-text-primary";
 
 /** Shared by header + row slices: flat fill, side border, inner padding. */
-const SLICE = `overflow-hidden border-x border-glass-border px-3 ${GLASS_FLAT_FILL}`;
+const SLICE = `overflow-hidden border-x border-surface-border px-3 ${SURFACE_FILL}`;
 
 /** Static header row (top slice, rounded top); sorting lives in the panel. */
-export function GlassTableHeader({
+export function DataTableHeader({
   testID,
   children,
 }: {
@@ -47,7 +47,7 @@ export function GlassTableHeader({
     <View className={cn(SLICE, "rounded-t-xl border-t pt-3")}>
       <View
         testID={testID}
-        className="flex-row items-center border-b border-glass-border pb-3"
+        className="flex-row items-center border-b border-surface-border pb-3"
       >
         {children}
       </View>
@@ -56,7 +56,7 @@ export function GlassTableHeader({
 }
 
 /** Plain header text cell. */
-export function GlassTableHeaderCell({
+export function DataTableHeaderCell({
   className,
   children,
   testID,
@@ -76,7 +76,7 @@ export function GlassTableHeaderCell({
  * Table row slice. Square corners (one container look); only the last row
  * rounds its bottom corners and closes the bottom border.
  */
-export function GlassTableRow({
+export function DataTableRow({
   testID,
   isLast,
   onPress,
@@ -95,7 +95,7 @@ export function GlassTableRow({
         onPress={onPress}
         className={cn(
           "flex-row items-center py-3",
-          !isLast && "border-b border-glass-border",
+          !isLast && "border-b border-surface-border",
         )}
       >
         {children}
@@ -105,7 +105,7 @@ export function GlassTableRow({
 }
 
 /** Header cell showing an icon/logo instead of a text label (static). */
-export function GlassTableHeaderIconCell({
+export function DataTableHeaderIconCell({
   testID,
   label,
   className,

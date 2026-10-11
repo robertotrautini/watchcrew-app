@@ -13,13 +13,13 @@ import { PaymentModal } from "@/components/movie/PaymentModal";
 import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import {
-  Glass,
-  GLASS_SEARCH_INPUT_CLASSNAME,
+  Surface,
+  SURFACE_SEARCH_INPUT_CLASSNAME,
   PANEL_LIST_CONTENT_PT_CLASSNAME,
   PANEL_LIST_OVERLAP_CLASSNAME,
-} from "@/components/ui/Glass";
+} from "@/components/ui/Surface";
 import { PanelShadow } from "@/components/ui/PanelShadow";
-import { TABLE_DATE_CELL, TABLE_TITLE_CELL } from "@/components/ui/GlassTable";
+import { TABLE_DATE_CELL, TABLE_TITLE_CELL } from "@/components/ui/DataTable";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
@@ -155,10 +155,10 @@ export default function TrackerScreen() {
 
       <View testID="tracker-panel-wrapper" className="z-10 mx-4 mt-3">
         <PanelShadow testID="tracker-panel-shadow" />
-        <Glass variant="solid" className="flex-row items-center gap-3 p-3">
+        <Surface variant="solid" className="flex-row items-center gap-3 p-3">
           <TextInput
             testID="tracker-search-input"
-            className={GLASS_SEARCH_INPUT_CLASSNAME}
+            className={SURFACE_SEARCH_INPUT_CLASSNAME}
             placeholder="Film suchen…"
             placeholderTextColor={PLACEHOLDER_COLOR}
             value={searchQuery}
@@ -171,7 +171,7 @@ export default function TrackerScreen() {
             accessibilityLabel="Zahlung erfassen"
             onPress={() => setPaymentModalVisible(true)}
           />
-        </Glass>
+        </Surface>
       </View>
 
       {searchedEntries.length === 0 ? (
@@ -187,9 +187,9 @@ export default function TrackerScreen() {
           className={`${PANEL_LIST_OVERLAP_CLASSNAME} flex-1`}
           contentContainerClassName={`px-4 pb-3 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
         >
-          <Glass className="px-3 pb-1 pt-3">
+          <Surface className="px-3 pb-1 pt-3">
             <View
-              className="flex-row border-b border-glass-border pb-2"
+              className="flex-row border-b border-surface-border pb-2"
               testID="tracker-table-header"
             >
               <Text className="flex-1 text-sm text-text-secondary">Film</Text>
@@ -222,7 +222,7 @@ export default function TrackerScreen() {
                     testID={`tracker-row-${entry.id}`}
                     className={
                       entryIndex < searchedEntries.length - 1
-                        ? "border-b border-glass-border"
+                        ? "border-b border-surface-border"
                         : ""
                     }
                   >
@@ -262,7 +262,7 @@ export default function TrackerScreen() {
                 </FadeInItem>
               );
             })}
-          </Glass>
+          </Surface>
         </ScrollView>
       )}
 

@@ -36,7 +36,7 @@ jest.mock("@/lib/toast", () => ({
 // can be chained) and records each registered (event, filterConfig,
 // callback) triple so tests can trigger them directly, exactly like
 // src/hooks/useGroupRealtimeSync.ts registers them.
-let registeredHandlers: Array<{ table: string; filter?: string; callback: (payload: unknown) => void }>;
+let registeredHandlers: { table: string; filter?: string; callback: (payload: unknown) => void }[];
 let mockSubscribe: jest.Mock;
 let mockOn: jest.Mock;
 let mockChannel: { on: jest.Mock; subscribe: jest.Mock };

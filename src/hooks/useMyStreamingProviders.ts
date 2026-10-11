@@ -11,7 +11,7 @@ import { queryKeys } from "@/lib/queryKeys";
  * (i.e. while the "Meine Streaming-Dienste" sort is selected), so the
  * non-date-less movies are not looked up unless that sort is used.
  */
-type ProviderEntries = Array<[number, TmdbMovieProviders]>;
+type ProviderEntries = [number, TmdbMovieProviders][];
 
 /**
  * The query cache is persisted as JSON (src/lib/queryPersistence.ts), which

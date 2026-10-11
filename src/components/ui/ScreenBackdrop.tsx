@@ -1,18 +1,18 @@
 import type { ReactElement, ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { GLASS_FLAT_FILL } from "@/components/ui/Glass";
+import { SURFACE_FILL } from "@/components/ui/Surface";
 
 /**
  * Flat dark backdrop (docs/style-guide.md "Backdrop rule"): the projector photo
- * (root AppBackground) is covered by the shared flat fill (`GLASS_FLAT_FILL`,
+ * (root AppBackground) is covered by the shared flat fill (`SURFACE_FILL`,
  * 95 %), no blur. ONLY the three tabs (Tracker, Watchlist, Tagebuch) show the
  * undimmed photo. Static layer behind the content.
  */
 export function ScreenBackdrop() {
   return (
     <View testID="screen-backdrop" pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <View testID="screen-backdrop-glass" className={`flex-1 ${GLASS_FLAT_FILL}`} />
+      <View testID="screen-backdrop-surface" className={`flex-1 ${SURFACE_FILL}`} />
     </View>
   );
 }

@@ -37,7 +37,7 @@ scripts/maestro-all.sh tracker-payment    # einzelne Flows (nur beim Flow-Entwic
 | theme | theme-tour | `global.css`, `groupTheme.ts`, `navTheme.ts`, Theme-Provider, `tailwind.config.js` |
 | design-system (global) | tabs-tour, tracker-payment, watchlist-open-detail, movie-detail, group-settings-edit, theme-tour, auth-screens | `src/components/ui/**`, `tailwind.config.js`, `global.css`, `assets/**`, Konstanten/Theme-Hooks |
 
-design-system ist die repräsentative Stichprobe über alle Screen-Typen (Tabs, Sheets, Detail, Settings/Themes, Auth). Ändert eine Änderung gemeinsame Komponenten tiefgreifend (z.B. Sheet, Glass, Backdrop auf allen Screens), danach zusätzlich den vollen Lauf.
+design-system ist die repräsentative Stichprobe über alle Screen-Typen (Tabs, Sheets, Detail, Settings/Themes, Auth). Ändert eine Änderung gemeinsame Komponenten tiefgreifend (z.B. Sheet, Surface, Backdrop auf allen Screens), danach zusätzlich den vollen Lauf.
 
 ## Wann voll, wann Bereich
 

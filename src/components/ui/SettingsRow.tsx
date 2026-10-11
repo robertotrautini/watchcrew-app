@@ -27,7 +27,7 @@ export interface SettingsRowProps {
 
 /**
  * Flat settings list row (icon, label, optional value/badge, accent chevron).
- * Has no box of its own: put rows inside a `SettingsGroup` glass card, which
+ * Has no box of its own: put rows inside a `SettingsGroup` surface card, which
  * draws the hairlines between them.
  */
 export function SettingsRow({

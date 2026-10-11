@@ -97,7 +97,6 @@ for (const f of compFiles) {
   const src = read(f);
   const sf = ts.createSourceFile(f, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const decls = new Map();
-  const imports = new Map();
   sf.statements.forEach((s) => {
     if (ts.isInterfaceDeclaration(s) || ts.isTypeAliasDeclaration(s)) decls.set(s.name.text, s);
   });
@@ -173,7 +172,6 @@ const comps = rawComps.map((c) => {
   return { ...c, id: c.file + '#' + display, display };
 });
 
-const isRouteFile = (file) => file.startsWith('src/app/');
 const catOf = (c) => {
   const base = category(c.file);
   if (base === 'screen') {
@@ -184,7 +182,6 @@ const catOf = (c) => {
 };
 
 const uiNames = new Set(comps.filter((c) => c.file.startsWith('src/components/ui/')).map((c) => c.display));
-const corePrims = new Set([...uiNames, 'Pressable', 'ScrollView', 'FlatList', 'Modal', 'TextInput', 'Image', 'Animated.View', 'Text', 'View']);
 
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 function countUsage(c) {

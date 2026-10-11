@@ -14,7 +14,7 @@ import { useGroupPushSubscription } from "@/hooks/useGroupPushSubscription";
 import { usePushPermissionStatus } from "@/hooks/usePushPermissionStatus";
 import { useUserGroups } from "@/hooks/useUserGroups";
 import { groupDisplayLabel } from "@/lib/diaryDisplay";
-import { GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_TILE_CLASSNAME } from "@/components/ui/Surface";
 
 /**
  * Settings "Benachrichtigungen" (inventory 4.2, ADR 0006): one opt-in toggle
@@ -63,7 +63,7 @@ export default function SettingsNotificationsScreen() {
   const groupsQuery = useUserGroups(currentUserId);
   const groupIds = useMemo(
     () =>
-      ((groupsQuery.data ?? []) as Array<{ group_id: string }>).map(
+      ((groupsQuery.data ?? []) as { group_id: string }[]).map(
         (m) => m.group_id,
       ),
     [groupsQuery.data],
@@ -71,10 +71,10 @@ export default function SettingsNotificationsScreen() {
   const namesQuery = useGroupNames(groupIds);
   const nameById = useMemo(() => {
     const names = new Map<string, string>();
-    for (const group of (namesQuery.data ?? []) as Array<{
+    for (const group of (namesQuery.data ?? []) as {
       id: string;
       name: string;
-    }>) {
+    }[]) {
       names.set(group.id, group.name);
     }
     return names;
@@ -87,7 +87,7 @@ export default function SettingsNotificationsScreen() {
         {permission === "denied" ? (
           <View
             testID="settings-notifications-permission-hint"
-            className={`mb-4 gap-3 ${GLASS_TILE_CLASSNAME} p-4`}
+            className={`mb-4 gap-3 ${SURFACE_TILE_CLASSNAME} p-4`}
           >
             <Text className="text-text-primary">
               Benachrichtigungen sind in den Systemeinstellungen deaktiviert.{" "}

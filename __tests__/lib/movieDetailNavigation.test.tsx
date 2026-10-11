@@ -1,4 +1,4 @@
-import { act, fireEvent, renderRouter, screen } from "expo-router/testing-library";
+import { fireEvent, renderRouter, screen } from "expo-router/testing-library";
 import { Pressable, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 

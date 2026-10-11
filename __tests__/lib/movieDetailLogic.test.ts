@@ -319,7 +319,7 @@ describe("getVisibleActions", () => {
 });
 
 describe("buildGroupRatingRows", () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   const { buildGroupRatingRows } = require("@/lib/movieDetailLogic");
 
   it("excludes the current user and lists rated members before unrated ones", () => {

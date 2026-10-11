@@ -2,7 +2,7 @@ import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useEffect, useRef, useState } from "react";
 import { Dimensions, Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
-import { GLASS_EDGE, GLASS_FLAT_FILL } from "@/components/ui/Glass";
+import { SURFACE_EDGE, SURFACE_FILL } from "@/components/ui/Surface";
 import { Icon, type IconRole } from "@/components/ui/Icon";
 import { Text, TextInput } from "@/components/ui/Text";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
@@ -181,7 +181,7 @@ export function Select({
   const manualFocus = showInput && !autoFocusSearch;
   const chevronColor = PLACEHOLDER_COLOR;
   const fieldClass = cn(
-    `min-h-touch-comfortable flex-row items-center gap-2 rounded-lg ${GLASS_EDGE} ${GLASS_FLAT_FILL} px-4`,
+    `min-h-touch-comfortable flex-row items-center gap-2 rounded-lg ${SURFACE_EDGE} ${SURFACE_FILL} px-4`,
     disabled && "opacity-50",
   );
 
@@ -279,7 +279,7 @@ export function Select({
             </Pressable>
             <View
               testID={`${testID}-list`}
-              className={`overflow-hidden rounded-lg ${GLASS_EDGE} ${GLASS_FLAT_FILL}`}
+              className={`overflow-hidden rounded-lg ${SURFACE_EDGE} ${SURFACE_FILL}`}
               style={[styles.overlayPart, listGeometry, measuredStyle]}
             >
               <ScrollView testID={`${testID}-scroll`} nestedScrollEnabled keyboardShouldPersistTaps="handled">
@@ -299,7 +299,7 @@ export function Select({
                         accessibilityState={{ selected: isSelected }}
                         onPress={() => handleSelect(option.value)}
                         className={cn(
-                          "min-h-touch-comfortable justify-center border-b border-glass-border px-4",
+                          "min-h-touch-comfortable justify-center border-b border-surface-border px-4",
                           isSelected && "bg-accent",
                         )}
                       >

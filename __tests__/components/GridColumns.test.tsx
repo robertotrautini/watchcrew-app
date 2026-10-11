@@ -6,7 +6,7 @@ import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
 import { WatchlistEntryList } from "@/components/watchlist/WatchlistEntryList";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
-const mockNumColumns: Array<number | undefined> = [];
+const mockNumColumns: (number | undefined)[] = [];
 const mockWrapperStyles: unknown[] = [];
 const lastNumColumns = () => mockNumColumns[mockNumColumns.length - 1];
 jest.mock("react-native/Libraries/Lists/FlatList", () => {
@@ -84,7 +84,7 @@ describe("configurable grid columns", () => {
 
   it.each([3, 4] as const)("Tagebuch grid uses %i columns", async (cols) => {
     usePreferencesStore.setState({ gridColumnsDiaryWatchlist: cols });
-    const r = await render(tagebuch());
+    await render(tagebuch());
     expect(lastNumColumns()).toBe(cols);
   });
 

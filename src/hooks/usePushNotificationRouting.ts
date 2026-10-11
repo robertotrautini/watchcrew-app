@@ -48,7 +48,7 @@ export function usePushNotificationRouting(): void {
           return;
         }
         const groups = (await queryClient.ensureQueryData(userGroupsQueryOptions(userId))) as
-          | Array<{ group_id: string }>
+          | { group_id: string }[]
           | undefined;
         if (groups?.some((g) => g.group_id === groupId)) {
           usePreferencesStore.getState().setActiveGroupId(groupId);

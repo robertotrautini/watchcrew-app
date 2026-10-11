@@ -46,7 +46,7 @@ import type { TmdbMovieLike } from "@/lib/tmdbProxy";
 
 type AddMovieMode = "film" | "regisseur" | "besetzung" | "studio";
 
-const MODES: Array<{ key: AddMovieMode; label: string }> = [
+const MODES: { key: AddMovieMode; label: string }[] = [
   { key: "film", label: "Film" },
   { key: "regisseur", label: "Regisseur" },
   { key: "besetzung", label: "Besetzung" },
@@ -69,8 +69,7 @@ export default function AddMovieScreen() {
   const router = useRouter();
 
   const currentUserId = useCurrentUserId();
-  const { activeGroupId, groupsQuery: userGroupsQuery } =
-    useActiveGroup(currentUserId);
+  const { activeGroupId } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const [mode, setMode] = useState<AddMovieMode>("film");

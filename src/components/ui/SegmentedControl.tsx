@@ -35,7 +35,7 @@ export interface SegmentedControlProps<K extends string | number> {
 }
 
 /**
- * Shared segmented switch: identical 40x40 cells in a glass pill. Radius and
+ * Shared segmented switch: identical 40x40 cells in a surface pill. Radius and
  * fill of the selected cell are explicit style values (not a className that
  * flips with the selected state): on Android a runtime className swap
  * dropped the radius until the screen was re-entered. Fill = group accent.
@@ -53,7 +53,7 @@ export function SegmentedControl<K extends string | number>({
     <View
       testID={testID}
       style={styles.outer}
-      className={cn("h-12 flex-row items-center gap-1 border border-glass-border bg-black/35 p-[3px]", className)}
+      className={cn("h-12 flex-row items-center gap-1 border border-surface-border bg-black/35 p-[3px]", className)}
     >
       {options.map((option) => {
         const active = value === option.key;

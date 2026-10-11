@@ -58,10 +58,6 @@ export interface GroupMemberRow extends WatchGroupMembershipRow {
 // reshaped into `{ groupId }` rather than returned bare, so callers get a
 // self-describing field name instead of an anonymous string.
 
-interface WatchGroupIdResult {
-  groupId: string;
-}
-
 export async function createWatchGroup(name: string, colorTheme: string) {
   const { data, error } = await supabase.rpc("create_watch_group", {
     p_name: name,
@@ -109,15 +105,6 @@ export async function joinWatchGroupByToken(token: string) {
 // `color_theme`/`invite_token`/`invite_enabled`, not exposed anywhere in the
 // client before this screen). Same never-throw `{ data, error }`
 // passthrough convention as every other function in this file.
-
-interface WatchGroupRow {
-  id: string;
-  name: string;
-  color_theme: string;
-  invite_token: string;
-  invite_enabled: boolean;
-  created_at: string;
-}
 
 /** A single group's own row (name/theme/invite settings) -- RLS: member-only select, same `watch_groups_select_members` policy as everything else on this table. */
 export async function getWatchGroupDetails(groupId: string) {
@@ -187,10 +174,6 @@ export async function setInviteEnabled(groupId: string, enabled: boolean) {
 // the existing owner-only RLS policy would already block a non-owner's
 // plain UPDATE the same way.
 export const NOT_GROUP_OWNER_ERROR_CODE = "WC004";
-
-interface RegenerateInviteTokenResult {
-  inviteToken: string;
-}
 
 export async function regenerateInviteToken(groupId: string) {
   const { data, error } = await supabase.rpc("regenerate_invite_token", { p_group_id: groupId });

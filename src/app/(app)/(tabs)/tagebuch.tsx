@@ -4,7 +4,7 @@ import { Text } from "@/components/ui/Text";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Glass";
+import { PANEL_LIST_OVERLAP_CLASSNAME } from "@/components/ui/Surface";
 import { TagebuchEntryList } from "@/components/tagebuch/TagebuchEntryList";
 import { TagebuchFilterPanel } from "@/components/tagebuch/TagebuchFilterPanel";
 import { TagebuchScopeSwitch } from "@/components/tagebuch/TagebuchScopeSwitch";

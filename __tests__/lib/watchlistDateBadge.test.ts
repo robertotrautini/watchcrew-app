@@ -20,7 +20,7 @@ function makeMovie(overrides: Partial<Movie> = {}): Movie {
   };
 }
 
-function lookup(entries: Array<[number, boolean]> = []): StreamingAvailabilityLookup {
+function lookup(entries: [number, boolean][] = []): StreamingAvailabilityLookup {
   return new Map(entries);
 }
 

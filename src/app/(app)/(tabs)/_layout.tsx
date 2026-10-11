@@ -9,8 +9,8 @@ import { TabSwipeView } from "@/components/TabSwipeView";
 import { TabSwitchContext } from "@/components/tabSwitchContext";
 import { useTabSwitchState } from "@/hooks/useTabSwitchState";
 import {
-  GLASS_TAB_BAR_STYLE,
-} from "@/components/ui/Glass";
+  TAB_BAR_STYLE,
+} from "@/components/ui/Surface";
 import { TabBarButton } from "@/components/ui/TabBarButton";
 import { tabIndexOf } from "@/lib/parallax";
 import { WATCHLIST_ROUTE } from "@/lib/homeRoute";
@@ -44,12 +44,12 @@ export const TAB_SCREENS = [
     icon: "tabDiary",
     iconInactive: "tabDiary",
   },
-] as const satisfies ReadonlyArray<{
+] as const satisfies readonly {
   name: string;
   title: string;
   icon: IconRole;
   iconInactive: IconRole;
-}>;
+}[];
 
 /**
  * Per-device "Tracker aktiv" flag (usePreferencesStore.trackerEnabled): the
@@ -111,9 +111,9 @@ export default function TabsLayout() {
             headerShown: false,
             tabBarActiveTintColor: groupColors.accent,
             tabBarInactiveTintColor: PLACEHOLDER_COLOR,
-            // Legacy look: flat dark glass bar with hairline top
+            // Legacy look: flat dark surface bar with hairline top
             // border; the gold top line over the active tab is TabBarButton.
-            tabBarStyle: GLASS_TAB_BAR_STYLE,
+            tabBarStyle: TAB_BAR_STYLE,
             tabBarButton: TabBarButton as never,
           }}
         >

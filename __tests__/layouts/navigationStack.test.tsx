@@ -2,7 +2,7 @@ import { render } from "@testing-library/react-native";
 
 import { navigateToMovieDetail, navigateToSimilarMovies } from "@/lib/movieDetailNavigation";
 
-const mockScreens: Array<{ name: string; options?: Record<string, unknown> }> = [];
+const mockScreens: { name: string; options?: Record<string, unknown> }[] = [];
 
 jest.mock("@/hooks/useCurrentUserId", () => ({ useCurrentUserId: () => "user-1" }));
 jest.mock("@/hooks/usePushRegistration", () => ({ usePushRegistration: jest.fn() }));

@@ -21,7 +21,7 @@ export interface ViewModeToggleProps {
   buttonTestID: (mode: ViewMode) => string;
 }
 
-/** Segmented Karten/Grid/Liste switch (shared `SegmentedControl`): three identical 40x40 icon cells, equal 4px inset (1 border + 3 padding) and 4px gaps (lives inside the search glass card). */
+/** Segmented Karten/Grid/Liste switch (shared `SegmentedControl`): three identical 40x40 icon cells, equal 4px inset (1 border + 3 padding) and 4px gaps (lives inside the search surface card). */
 export function ViewModeToggle({ value, onChange, testID, buttonTestID }: ViewModeToggleProps) {
   return (
     <SegmentedControl

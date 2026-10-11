@@ -45,7 +45,7 @@ describe("ToastHost", () => {
     expect(getByTestId("toast-message").props.children).toBe("Neuer Film zur Watchlist hinzugefügt");
   });
 
-  it("renders on a filled glass surface with a border (readable over the photo background)", async () => {
+  it("renders on a filled surface with a border (readable over the photo background)", async () => {
     const { getByTestId } = await render(<ToastHost />);
 
     await act(async () => {

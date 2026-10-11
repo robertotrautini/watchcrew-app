@@ -30,7 +30,7 @@ describe("Sheet", () => {
     expect(queryByText("sheet content")).toBeNull();
   });
 
-  it("uses a near-opaque dark surface (not the translucent bg-glass) so content behind the sheet cannot bleed through", async () => {
+  it("uses a near-opaque dark surface (not the translucent bg-surface) so content behind the sheet cannot bleed through", async () => {
     const { getByTestId } = await render(
       <Sheet visible onClose={jest.fn()}>
         <Text>sheet content</Text>
@@ -39,7 +39,7 @@ describe("Sheet", () => {
 
     expect(getByTestId("sheet-surface").props.className).toContain("bg-black");
     expect(getByTestId("sheet-surface").props.className).not.toContain("bg-bg-card-flat");
-    expect(getByTestId("sheet-surface").props.className).not.toContain("bg-glass");
+    expect(getByTestId("sheet-surface").props.className).not.toContain("bg-surface");
   });
 
   it("has a straight top edge (no corner radius) with a full-width top border", async () => {
@@ -51,7 +51,7 @@ describe("Sheet", () => {
     const cls = getByTestId("sheet-surface").props.className as string;
     expect(cls).not.toMatch(/rounded/);
     expect(cls).toContain("border-t");
-    expect(cls).toContain("border-glass-border");
+    expect(cls).toContain("border-surface-border");
   });
 
   it("renders the close button as a ghost IconButton", async () => {
@@ -65,7 +65,7 @@ describe("Sheet", () => {
 
   it("closes on the Android hardware back button while visible", async () => {
     const { BackHandler } = require("react-native");
-    const handlers: Array<() => boolean> = [];
+    const handlers: (() => boolean)[] = [];
     const spy = jest.spyOn(BackHandler, "addEventListener").mockImplementation(((_e: string, h: () => boolean) => {
       handlers.push(h);
       return { remove: jest.fn() };

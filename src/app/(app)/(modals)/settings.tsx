@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { GLASS_INPUT_CLASSNAME, GLASS_INSET_EDGE } from "@/components/ui/Glass";
+import { SURFACE_INPUT_CLASSNAME, SURFACE_EDGE } from "@/components/ui/Surface";
 import { Select } from "@/components/ui/Select";
 import { Sheet } from "@/components/ui/Sheet";
 import { SettingsRow } from "@/components/ui/SettingsRow";
@@ -32,9 +32,9 @@ import { showToast } from "@/lib/toast";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
- * Layout (grouped, legacy-inspired): one glass
+ * Layout (grouped, legacy-inspired): one surface
  * card per section (Profil, Gruppe, App, Rechtliches), the Datenquellen footer
- * with TMDB/Trakt logos and a full-width glass Abmelden button followed by the danger Konto löschen button. The calm dark
+ * with TMDB/Trakt logos and a full-width surface Abmelden button followed by the danger Konto löschen button. The calm dark
  * background comes from the (modals) layout (contentStyle), not from here.
  *
  * M10 — the real Settings hub, replacing the M9-part-2 interim "⚙️ Gruppe
@@ -326,7 +326,7 @@ export default function SettingsScreen() {
             autoCapitalize="words"
             placeholder="Anzeigename"
             placeholderTextColor={PLACEHOLDER_COLOR}
-            className={GLASS_INPUT_CLASSNAME}
+            className={SURFACE_INPUT_CLASSNAME}
           />
           {displayNameError ? (
             <Text
@@ -379,7 +379,7 @@ export default function SettingsScreen() {
           </Text>
           <TextInput
             testID="delete-account-confirm-input"
-            className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+            className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
             autoCapitalize="characters"
             autoCorrect={false}
             value={deleteConfirmationInput}

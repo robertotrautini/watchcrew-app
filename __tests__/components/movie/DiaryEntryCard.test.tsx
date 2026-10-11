@@ -17,9 +17,9 @@ describe("DiaryEntryCard", () => {
     ],
   };
 
-  it("uses the flat dark glass (no live BlurView per card)", async () => {
+  it("uses the flat dark surface (no live BlurView per card)", async () => {
     const { getByTestId, queryByTestId } = await render(<DiaryEntryCard {...base} />);
-    expect(queryByTestId("glass-blur-view")).toBeNull();
+    expect(queryByTestId("surface-blur-view")).toBeNull();
     expect(getByTestId("diary-entry-card").props.className).toContain("bg-bg-card-flat");
   });
 

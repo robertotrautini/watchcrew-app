@@ -12,7 +12,7 @@ function entry(
   id: string,
   genreIds: string[],
   releaseDate: string | null,
-  ratings: Array<{ member_id: string; seen_at: string | null }> = [],
+  ratings: { member_id: string; seen_at: string | null }[] = [],
 ): WatchlistEntry {
   return {
     id,

@@ -3,44 +3,42 @@ import { Pressable, View, type GestureResponderEvent, type ViewProps } from "rea
 import { cn } from "@/lib/utils";
 
 /**
- * Flat dark glass surface: near-opaque dark fill (`GLASS_FLAT_FILL`, 95 %) +
+ * Flat dark surface: near-opaque dark fill (`SURFACE_FILL`, 95 %) +
  * single flat 1px faint white border + rounded corners. No blur anywhere
  * (docs/style-guide.md). Shared by Card, Toast, settings groups and similar surfaces.
  */
-export type GlassVariant = "default" | "strong" | "panel" | "solid";
+export type SurfaceVariant = "default" | "strong" | "panel" | "solid";
 
 /**
  * Flat Material border (docs/style-guide.md): ONE uniform 1px hairline in
- * `glass-border` (white 10%). No highlight, bottom edge, inner shadow or
+ * `surface-border` (white 10%). No highlight, bottom edge, inner shadow or
  * drop shadow ("3D bevel" removed). Tokens in tailwind.config.js.
  */
-export const GLASS_EDGE = "border border-glass-border";
-/** Text inputs use the same single flat border (no recessed bevel). */
-export const GLASS_INSET_EDGE = GLASS_EDGE;
+export const SURFACE_EDGE = "border border-surface-border";
 
-export const GLASS_CLASSNAMES: Record<GlassVariant, string> = {
-  default: `rounded-xl ${GLASS_EDGE}`,
-  strong: `rounded-xl ${GLASS_EDGE}`,
+export const SURFACE_CLASSNAMES: Record<SurfaceVariant, string> = {
+  default: `rounded-xl ${SURFACE_EDGE}`,
+  strong: `rounded-xl ${SURFACE_EDGE}`,
   /** Fully opaque black (#000) card, like tab bar / sheet intent: filter panels. */
-  solid: `rounded-xl ${GLASS_EDGE}`,
+  solid: `rounded-xl ${SURFACE_EDGE}`,
   /** Large panels: toast, bottom action bar (sheet/tab bar reuse the same tokens). */
-  panel: GLASS_EDGE,
+  panel: SURFACE_EDGE,
 };
 
 /** Shared rounded-row look (settings rows, action buttons). */
-export const GLASS_TILE_CLASSNAME = `rounded-xl ${GLASS_EDGE} bg-card`;
+export const SURFACE_TILE_CLASSNAME = `rounded-xl ${SURFACE_EDGE} bg-card`;
 
 /** Detail screen bottom action bar surface (top edge only). */
-export const GLASS_BAR_CLASSNAME = "border-t border-glass-border";
+export const SURFACE_BAR_CLASSNAME = "border-t border-surface-border";
 
-/** The one fill of every glass surface; token in tailwind.config.js. */
-export const GLASS_FLAT_FILL = "bg-bg-card-flat";
+/** The one fill of every surface; token in tailwind.config.js. */
+export const SURFACE_FILL = "bg-bg-card-flat";
 
 /**
  * Tab bar needs raw style values (React Navigation `tabBarStyle`); keep them in
- * sync with the `bg-tab-bar` / `glass-border` tokens in tailwind.config.js.
+ * sync with the `bg-tab-bar` / `surface-border` tokens in tailwind.config.js.
  */
-export const GLASS_TAB_BAR_STYLE = {
+export const TAB_BAR_STYLE = {
   backgroundColor: "rgba(10,10,12,0.95)",
   borderTopColor: "rgba(255,255,255,0.1)",
   borderTopWidth: 1,
@@ -101,24 +99,24 @@ export function panelShadowOpacities(
   });
 }
 
-export interface GlassProps extends ViewProps {
+export interface SurfaceProps extends ViewProps {
   onPress?: (event: GestureResponderEvent) => void;
-  variant?: GlassVariant;
+  variant?: SurfaceVariant;
 }
 
-export function Glass({ variant = "default", className, onPress, ...rest }: GlassProps) {
+export function Surface({ variant = "default", className, onPress, ...rest }: SurfaceProps) {
   const Root = (onPress ? Pressable : View) as typeof View;
   const rootProps = onPress ? { onPress, ...rest } : rest;
   return (
     <Root
-      className={cn("overflow-hidden", GLASS_CLASSNAMES[variant], className, variant === "solid" ? "bg-black" : GLASS_FLAT_FILL)}
+      className={cn("overflow-hidden", SURFACE_CLASSNAMES[variant], className, variant === "solid" ? "bg-black" : SURFACE_FILL)}
       {...rootProps}
     />
   );
 }
 
-/** Shared glass text-input look (auth, onboarding, settings forms). */
-export const GLASS_INPUT_CLASSNAME = `rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-4 py-3 text-base text-text-primary`;
+/** Shared surface text-input look (auth, onboarding, settings forms). */
+export const SURFACE_INPUT_CLASSNAME = `rounded-lg ${SURFACE_EDGE} bg-black/35 px-4 py-3 text-base text-text-primary`;
 
-/** Recessed (darker) search input sitting inside a glass card. */
-export const GLASS_SEARCH_INPUT_CLASSNAME = `flex-1 rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`;
+/** Recessed (darker) search input sitting inside a surface card. */
+export const SURFACE_SEARCH_INPUT_CLASSNAME = `flex-1 rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`;

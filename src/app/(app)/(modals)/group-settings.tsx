@@ -35,7 +35,7 @@ import {
   resolveGroupTheme,
   type GroupThemeName,
 } from "@/lib/groupTheme";
-import { GLASS_INSET_EDGE, GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_EDGE, SURFACE_TILE_CLASSNAME } from "@/components/ui/Surface";
 
 /**
  * Group-Settings screen (M9 part 2) -- member list, rename, invite-link
@@ -379,7 +379,7 @@ export default function GroupSettingsScreen() {
                 testID="group-settings-name-input"
                 value={nameInput}
                 onChangeText={setNameInput}
-                className={`flex-1 rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+                className={`flex-1 rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
               />
               <IconButton
                 testID="group-settings-rename-save-button"
@@ -484,7 +484,7 @@ export default function GroupSettingsScreen() {
                 onPress={() => setRegenerateConfirmVisible(true)}
               />
             </View>
-            <View className={GLASS_TILE_CLASSNAME}>
+            <View className={SURFACE_TILE_CLASSNAME}>
               <SettingsToggleRow
                 testID="group-settings-invite-toggle"
                 checked={inviteEnabled}
@@ -514,7 +514,7 @@ export default function GroupSettingsScreen() {
                 <View className="flex-row items-center gap-3">
                   <View
                     testID={`group-settings-member-capsule-${member.user_id}`}
-                    className={`flex-1 flex-row items-center gap-3 ${GLASS_TILE_CLASSNAME} px-3 py-3`}
+                    className={`flex-1 flex-row items-center gap-3 ${SURFACE_TILE_CLASSNAME} px-3 py-3`}
                   >
                     <Text
                       className="flex-1 text-text-primary"

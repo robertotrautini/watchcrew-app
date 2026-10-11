@@ -37,8 +37,7 @@ export default function StudioFilmographyScreen() {
   const hasValidParams = params.companyId != null && !Number.isNaN(companyId);
 
   const currentUserId = useCurrentUserId();
-  const { activeGroupId, groupsQuery: userGroupsQuery } =
-    useActiveGroup(currentUserId);
+  const { activeGroupId } = useActiveGroup(currentUserId);
   const watchlistQuery = useGroupWatchlist(activeGroupId);
 
   const studioFilmographyQuery = useStudioFilmography(

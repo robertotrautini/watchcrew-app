@@ -6,7 +6,7 @@ import { Link, useRouter } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Glass, GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import { signInWithEmail } from "@/lib/auth";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
@@ -87,7 +87,7 @@ export default function LoginScreen() {
       testID="login-screen"
     >
       <Brand />
-      <Glass variant="strong" className="gap-3 p-5">
+      <Surface variant="strong" className="gap-3 p-5">
         <Text className="text-sm text-text-secondary">E-Mail</Text>
         <TextInput
           testID="login-email-input"
@@ -98,7 +98,7 @@ export default function LoginScreen() {
           autoComplete="email"
           placeholder="du@beispiel.de"
           placeholderTextColor={PLACEHOLDER_COLOR}
-          className={GLASS_INPUT_CLASSNAME}
+          className={SURFACE_INPUT_CLASSNAME}
         />
 
         <Text className="text-sm text-text-secondary">Passwort</Text>
@@ -110,7 +110,7 @@ export default function LoginScreen() {
           autoCapitalize="none"
           placeholder="••••••••"
           placeholderTextColor={PLACEHOLDER_COLOR}
-          className={GLASS_INPUT_CLASSNAME}
+          className={SURFACE_INPUT_CLASSNAME}
         />
 
         {validationError ? (
@@ -163,7 +163,7 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
         </Link>
-      </Glass>
+      </Surface>
     </KeyboardAvoidingView>
   );
 }

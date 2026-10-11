@@ -1,6 +1,6 @@
 import { render } from "@testing-library/react-native";
 
-const mockScreens: Array<{ name: string; options?: { title?: string; contentStyle?: { backgroundColor?: string } } }> = [];
+const mockScreens: { name: string; options?: { title?: string; contentStyle?: { backgroundColor?: string } } }[] = [];
 
 const mockStackProps: { screenLayout?: unknown; screenOptions?: Record<string, unknown> } = {};
 

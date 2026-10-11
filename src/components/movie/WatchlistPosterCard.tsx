@@ -96,7 +96,7 @@ export function WatchlistPosterCard({
     ? (movie.overview as string)
     : OVERVIEW_FALLBACK;
 
-  // Dim only the content layer; the glass surface (flat fill) must stay untouched.
+  // Dim only the content layer; the surface (flat fill) must stay untouched.
   const dimClassName = dimmed ? " opacity-50" : "";
 
   if (variant === "card") {

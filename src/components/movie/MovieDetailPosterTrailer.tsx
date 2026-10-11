@@ -84,7 +84,7 @@ export function MovieDetailPosterTrailer({
       className={
         isPlayingTrailer
           ? "relative aspect-video w-full"
-          : "relative aspect-[2/3] w-[55%] max-w-[260px] self-center overflow-hidden rounded-lg border border-glass-border"
+          : "relative aspect-[2/3] w-[55%] max-w-[260px] self-center overflow-hidden rounded-lg border border-surface-border"
       }
     >
       {isPlayingTrailer ? (

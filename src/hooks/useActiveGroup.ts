@@ -32,7 +32,7 @@ export function useActiveGroup(userId: string | undefined) {
   const storedActiveGroupId = usePreferencesStore((s) => s.activeGroupId);
   const setActiveGroupId = usePreferencesStore((s) => s.setActiveGroupId);
 
-  const groups = (groupsQuery.data ?? []) as Array<{ group_id: string }>;
+  const groups = (groupsQuery.data ?? []) as { group_id: string }[];
   const isStoredIdStillValid =
     storedActiveGroupId != null && groups.some((g) => g.group_id === storedActiveGroupId);
 

@@ -24,7 +24,7 @@ const GOLD_STAR_COLOR = "#FFD700";
 const STAR_EMPTY_COLOR = "#575757";
 const LIKE_HEART_COLOR = "#e05c6e";
 
-function starIcons(icons: Array<{ props: { name: string; color: string } }>) {
+function starIcons(icons: { props: { name: string; color: string } }[]) {
   return icons.map((icon) => ({ name: icon.props.name, color: icon.props.color }));
 }
 

@@ -12,9 +12,9 @@ import { nextGroupId } from "@/lib/groupCycle";
 export function useGroupQuickSwitch() {
   const userId = useCurrentUserId();
   const { activeGroupId, setActiveGroup, groupsQuery } = useActiveGroup(userId);
-  const groupIds = ((groupsQuery.data ?? []) as Array<{ group_id: string }>).map((g) => g.group_id);
+  const groupIds = ((groupsQuery.data ?? []) as { group_id: string }[]).map((g) => g.group_id);
   const namesQuery = useGroupNames(groupIds);
-  const names = (namesQuery.data ?? []) as Array<{ id: string; name?: string | null }>;
+  const names = (namesQuery.data ?? []) as { id: string; name?: string | null }[];
 
   const nameOf = (id: string) => groupDisplayLabel(id, names.find((g) => g.id === id)?.name);
   const activeGroupName = activeGroupId ? nameOf(activeGroupId) : null;

@@ -5,7 +5,7 @@ import { TextInput } from "@/components/ui/Text";
 import { EntryFilterBar } from "@/components/entries/EntryFilterBar";
 import { EntrySortRow } from "@/components/entries/EntrySortRow";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
-import { GLASS_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import { WATCHLIST_SORT_FIELDS } from "@/lib/entrySorting";
 import { activeFilterKeys, hasActiveListFilters } from "@/lib/listFilters";
@@ -30,7 +30,7 @@ export function WatchlistFilterPanel({
       search={
         <TextInput
           testID="watchlist-search-input"
-          className={GLASS_SEARCH_INPUT_CLASSNAME}
+          className={SURFACE_SEARCH_INPUT_CLASSNAME}
           placeholder="Film suchen…"
           placeholderTextColor={PLACEHOLDER_COLOR}
           value={f.searchQuery}

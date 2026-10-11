@@ -1,7 +1,7 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
 import { StyleSheet } from "react-native";
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import type { Movie, Rating, WatchlistEntry } from "@/lib/watchlistTypes";
 

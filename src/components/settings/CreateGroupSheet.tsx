@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 
 import { Button } from "@/components/ui/Button";
-import { GLASS_INSET_EDGE } from "@/components/ui/Glass";
+import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Icon } from "@/components/ui/Icon";
 import { Sheet } from "@/components/ui/Sheet";
 import { Text, TextInput } from "@/components/ui/Text";
@@ -64,7 +64,7 @@ export function CreateGroupSheet({
           onChangeText={setName}
           placeholder="Gruppenname"
           placeholderTextColor={PLACEHOLDER_COLOR}
-          className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+          className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
         />
         <Text className="text-text-secondary">Farbthema</Text>
         <View className="flex-row flex-wrap gap-3">

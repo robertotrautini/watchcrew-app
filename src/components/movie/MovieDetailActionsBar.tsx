@@ -13,7 +13,7 @@ import {
   DANGER_SURFACE_CLASSNAME,
   DANGER_TEXT_CLASSNAME,
 } from "@/components/ui/Button";
-import { GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
+import { SURFACE_TILE_CLASSNAME } from "@/components/ui/Surface";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import {
   useAddToWatchlist,
@@ -100,7 +100,7 @@ function handleAddToWatchlistError(): void {
   showToast(GENERIC_ADD_TO_WATCHLIST_ERROR_MESSAGE, { variant: "error" });
 }
 
-/** Legacy-style glass icon buttons of the bottom bar (icon above label). */
+/** Legacy-style surface icon buttons of the bottom bar (icon above label). */
 const ACTION_ICONS: Record<ActionButtonId, IconRole> = {
   bewerten: "starEmpty",
   bearbeiten: "edit",
@@ -114,7 +114,7 @@ const ACTION_ICONS: Record<ActionButtonId, IconRole> = {
 const ACTION_ICON_COLOR = "#a8a8a8";
 
 // Fully opaque black (same as the bar surface behind them) so the tiles stand off from the content.
-const ACTION_TILE_CLASSNAME = `${GLASS_TILE_CLASSNAME.replace("bg-card", "")} bg-black`;
+const ACTION_TILE_CLASSNAME = `${SURFACE_TILE_CLASSNAME.replace("bg-card", "")} bg-black`;
 
 interface ActionIconButtonProps {
   id: ActionButtonId;

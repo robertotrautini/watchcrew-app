@@ -62,27 +62,27 @@ export const DANGER_TEXT_CLASSNAME = "text-danger-text";
 export const DANGER_ICON_COLOR = DANGER_TEXT_COLOR;
 
 /**
- * ONE button system for glass surfaces (docs/style-guide.md). Flat Material
+ * ONE button system for surfaces (docs/style-guide.md). Flat Material
  * look: no 3D edge, no highlight; every variant has the same single 1px border
  * (transparent where it should not show):
  *  - primary: accent (gold) fill, dark text. The one main action per screen.
- *  - secondary: neutral glass, white 10% fill, flat `glass-border`, light text.
+ *  - secondary: neutral surface, white 10% fill, flat `surface-border`, light text.
  *  - ghost: no fill/border, text/icon only.
  *  - danger: shared danger tokens (red tint, red text), all destructive actions.
  * Disabled uses dedicated muted classes (no opacity on gold -> no muddy brown).
  */
 const VARIANT_CONTAINER_CLASSES: Record<ButtonVariant, string> = {
   primary: "bg-accent border border-transparent active:bg-accent-light",
-  secondary: "bg-white/10 border border-glass-border active:bg-white/20",
+  secondary: "bg-white/10 border border-surface-border active:bg-white/20",
   ghost: "bg-transparent border border-transparent active:bg-white/10",
   danger: `${DANGER_SURFACE_CLASSNAME} ${DANGER_PRESSED_CLASSNAME}`,
 };
 
 const VARIANT_DISABLED_CONTAINER_CLASSES: Record<ButtonVariant, string> = {
-  primary: "bg-white/10 border border-glass-border",
-  secondary: "bg-white/5 border border-glass-border",
+  primary: "bg-white/10 border border-surface-border",
+  secondary: "bg-white/5 border border-surface-border",
   ghost: "bg-transparent border border-transparent",
-  danger: "bg-white/5 border border-glass-border",
+  danger: "bg-white/5 border border-surface-border",
 };
 
 const VARIANT_TEXT_CLASSES: Record<ButtonVariant, string> = {

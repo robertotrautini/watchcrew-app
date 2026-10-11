@@ -16,6 +16,13 @@
  * below just stops recognizing the (by-then-already-wrong) app.config.ts
  * default as a placeholder, which is easy to notice and fix.
  */
+// --- shared "open a legal link" side effect --------------------------------
+// Used by both the Settings hub (src/app/(app)/(modals)/settings.tsx) and
+// the Register screen (src/app/(auth)/register.tsx) so the two don't
+// duplicate the same placeholder-gate logic.
+
+import * as Linking from "expo-linking";
+
 export const PLACEHOLDER_PRIVACY_POLICY_URL = "https://watch-crew.app/privacy";
 export const PLACEHOLDER_TERMS_OF_SERVICE_URL = "https://watch-crew.app/terms";
 
@@ -31,13 +38,6 @@ export function isPlaceholderLegalUrl(url: string | null | undefined): boolean {
   }
   return PLACEHOLDER_URLS.has(url);
 }
-
-// --- shared "open a legal link" side effect --------------------------------
-// Used by both the Settings hub (src/app/(app)/(modals)/settings.tsx) and
-// the Register screen (src/app/(auth)/register.tsx) so the two don't
-// duplicate the same placeholder-gate logic.
-
-import * as Linking from "expo-linking";
 
 /**
  * Opens `url` in the system browser (per this task's brief: simplest
