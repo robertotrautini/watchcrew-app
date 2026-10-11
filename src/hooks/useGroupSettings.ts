@@ -3,6 +3,7 @@ import type { GroupThemeName } from "@/lib/groupTheme";
 import { showToast } from "@/lib/toast";
 
 import {
+  createWatchGroup,
   regenerateInviteToken,
   removeMember,
   renameWatchGroup,
@@ -182,6 +183,38 @@ export function useLeaveGroup() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.userGroups.byUser(variables.userId),
       });
+    },
+  });
+}
+
+export interface CreateGroupParams {
+  name: string;
+  theme: GroupThemeName;
+}
+
+/**
+ * "Neue Gruppe anlegen" -- wraps the same `create_watch_group` RPC wrapper the
+ * onboarding screen uses (caller becomes owner). Invalidates every group list
+ * cache; the caller activates the new group via the returned `groupId`.
+ */
+export function useCreateGroup() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ name, theme }: CreateGroupParams) => {
+      const { data, error } = await createWatchGroup(name, theme);
+      if (error) {
+        throw error;
+      }
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.userGroups.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.groupNames.all });
+      showToast("Gruppe angelegt", { variant: "success" });
+    },
+    onError: () => {
+      showToast("Gruppe konnte nicht angelegt werden", { variant: "error" });
     },
   });
 }

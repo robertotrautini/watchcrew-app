@@ -37,6 +37,19 @@ describe("useGroupQuickSwitch", () => {
     expect(result.current.activeGroupName).toBe("Eins");
   });
 
+  it("exposes the group list and selectGroup sets a known group directly", async () => {
+    const { result } = await renderHook(() => useGroupQuickSwitch());
+    expect(result.current.groups).toEqual([
+      { id: "g1", name: "Eins" },
+      { id: "g2", name: "Zwei" },
+    ]);
+    await act(async () => result.current.selectGroup("g2"));
+    expect(mockSetActiveGroup).toHaveBeenCalledWith("g2");
+    mockSetActiveGroup.mockClear();
+    await act(async () => result.current.selectGroup("unknown"));
+    expect(mockSetActiveGroup).not.toHaveBeenCalled();
+  });
+
   it("switches to the next group without a toast", async () => {
     const { result } = await renderHook(() => useGroupQuickSwitch());
     await act(async () => result.current.switchToNext());

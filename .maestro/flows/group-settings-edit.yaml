@@ -35,6 +35,19 @@ appId: com.watchcrew.app
       id: "group-settings-switch-list"
     timeout: 5000
 
+# --- "Neue Gruppe anlegen" flyout: open, screenshot, cancel (nothing is created) ---
+- tapOn:
+    id: "group-settings-create-button"
+- extendedWaitUntil:
+    visible:
+      id: "group-settings-create-dialog"
+    timeout: 5000
+- takeScreenshot: 01c-group-create-flyout
+- tapOn:
+    id: "group-settings-create-cancel-button"
+- assertNotVisible:
+    id: "group-settings-create-dialog"
+
 # --- rename (restored) ---
 # Guard: only overwrite the name if it is the documented baseline.
 - assertVisible: "Maestro Test Gruppe"

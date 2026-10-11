@@ -36,9 +36,19 @@ describe("useUserGroups", () => {
     });
     const useUserGroups = loadUseUserGroups();
 
-    const { result } = await renderHook(() => useUserGroups("u1"), { wrapper: createQueryWrapper() });
+    // Record the first render synchronously: asserting on result.current after
+    // `await renderHook` races the mocked promise resolving.
+    const loadingHistory: boolean[] = [];
+    const { result } = await renderHook(
+      () => {
+        const query = useUserGroups("u1");
+        loadingHistory.push(query.isLoading);
+        return query;
+      },
+      { wrapper: createQueryWrapper() }
+    );
 
-    expect(result.current.isLoading).toBe(true);
+    expect(loadingHistory[0]).toBe(true);
 
     await waitFor(() =>
       expect(result.current.data).toEqual([

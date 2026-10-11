@@ -5,7 +5,7 @@ import { groupDisplayLabel } from "@/lib/diaryDisplay";
 import { nextGroupId } from "@/lib/groupCycle";
 
 /**
- * Header logo quick-switch: cycles the active group through the user's groups (wrap-around) via
+ * Header group switching: logo tap cycles the active group through the user's groups (wrap-around) via
  * the same persisted `activeGroupId` the group-settings switcher uses. The store write is
  * synchronous (optimistic); group-keyed queries and the group theme follow the new id.
  */
@@ -26,5 +26,12 @@ export function useGroupQuickSwitch() {
     setActiveGroup(next);
   }
 
-  return { activeGroupName, activeGroupId, groupCount: groupIds.length, switchToNext };
+  const groups = groupIds.map((id) => ({ id, name: nameOf(id) }));
+
+  /** Dropdown selection: sets the active group directly. */
+  function selectGroup(id: string) {
+    if (groupIds.includes(id)) setActiveGroup(id);
+  }
+
+  return { activeGroupName, activeGroupId, groupCount: groupIds.length, groups, selectGroup, switchToNext };
 }

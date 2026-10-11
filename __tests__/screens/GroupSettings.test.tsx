@@ -1,6 +1,6 @@
 import { mockCurrentUserId } from "../helpers/mockCurrentUser";
 import { mockRouter } from "../helpers/mockRouter";
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import { Share } from "react-native";
 
 // --- Router mock (push/replace) + no-op Stack.Screen, same convention as
@@ -32,6 +32,8 @@ const mockSetInviteEnabledMutate = jest.fn();
 const mockRegenerateMutate = jest.fn();
 const mockRemoveMemberMutate = jest.fn();
 const mockLeaveGroupMutate = jest.fn();
+const mockCreateGroupMutate = jest.fn();
+let mockCreateGroupIsPending = false;
 let mockRenameIsPending = false;
 let mockRenameIsError = false;
 let mockRegenerateIsPending = false;
@@ -50,6 +52,7 @@ jest.mock("@/hooks/useGroupSettings", () => ({
   useRegenerateInviteToken: () => ({ mutate: mockRegenerateMutate, isPending: mockRegenerateIsPending }),
   useRemoveMember: () => ({ mutate: mockRemoveMemberMutate, isPending: mockRemoveMemberIsPending }),
   useLeaveGroup: () => ({ mutate: mockLeaveGroupMutate, isPending: mockLeaveGroupIsPending }),
+  useCreateGroup: () => ({ mutate: mockCreateGroupMutate, isPending: mockCreateGroupIsPending }),
 }));
 
 // Lazily required, same Babel CJS-hoisting reason as every other screen test
@@ -126,6 +129,7 @@ describe("GroupSettingsScreen", () => {
     mockRegenerateIsPending = false;
     mockRemoveMemberIsPending = false;
     mockLeaveGroupIsPending = false;
+    mockCreateGroupIsPending = false;
     jest.spyOn(Share, "share").mockResolvedValue({ action: "sharedAction" } as never);
   });
 
@@ -617,6 +621,56 @@ describe("GroupSettingsScreen", () => {
 
       expect(mockRouter.replace).toHaveBeenCalledWith("/(onboarding)/create-or-join-group");
       expect(mockSetActiveGroup).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("create group flyout", () => {
+    async function openFlyout() {
+      setUpHappyPath();
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const utils = await render(<GroupSettingsScreen />);
+      expect(utils.queryByTestId("group-settings-create-dialog")).toBeNull();
+      await fireEvent.press(utils.getByTestId("group-settings-create-button"));
+      return utils;
+    }
+
+    it("button opens the flyout", async () => {
+      const { getByTestId } = await openFlyout();
+      expect(getByTestId("group-settings-create-dialog")).toBeTruthy();
+      expect(getByTestId("group-settings-create-name-input")).toBeTruthy();
+      expect(getByTestId("group-settings-create-theme-gold")).toBeTruthy();
+    });
+
+    it("requires a non-blank name", async () => {
+      const { getByTestId } = await openFlyout();
+      await fireEvent.changeText(getByTestId("group-settings-create-name-input"), "   ");
+      await fireEvent.press(getByTestId("group-settings-create-confirm-button"));
+      expect(mockCreateGroupMutate).not.toHaveBeenCalled();
+    });
+
+    it("creates with trimmed name and chosen theme, then activates the new group", async () => {
+      const { getByTestId, queryByTestId } = await openFlyout();
+      await fireEvent.changeText(getByTestId("group-settings-create-name-input"), "  Neue Crew ");
+      await fireEvent.press(getByTestId("group-settings-create-theme-blue"));
+      await fireEvent.press(getByTestId("group-settings-create-confirm-button"));
+      expect(mockCreateGroupMutate).toHaveBeenCalledWith(
+        { name: "Neue Crew", theme: "blue" },
+        expect.objectContaining({ onSuccess: expect.any(Function) }),
+      );
+      const options = mockCreateGroupMutate.mock.calls[0][1];
+      await act(async () => options.onSuccess({ groupId: "g-new" }));
+      expect(mockSetActiveGroup).toHaveBeenCalledWith("g-new");
+      expect(queryByTestId("group-settings-create-dialog")).toBeNull();
+    });
+
+    it("cancel discards the draft", async () => {
+      const { getByTestId, queryByTestId } = await openFlyout();
+      await fireEvent.changeText(getByTestId("group-settings-create-name-input"), "Entwurf");
+      await fireEvent.press(getByTestId("group-settings-create-cancel-button"));
+      expect(queryByTestId("group-settings-create-dialog")).toBeNull();
+      expect(mockCreateGroupMutate).not.toHaveBeenCalled();
+      await fireEvent.press(getByTestId("group-settings-create-button"));
+      expect(getByTestId("group-settings-create-name-input").props.value).toBe("");
     });
   });
 });

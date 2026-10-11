@@ -10,6 +10,7 @@ import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView
 import { Pressable, Share, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
+import { CreateGroupSheet } from "@/components/settings/CreateGroupSheet";
 import { Select } from "@/components/ui/Select";
 import { SettingsToggleRow } from "@/components/settings/SettingsToggleRow";
 
@@ -19,6 +20,7 @@ import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useGroupDetails, useGroupNames } from "@/hooks/useGroupDetails";
 import { useGroupMembers } from "@/hooks/useGroupMembers";
 import {
+  useCreateGroup,
   useLeaveGroup,
   useRegenerateInviteToken,
   useRemoveMember,
@@ -104,6 +106,9 @@ export default function GroupSettingsScreen() {
   const regenerateMutation = useRegenerateInviteToken();
   const removeMemberMutation = useRemoveMember();
   const leaveGroupMutation = useLeaveGroup();
+  const createGroupMutation = useCreateGroup();
+  const [createVisible, setCreateVisible] = useState(false);
+  const [createSheetKey, setCreateSheetKey] = useState(0);
 
   const [switchOpen, setSwitchOpen] = useState(false);
   const [nameInput, setNameInput] = useState("");
@@ -203,6 +208,18 @@ export default function GroupSettingsScreen() {
       return;
     }
     renameMutation.mutate({ groupId: activeGroupId, newName: trimmed });
+  }
+
+  function handleCreateGroup(params: { name: string; theme: GroupThemeName }) {
+    createGroupMutation.mutate(params, {
+      onSuccess: (result) => {
+        setCreateVisible(false);
+        setCreateSheetKey((key) => key + 1); // fresh draft next time
+        if (result?.groupId) {
+          setActiveGroup(result.groupId);
+        }
+      },
+    });
   }
 
   function handleShareInvite() {
@@ -318,20 +335,31 @@ export default function GroupSettingsScreen() {
           <Text className="font-title text-lg text-accent-light">
             Deine Gruppen
           </Text>
-          <Select
-            testID="group-settings-switch"
-            accessibilityLabel="Gruppe wählen"
-            value={activeGroupId ?? null}
-            options={(groupsQuery.data ?? []).map((membership) => ({
-              value: membership.group_id,
-              label: groupDisplayLabel(
-                membership.group_id,
-                groupNameById.get(membership.group_id),
-              ),
-            }))}
-            onChange={setActiveGroup}
-            onOpenChange={setSwitchOpen}
-          />
+          <View className="flex-row items-center gap-3">
+            <View className="flex-1">
+              <Select
+                testID="group-settings-switch"
+                accessibilityLabel="Gruppe wählen"
+                value={activeGroupId ?? null}
+                options={(groupsQuery.data ?? []).map((membership) => ({
+                  value: membership.group_id,
+                  label: groupDisplayLabel(
+                    membership.group_id,
+                    groupNameById.get(membership.group_id),
+                  ),
+                }))}
+                onChange={setActiveGroup}
+                onOpenChange={setSwitchOpen}
+              />
+            </View>
+            <IconButton
+              testID="group-settings-create-button"
+              icon="add"
+              variant="accent"
+              accessibilityLabel="Neue Gruppe anlegen"
+              onPress={() => setCreateVisible(true)}
+            />
+          </View>
         </View>
 
         {isOwner ? (
@@ -574,6 +602,13 @@ export default function GroupSettingsScreen() {
         loading={leaveGroupMutation.isPending}
         onCancel={() => setLeaveConfirmVisible(false)}
         onConfirm={handleConfirmLeave}
+      />
+      <CreateGroupSheet
+        key={createSheetKey}
+        visible={createVisible}
+        loading={createGroupMutation.isPending}
+        onCancel={() => setCreateVisible(false)}
+        onCreate={handleCreateGroup}
       />
       <SettingsBackBar />
     </View>
