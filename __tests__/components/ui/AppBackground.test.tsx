@@ -2,7 +2,7 @@ import { render } from "@testing-library/react-native";
 import { Dimensions, StyleSheet } from "react-native";
 
 import { AppBackground } from "@/components/ui/AppBackground";
-import { BG_IMAGE_ASPECT, backgroundLayout } from "@/lib/parallax";
+import { BG_DIM_OPACITY, BG_IMAGE_ASPECT, backgroundLayout } from "@/lib/parallax";
 
 // Release-build regression: the backdrop must not depend on NativeWind
 // className resolution for its geometry (a zero-size image rendered as a flat
@@ -36,5 +36,15 @@ describe("AppBackground", () => {
     // Dimming + greyscale are baked into cinema-bg-baked.jpg (scripts/generate-bg-assets.py).
     expect(box.opacity).toBeUndefined();
     expect(box.mixBlendMode).toBeUndefined();
+  });
+
+  it("draws a static black dim overlay (BG_DIM_OPACITY) above the photo, outside the parallax box", async () => {
+    const { getByTestId } = await render(<AppBackground />);
+    const dim = StyleSheet.flatten(getByTestId("app-background-dim").props.style);
+    expect(dim).toMatchObject({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 });
+    expect(dim.backgroundColor).toBe("#000000");
+    expect(dim.opacity).toBe(BG_DIM_OPACITY);
+    expect(BG_DIM_OPACITY).toBeGreaterThanOrEqual(0);
+    expect(BG_DIM_OPACITY).toBeLessThanOrEqual(1);
   });
 });

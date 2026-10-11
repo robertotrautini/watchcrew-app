@@ -3,6 +3,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { shouldShowAllProvidersToggle } from "@/lib/movieDetailLogic";
 import type {
@@ -30,6 +31,8 @@ export const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
  */
 export interface MovieDetailProvidersProps {
   providers: TmdbMovieProviders | null;
+  /** Providers still loading: small spinner area. */
+  isLoading?: boolean;
 }
 
 interface FlatProvider extends TmdbProviderRef {
@@ -64,8 +67,19 @@ function groupBySection(
 
 export function MovieDetailProviders({
   providers,
+  isLoading = false,
 }: MovieDetailProvidersProps) {
   const [expanded, setExpanded] = useState(false);
+
+  if (isLoading && providers == null) {
+    return (
+      <LoadingArea
+        testID="movie-detail-providers-loading"
+        className="min-h-24 w-full"
+        size="small"
+      />
+    );
+  }
 
   if (providers == null) {
     return null;

@@ -13,24 +13,16 @@ import { Text } from "@/components/ui/Text";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BUTTON_ICON_COLORS, Button } from "@/components/ui/Button";
-import { GLASS_FLAT_FILL } from "@/components/ui/Glass";
-import { Icon } from "@/components/ui/Icon";
+import { IconButton } from "@/components/ui/IconButton";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 import { sheetMaxHeight } from "@/lib/sheetLayout";
 
 /**
- * Below this viewport width, the backdrop uses a flatter/less-transparent
- * fill instead of relying on layered opacity for its "glass" look. This is
- * flat stand-in for the planning report's "reduced blur on small
- * screens" note: there is no blur anywhere in the app. Width is read once at
- * module load (not via a resize listener) since phones don't rotate between
- * a Sheet opening and closing.
+ * Backdrop dimming behind every Sheet/dialog (0 = clear, 1 = black). One value
+ * for all variants; change here only.
  */
-const SMALL_SCREEN_WIDTH_THRESHOLD = 380;
-const isSmallScreen =
-  Dimensions.get("window").width < SMALL_SCREEN_WIDTH_THRESHOLD;
+export const SHEET_BACKDROP_OPACITY = 0.75;
 
 /** Space kept free above the sheet (status bar + a visible backdrop strip). */
 const SHEET_TOP_MARGIN = 80;
@@ -170,17 +162,14 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
         <Pressable
           testID="sheet-backdrop"
           onPress={onClose}
-          className={
-            isSmallScreen
-              ? "flex-1 justify-end bg-black/60"
-              : "flex-1 justify-end bg-black/40"
-          }
+          className="flex-1 justify-end"
+          style={styles.backdrop}
         >
           <Animated.View style={slideStyle}>
             <Pressable
               testID="sheet-surface"
               style={surfaceStyle}
-              className={`overflow-hidden rounded-t-xl border-t border-glass-border ${GLASS_FLAT_FILL}`}
+              className={`overflow-hidden border-t border-glass-border bg-black`}
               onPress={() => {
                 // Swallow the tap so it doesn't bubble to the backdrop.
               }}
@@ -195,15 +184,13 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
                     <Text className="font-title text-lg text-text-primary">
                       {title}
                     </Text>
-                    <Button
+                    <IconButton
                       testID="sheet-close-button"
                       variant="ghost"
-                      iconOnly
+                      icon="close"
                       onPress={onClose}
                       accessibilityLabel="Schließen"
-                    >
-                      <Icon name="close" color={BUTTON_ICON_COLORS.ghost} />
-                    </Button>
+                    />
                   </View>
                 ) : null}
                 <ScrollView
@@ -232,4 +219,5 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
 
 const styles = StyleSheet.create({
   overlay: { ...StyleSheet.absoluteFill, zIndex: 1000, elevation: 1000 },
+  backdrop: { backgroundColor: `rgba(0,0,0,${SHEET_BACKDROP_OPACITY})` },
 });

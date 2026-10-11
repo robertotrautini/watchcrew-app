@@ -1,3 +1,4 @@
+import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
@@ -6,7 +7,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { GLASS_BAR_CLASSNAME, GLASS_FLAT_FILL } from "@/components/ui/Glass";
+import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
 import { SheetHost } from "@/components/ui/Sheet";
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
 import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
@@ -46,7 +47,6 @@ import {
   navigateToDirectorFilmography,
 } from "@/lib/movieDetailNavigation";
 import type { Movie } from "@/lib/watchlistTypes";
-import { Button, BUTTON_ICON_COLORS } from "@/components/ui/Button";
 
 /**
  * Movie-Detail-Overlay route (M6 part 2a) — the final integration point that
@@ -391,9 +391,10 @@ export default function MovieDetailScreen() {
                     ? () => setReleaseDateSheetVisible(true)
                     : undefined
                 }
+                isLoading={isDetailLoading}
               />
 
-              <MovieDetailGenreTags genres={genres} />
+              <MovieDetailGenreTags genres={genres} isLoading={isDetailLoading} />
 
               {source === "diary" ? (
                 <MovieDetailRatingsSection
@@ -406,6 +407,7 @@ export default function MovieDetailScreen() {
               <MovieDetailCastRow
                 director={movieDetailQuery.data?.credits?.director ?? null}
                 cast={movieDetailQuery.data?.credits?.cast ?? []}
+                isLoading={isDetailLoading}
                 onDirectorPress={(personId) =>
                   navigateToDirectorFilmography(router, personId)
                 }
@@ -421,30 +423,24 @@ export default function MovieDetailScreen() {
 
               <MovieDetailProviders
                 providers={movieDetailQuery.data?.providers ?? null}
+                isLoading={isDetailLoading}
               />
             </View>
           </ScrollView>
 
           {/* Fixed (not inside the ScrollView): stays inside the top safe-area inset and never scrolls away. */}
           <View className="absolute left-4 top-2 z-10" pointerEvents="box-none">
-            <Button
+            <IconButton
               testID="movie-detail-back-button"
-              variant="secondary"
-              size="sm"
-              iconOnly
+              icon={router.canGoBack() ? "back" : "close"}
+              accessibilityLabel={router.canGoBack() ? "Zurück" : "Schließen"}
               onPress={goBack}
-            >
-              <Icon
-                name={router.canGoBack() ? "back" : "close"}
-                size="M"
-                color={BUTTON_ICON_COLORS.secondary}
-              />
-            </Button>
+            />
           </View>
         </View>
 
         <View
-          className={`absolute bottom-0 left-0 right-0 overflow-hidden ${GLASS_BAR_CLASSNAME} ${GLASS_FLAT_FILL}`}
+          className={`absolute bottom-0 left-0 right-0 overflow-hidden ${GLASS_BAR_CLASSNAME} bg-black`}
         >
           <SafeAreaView edges={["bottom"]} testID="movie-detail-action-bar">
             <MovieDetailActionsBar

@@ -78,7 +78,7 @@ describe("highlight colour follows the group theme (red)", () => {
         />
       </GroupThemeProvider>,
     );
-    expect(styleOf(getByTestId("grid-badge-icon-1"))).toContain(red.accent);
+    expect(styleOf(getByTestId("grid-badge-1-watchlist-icon"))).toContain(red.accent);
   });
 
   it("navigation theme primary takes the accent", () => {

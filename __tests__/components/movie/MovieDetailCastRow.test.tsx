@@ -114,3 +114,13 @@ describe("MovieDetailCastRow gold frame", () => {
     expect(getByTestId("movie-detail-director").props.className).toContain("min-h-touch-comfortable");
   });
 });
+
+describe("MovieDetailCastRow spacing", () => {
+  it("director row has no extra padding below; cast frame uses compact symmetric py-2", async () => {
+    const { getByTestId } = await render(
+      <MovieDetailCastRow director={director} cast={cast} onDirectorPress={() => {}} onCastMemberPress={() => {}} />,
+    );
+    expect(getByTestId("movie-detail-director-row").props.className).not.toMatch(/\b(pt|pb|py)-/);
+    expect(getByTestId("movie-detail-cast-frame").props.className).toContain("py-2");
+  });
+});

@@ -14,6 +14,12 @@ export const BG_IMAGE_HEIGHT = 1280;
 export const BG_IMAGE_ASPECT = BG_IMAGE_WIDTH / BG_IMAGE_HEIGHT;
 /** Legacy look: luminosity blend over the dark app background at this opacity; now baked into cinema-bg-baked.jpg (scripts/generate-bg-assets.py, keep both in sync). */
 export const BG_IMAGE_OPACITY = 0.6;
+/**
+ * TUNE HERE: extra black overlay (0..1) above the baked photo, below the content
+ * (AppBackground, `app-background-dim`). Test value 0.3 = 30 % black. 0 = off.
+ * Runtime layer, so a Reload is enough (no asset regeneration).
+ */
+export const BG_DIM_OPACITY = 0.3;
 export const TAB_PAN_DURATION_MS = 600;
 /**
  * Both extreme tabs stay this many dp away from the photo edge (first tab:

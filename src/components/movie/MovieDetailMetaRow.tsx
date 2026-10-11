@@ -2,6 +2,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Icon } from "@/components/ui/Icon";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 
 /**
  * Movie Detail Overlay (M6 part 2a): runtime + release-date meta row.
@@ -23,13 +24,26 @@ export interface MovieDetailMetaRowProps {
   releaseInfo: MovieDetailReleaseInfo | null;
   /** When set (watchlist + group context only), the date line is a tappable button with an edit icon; without a date it shows the "Kein Datum" placeholder. */
   onEditReleaseDate?: () => void;
+  /** Live details still loading and no runtime/date known yet: small spinner area. */
+  isLoading?: boolean;
 }
 
 export function MovieDetailMetaRow({
   runtimeLabel,
   releaseInfo,
   onEditReleaseDate,
+  isLoading = false,
 }: MovieDetailMetaRowProps) {
+  if (isLoading && runtimeLabel == null && releaseInfo == null) {
+    return (
+      <LoadingArea
+        testID="movie-detail-meta-loading"
+        className="min-h-10 w-full"
+        size="small"
+      />
+    );
+  }
+
   return (
     <View
       testID="movie-detail-meta-row"

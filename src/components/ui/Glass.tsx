@@ -37,9 +37,9 @@ export const GLASS_BAR_CLASSNAME = "border-t border-glass-border";
 /** The one fill of every glass surface; token in tailwind.config.js. */
 export const GLASS_FLAT_FILL = "bg-bg-card-flat";
 
-/** Sheet surface (rounded top corners). */
+/** Sheet surface (straight top edge, top border only). */
 export const GLASS_SHEET_CLASSNAME =
-  "rounded-t-xl border-t border-glass-border bg-bg-card-flat";
+  "border-t border-glass-border bg-bg-card-flat";
 
 /**
  * Tab bar needs raw style values (React Navigation `tabBarStyle`); keep them in

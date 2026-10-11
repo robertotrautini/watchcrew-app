@@ -537,7 +537,7 @@ describe("MovieDetailScreen", () => {
       return base;
     }
 
-    it("watchlist context without any date: shows 'Kein Datum' placeholder, tap opens the sheet, picking saves the date", async () => {
+    it("watchlist context without any date: shows 'Kein Datum' placeholder, tap opens the sheet, picking + Speichern saves the date", async () => {
       mockSetReleaseDateMutate.mockClear();
       mockUseLocalSearchParams.mockReturnValue({
         tmdbId: "42",
@@ -561,6 +561,8 @@ describe("MovieDetailScreen", () => {
         { type: "set" },
         new Date(2027, 2, 5),
       );
+      expect(mockSetReleaseDateMutate).not.toHaveBeenCalled();
+      await fireEvent.press(getByTestId("movie-detail-release-date-save-button"));
       expect(mockSetReleaseDateMutate).toHaveBeenCalledWith({
         watchlistEntryId: "entry-1",
         groupId: "group-1",

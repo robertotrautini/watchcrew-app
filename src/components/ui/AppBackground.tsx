@@ -8,6 +8,7 @@ import Animated, {
 
 import { useParallaxValues } from "@/components/parallaxContext";
 import {
+  BG_DIM_OPACITY,
   backgroundLayout,
   parallaxTranslateX,
   tabPanFraction,
@@ -21,6 +22,9 @@ import {
  * #0a0a0a) is PRE-COMPOSITED into assets/images/cinema-bg-baked.jpg
  * (scripts/generate-bg-assets.py, same resolution, sharp): no runtime
  * mixBlendMode / opacity layer (offscreen layer + blend on every frame).
+ *
+ * Extra test dimming: static black overlay (BG_DIM_OPACITY in parallax.ts) above the
+ * photo, not parallaxed.
  *
  * Framing: photo height = 100% of the screen height (no zoom, no vertical
  * overscan, no vertical parallax). Horizontal parallax only: first tab =
@@ -80,6 +84,13 @@ export function AppBackground() {
           accessible={false}
         />
       </Animated.View>
+      {BG_DIM_OPACITY > 0 ? (
+        <View
+          testID="app-background-dim"
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFill, { backgroundColor: "#000000", opacity: BG_DIM_OPACITY }]}
+        />
+      ) : null}
     </View>
   );
 }

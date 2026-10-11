@@ -3,6 +3,7 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
 import type { TmdbCastMember, TmdbCrewMember } from "@/lib/movieDetailTypes";
@@ -31,6 +32,8 @@ export interface MovieDetailCastRowProps {
   cast: TmdbCastMember[];
   onDirectorPress: (personId: number) => void;
   onCastMemberPress: (personId: number) => void;
+  /** Credits still loading: small spinner area in place of director + cast. */
+  isLoading?: boolean;
 }
 
 export function MovieDetailCastRow({
@@ -38,11 +41,25 @@ export function MovieDetailCastRow({
   cast,
   onDirectorPress,
   onCastMemberPress,
+  isLoading = false,
 }: MovieDetailCastRowProps) {
+  if (isLoading && !director && cast.length === 0) {
+    return (
+      <LoadingArea
+        testID="movie-detail-cast-loading"
+        className="min-h-24 w-full"
+        size="small"
+      />
+    );
+  }
+
   return (
-    <>
+    <View testID="movie-detail-credits">
       {director ? (
-        <View className="flex-row items-center gap-3 border-t border-accent-a30 pt-3">
+        <View
+          testID="movie-detail-director-row"
+          className="flex-row items-center gap-3 border-t border-accent-a30"
+        >
           <Text className={CAST_LABEL_CLASSNAME}>
             Regie
           </Text>
@@ -60,7 +77,7 @@ export function MovieDetailCastRow({
       {cast.length > 0 ? (
         <View
           testID="movie-detail-cast-frame"
-          className="gap-2 border-y border-accent-a30 py-3"
+          className="gap-1 border-y border-accent-a30 py-2"
         >
           <Text className={CAST_LABEL_CLASSNAME}>
             Besetzung
@@ -114,6 +131,6 @@ export function MovieDetailCastRow({
           </ScrollView>
         </View>
       ) : null}
-    </>
+    </View>
   );
 }

@@ -7,7 +7,7 @@ jest.mock("react-native-safe-area-context", () => {
   return { SafeAreaView: (props: Record<string, unknown>) => <View {...props} /> };
 });
 
-import { Sheet, SheetHost } from "../../../src/components/ui/Sheet";
+import { SHEET_BACKDROP_OPACITY, Sheet, SheetHost } from "../../../src/components/ui/Sheet";
 
 describe("Sheet", () => {
   it("renders children when visible", async () => {
@@ -37,8 +37,30 @@ describe("Sheet", () => {
       </Sheet>,
     );
 
-    expect(getByTestId("sheet-surface").props.className).toContain("bg-bg-card-flat");
+    expect(getByTestId("sheet-surface").props.className).toContain("bg-black");
+    expect(getByTestId("sheet-surface").props.className).not.toContain("bg-bg-card-flat");
     expect(getByTestId("sheet-surface").props.className).not.toContain("bg-glass");
+  });
+
+  it("has a straight top edge (no corner radius) with a full-width top border", async () => {
+    const { getByTestId } = await render(
+      <Sheet visible onClose={jest.fn()}>
+        <Text>c</Text>
+      </Sheet>,
+    );
+    const cls = getByTestId("sheet-surface").props.className as string;
+    expect(cls).not.toMatch(/rounded/);
+    expect(cls).toContain("border-t");
+    expect(cls).toContain("border-glass-border");
+  });
+
+  it("renders the close button as a ghost IconButton", async () => {
+    const { getByTestId } = await render(
+      <Sheet visible onClose={jest.fn()} title="T">
+        <Text>c</Text>
+      </Sheet>,
+    );
+    expect(getByTestId("sheet-close-button-icon")).toBeTruthy();
   });
 
   it("closes on the Android hardware back button while visible", async () => {
@@ -80,6 +102,18 @@ describe("Sheet", () => {
     );
 
     expect(getByTestId("sheet-safe-area").props.edges).toEqual(["bottom"]);
+  });
+
+  it("dims the backdrop with SHEET_BACKDROP_OPACITY", async () => {
+    const { getByTestId } = await render(
+      <Sheet visible onClose={() => {}}>
+        <Text>x</Text>
+      </Sheet>,
+    );
+    expect(SHEET_BACKDROP_OPACITY).toBe(0.75);
+    expect(getByTestId("sheet-backdrop")).toHaveStyle({
+      backgroundColor: `rgba(0,0,0,${SHEET_BACKDROP_OPACITY})`,
+    });
   });
 
   it("calls onClose when the backdrop is tapped", async () => {
