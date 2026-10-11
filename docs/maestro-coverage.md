@@ -34,7 +34,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Settings: Streaming-Dienste | `settings-edit`, `tabs-tour` | settings, navigation | `settings-edit/11..14` | covered |
 | Settings: Darstellung | `settings-edit` | settings | `07..10` | covered |
 | Settings: Benachrichtigungen | `settings-edit` | settings | `15-notifications-screen` | partial (Screen ja, Toggle nein, s. unten) |
-| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-screen`, `06-delete-account-confirm-sheet` | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
+| Settings: Konto löschen | `settings-edit` | settings | `05-delete-account-screen`, `06-delete-account-confirm-sheet` (ConfirmDialog) | partial (Dialog gezeigt, nie bestätigt, destruktiv) |
 | Gruppen-Einstellungen `group-settings` | `group-settings-edit`, `tabs-tour` | group-settings, navigation | `group-settings-edit/01..16` | covered |
 | Highlight-Farbe (Theme Rot-Tour, Blau-Stichprobe, Gold-Restore) | `theme-tour` | theme, design-system | `theme-tour/00..24` | covered (Gold-Restore via `onFlowComplete`) |
 | Datenquellen/Attributions (im Settings-Hub) | `tabs-tour` | navigation | `04-settings-hub` | partial (Anzeige; Links öffnen externen Browser) |
@@ -62,7 +62,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Streaming-Filter-Toggle im Add-Movie | `add-movie-modes` | add-movie | `03-add-movie-streaming-filter-toggled` | covered |
 | Film bewerten (Sterne, Like, Speichern) | `rating-cycle` | rating | `02..05` | covered |
 | Bewertung bearbeiten | `rating-cycle`, `movie-detail-full` | rating, movie-detail | `rating-cycle/06..08`, `movie-detail-full/08` | covered |
-| Bewertung zurücksetzen | `rating-cycle` | rating | `09-edit-dialog-after-reset` | covered |
+| Bewertung zurücksetzen (nur Entwurf; Speichern fragt per ConfirmDialog 'Bewertung wirklich löschen?', abgebrochen) | `rating-cycle` | rating | `09-edit-dialog-after-reset`, `09b-rating-delete-confirm` | partial (Bestätigung gezeigt, abgebrochen, destruktiv) |
 | "Direkt bewerten" | - | - | `watchlist-add-remove/03` (Button sichtbar) | partial (Button sichtbar, nicht ausgelöst, würde Film dauerhaft hinzufügen+bewerten) |
 | Film von Watchlist löschen (Bestätigung + echt, nur selbst angelegt) | `watchlist-add-remove` | watchlist, add-movie | `07-delete-confirm`, `08-watchlist-after-remove` | covered |
 | Film aus Tagebuch löschen | `movie-detail-full` | movie-detail | `09-detail-delete-confirm` | partial (Dialog gezeigt/abgebrochen, Löschen zerstört echte Daten) |
@@ -91,6 +91,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Einladungen aktiv/deaktiviert | `group-settings-edit` | group-settings | `11`, `12` | covered |
 | Einladungslink neu generieren | - | - | - | not automatable (zerstört den bisherigen Link irreversibel) |
 | Mitglied entfernen (Icon-Button rechts in einzeiliger Mitgliederzeile; Kopfblock Name/Farbe oben entfernt, oben steht 'Deine Gruppen') | - | - | `group-settings-edit/01`, `14` (Mitgliederliste) | not automatable (2. Mitglied nötig, destruktiv) |
+| Einladungslink neu generieren (ConfirmDialog `group-settings-invite-regenerate-*`, invalidiert alten Link) | - | - | - | not automatable (invalidiert echten Link, destruktiv) |
 | Gruppe verlassen | `group-settings-edit` | group-settings | `15-leave-confirm`, `16-leave-cancelled` | partial (Bestätigung gezeigt, abgebrochen, destruktiv) |
 | Gruppe wechseln (Select-Dropdown) | `group-settings-edit` (nur auf/zu) | group-settings | `01`, `01b-group-dropdown-open` | partial (Auswahl nicht automatisierbar, nur 1 Gruppe) |
 | Konto löschen | `settings-edit` | settings | `05`, `06` | partial (nie bestätigt, destruktiv) |
