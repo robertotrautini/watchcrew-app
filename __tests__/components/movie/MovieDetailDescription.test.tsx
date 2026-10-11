@@ -74,11 +74,13 @@ describe("MovieDetailDescription", () => {
     expect(getByText("Weniger anzeigen")).toBeTruthy();
   });
 
-  it("the Mehr/Weniger toggle has a 48dp tall touch area (min-h)", async () => {
+  it("the Mehr/Weniger toggle has no extra min-h/margin (tap area via hitSlop)", async () => {
     const { getByTestId } = await render(<MovieDetailDescription overview={OVERVIEW} />);
     await fireEvent(getByTestId("movie-detail-description-measure"), "textLayout", {
       nativeEvent: { lines: [{}, {}, {}, {}] },
     });
-    expect(getByTestId("movie-detail-description-toggle").props.className).toContain("min-h-touch-comfortable");
+    const toggle = getByTestId("movie-detail-description-toggle");
+    expect(toggle.props.className).not.toMatch(/min-h|\bm[tb]-|\bp[tb]-/);
+    expect(toggle.props.hitSlop).toEqual(expect.objectContaining({ top: 12, bottom: 12 }));
   });
 });

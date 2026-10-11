@@ -61,8 +61,8 @@ export interface MovieDetailActionsBarProps {
     watchlistEntryId: string,
     mode: "watchlist" | "diary",
   ) => void;
-  /** "direkt_bewerten": called once the add-to-watchlist mutation succeeds, with the newly-created entry's id. */
-  onDirectRateEntryCreated?: (watchlistEntryId: string, movieId: string) => void;
+  /** "direkt_bewerten": opens the rating dialog; the entry is only created on its Speichern. */
+  onDirectRate?: () => void;
 }
 
 /**
@@ -189,7 +189,7 @@ export function MovieDetailActionsBar({
   currentUserId,
   collectionId,
   onOpenRatingDialog,
-  onDirectRateEntryCreated,
+  onDirectRate,
 }: MovieDetailActionsBarProps) {
   const [deleteSheetVisible, setDeleteSheetVisible] = useState(false);
 
@@ -234,17 +234,12 @@ export function MovieDetailActionsBar({
     );
   }
 
+  // Only opens the rating dialog -- nothing is written until the dialog's Speichern.
   function handleDirektBewerten() {
     if (!activeGroupId || !currentUserId) {
       return;
     }
-    addToWatchlistMutation.mutate(
-      { tmdbId, groupId: activeGroupId, addedBy: currentUserId },
-      {
-        onSuccess: (data) => onDirectRateEntryCreated?.(data.id, data.movie_id),
-        onError: handleAddToWatchlistError,
-      },
-    );
+    onDirectRate?.();
   }
 
   function renderAction(id: ActionButtonId, widthClass: string) {
@@ -321,7 +316,6 @@ export function MovieDetailActionsBar({
         return (
           <ActionIconButton
             {...common}
-            loading={addToWatchlistMutation.isPending}
             onPress={handleDirektBewerten}
           />
         );

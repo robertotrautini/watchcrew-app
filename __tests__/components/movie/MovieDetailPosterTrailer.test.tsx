@@ -32,8 +32,8 @@ describe("MovieDetailPosterTrailer", () => {
     expect(getByTestId("movie-detail-poster-placeholder")).toBeTruthy();
   });
 
-  it("shows the spinner while isLoadingDetail is true, and no play button", async () => {
-    const { getByTestId, queryByTestId } = await render(
+  it("shows no play button (and no spinner) while isLoadingDetail is true", async () => {
+    const { queryByTestId } = await render(
       <MovieDetailPosterTrailer
         posterUrl="https://example.com/poster.jpg"
         title="Alpha"
@@ -42,7 +42,7 @@ describe("MovieDetailPosterTrailer", () => {
       />,
     );
 
-    expect(getByTestId("movie-detail-poster-spinner")).toBeTruthy();
+    expect(queryByTestId("movie-detail-poster-spinner")).toBeNull();
     expect(queryByTestId("movie-detail-trailer-play-button")).toBeNull();
   });
 

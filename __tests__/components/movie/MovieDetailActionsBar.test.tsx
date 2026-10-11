@@ -181,9 +181,9 @@ describe("MovieDetailActionsBar", () => {
     );
   });
 
-  it("'direkt_bewerten' calls addToWatchlist mutate and reports the newly-created entry via onDirectRateEntryCreated on success", async () => {
+  it("'direkt_bewerten' only opens the rating dialog and triggers no addToWatchlist mutation", async () => {
     const router = createMockRouter();
-    const onDirectRateEntryCreated = jest.fn();
+    const onDirectRate = jest.fn();
     const { getByTestId } = await render(
       <MovieDetailActionsBar
         actions={["direkt_bewerten"]}
@@ -191,21 +191,14 @@ describe("MovieDetailActionsBar", () => {
         tmdbId={42}
         activeGroupId="active-group-1"
         currentUserId="user-1"
-        onDirectRateEntryCreated={onDirectRateEntryCreated}
+        onDirectRate={onDirectRate}
       />,
     );
 
     await fireEvent.press(getByTestId("movie-detail-action-direkt_bewerten"));
 
-    expect(mockAddMutate).toHaveBeenCalledWith(
-      { tmdbId: 42, groupId: "active-group-1", addedBy: "user-1" },
-      expect.objectContaining({ onSuccess: expect.any(Function), onError: expect.any(Function) }),
-    );
-
-    const onSuccess = mockAddMutate.mock.calls[0][1].onSuccess;
-    onSuccess({ id: "new-entry-id", movie_id: "movie-9" });
-
-    expect(onDirectRateEntryCreated).toHaveBeenCalledWith("new-entry-id", "movie-9");
+    expect(onDirectRate).toHaveBeenCalledTimes(1);
+    expect(mockAddMutate).not.toHaveBeenCalled();
   });
 
   it("'filmreihe' navigates to the collection", async () => {

@@ -81,4 +81,47 @@ describe("MovieDetailMetaRow", () => {
     await fireEvent.press(edit);
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
+
+  it("uses explicit style gaps (no className gap) and wraps", async () => {
+    const { META_ROW_GAP, META_ROW_ROW_GAP } = require("@/components/movie/MovieDetailMetaRow");
+    const { StyleSheet } = require("react-native");
+    const { getByTestId } = await render(
+      <MovieDetailMetaRow runtimeLabel="2h" releaseInfo={{ label: "Kino", date: "01.01.2024" }} />,
+    );
+    const row = getByTestId("movie-detail-meta-row");
+    const cls = row.props.className as string;
+    expect(cls).toContain("flex-row");
+    expect(cls).toContain("flex-wrap");
+    expect(cls).not.toMatch(/gap-/);
+    expect(META_ROW_GAP).toBe(8);
+    expect(META_ROW_ROW_GAP).toBe(6);
+    expect(StyleSheet.flatten(row.props.style).rowGap).toBe(META_ROW_ROW_GAP);
+    const sep = getByTestId("movie-detail-meta-separator-0");
+    expect(sep.props.children).toBe("\u00B7");
+    const flat = StyleSheet.flatten(sep.props.style);
+    expect(flat.marginLeft).toBe(META_ROW_GAP);
+    expect(flat.marginRight).toBe(META_ROW_GAP);
+  });
+
+  it("renders separators only between present items", async () => {
+    const { Text } = require("react-native");
+    const trailing = <Text testID="trailing-item">x</Text>;
+    const all = await render(
+      <MovieDetailMetaRow runtimeLabel="2h" releaseInfo={{ label: "Kino", date: "d" }} trailing={trailing} />,
+    );
+    expect(all.queryAllByTestId(/^movie-detail-meta-separator-/)).toHaveLength(2);
+    all.unmount();
+    const noRuntime = await render(
+      <MovieDetailMetaRow runtimeLabel={null} releaseInfo={{ label: "Kino", date: "d" }} trailing={trailing} />,
+    );
+    expect(noRuntime.queryAllByTestId(/^movie-detail-meta-separator-/)).toHaveLength(1);
+    noRuntime.unmount();
+    const onlyTrailing = await render(
+      <MovieDetailMetaRow runtimeLabel={null} releaseInfo={null} trailing={trailing} />,
+    );
+    expect(onlyTrailing.queryAllByTestId(/^movie-detail-meta-separator-/)).toHaveLength(0);
+    onlyTrailing.unmount();
+    const two = await render(<MovieDetailMetaRow runtimeLabel="2h" releaseInfo={null} />);
+    expect(two.queryAllByTestId(/^movie-detail-meta-separator-/)).toHaveLength(0);
+  });
 });

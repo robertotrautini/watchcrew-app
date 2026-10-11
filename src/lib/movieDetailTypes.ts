@@ -9,7 +9,7 @@
 // stay easy to diff by eye; keep them in sync by hand if tmdb-client.ts's
 // shapes change.
 
-export interface TmdbCollectionRef {
+interface TmdbCollectionRef {
   id: number;
   name: string;
   poster_path?: string | null;
@@ -61,7 +61,7 @@ export interface NormalizedCredits {
   director: TmdbCrewMember | null;
 }
 
-export type GermanReleaseCategory = "Kino" | "Digital" | "TV";
+type GermanReleaseCategory = "Kino" | "Digital" | "TV";
 
 /** `release_dates` action response shape (tmdb-client.ts `GermanReleaseDate`) — null if no DE entries. */
 export interface GermanReleaseDate {

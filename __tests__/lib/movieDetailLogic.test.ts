@@ -317,3 +317,29 @@ describe("getVisibleActions", () => {
     ).toEqual(["zur_watchlist", "direkt_bewerten", "aehnliche"]);
   });
 });
+
+describe("buildGroupRatingRows", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { buildGroupRatingRows } = require("@/lib/movieDetailLogic");
+
+  it("excludes the current user and lists rated members before unrated ones", () => {
+    const rows = buildGroupRatingRows(
+      ["me", "a", "b", "c"],
+      [
+        { member_id: "me", rating: 5 },
+        { member_id: "c", rating: 3.5 },
+        { member_id: "b", rating: 0 },
+      ],
+      "me",
+    );
+    expect(rows).toEqual([
+      { memberId: "c", rating: 3.5 },
+      { memberId: "a", rating: null },
+      { memberId: "b", rating: null },
+    ]);
+  });
+
+  it("returns an empty list when the current user is the only member", () => {
+    expect(buildGroupRatingRows(["me"], [{ member_id: "me", rating: 4 }], "me")).toEqual([]);
+  });
+});

@@ -1,15 +1,16 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { Icon } from "@/components/ui/Icon";
 import { Pressable, ScrollView, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
-import { LoadingArea } from "@/components/ui/LoadingArea";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 
 import type { TmdbCastMember, TmdbCrewMember } from "@/lib/movieDetailTypes";
 
 /**
- * Director + cast row for the Movie-Detail-Overlay. `cast` arrives already
+ * Director and cast blocks for the Movie-Detail-Overlay (each lives in its own
+ * `MovieDetailSection`, headings come from there). `cast` arrives already
  * capped to 10 entries server-side (tmdb-proxy `credits` action), so this
  * component renders it as-is with no further slicing.
  *
@@ -19,118 +20,93 @@ import type { TmdbCastMember, TmdbCrewMember } from "@/lib/movieDetailTypes";
  * standard RN pattern for "10 tappable names" — not mandated by the spec,
  * which left the exact layout open.
  */
-/** Shared (real content + skeleton) size/text tokens. */
-export const CAST_LABEL_CLASSNAME = "text-xs uppercase tracking-widest text-text-secondary";
-export const CAST_DIRECTOR_NAME_CLASSNAME = "text-base text-accent";
-export const CAST_DIRECTOR_BOX_CLASSNAME = "min-h-touch-comfortable justify-center";
-export const CAST_AVATAR_SIZE_CLASSNAME = "h-16 w-16";
-export const CAST_NAME_CLASSNAME = "mt-1 text-center text-xs text-accent";
-export const CAST_CHARACTER_CLASSNAME = "text-center text-[10px] text-text-secondary";
+/** Shared size/text tokens. */
+const CAST_DIRECTOR_NAME_CLASSNAME = "text-base text-accent";
+/** Kein min-h/Padding: 44dp Tippflaeche kommt per hitSlop, Layout bleibt kompakt. */
+const CAST_DIRECTOR_BOX_CLASSNAME = "self-start";
+const CAST_AVATAR_SIZE_CLASSNAME = "h-16 w-16";
+const CAST_NAME_CLASSNAME = "mt-1 text-center text-xs text-accent";
+const CAST_CHARACTER_CLASSNAME = "text-center text-[10px] text-text-secondary";
+
+export interface MovieDetailDirectorProps {
+  director: TmdbCrewMember;
+  onDirectorPress: (personId: number) => void;
+}
+
+export function MovieDetailDirector({
+  director,
+  onDirectorPress,
+}: MovieDetailDirectorProps) {
+  return (
+    <View testID="movie-detail-director-row" className="items-start">
+      <Pressable
+        testID="movie-detail-director"
+        accessibilityRole="button"
+        onPress={() => onDirectorPress(director.id)}
+        hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+        className={CAST_DIRECTOR_BOX_CLASSNAME}
+      >
+        <Text className={CAST_DIRECTOR_NAME_CLASSNAME}>{director.name}</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export interface MovieDetailCastRowProps {
-  director: TmdbCrewMember | null;
   cast: TmdbCastMember[];
-  onDirectorPress: (personId: number) => void;
   onCastMemberPress: (personId: number) => void;
-  /** Credits still loading: small spinner area in place of director + cast. */
-  isLoading?: boolean;
 }
 
 export function MovieDetailCastRow({
-  director,
   cast,
-  onDirectorPress,
   onCastMemberPress,
-  isLoading = false,
 }: MovieDetailCastRowProps) {
-  if (isLoading && !director && cast.length === 0) {
-    return (
-      <LoadingArea
-        testID="movie-detail-cast-loading"
-        className="min-h-24 w-full"
-        size="small"
-      />
-    );
+  if (cast.length === 0) {
+    return null;
   }
-
   return (
-    <View testID="movie-detail-credits">
-      {director ? (
-        <View
-          testID="movie-detail-director-row"
-          className="flex-row items-center gap-3 border-t border-accent-a30"
-        >
-          <Text className={CAST_LABEL_CLASSNAME}>
-            Regie
-          </Text>
-          <Pressable
-            testID="movie-detail-director"
-            accessibilityRole="button"
-            onPress={() => onDirectorPress(director.id)}
-            className={CAST_DIRECTOR_BOX_CLASSNAME}
-          >
-            <Text className={CAST_DIRECTOR_NAME_CLASSNAME}>{director.name}</Text>
-          </Pressable>
-        </View>
-      ) : null}
-
-      {cast.length > 0 ? (
-        <View
-          testID="movie-detail-cast-frame"
-          className="gap-1 border-y border-accent-a30 py-2"
-        >
-          <Text className={CAST_LABEL_CLASSNAME}>
-            Besetzung
-          </Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="flex-row py-1"
-          >
-            {cast.map((castMember, index) => {
-              const photoUrl = buildTmdbImageUrl(
-                castMember.profile_path ?? null,
-                "w185",
-              );
-              return (
-                <Pressable
-                  key={castMember.id}
-                  testID={`movie-detail-cast-member-${index}`}
-                  onPress={() => onCastMemberPress(castMember.id)}
-                  className="mr-3 w-20 items-center"
-                >
-                  {photoUrl ? (
-                    <Image
-                      source={{ uri: photoUrl }}
-                      accessibilityLabel={castMember.name}
-                      className={`${CAST_AVATAR_SIZE_CLASSNAME} rounded-[32px] border-[1.5px] border-accent-a45 bg-card`}
-                      contentFit="cover"
-                    />
-                  ) : (
-                    <View className={`${CAST_AVATAR_SIZE_CLASSNAME} items-center justify-center rounded-full border-[1.5px] border-accent-a45 bg-card`}>
-                      <Icon name="person" size="M" color="#888888" />
-                    </View>
-                  )}
-                  <Text
-                    numberOfLines={2}
-                    className={CAST_NAME_CLASSNAME}
-                  >
-                    {castMember.name}
-                  </Text>
-                  {castMember.character ? (
-                    <Text
-                      numberOfLines={1}
-                      className={CAST_CHARACTER_CLASSNAME}
-                    >
-                      {castMember.character}
-                    </Text>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </View>
-      ) : null}
+    <View testID="movie-detail-cast-frame" className="self-stretch">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        className="flex-row"
+      >
+        {cast.map((castMember, index) => {
+          const photoUrl = buildTmdbImageUrl(
+            castMember.profile_path ?? null,
+            "w185",
+          );
+          return (
+            <Pressable
+              key={castMember.id}
+              testID={`movie-detail-cast-member-${index}`}
+              onPress={() => onCastMemberPress(castMember.id)}
+              className="mr-3 w-20 items-center"
+            >
+              {photoUrl ? (
+                <Image
+                  source={{ uri: photoUrl }}
+                  accessibilityLabel={castMember.name}
+                  className={`${CAST_AVATAR_SIZE_CLASSNAME} rounded-[32px] border-[1.5px] border-accent-a45 bg-card`}
+                  contentFit="cover"
+                />
+              ) : (
+                <View className={`${CAST_AVATAR_SIZE_CLASSNAME} items-center justify-center rounded-full border-[1.5px] border-accent-a45 bg-card`}>
+                  <Icon name="person" size="M" color={PLACEHOLDER_COLOR} />
+                </View>
+              )}
+              <Text numberOfLines={2} className={CAST_NAME_CLASSNAME}>
+                {castMember.name}
+              </Text>
+              {castMember.character ? (
+                <Text numberOfLines={1} className={CAST_CHARACTER_CLASSNAME}>
+                  {castMember.character}
+                </Text>
+              ) : null}
+            </Pressable>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }

@@ -1,7 +1,6 @@
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { Image } from "@/components/ui/Image";
-import { Spinner } from "@/components/ui/Spinner";
 import * as ScreenOrientation from "expo-screen-orientation";
 import { useEffect, useState } from "react";
 import { Pressable, View } from "react-native";
@@ -24,7 +23,7 @@ import {
  * prefixing) rather than duplicating URL-building logic here.
  */
 
-export interface MovieDetailTrailer {
+interface MovieDetailTrailer {
   id: string;
   key: string;
   site: string;
@@ -122,11 +121,7 @@ export function MovieDetailPosterTrailer({
             />
           )}
 
-          {isLoadingDetail ? (
-            <View className="absolute inset-0 items-center justify-center">
-              <Spinner testID="movie-detail-poster-spinner" size="large" />
-            </View>
-          ) : showPlayButton ? (
+          {showPlayButton ? (
             <Pressable
               testID="movie-detail-trailer-play-button"
               accessibilityRole="button"

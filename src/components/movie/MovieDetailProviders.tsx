@@ -3,7 +3,6 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Image } from "@/components/ui/Image";
-import { LoadingArea } from "@/components/ui/LoadingArea";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { shouldShowAllProvidersToggle } from "@/lib/movieDetailLogic";
 import type {
@@ -13,10 +12,10 @@ import type {
 
 const PREVIEW_COUNT = 3;
 
-/** Shared (real content + skeleton) tokens. */
-export const PROVIDER_HEADER_CLASSNAME = "text-sm font-sans-semibold text-text-primary";
-export const PROVIDER_LOGO_CLASSNAME = "h-6 w-6";
-export const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
+/** Shared size/text tokens. */
+const PROVIDER_HEADER_CLASSNAME = "text-sm font-sans-semibold text-text-primary";
+const PROVIDER_LOGO_CLASSNAME = "h-6 w-6";
+const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
 
 /**
  * Renders each provider's name, with its small TMDB logo (w92) in front when
@@ -31,8 +30,6 @@ export const PROVIDER_NAME_CLASSNAME = "text-text-secondary";
  */
 export interface MovieDetailProvidersProps {
   providers: TmdbMovieProviders | null;
-  /** Providers still loading: small spinner area. */
-  isLoading?: boolean;
 }
 
 interface FlatProvider extends TmdbProviderRef {
@@ -67,19 +64,8 @@ function groupBySection(
 
 export function MovieDetailProviders({
   providers,
-  isLoading = false,
 }: MovieDetailProvidersProps) {
   const [expanded, setExpanded] = useState(false);
-
-  if (isLoading && providers == null) {
-    return (
-      <LoadingArea
-        testID="movie-detail-providers-loading"
-        className="min-h-24 w-full"
-        size="small"
-      />
-    );
-  }
 
   if (providers == null) {
     return null;
@@ -105,14 +91,14 @@ export function MovieDetailProviders({
   });
 
   return (
-    <View testID="movie-detail-providers" className="gap-2">
+    <View testID="movie-detail-providers" className="gap-2 self-stretch">
       {(["flatrate", "rent", "buy"] as const).map((section) => {
         const items = grouped.get(section);
         if (!items || items.length === 0) {
           return null;
         }
         return (
-          <View key={section} className="gap-2 py-1">
+          <View key={section} className="gap-2">
             <Text className={PROVIDER_HEADER_CLASSNAME}>
               {SECTION_LABELS[section]}
             </Text>
@@ -150,7 +136,8 @@ export function MovieDetailProviders({
           testID="movie-detail-providers-toggle"
           onPress={() => setExpanded((prev) => !prev)}
           accessibilityRole="button"
-          className="mt-2 min-h-touch-comfortable justify-center self-start"
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          className="self-start"
         >
           <Text className="text-accent">Alle Anbieter anzeigen</Text>
         </Pressable>

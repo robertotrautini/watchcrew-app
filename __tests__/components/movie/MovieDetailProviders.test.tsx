@@ -76,7 +76,7 @@ describe("MovieDetailProviders", () => {
     expect(queryByText("Google Play")).toBeNull();
   });
 
-  it("gives the 'Alle Anbieter anzeigen' toggle its own vertical spacing so it never sits on the provider rows", async () => {
+  it("spaces the toggle via the wrapper gap-2 (no own margin)", async () => {
     const providers: TmdbMovieProviders = {
       flatrate: [provider(1, "A"), provider(2, "B"), provider(3, "C"), provider(4, "D")],
       rent: [],
@@ -85,17 +85,17 @@ describe("MovieDetailProviders", () => {
     const { getByTestId } = await render(<MovieDetailProviders providers={providers} />);
 
     const cls = getByTestId("movie-detail-providers-toggle").props.className as string;
-    expect(cls).toMatch(/\bmt-\d/);
-    expect(cls).toContain("min-h-touch-comfortable");
+    expect(cls).not.toMatch(/\bmt-\d|min-h/);
+    expect(getByTestId("movie-detail-providers").props.className).toContain("gap-2");
   });
 
-  it("the 'Alle Anbieter anzeigen' toggle is at least 48dp high", async () => {
+  it("the 'Alle Anbieter anzeigen' toggle keeps a 44dp tap area via hitSlop", async () => {
     const providers: TmdbMovieProviders = {
       flatrate: [provider(1, "A"), provider(2, "B"), provider(3, "C"), provider(4, "D")],
       rent: [],
       buy: [],
     };
     const { getByTestId } = await render(<MovieDetailProviders providers={providers} />);
-    expect(getByTestId("movie-detail-providers-toggle").props.className).toContain("min-h-touch-comfortable");
+    expect(getByTestId("movie-detail-providers-toggle").props.hitSlop).toEqual(expect.objectContaining({ top: 12, bottom: 12 }));
   });
 });

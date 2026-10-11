@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { Icon } from "@/components/ui/Icon";
 import { useParallaxScroll } from "@/components/parallaxContext";
@@ -9,8 +10,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { GLASS_BAR_CLASSNAME } from "@/components/ui/Glass";
 import { SheetHost } from "@/components/ui/Sheet";
+import { FadeInItem } from "@/components/ui/FadeInItem";
+import { LoadingArea } from "@/components/ui/LoadingArea";
 import { MovieDetailActionsBar } from "@/components/movie/MovieDetailActionsBar";
-import { MovieDetailCastRow } from "@/components/movie/MovieDetailCastRow";
+import {
+  MovieDetailCastRow,
+  MovieDetailDirector,
+} from "@/components/movie/MovieDetailCastRow";
+import { MovieDetailOwnRating } from "@/components/movie/MovieDetailOwnRating";
+import { MovieDetailSection } from "@/components/movie/MovieDetailSection";
+import { TmdbBadge } from "@/components/ui/TmdbBadge";
 import { MovieDetailDescription } from "@/components/movie/MovieDetailDescription";
 import { MovieDetailGenreTags } from "@/components/movie/MovieDetailGenreTags";
 import { MovieDetailMetaRow } from "@/components/movie/MovieDetailMetaRow";
@@ -35,6 +44,7 @@ import { useGroupTheme } from "@/components/GroupThemeProvider";
 import { formatDateForInput } from "@/lib/ratingLogic";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import {
+  buildGroupRatingRows,
   formatRuntime,
   getVisibleActions,
   pickGenres,
@@ -168,9 +178,9 @@ export default function MovieDetailScreen() {
 
   const toggleLikeMutation = useToggleLike();
 
-  // Structure first: header/poster/action bar render from whatever exists (stored
-  // movie / route JSON); only the parts still missing while the live query loads
-  // show spinners.
+  // Structure first: poster/title/description/rating render at once from whatever
+  // exists (stored movie / route JSON). The rest (meta, genres, cast, providers)
+  // sits behind ONE central loading state, see `isContentPending` below.
   const isDetailLoading = movieDetailQuery.isLoading;
 
   // Stored movie (DB row / instant-paint JSON) wins; the live TMDB `details`
@@ -210,10 +220,33 @@ export default function MovieDetailScreen() {
   const voteAverage =
     liveDetails?.vote_average ?? storedMovie?.vote_average ?? null;
 
+  // One central loading state for the whole content area under the title: only
+  // while the live query loads AND nothing of it is known yet (first open from a
+  // search result). With cached data the sections show immediately.
+  const isContentPending =
+    isDetailLoading &&
+    runtimeLabel == null &&
+    releaseInfo == null &&
+    genres.length === 0;
+  const director = movieDetailQuery.data?.credits?.director ?? null;
+  const cast = movieDetailQuery.data?.credits?.cast ?? [];
+  const providerData = movieDetailQuery.data?.providers ?? null;
+  const hasProviders =
+    providerData != null &&
+    providerData.flatrate.length + providerData.rent.length + providerData.buy.length > 0;
+  const hasDetails =
+    runtimeLabel != null ||
+    releaseInfo != null ||
+    canEditReleaseDate ||
+    genres.length > 0 ||
+    voteAverage != null;
+  // Fade the content in only if it actually came out of the loading state.
+  const [startedPending] = useState(isContentPending);
+
   const currentUserRating = ratings.find(
     (rating) => rating.member_id === currentUserId,
   );
-  const showHeart = currentUserRating?.liked === true;
+  const showHeart = currentUserRating != null;
   const liked = currentUserRating?.liked === true;
 
   function handleToggleLike() {
@@ -231,6 +264,25 @@ export default function MovieDetailScreen() {
       });
     }
   }
+
+  // Abschnitt "Bewertung": nur wenn der Film eine eigene Bewertung hat oder im
+  // Tagebuch liegt (dort zusaetzlich die Gruppen-Liste). Film aus der Suche ohne
+  // Bewertung -> kein Abschnitt.
+  const ratedCount = ratings.filter(
+    (rating) => rating.rating != null && rating.rating > 0,
+  ).length;
+  const totalMembers = groupMembersQuery.data?.length ?? 0;
+  // Gruppen-Liste: nur andere Mitglieder; ohne andere entfaellt der Block.
+  const groupRatingRows =
+    source === "diary"
+      ? buildGroupRatingRows(
+          (groupMembersQuery.data ?? []).map((member) => member.user_id),
+          ratings,
+          currentUserId,
+        )
+      : [];
+  const showRatingSection =
+    currentUserRating != null || groupRatingRows.length > 0;
 
   const starColor = useGroupTheme().colors.starColor;
 
@@ -296,14 +348,14 @@ export default function MovieDetailScreen() {
     setRatingDialogVisible(true);
   }
 
-  function handleDirectRateEntryCreated(entryId: string, movieId: string) {
+  function handleDirectRate() {
     if (!activeGroupId) {
       return;
     }
+    // No write here: the entry is created together with the rating on the dialog's Speichern.
     setRatingDialogTarget({
       mode: "direct",
-      watchlistEntryId: entryId,
-      movieId,
+      watchlistEntryId: "",
       groupId: activeGroupId,
     });
     setRatingDialogVisible(true);
@@ -328,7 +380,7 @@ export default function MovieDetailScreen() {
           <Icon
             name={router.canGoBack() ? "back" : "close"}
             size="M"
-            color="#8b8b8b"
+            color={PLACEHOLDER_COLOR}
           />
         </Pressable>
       </SafeAreaView>
@@ -367,66 +419,108 @@ export default function MovieDetailScreen() {
               trailer={movieDetailQuery.data?.trailer ?? null}
             />
 
-            <View className="gap-3 px-4 pt-3">
-              <MovieDetailTitleRow
-                title={title}
-                voteAverage={voteAverage}
-                showHeart={showHeart}
-                liked={liked}
-                onToggleLike={handleToggleLike}
-                isTogglingLike={toggleLikeMutation.isPending}
-                isLoading={isDetailLoading && !storedMovie && !liveDetails}
-              />
+            <View className="px-4 pt-3">
+              <MovieDetailSection name="info">
+                <MovieDetailTitleRow title={title} />
+                <MovieDetailDescription overview={overview} />
+              </MovieDetailSection>
 
-              <MovieDetailMetaRow
-                runtimeLabel={runtimeLabel}
-                releaseInfo={
-                  releaseInfo
-                    ? {
-                        ...releaseInfo,
-                        date: formatDateForInput(releaseInfo.date),
-                      }
-                    : null
-                }
-                onEditReleaseDate={
-                  canEditReleaseDate
-                    ? () => setReleaseDateSheetVisible(true)
-                    : undefined
-                }
-                isLoading={isDetailLoading}
-              />
-
-              <MovieDetailGenreTags genres={genres} isLoading={isDetailLoading} />
-
-              {source === "diary" ? (
-                <MovieDetailRatingsSection
-                  ratings={ratings}
-                  displayNameById={displayNameById}
-                  starColor={starColor}
-                />
+              {showRatingSection ? (
+                <MovieDetailSection name="rating" title="Bewertung" withDivider>
+                  {currentUserRating ? (
+                    <MovieDetailOwnRating
+                      rating={currentUserRating.rating}
+                      starColor={starColor}
+                      showHeart={showHeart}
+                      liked={liked}
+                      onToggleLike={handleToggleLike}
+                      isTogglingLike={toggleLikeMutation.isPending}
+                      ratedCount={ratedCount}
+                      totalMembers={totalMembers}
+                    />
+                  ) : null}
+                  {groupRatingRows.length > 0 ? (
+                    <MovieDetailRatingsSection
+                      rows={groupRatingRows}
+                      displayNameById={displayNameById}
+                      starColor={starColor}
+                    />
+                  ) : null}
+                </MovieDetailSection>
               ) : null}
 
-              <MovieDetailCastRow
-                director={movieDetailQuery.data?.credits?.director ?? null}
-                cast={movieDetailQuery.data?.credits?.cast ?? []}
-                isLoading={isDetailLoading}
-                onDirectorPress={(personId) =>
-                  navigateToDirectorFilmography(router, personId)
-                }
-                onCastMemberPress={(personId) =>
-                  navigateToActorFilmography(router, personId)
-                }
-              />
+              {isContentPending ? (
+                <LoadingArea
+                  testID="movie-detail-content-loading"
+                  className="min-h-64 w-full"
+                />
+              ) : (
+                <FadeInItem
+                  index={0}
+                  skipInitialFade={!startedPending}
+                  testID="movie-detail-content"
+                >
+                  {hasDetails ? (
+                    <MovieDetailSection name="details" title="Details" withDivider>
+                      <MovieDetailMetaRow
+                        runtimeLabel={runtimeLabel}
+                        releaseInfo={
+                          releaseInfo
+                            ? {
+                                ...releaseInfo,
+                                date: formatDateForInput(releaseInfo.date),
+                              }
+                            : null
+                        }
+                        onEditReleaseDate={
+                          canEditReleaseDate
+                            ? () => setReleaseDateSheetVisible(true)
+                            : undefined
+                        }
+                        trailing={
+                          voteAverage != null ? (
+                            <TmdbBadge
+                              testID="movie-detail-score-badge"
+                              score={voteAverage}
+                            />
+                          ) : null
+                        }
+                      />
+                      <MovieDetailGenreTags genres={genres} />
+                    </MovieDetailSection>
+                  ) : null}
 
-              <MovieDetailDescription
-                overview={overview}
-                isLoading={isDetailLoading}
-              />
+                  {director ? (
+                    <MovieDetailSection name="director" title="Regie" withDivider>
+                      <MovieDetailDirector
+                        director={director}
+                        onDirectorPress={(personId) =>
+                          navigateToDirectorFilmography(router, personId)
+                        }
+                      />
+                    </MovieDetailSection>
+                  ) : null}
 
-              <MovieDetailProviders
-                providers={movieDetailQuery.data?.providers ?? null}
-                isLoading={isDetailLoading}
-              />
+                  {cast.length > 0 ? (
+                    <MovieDetailSection name="cast" title="Besetzung" withDivider>
+                      <MovieDetailCastRow
+                        cast={cast}
+                        onCastMemberPress={(personId) =>
+                          navigateToActorFilmography(router, personId)
+                        }
+                      />
+                    </MovieDetailSection>
+                  ) : null}
+
+                  {hasProviders ? (
+                    <MovieDetailSection name="streaming" title="Streaming" withDivider>
+                      <MovieDetailProviders
+                        providers={movieDetailQuery.data?.providers ?? null}
+                      />
+                    </MovieDetailSection>
+                  ) : null}
+                </FadeInItem>
+              )}
             </View>
           </ScrollView>
 
@@ -455,7 +549,7 @@ export default function MovieDetailScreen() {
               currentUserId={currentUserId}
               collectionId={collectionId}
               onOpenRatingDialog={handleOpenRatingDialog}
-              onDirectRateEntryCreated={handleDirectRateEntryCreated}
+              onDirectRate={handleDirectRate}
             />
           </SafeAreaView>
         </View>
@@ -485,6 +579,7 @@ export default function MovieDetailScreen() {
           groupMembers={groupMembersQuery.data ?? []}
           displayNameById={displayNameById}
           starColor={starColor}
+          directCreate={ratingDialogTarget?.mode === "direct" ? { tmdbId } : undefined}
         />
       </SheetHost>
     </SafeAreaView>

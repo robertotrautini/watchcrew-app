@@ -1,3 +1,4 @@
+import { LIKE_HEART_COLOR, PLACEHOLDER_COLOR } from "@/lib/colors";
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
 import { Icon } from "@/components/ui/Icon";
 import { View } from "react-native";
@@ -8,11 +9,8 @@ import { Card } from "@/components/ui/Card";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
 import { Image } from "@/components/ui/Image";
 
-/** Fixed regardless of theme (same value as StarRating / DiaryPosterTile). */
-export const LIKE_HEART_COLOR = "#e05c6e";
-const PLACEHOLDER_ICON_COLOR = "#8b8b8b";
 
-export interface DiaryEntryCardMember {
+interface DiaryEntryCardMember {
   id: string;
   label: string;
   rating: number | null;
@@ -65,7 +63,7 @@ export function DiaryEntryCard({
             testID="poster-card-placeholder"
             className="absolute inset-0 items-center justify-center"
           >
-            <Icon name="film" size="L" color={PLACEHOLDER_ICON_COLOR} />
+            <Icon name="film" size="L" color={PLACEHOLDER_COLOR} />
           </View>
         )}
       </View>

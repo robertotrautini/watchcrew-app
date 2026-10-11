@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Pressable, View, type NativeSyntheticEvent, type TextLayoutEventData } from "react-native";
 import { Text } from "@/components/ui/Text";
 
-import { LoadingArea } from "@/components/ui/LoadingArea";
 import { shouldShowMoreToggle } from "@/lib/movieDetailLogic";
 
 const MAX_COLLAPSED_LINES = 3;
-export const MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME = "text-text-secondary";
+const MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME = "text-text-secondary";
 const TEXT_CLASSNAME = MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME;
 
 /**
@@ -22,25 +21,13 @@ const TEXT_CLASSNAME = MOVIE_DETAIL_DESCRIPTION_TEXT_CLASSNAME;
  */
 export interface MovieDetailDescriptionProps {
   overview: string | null;
-  /** Live details still loading: centered spinner while no overview is known. */
-  isLoading?: boolean;
 }
 
 export function MovieDetailDescription({
   overview,
-  isLoading = false,
 }: MovieDetailDescriptionProps) {
   const [measuredLineCount, setMeasuredLineCount] = useState(0);
   const [expanded, setExpanded] = useState(false);
-
-  if (overview == null && isLoading) {
-    return (
-      <LoadingArea
-        testID="movie-detail-description-loading"
-        className="min-h-24 w-full"
-      />
-    );
-  }
 
   if (overview == null) {
     return null;
@@ -84,7 +71,8 @@ export function MovieDetailDescription({
         <Pressable
           testID="movie-detail-description-toggle"
           accessibilityRole="button"
-          className="min-h-touch-comfortable justify-center"
+          hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
+          className="self-start"
           onPress={() => setExpanded((prev) => !prev)}
         >
           <Text className="text-accent">

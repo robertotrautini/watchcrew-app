@@ -2,46 +2,50 @@ import { useState } from "react";
 import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 import { Icon } from "@/components/ui/Icon";
+import { StarRating } from "@/components/ui/StarRating";
 
-import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
-import type { Rating } from "@/lib/watchlistTypes";
+import type { GroupRatingRow } from "@/lib/movieDetailLogic";
 
 /**
- * Collapsible "Bewertungen" (ratings) section of the Movie-Detail-Overlay,
- * shown ONLY when the parent route was opened with `source === "diary"` —
- * that gating happens upstream (this component doesn't know about `source`).
+ * Einklappbare Liste "Bewertungen der Gruppe" im Abschnitt Bewertung (nur
+ * Tagebuch-Kontext, Gating im Parent). Zeigt NUR die anderen Mitglieder (die
+ * eigene Bewertung steht darueber), bewertete zuerst, dann "nicht bewertet".
+ * Ohne andere Mitglieder rendert die Komponente nichts.
  *
- * Interim decision: starts COLLAPSED by default (`expanded` initial state is
- * `false`). Nothing in the spec mandates either default; collapsed keeps the
- * overlay compact for the common case, matching this project's general
- * pattern of hiding secondary detail behind a tap (e.g. the "Mehr anzeigen"
- * overview toggle).
+ * Starts COLLAPSED (kompakter Overlay, wie "Mehr anzeigen").
  */
+export const MOVIE_DETAIL_GROUP_ROW_CLASSNAME = "h-10 flex-row items-center";
+
 export interface MovieDetailRatingsSectionProps {
-  ratings: Rating[];
+  rows: GroupRatingRow[];
   displayNameById: Map<string, string>;
   starColor: string;
 }
 
 export function MovieDetailRatingsSection({
-  ratings,
+  rows,
   displayNameById,
   starColor,
 }: MovieDetailRatingsSectionProps) {
   const [expanded, setExpanded] = useState(false);
 
+  if (rows.length === 0) {
+    return null;
+  }
+
   return (
-    <View testID="movie-detail-ratings-section">
+    <View testID="movie-detail-ratings-section" className="self-stretch">
       <Pressable
         testID="movie-detail-ratings-toggle"
         accessibilityRole="button"
         accessibilityState={{ expanded }}
+        hitSlop={{ top: 12, bottom: 12 }}
         onPress={() => setExpanded((prev) => !prev)}
-        className="min-h-touch-comfortable flex-row items-center justify-between"
+        className="flex-row items-center justify-between"
       >
-        <Text className="text-base font-sans-semibold text-text-primary">
-          Bewertungen
+        <Text className="text-sm font-sans-semibold text-text-primary">
+          Bewertungen der Gruppe
         </Text>
         <Icon
           name={expanded ? "chevronUp" : "chevronDown"}
@@ -51,17 +55,44 @@ export function MovieDetailRatingsSection({
       </Pressable>
 
       {expanded ? (
-        <View testID="movie-detail-ratings-content">
-          {ratings.map((rating) => (
-            <MemberRatingRow
-              key={rating.member_id}
-              memberLabel={memberDisplayLabel(
-                rating.member_id,
-                displayNameById.get(rating.member_id),
+        <View testID="movie-detail-ratings-content" className="pt-2">
+          {rows.map((row) => (
+            <View
+              key={row.memberId}
+              testID="member-rating-row"
+              className={MOVIE_DETAIL_GROUP_ROW_CLASSNAME}
+            >
+              <Text
+                testID="member-rating-name"
+                numberOfLines={1}
+                className="w-28 pr-2 text-sm text-text-secondary"
+              >
+                {memberDisplayLabel(row.memberId, displayNameById.get(row.memberId))}
+              </Text>
+              {row.rating != null ? (
+                <>
+                  <StarRating
+                    rating={row.rating}
+                    starColor={starColor}
+                    iconSize="S"
+                    compactBox
+                  />
+                  <Text
+                    testID="member-rating-value"
+                    className="w-10 pl-2 text-right text-sm text-text-primary"
+                  >
+                    {row.rating.toFixed(1)}
+                  </Text>
+                </>
+              ) : (
+                <Text
+                  testID="member-rating-unrated"
+                  className="text-sm text-text-secondary opacity-60"
+                >
+                  nicht bewertet
+                </Text>
               )}
-              rating={rating.rating}
-              starColor={starColor}
-            />
+            </View>
           ))}
         </View>
       ) : null}

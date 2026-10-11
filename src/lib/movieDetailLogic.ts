@@ -228,3 +228,32 @@ export function getVisibleActions(
   }
   return getVisibleActionsWithoutGroupContext(context);
 }
+
+export interface GroupRatingRow {
+  memberId: string;
+  /** null = hat noch nicht bewertet (kein Rating oder 0). */
+  rating: number | null;
+}
+
+/**
+ * Zeilen fuer "Bewertungen der Gruppe": alle Gruppenmitglieder AUSSER dem
+ * aktuellen Nutzer (dessen Bewertung steht oben im Abschnitt Bewertung).
+ * Bewertete zuerst, dann nicht bewertete; innerhalb der Gruppen bleibt die
+ * Mitglieder-Reihenfolge erhalten.
+ */
+export function buildGroupRatingRows(
+  memberIds: string[],
+  ratings: { member_id: string; rating: number | null }[],
+  currentUserId: string | undefined,
+): GroupRatingRow[] {
+  const rows = memberIds
+    .filter((id) => id !== currentUserId)
+    .map((memberId) => {
+      const value = ratings.find((r) => r.member_id === memberId)?.rating ?? null;
+      return { memberId, rating: value != null && value > 0 ? value : null };
+    });
+  return [
+    ...rows.filter((row) => row.rating != null),
+    ...rows.filter((row) => row.rating == null),
+  ];
+}
