@@ -1,12 +1,12 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
+import { Surface } from "@/components/ui/Surface";
 import { requestPasswordReset } from "@/lib/auth";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
@@ -83,7 +83,7 @@ export default function ForgotPasswordScreen() {
               Gib deine E-Mail-Adresse ein. Wir schicken dir einen Link zum
               Zurücksetzen.
             </Text>
-            <TextInput
+            <TextField
               testID="forgot-password-email-input"
               value={email}
               onChangeText={setEmail}
@@ -91,8 +91,6 @@ export default function ForgotPasswordScreen() {
               autoCapitalize="none"
               autoComplete="email"
               placeholder="du@beispiel.de"
-              placeholderTextColor={PLACEHOLDER_COLOR}
-              className={SURFACE_INPUT_CLASSNAME}
             />
             {validationError ? (
               <Text

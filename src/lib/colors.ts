@@ -16,3 +16,10 @@ export const TEXT_PRIMARY_COLOR = "#e8e8e8";
 export const DANGER_TEXT_COLOR = "#e5675a";
 export const SUCCESS_TEXT_COLOR = "#5fcf8a";
 export const STAR_EMPTY_COLOR = "#575757";
+
+/**
+ * ONE opaque fill for every control (text fields, dropdowns, buttons, settings rows, view toggles).
+ * Measured on device (Select trigger) = rgb(10,10,12). Mirrors tailwind token `field` (`bg-field`).
+ * Never use alpha for controls: rgba fills rendered black/unreliable on device.
+ */
+export const FIELD_FILL = "#0a0a0c";

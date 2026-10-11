@@ -1,12 +1,12 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { Link, useRouter } from "expo-router";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
+import { Surface } from "@/components/ui/Surface";
 import { signInWithEmail } from "@/lib/auth";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
@@ -89,7 +89,7 @@ export default function LoginScreen() {
       <Brand />
       <Surface variant="strong" className="gap-3 p-5">
         <Text className="text-sm text-text-secondary">E-Mail</Text>
-        <TextInput
+        <TextField
           testID="login-email-input"
           value={email}
           onChangeText={setEmail}
@@ -97,20 +97,16 @@ export default function LoginScreen() {
           autoCapitalize="none"
           autoComplete="email"
           placeholder="du@beispiel.de"
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={SURFACE_INPUT_CLASSNAME}
         />
 
         <Text className="text-sm text-text-secondary">Passwort</Text>
-        <TextInput
+        <TextField
           testID="login-password-input"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secure
           autoCapitalize="none"
           placeholder="••••••••"
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={SURFACE_INPUT_CLASSNAME}
         />
 
         {validationError ? (

@@ -4,8 +4,8 @@ import { useState } from "react";
 import { View } from "react-native";
 
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SURFACE_EDGE } from "@/components/ui/Surface";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { signOut } from "@/lib/auth";
 import { deleteOwnAccount } from "@/lib/deleteAccount";
 
@@ -79,9 +79,8 @@ export function DeleteAccountDialog({ visible, onCancel }: DeleteAccountDialogPr
         <Text className="text-text-secondary">
           Gib zur Bestätigung &quot;{DELETE_CONFIRMATION_PHRASE}&quot; ein.
         </Text>
-        <TextInput
+        <TextField
           testID="delete-account-confirm-input"
-          className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
           autoCapitalize="characters"
           autoCorrect={false}
           value={confirmationInput}

@@ -1,10 +1,9 @@
 import { useState } from "react";
 
 import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
-import { SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { useUpdateDisplayName } from "@/hooks/useUpdateDisplayName";
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { showToast } from "@/lib/toast";
 
 export interface DisplayNameSheetProps {
@@ -70,14 +69,12 @@ function DisplayNameForm({ storedDisplayName }: { storedDisplayName: string }) {
       errorTestID="settings-display-name-error"
     >
       <Text className="text-sm text-text-secondary">Anzeigename</Text>
-      <TextInput
+      <TextField
         testID="settings-display-name-input"
         value={draft}
         onChangeText={setDraft}
         autoCapitalize="words"
         placeholder="Anzeigename"
-        placeholderTextColor={PLACEHOLDER_COLOR}
-        className={SURFACE_INPUT_CLASSNAME}
       />
     </DraftSheetForm>
   );

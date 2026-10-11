@@ -1,21 +1,19 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
+import { Surface } from "@/components/ui/Surface";
 import { signUpWithEmail } from "@/lib/auth";
 import { MIN_PASSWORD_LENGTH } from "@/lib/passwordRules";
 import { openLegalUrl } from "@/lib/legalLinks";
 import { screenKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const INPUT_CLASSNAME = SURFACE_INPUT_CLASSNAME;
 
 function validate(
   displayName: string,
@@ -143,41 +141,35 @@ export default function RegisterScreen() {
 
         <View className="gap-1">
           <Text className="text-sm text-text-secondary">Anzeigename</Text>
-          <TextInput
+          <TextField
             testID="register-display-name-input"
             value={displayName}
             onChangeText={setDisplayName}
             autoCapitalize="words"
             placeholder="Wie sollen dich andere sehen?"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={INPUT_CLASSNAME}
           />
         </View>
 
         <View className="gap-1">
           <Text className="text-sm text-text-secondary">E-Mail</Text>
-          <TextInput
+          <TextField
             testID="register-email-input"
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             placeholder="deine@email.de"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={INPUT_CLASSNAME}
           />
         </View>
 
         <View className="gap-1">
           <Text className="text-sm text-text-secondary">Passwort</Text>
-          <TextInput
+          <TextField
             testID="register-password-input"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
+            secure
             placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={INPUT_CLASSNAME}
           />
         </View>
 
@@ -185,14 +177,12 @@ export default function RegisterScreen() {
           <Text className="text-sm text-text-secondary">
             Passwort bestätigen
           </Text>
-          <TextInput
+          <TextField
             testID="register-confirm-password-input"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            secureTextEntry
+            secure
             placeholder="Passwort wiederholen"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={INPUT_CLASSNAME}
           />
         </View>
 

@@ -1,7 +1,7 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Icon } from "@/components/ui/Icon";
 import { router } from "expo-router";
@@ -9,7 +9,6 @@ import { router } from "expo-router";
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
 import { Card } from "@/components/ui/Card";
-import { SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
 import {
   DEFAULT_GROUP_THEME,
   GROUP_THEME_LABELS,
@@ -206,13 +205,11 @@ export default function CreateOrJoinGroupScreen() {
             Gruppe erstellen
           </Text>
 
-          <TextInput
+          <TextField
             testID="create-group-name-input"
             value={groupName}
             onChangeText={setGroupName}
             placeholder="Gruppenname"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={SURFACE_INPUT_CLASSNAME}
           />
 
           <Text className="text-text-secondary">Farbthema</Text>
@@ -282,13 +279,11 @@ export default function CreateOrJoinGroupScreen() {
             Gruppe beitreten
           </Text>
 
-          <TextInput
+          <TextField
             testID="join-group-code-input"
             value={groupCode}
             onChangeText={setGroupCode}
             placeholder="Einladungscode / Gruppen-ID"
-            placeholderTextColor={PLACEHOLDER_COLOR}
-            className={SURFACE_INPUT_CLASSNAME}
           />
 
           {joinError ? (

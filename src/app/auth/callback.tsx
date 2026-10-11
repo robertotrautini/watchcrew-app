@@ -1,14 +1,14 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import * as Linking from "expo-linking";
 import { Spinner } from "@/components/ui/Spinner";
 import { useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 
 import { Button } from "@/components/ui/Button";
 import { Brand } from "@/components/ui/Brand";
-import { Surface, SURFACE_INPUT_CLASSNAME } from "@/components/ui/Surface";
+import { Surface } from "@/components/ui/Surface";
 import {
   establishSessionFromTokens,
   exchangeAuthCode,
@@ -172,25 +172,21 @@ export default function AuthCallbackScreen() {
         <Text className="font-title text-2xl text-text-primary">
           Neues Passwort setzen
         </Text>
-        <TextInput
+        <TextField
           testID="auth-callback-password-input"
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          secure
           autoCapitalize="none"
           placeholder={`Mindestens ${MIN_PASSWORD_LENGTH} Zeichen`}
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={SURFACE_INPUT_CLASSNAME}
         />
-        <TextInput
+        <TextField
           testID="auth-callback-confirm-input"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
-          secureTextEntry
+          secure
           autoCapitalize="none"
           placeholder="Passwort wiederholen"
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={SURFACE_INPUT_CLASSNAME}
         />
         {validationError ? (
           <Text

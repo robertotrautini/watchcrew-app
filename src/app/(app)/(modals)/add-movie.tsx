@@ -1,7 +1,7 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { KeyboardInsetView } from "@/components/ui/KeyboardInsetView";
 import { Pressable, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { SearchResultsArea } from "@/components/ui/SearchResultsArea";
 import { MovieGrid } from "@/components/movie/MovieGrid";
@@ -71,11 +71,11 @@ export default function AddMovieScreen() {
       {mode === "film" ? (
         <>
           <View className="flex-row items-center gap-2 pt-3">
-            <TextInput
+            <TextField
+              search
               testID="add-movie-film-search-input"
-              className="flex-1 rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
+              className="flex-1"
               placeholder="Filmtitel suchen…"
-              placeholderTextColor={PLACEHOLDER_COLOR}
               value={query}
               onChangeText={setQuery}
             />
@@ -115,15 +115,14 @@ export default function AddMovieScreen() {
         <View className="flex-1 pt-3">
           {selectedPersonId == null ? (
             <>
-              <TextInput
+              <TextField
+                search
                 testID="add-movie-person-search-input"
-                className="rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
                 placeholder={
                   mode === "regisseur"
                     ? "Regisseur suchen…"
                     : "Schauspieler suchen…"
                 }
-                placeholderTextColor={PLACEHOLDER_COLOR}
                 value={query}
                 onChangeText={setQuery}
               />
@@ -193,11 +192,10 @@ export default function AddMovieScreen() {
         <View className="flex-1 pt-3">
           {selectedCompanyId == null ? (
             <>
-              <TextInput
+              <TextField
+                search
                 testID="add-movie-company-search-input"
-                className="rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
                 placeholder="Studio suchen…"
-                placeholderTextColor={PLACEHOLDER_COLOR}
                 value={query}
                 onChangeText={setQuery}
               />

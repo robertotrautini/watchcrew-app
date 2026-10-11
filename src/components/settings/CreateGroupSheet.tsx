@@ -1,11 +1,10 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
 
-import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Icon } from "@/components/ui/Icon";
 import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import {
   DEFAULT_GROUP_THEME,
   GROUP_THEME_LABELS,
@@ -68,13 +67,11 @@ function CreateGroupForm({
       loading={loading}
       onSave={handleCreate}
     >
-      <TextInput
+      <TextField
         testID={`${TEST_ID}-name-input`}
         value={name}
         onChangeText={setName}
         placeholder="Gruppenname"
-        placeholderTextColor={PLACEHOLDER_COLOR}
-        className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
       />
       <Text className="text-text-secondary">Farbthema</Text>
       <View className="flex-row flex-wrap gap-3">

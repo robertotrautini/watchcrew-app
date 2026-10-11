@@ -1,8 +1,8 @@
 import { View } from "react-native";
 
 import { IconButton } from "@/components/ui/IconButton";
-import { SURFACE_EDGE } from "@/components/ui/Surface";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 
 interface GroupNameSectionProps {
   value: string;
@@ -33,11 +33,11 @@ export function GroupNameSection({
     >
       <Text className="font-title text-lg text-accent-light">Gruppenname</Text>
       <View testID="group-settings-rename-row" className="flex-row items-center gap-3">
-        <TextInput
+        <TextField
           testID="group-settings-name-input"
           value={value}
           onChangeText={onChangeText}
-          className={`flex-1 rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+          className="flex-1"
         />
         <IconButton
           testID="group-settings-rename-save-button"

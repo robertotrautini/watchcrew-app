@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
  * single flat 1px faint white border + rounded corners. No blur anywhere
  * (docs/style-guide.md). Shared by Card, Toast, settings groups and similar surfaces.
  */
-export type SurfaceVariant = "default" | "strong" | "panel" | "solid";
+export type SurfaceVariant = "default" | "strong" | "panel" | "solid" | "field";
 
 /**
  * Flat Material border (docs/style-guide.md): ONE uniform 1px hairline in
@@ -23,10 +23,12 @@ export const SURFACE_CLASSNAMES: Record<SurfaceVariant, string> = {
   solid: `rounded-xl ${SURFACE_EDGE}`,
   /** Large panels: toast, bottom action bar (sheet/tab bar reuse the same tokens). */
   panel: SURFACE_EDGE,
+  /** Opaque control fill (`bg-field`): settings groups, rows. */
+  field: `rounded-xl ${SURFACE_EDGE}`,
 };
 
 /** Shared rounded-row look (settings rows, action buttons). */
-export const SURFACE_TILE_CLASSNAME = `rounded-xl ${SURFACE_EDGE} bg-card`;
+export const SURFACE_TILE_CLASSNAME = `rounded-xl ${SURFACE_EDGE} bg-field`;
 
 /** Detail screen bottom action bar surface (top edge only). */
 export const SURFACE_BAR_CLASSNAME = "border-t border-surface-border";
@@ -109,14 +111,8 @@ export function Surface({ variant = "default", className, onPress, ...rest }: Su
   const rootProps = onPress ? { onPress, ...rest } : rest;
   return (
     <Root
-      className={cn("overflow-hidden", SURFACE_CLASSNAMES[variant], className, variant === "solid" ? "bg-black" : SURFACE_FILL)}
+      className={cn("overflow-hidden", SURFACE_CLASSNAMES[variant], className, variant === "solid" ? "bg-black" : variant === "field" ? "bg-field" : SURFACE_FILL)}
       {...rootProps}
     />
   );
 }
-
-/** Shared surface text-input look (auth, onboarding, settings forms). */
-export const SURFACE_INPUT_CLASSNAME = `rounded-lg ${SURFACE_EDGE} bg-black/35 px-4 py-3 text-base text-text-primary`;
-
-/** Recessed (darker) search input sitting inside a surface card. */
-export const SURFACE_SEARCH_INPUT_CLASSNAME = `flex-1 rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`;

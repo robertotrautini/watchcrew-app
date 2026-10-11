@@ -1,11 +1,11 @@
 import { EmptyState } from "@/components/ui/EmptyState";
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { useMemo, useState } from "react";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Pressable, ScrollView, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TrackerEntrySheet } from "@/components/movie/TrackerEntrySheet";
@@ -14,7 +14,6 @@ import { AppHeader } from "@/components/ui/AppHeader";
 import { FadeInItem } from "@/components/ui/FadeInItem";
 import {
   Surface,
-  SURFACE_SEARCH_INPUT_CLASSNAME,
   PANEL_LIST_CONTENT_PT_CLASSNAME,
   PANEL_LIST_OVERLAP_CLASSNAME,
 } from "@/components/ui/Surface";
@@ -156,11 +155,11 @@ export default function TrackerScreen() {
       <View testID="tracker-panel-wrapper" className="z-10 mx-4 mt-3">
         <PanelShadow testID="tracker-panel-shadow" />
         <Surface variant="solid" className="flex-row items-center gap-3 p-3">
-          <TextInput
+          <TextField
+            search
             testID="tracker-search-input"
-            className={SURFACE_SEARCH_INPUT_CLASSNAME}
+            className="flex-1"
             placeholder="Film suchen…"
-            placeholderTextColor={PLACEHOLDER_COLOR}
             value={searchQuery}
             onChangeText={setSearchQuery}
           />

@@ -38,6 +38,16 @@ module.exports = {
         // Flat Material border (docs/style-guide.md): one uniform, subtle
         // 1px hairline for every surface (cards, buttons, inputs, sheets).
         "surface-border": "rgba(255,255,255,0.12)",
+        // OPAQUE control fill (no alpha): every input, dropdown, button, row, view toggle.
+        // Measured on device (Select trigger, Pixel 6 Pro screenshot) = rgb(10,10,12).
+        // Mirror: FIELD_FILL in src/lib/colors.ts. Alpha fills rendered black/unreliable on device.
+        field: "#0a0a0c",
+        // Neutral button pressed state (white 12% over field, precomputed).
+        "btn-neutral-pressed": "#1c1c1f",
+        // Danger controls: danger #c0392b mixed over field (15% / 25% pressed / 30% border), precomputed.
+        "btn-danger": "#251111",
+        "btn-danger-pressed": "#381614",
+        "btn-danger-border": "#411815",
         "danger-text": "#e5675a",
         "bg-autocomplete": "rgba(12,12,12,.97)",
         "text-primary": "#e8e8e8",
@@ -67,6 +77,8 @@ module.exports = {
         "accent-a40": "var(--color-accent-a40, rgba(200,164,78,.4))",
         "accent-a45": "var(--color-accent-a45, rgba(200,164,78,.45))",
         "accent-a55": "var(--color-accent-a55, rgba(200,164,78,.55))",
+        // Opaque accent tint (accent 15% over field), per theme in global.css; chip + soft accent fills.
+        "accent-soft": "var(--color-accent-soft, #262116)",
         // Near-opaque dark chip base (theme-neutral) so chips read over the photo.
         "chip-base": "rgba(14,12,8,.88)",
         "star-color": "var(--color-star, #FFD700)",

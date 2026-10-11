@@ -41,6 +41,7 @@
 :root,
 .theme-gold {
   --color-accent: #c8a44e;
+  --color-accent-soft: #262116;
   --color-accent-a15: rgba(200, 164, 78, 0.15);
   --color-accent-a30: rgba(200, 164, 78, 0.3);
   --color-accent-a40: rgba(200, 164, 78, 0.4);
@@ -54,6 +55,7 @@
 
 .theme-red {
   --color-accent: #c75050;
+  --color-accent-soft: #261416;
   --color-accent-a15: rgba(199, 80, 80, 0.15);
   --color-accent-a30: rgba(199, 80, 80, 0.3);
   --color-accent-a40: rgba(199, 80, 80, 0.4);
@@ -67,6 +69,7 @@
 
 .theme-blue {
   --color-accent: #4e8ac8;
+  --color-accent-soft: #141d28;
   --color-accent-a15: rgba(78, 138, 200, 0.15);
   --color-accent-a30: rgba(78, 138, 200, 0.3);
   --color-accent-a40: rgba(78, 138, 200, 0.4);
@@ -80,6 +83,7 @@
 
 .theme-green {
   --color-accent: #50a870;
+  --color-accent-soft: #14221b;
   --color-accent-a15: rgba(80, 168, 112, 0.15);
   --color-accent-a30: rgba(80, 168, 112, 0.3);
   --color-accent-a40: rgba(80, 168, 112, 0.4);
@@ -93,6 +97,7 @@
 
 .theme-purple {
   --color-accent: #9050c7;
+  --color-accent-soft: #1e1428;
   --color-accent-a15: rgba(144, 80, 199, 0.15);
   --color-accent-a30: rgba(144, 80, 199, 0.3);
   --color-accent-a40: rgba(144, 80, 199, 0.4);
@@ -106,6 +111,7 @@
 
 .theme-orange {
   --color-accent: #c8784e;
+  --color-accent-soft: #261a16;
   --color-accent-a15: rgba(200, 120, 78, 0.15);
   --color-accent-a30: rgba(200, 120, 78, 0.3);
   --color-accent-a40: rgba(200, 120, 78, 0.4);

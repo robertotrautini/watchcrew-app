@@ -3,11 +3,9 @@ import type { ReactNode } from "react";
 import { EntryFilterBar } from "@/components/entries/EntryFilterBar";
 import { EntrySortRow } from "@/components/entries/EntrySortRow";
 import { CollapsibleFilterPanel } from "@/components/ui/CollapsibleFilterPanel";
-import { SURFACE_SEARCH_INPUT_CLASSNAME } from "@/components/ui/Surface";
-import { TextInput } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 import { ViewModeToggle } from "@/components/ui/ViewModeToggle";
 import type { useEntryFilters } from "@/hooks/useEntryFilters";
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import type { SortFieldItem } from "@/lib/entrySorting";
 import {
   activeFilterKeys,
@@ -65,13 +63,13 @@ export function EntryFilterPanel({
       onToggle={f.toggleFilterPanel}
       hasActiveFilters={filterKeys.length > 0}
       search={
-        <TextInput
+        <TextField
+          search
           testID={`${testIDPrefix}-search-input`}
           value={f.searchQuery}
           onChangeText={f.setSearchQuery}
           placeholder="Film suchen…"
-          placeholderTextColor={PLACEHOLDER_COLOR}
-          className={SURFACE_SEARCH_INPUT_CLASSNAME}
+          className="flex-1"
         />
       }
       actions={actions}

@@ -22,3 +22,19 @@ describe("surface-border token", () => {
     if (!hex) expect(Number(value.match(/,\s*([\d.]+)\s*\)/)![1])).toBeGreaterThanOrEqual(0.11);
   });
 });
+
+describe("opaque control tokens", () => {
+  const colors = config.theme.extend.colors;
+  const { FIELD_FILL } = require("../../src/lib/colors");
+  const HEX = /^#[0-9a-f]{6}$/;
+
+  it("field and button tokens are 6-digit hex (no alpha)", () => {
+    for (const k of ["field", "btn-neutral-pressed", "btn-danger", "btn-danger-pressed", "btn-danger-border"]) {
+      expect(colors[k]).toMatch(HEX);
+    }
+  });
+
+  it("FIELD_FILL mirrors the field token", () => {
+    expect(FIELD_FILL).toBe(colors.field);
+  });
+});

@@ -1,9 +1,9 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useMemo, useState } from "react";
 import { LoadingArea } from "@/components/ui/LoadingArea";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { Pressable, ScrollView, View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
+import { TextField } from "@/components/ui/TextField";
 
 import { SettingsBackBar } from "@/components/settings/SettingsBackBar";
 import { Image } from "@/components/ui/Image";
@@ -11,7 +11,6 @@ import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import { useProvidersList } from "@/hooks/useProvidersList";
 import type { TmdbProviderRef } from "@/lib/tmdbProxy";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
-import { SURFACE_EDGE } from "@/components/ui/Surface";
 import {
   CHIP_ACTIVE_CLASSNAME,
   CHIP_INACTIVE_CLASSNAME,
@@ -100,11 +99,10 @@ export default function SettingsStreamingServicesScreen() {
   return (
     <View className="flex-1" testID="settings-streaming-screen">
       <View className="px-4 pt-4">
-        <TextInput
+        <TextField
+          search
           testID="settings-streaming-search-input"
-          className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
           placeholder="Suchen…"
-          placeholderTextColor={PLACEHOLDER_COLOR}
           value={searchQuery}
           onChangeText={setSearchQuery}
         />
