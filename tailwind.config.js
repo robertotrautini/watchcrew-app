@@ -37,7 +37,7 @@ module.exports = {
         "bg-card-flat": "rgba(10,10,12,.95)",
         // Flat Material border (docs/style-guide.md): one uniform, subtle
         // 1px hairline for every surface (cards, buttons, inputs, sheets).
-        "surface-border": "rgba(255,255,255,0.16)",
+        "surface-border": "rgba(255,255,255,0.12)",
         "danger-text": "#e5675a",
         "bg-autocomplete": "rgba(12,12,12,.97)",
         "text-primary": "#e8e8e8",

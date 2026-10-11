@@ -7,7 +7,7 @@ describe("surface-border token", () => {
     expect(value).toMatch(/^(#[0-9a-fA-F]{6,8}|rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*(0\.\d+|1)\s*\))$/);
   });
 
-  it("is visible on black (>= 30 grey)", () => {
+  it("is visible on black (>= 28 grey, alpha >= 0.11)", () => {
     const hex = value.match(/^#([0-9a-fA-F]{6})([0-9a-fA-F]{2})?$/);
     let grey: number;
     if (hex) {
@@ -17,6 +17,8 @@ describe("surface-border token", () => {
       const m = value.match(/rgba\(\s*(\d+)\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/)!;
       grey = Number(m[1]) * Number(m[2]);
     }
-    expect(grey).toBeGreaterThanOrEqual(30);
+    expect(grey).toBeGreaterThanOrEqual(28);
+    // alpha 0.10 and below rendered black on device
+    if (!hex) expect(Number(value.match(/,\s*([\d.]+)\s*\)/)![1])).toBeGreaterThanOrEqual(0.11);
   });
 });

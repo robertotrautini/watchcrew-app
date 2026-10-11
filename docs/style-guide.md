@@ -6,7 +6,7 @@ Kurzreferenz. Quelle der Wahrheit fuer Tokens: `tailwind.config.js`; Komponenten
 
 | Token | Wert | Zweck |
 |---|---|---|
-| `surface-border` | `rgba(255,255,255,0.16)` (mit fuehrender Null; am Geraet gemessen ca. 47-49 Grau auf Schwarz), **1px** | EINE Border fuer alle Flaechen (Karten, Buttons, Inputs, Sheets, Leisten, Trenner) |
+| `surface-border` | `rgba(255,255,255,0.12)` (mit fuehrender Null; am Geraet gemessen ca. 35-38 Grau auf Schwarz), **1px** | EINE Border fuer alle Flaechen (Karten, Buttons, Inputs, Sheets, Leisten, Trenner) |
 | `bg-bg-card-flat` | `.95` | EINZIGE Flaechen-Fuellung aller Flaechen (Karten, Tab-Bar, Toasts, Leisten, Dialoge, Settings, Backdrop). Konstante `SURFACE_FILL` in `Surface.tsx`. Kein Blur in der App. |
 | `accent` | Gruppenfarbe (Standard Gold `#c8a44e`) | Primary |
 | `danger` / `danger-text` | `#c0392b` / `#e5675a` | Danger-Fuellung bzw. Text und Icon |
@@ -18,7 +18,7 @@ Kurzreferenz. Quelle der Wahrheit fuer Tokens: `tailwind.config.js`; Komponenten
 - Kein Blur, keine Transluzenz-Stufen: alle Flaechen nutzen dieselbe flache dunkle Fuellung, nur die Kante ist schlicht.
 - Alle Flaechen (Karten, Kacheln, Tabellenzeilen, Tab-Bar, Toasts, Detail-Leiste, Settings-Gruppen, Backdrop) nutzen die flache dunkle Flaeche `bg-bg-card-flat` (rgba(10,10,12,.95), `SURFACE_FILL`) + Border + Rundung. KEIN BlurView (`expo-blur` entfernt), kein Bild. Die Varianten `default`/`strong`/`panel` von `Surface` unterscheiden sich nur noch in der Form.
 - Ausgegraute Eintraege ("Kommt noch") dimmen nur die Inhaltsschicht (`*-content`, `opacity-50`), nie die Flaeche.
-- Konstanten: `SURFACE_EDGE` (auch fuer Text-Inputs; fruehere Konstante `GLASS_INSET_EDGE` entfernt) in `Surface.tsx`; Tab-Bar `TAB_BAR_STYLE` nutzt dieselbe Farbe (0.16 Alpha).
+- Konstanten: `SURFACE_EDGE` (auch fuer Text-Inputs; fruehere Konstante `GLASS_INSET_EDGE` entfernt) in `Surface.tsx`; Tab-Bar `TAB_BAR_STYLE` nutzt dieselbe Farbe (0.12 Alpha).
 - Primary hat `border-transparent` (gleiche Masse, keine sichtbare Kante).
 
 ## Varianten nach Funktion (`Button`, `src/components/ui/Button.tsx`)
