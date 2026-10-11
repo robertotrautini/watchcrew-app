@@ -222,12 +222,11 @@ export default function MovieDetailScreen() {
     // practice -- `currentUserRating` only exists when `watchlistEntry`
     // resolved from `useGroupWatchlist(groupId)`'s data -- but the check is
     // explicit for type-safety rather than a non-null assertion.
-    if (currentUserRating && watchlistEntryId && currentUserId && groupId) {
+    if (currentUserRating && watchlistEntry && currentUserId && groupId) {
       toggleLikeMutation.mutate({
-        watchlistEntryId,
+        movieId: watchlistEntry.movie_id,
         memberId: currentUserId,
         nextLiked: !currentUserRating.liked,
-        existingRatingId: currentUserRating.id,
         groupId,
       });
     }
@@ -266,6 +265,8 @@ export default function MovieDetailScreen() {
   const [ratingDialogTarget, setRatingDialogTarget] = useState<{
     mode: RatingDialogMode;
     watchlistEntryId: string;
+    /** Set for "direct" (fresh entry in another group); otherwise resolved from the entry. */
+    movieId?: string;
     groupId: string;
   } | null>(null);
 
@@ -295,13 +296,14 @@ export default function MovieDetailScreen() {
     setRatingDialogVisible(true);
   }
 
-  function handleDirectRateEntryCreated(entryId: string) {
+  function handleDirectRateEntryCreated(entryId: string, movieId: string) {
     if (!activeGroupId) {
       return;
     }
     setRatingDialogTarget({
       mode: "direct",
       watchlistEntryId: entryId,
+      movieId,
       groupId: activeGroupId,
     });
     setRatingDialogVisible(true);
@@ -476,6 +478,7 @@ export default function MovieDetailScreen() {
           movieTitle={title}
           movieReleaseDate={releaseInfo?.date ?? null}
           watchlistEntryId={ratingDialogTarget?.watchlistEntryId ?? ""}
+          movieId={ratingDialogTarget?.movieId ?? ratingDialogEntry?.movie_id ?? ""}
           paidByMemberId={ratingDialogEntry?.paid_by_member_id ?? null}
           paidAt={ratingDialogEntry?.paid_at ?? null}
           ratings={ratingDialogEntry?.ratings ?? []}

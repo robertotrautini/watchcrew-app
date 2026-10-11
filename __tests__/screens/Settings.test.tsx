@@ -49,6 +49,17 @@ jest.mock("@/lib/auth", () => ({
   signOut: mockSignOut,
 }));
 
+const mockDeleteOwnAccount = jest.fn();
+jest.mock("@/lib/deleteAccount", () => ({
+  deleteOwnAccount: mockDeleteOwnAccount,
+}));
+
+const mockImpactAsync = jest.fn();
+jest.mock("expo-haptics", () => ({
+  impactAsync: (...args: unknown[]) => mockImpactAsync(...args),
+  ImpactFeedbackStyle: { Light: "light", Medium: "medium", Heavy: "heavy" },
+}));
+
 const mockShowToast = jest.fn();
 jest.mock("@/lib/toast", () => ({
   showToast: mockShowToast,
@@ -107,8 +118,81 @@ describe("SettingsScreen", () => {
     await fireEvent.press(getByTestId("settings-section-group-settings"));
     expect(mockRouter.push).toHaveBeenCalledWith("/group-settings");
 
+    // "Konto löschen" opens a dialog instead of a route.
     await fireEvent.press(getByTestId("settings-section-delete-account"));
-    expect(mockRouter.push).toHaveBeenCalledWith("/settings/delete-account");
+    expect(mockRouter.push).not.toHaveBeenCalledWith("/settings/delete-account");
+  });
+
+  describe("Konto löschen dialog", () => {
+    async function openDialog() {
+      const SettingsScreen = loadSettingsScreen();
+      const utils = await render(<SettingsScreen />);
+      await fireEvent.press(utils.getByTestId("settings-section-delete-account"));
+      return utils;
+    }
+
+    it("opens the ConfirmDialog (flyout) when 'Konto löschen' is tapped", async () => {
+      const SettingsScreen = loadSettingsScreen();
+      const { getByTestId, queryByTestId } = await render(<SettingsScreen />);
+      expect(queryByTestId("delete-account-dialog")).toBeNull();
+      await fireEvent.press(getByTestId("settings-section-delete-account"));
+      expect(getByTestId("delete-account-dialog")).toBeTruthy();
+      expect(getByTestId("delete-account-confirm-input")).toBeTruthy();
+    });
+
+    it("keeps confirm disabled until the exact phrase 'LÖSCHEN' is typed", async () => {
+      const { getByTestId } = await openDialog();
+      const disabled = () => getByTestId("delete-account-confirm-button").props.accessibilityState.disabled;
+      expect(disabled()).toBe(true);
+      await fireEvent.changeText(getByTestId("delete-account-confirm-input"), "loeschen");
+      expect(disabled()).toBe(true);
+      await fireEvent.changeText(getByTestId("delete-account-confirm-input"), "LÖSCHEN");
+      expect(disabled()).toBe(false);
+    });
+
+    it("does not delete when confirm is pressed while still disabled", async () => {
+      const { getByTestId } = await openDialog();
+      await fireEvent.press(getByTestId("delete-account-confirm-button"));
+      expect(mockDeleteOwnAccount).not.toHaveBeenCalled();
+      expect(mockImpactAsync).not.toHaveBeenCalled();
+    });
+
+    it("cancel closes the dialog without deleting", async () => {
+      const { getByTestId, queryByTestId } = await openDialog();
+      await fireEvent.press(getByTestId("delete-account-cancel-button"));
+      expect(queryByTestId("delete-account-dialog")).toBeNull();
+      expect(mockDeleteOwnAccount).not.toHaveBeenCalled();
+    });
+
+    it("on success: deletes, navigates to login, then signs out", async () => {
+      mockDeleteOwnAccount.mockResolvedValue({ error: null });
+      mockSignOut.mockResolvedValue({ error: null });
+      const { getByTestId } = await openDialog();
+      await fireEvent.changeText(getByTestId("delete-account-confirm-input"), "LÖSCHEN");
+      await fireEvent.press(getByTestId("delete-account-confirm-button"));
+
+      expect(mockImpactAsync).toHaveBeenCalledWith("medium");
+      await waitFor(() => expect(mockDeleteOwnAccount).toHaveBeenCalledTimes(1));
+      await waitFor(() => expect(mockSignOut).toHaveBeenCalled());
+      expect(mockRouter.replace).toHaveBeenCalledWith("/(auth)/login");
+      expect(mockDeleteOwnAccount.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRouter.replace.mock.invocationCallOrder[0],
+      );
+      expect(mockRouter.replace.mock.invocationCallOrder[0]).toBeLessThan(
+        mockSignOut.mock.invocationCallOrder[0],
+      );
+    });
+
+    it("on failure: shows the error and neither signs out nor navigates", async () => {
+      mockDeleteOwnAccount.mockResolvedValue({ error: { message: "server error" } });
+      const { getByTestId } = await openDialog();
+      await fireEvent.changeText(getByTestId("delete-account-confirm-input"), "LÖSCHEN");
+      await fireEvent.press(getByTestId("delete-account-confirm-button"));
+
+      await waitFor(() => expect(getByTestId("delete-account-error")).toBeTruthy());
+      expect(mockSignOut).not.toHaveBeenCalled();
+      expect(mockRouter.replace).not.toHaveBeenCalled();
+    });
   });
 
   it("shows the user's email and display name", async () => {

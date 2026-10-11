@@ -38,7 +38,6 @@ describe("(modals) layout header titles", () => {
     ["settings/streaming-services", "Meine Streaming-Dienste"],
     ["settings/display", "Darstellung"],
     ["settings/notifications", "Benachrichtigungen"],
-    ["settings/delete-account", "Konto löschen"],
     ["collection/[collectionId]", "Filmreihe"],
     ["filmography/director/[personId]", "Filmografie: Regisseur"],
     ["filmography/actor/[personId]", "Filmografie: Schauspieler:in"],
@@ -68,7 +67,7 @@ describe("(modals) layout calm backdrop", () => {
     expect(mockStackProps.screenLayout).toBe(require("@/components/modalScreenLayout").modalScreenLayout);
     expect(CALM_BACKDROP_ROUTES).toEqual(expect.arrayContaining(["movie/[tmdbId]", "similar/[tmdbId]", "add-movie"]));
     expect(CALM_BACKDROP_ROUTES).not.toContain("settings");
-    expect(DIM_BACKDROP_ROUTES).toEqual(expect.arrayContaining(["settings", "settings/delete-account", "group-settings"]));
+    expect(DIM_BACKDROP_ROUTES).toEqual(expect.arrayContaining(["settings", "group-settings"]));
   });
 });
 

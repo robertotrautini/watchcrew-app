@@ -63,10 +63,6 @@ export default function ModalsLayout() {
         name="settings/notifications"
         options={{ title: "Benachrichtigungen" }}
       />
-      <Stack.Screen
-        name="settings/delete-account"
-        options={{ title: "Konto löschen" }}
-      />
       <Stack.Screen name="group-settings" />
       <Stack.Screen
         name="collection/[collectionId]"

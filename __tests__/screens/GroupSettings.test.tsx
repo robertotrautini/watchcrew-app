@@ -531,9 +531,23 @@ describe("GroupSettingsScreen", () => {
 
       expect(
         getByText(
-          "Möchtest du die Gruppe wirklich verlassen? Die Owner-Rolle geht automatisch an ein anderes Mitglied über.",
+          "Du bist Owner. Die Owner-Rolle geht an Alex über.",
         ),
       ).toBeTruthy();
+    });
+
+    it("names the longest-standing other member (joined_at asc, user_id tiebreak) as owner successor", async () => {
+      const LATE = { ...MEMBER, user_id: "z-late", joined_at: "2026-03-01", profiles: { display_name: "Zoe" } };
+      const TIE_B = { ...MEMBER, user_id: "b-tie", joined_at: "2026-02-01", profiles: { display_name: "Bea" } };
+      const TIE_A = { ...MEMBER, user_id: "a-tie", joined_at: "2026-02-01", profiles: { display_name: "Anna" } };
+      setUpHappyPath({ currentUserId: "owner-1", members: [OWNER, LATE, TIE_B, TIE_A] });
+      const GroupSettingsScreen = loadGroupSettingsScreen();
+      const { getByTestId, getByText } = await render(<GroupSettingsScreen />);
+
+      expect(getByTestId("group-settings-leave-button")).toBeTruthy();
+      await fireEvent.press(getByTestId("group-settings-leave-button"));
+
+      expect(getByText("Du bist Owner. Die Owner-Rolle geht an Anna über.")).toBeTruthy();
     });
 
     it("shows the last-member retention warning when the current user is the only member, regardless of role", async () => {
@@ -545,7 +559,7 @@ describe("GroupSettingsScreen", () => {
 
       expect(
         getByText(
-          "Du bist das letzte Mitglied. Die Gruppe wird für 2 Wochen aufbewahrt, danach endgültig gelöscht. Du kannst über die Gruppen-ID wieder beitreten.",
+          "Du bist das einzige Mitglied. Die Gruppe wird nach 14 Tagen endgültig gelöscht, außer jemand tritt über den Einladungslink wieder bei.",
         ),
       ).toBeTruthy();
     });

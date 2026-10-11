@@ -63,9 +63,7 @@ import { GLASS_INSET_EDGE, GLASS_TILE_CLASSNAME } from "@/components/ui/Glass";
 const INVITE_LINK_SCHEME = "watchcrew://join/";
 
 const LEAVE_COPY_LAST_MEMBER =
-  "Du bist das letzte Mitglied. Die Gruppe wird für 2 Wochen aufbewahrt, danach endgültig gelöscht. Du kannst über die Gruppen-ID wieder beitreten.";
-const LEAVE_COPY_AS_OWNER =
-  "Möchtest du die Gruppe wirklich verlassen? Die Owner-Rolle geht automatisch an ein anderes Mitglied über.";
+  "Du bist das einzige Mitglied. Die Gruppe wird nach 14 Tagen endgültig gelöscht, außer jemand tritt über den Einladungslink wieder bei.";
 const LEAVE_COPY_AS_MEMBER = "Möchtest du die Gruppe wirklich verlassen?";
 
 // Same target string src/app/index.tsx's useAuthGate 'onboarding' redirect
@@ -153,6 +151,19 @@ export default function GroupSettingsScreen() {
     : "Das Mitglied";
   const memberCount = groupMembersQuery.data?.length ?? 0;
   const isLastMember = memberCount === 1;
+  // Mirrors handle_owner_succession: oldest joined_at, user_id as tiebreak.
+  const successor = (groupMembersQuery.data ?? [])
+    .filter((member) => member.user_id !== currentUserId)
+    .sort(
+      (a, b) =>
+        new Date(a.joined_at).getTime() - new Date(b.joined_at).getTime() ||
+        a.user_id.localeCompare(b.user_id),
+    )[0];
+  const leaveOwnerCopy = `Du bist Owner. Die Owner-Rolle geht an ${
+    successor
+      ? memberDisplayLabel(successor.user_id, successor.profiles?.display_name)
+      : "ein anderes Mitglied"
+  } über.`;
 
   const inviteToken = groupDetailsQuery.data?.invite_token;
   const inviteEnabled = groupDetailsQuery.data?.invite_enabled ?? false;
@@ -555,7 +566,7 @@ export default function GroupSettingsScreen() {
           isLastMember
             ? LEAVE_COPY_LAST_MEMBER
             : isOwner
-              ? LEAVE_COPY_AS_OWNER
+              ? leaveOwnerCopy
               : LEAVE_COPY_AS_MEMBER
         }
         confirmLabel="Verlassen"

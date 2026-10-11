@@ -13,13 +13,16 @@ import {
   Button,
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
-import { GLASS_INPUT_CLASSNAME } from "@/components/ui/Glass";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { GLASS_INPUT_CLASSNAME, GLASS_INSET_EDGE } from "@/components/ui/Glass";
 import { SettingsRow } from "@/components/ui/SettingsRow";
 import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
 import { useUpdateDisplayName } from "@/hooks/useUpdateDisplayName";
 import { signOut } from "@/lib/auth";
+import { deleteOwnAccount } from "@/lib/deleteAccount";
+import * as Haptics from "expo-haptics";
 import { openLegalUrl } from "@/lib/legalLinks";
 import { showToast } from "@/lib/toast";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
@@ -82,6 +85,8 @@ function legalSections(): LegalSection[] {
   ];
 }
 
+const DELETE_CONFIRMATION_PHRASE = "LÖSCHEN";
+
 export default function SettingsScreen() {
   const parallaxScroll = useParallaxScroll();
   const router = useRouter();
@@ -130,6 +135,41 @@ export default function SettingsScreen() {
     // a screen that is being popped and crashes Android ("ScreenStackFragment
     // added into a non-stack container"). The (auth) group has no guard, and
     // `useAuthGate` re-evaluates on the next visit to "/".
+    router.replace("/(auth)/login");
+    await signOut();
+  }
+
+  // "Konto löschen": ConfirmDialog with typed confirmation phrase.
+  const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
+  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
+    null,
+  );
+  const isDeleteConfirmed = deleteConfirmationInput === DELETE_CONFIRMATION_PHRASE;
+
+  function openDeleteDialog() {
+    setDeleteConfirmationInput("");
+    setDeleteErrorMessage(null);
+    setDeleteDialogVisible(true);
+  }
+
+  async function handleConfirmDeleteAccount() {
+    if (!isDeleteConfirmed || isDeletingAccount) {
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setIsDeletingAccount(true);
+    setDeleteErrorMessage(null);
+
+    const { error } = await deleteOwnAccount();
+    if (error) {
+      setIsDeletingAccount(false);
+      setDeleteErrorMessage(error.message);
+      return;
+    }
+
+    // Navigate FIRST, then end the session (see handleSignOut above).
     router.replace("/(auth)/login");
     await signOut();
   }
@@ -208,7 +248,7 @@ export default function SettingsScreen() {
             icon="delete"
             label="Konto löschen"
             danger
-            onPress={() => go("/settings/delete-account")}
+            onPress={openDeleteDialog}
           />
         </SettingsGroup>
 
@@ -275,6 +315,41 @@ export default function SettingsScreen() {
           {`WatchCrew v${Constants.expoConfig?.version ?? "?"}`}
         </Text>
       </KeyboardAwareScrollView>
+
+      <ConfirmDialog
+        visible={deleteDialogVisible}
+        testID="delete-account"
+        title="Konto endgültig löschen"
+        confirmLabel="Endgültig löschen"
+        confirmDisabled={!isDeleteConfirmed}
+        loading={isDeletingAccount}
+        onCancel={() => setDeleteDialogVisible(false)}
+        onConfirm={handleConfirmDeleteAccount}
+      >
+        <View className="gap-3">
+          <Text className="text-text-secondary">
+            Dein Konto sowie alle deine Gruppenmitgliedschaften, Bewertungen und
+            Zahlungsdaten werden endgültig gelöscht. Dieser Vorgang kann nicht
+            rückgängig gemacht werden.
+          </Text>
+          <Text className="text-text-secondary">
+            Gib zur Bestätigung &quot;{DELETE_CONFIRMATION_PHRASE}&quot; ein.
+          </Text>
+          <TextInput
+            testID="delete-account-confirm-input"
+            className={`rounded-lg ${GLASS_INSET_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            value={deleteConfirmationInput}
+            onChangeText={setDeleteConfirmationInput}
+          />
+          {deleteErrorMessage ? (
+            <Text testID="delete-account-error" className="text-danger">
+              Konto konnte nicht gelöscht werden: {deleteErrorMessage}
+            </Text>
+          ) : null}
+        </View>
+      </ConfirmDialog>
     </View>
   );
 }
