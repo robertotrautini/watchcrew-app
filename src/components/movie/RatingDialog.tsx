@@ -1,3 +1,4 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { useEffect, useState } from "react";
@@ -9,6 +10,7 @@ import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
 import { DateField } from "@/components/ui/DateField";
 import { Sheet } from "@/components/ui/Sheet";
 import { StarRating } from "@/components/ui/StarRating";
+import { useDirectRate } from "@/hooks/useDirectRate";
 import { useResetRating, useSaveRating } from "@/hooks/useSaveRating";
 import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import type { GroupMemberRow } from "@/lib/groups";
@@ -84,6 +86,12 @@ export interface RatingDialogProps {
   starColor: string;
   /** Called (in addition to `onClose`, which always follows) after a successful save. */
   onSaved?: () => void;
+  /**
+   * "Direkt bewerten": the movie is not in the group yet. Nothing is written when the dialog opens;
+   * on Speichern the rating AND the group entry are created together (`useDirectRate`).
+   * `watchlistEntryId`/`movieId` are unused then.
+   */
+  directCreate?: { tmdbId: number; manualReleaseDate?: string };
 }
 
 /**
@@ -93,6 +101,8 @@ export interface RatingDialogProps {
 const SAVE_SUCCESS_TOAST = "Bewertung gespeichert";
 const SAVE_ERROR_MESSAGE =
   "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.";
+const DIRECT_ENTRY_ERROR_MESSAGE =
+  "Bewertung gespeichert, aber der Film konnte der Gruppe nicht hinzugefügt werden.";
 const RESET_ERROR_MESSAGE =
   "Die Bewertung konnte nicht gelöscht werden. Bitte versuche es erneut.";
 const DELETE_SUCCESS_TOAST = "Bewertung gelöscht";
@@ -142,6 +152,7 @@ export function RatingDialog({
   displayNameById,
   starColor,
   onSaved,
+  directCreate,
 }: RatingDialogProps) {
   const ownRating = ratings.find((r) => r.member_id === currentUserId) ?? null;
   const otherRatings = ratings.filter((r) => r.member_id !== currentUserId);
@@ -173,6 +184,7 @@ export function RatingDialog({
 
   const saveMutation = useSaveRating();
   const resetMutation = useResetRating();
+  const directMutation = useDirectRate();
 
   // Re-sync the draft to the current props every time the dialog transitions
   // to visible -- interim decision (docs/interim-decisions.md "M7 Teil
@@ -264,6 +276,38 @@ export function RatingDialog({
   function handleSave() {
     if (markedForDelete && ownRating) {
       setDeleteConfirmVisible(true);
+      return;
+    }
+    if (mode === "direct" && directCreate) {
+      const payment = buildPayment();
+      directMutation.mutate(
+        {
+          tmdbId: directCreate.tmdbId,
+          manualReleaseDate: directCreate.manualReleaseDate,
+          groupId,
+          memberId: currentUserId,
+          rating,
+          liked,
+          seenAt: currentSeenAt(),
+          payment: payment && {
+            paidByMemberId: payment.paidByMemberId,
+            explicitPaidAt: payment.explicitPaidAt,
+          },
+        },
+        {
+          onSuccess: () => finishSaved(SAVE_SUCCESS_TOAST),
+          onError: (error) => {
+            if ((error as { ratingSaved?: boolean }).ratingSaved) {
+              // Rating stays saved; only the group entry failed.
+              onSaved?.();
+              showToast(DIRECT_ENTRY_ERROR_MESSAGE, { variant: "error" });
+              onClose();
+              return;
+            }
+            showToast(SAVE_ERROR_MESSAGE, { variant: "error" });
+          },
+        },
+      );
       return;
     }
     saveMutation.mutate(
@@ -449,7 +493,7 @@ export function RatingDialog({
           {trackerEnabled ? (
             <View className="gap-2">
               <View className="flex-row items-center gap-2">
-                <Icon name="price" size="S" color="#888888" />
+                <Icon name="price" size="S" color={PLACEHOLDER_COLOR} />
                 <Text className="text-text-secondary">Wer hat bezahlt?</Text>
               </View>
               <Select
@@ -494,7 +538,7 @@ export function RatingDialog({
               testID="rating-dialog-save-button"
               variant="primary"
               className="flex-[1.6]"
-              loading={saveMutation.isPending && !deleteConfirmVisible}
+              loading={(saveMutation.isPending || directMutation.isPending) && !deleteConfirmVisible}
               label="Speichern"
               icon="save"
               onPress={handleSave}

@@ -13,7 +13,7 @@ import { queryKeys } from "@/lib/queryKeys";
 // src/lib/movieDetailMutations.ts (see that file's own "M7 part 2b" comment
 // for why).
 
-export interface SaveRatingPaymentParams {
+interface SaveRatingPaymentParams {
   /** The member being credited as payer for this save. */
   paidByMemberId: string;
   /** The dialog's own optional "Bezahlt am" field, if the user filled it in this save. */

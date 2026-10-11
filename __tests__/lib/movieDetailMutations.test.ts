@@ -406,3 +406,49 @@ describe("setWatchlistEntryReleaseDate", () => {
     expect(chain.update).toHaveBeenCalledWith({ release_date_override: null });
   });
 });
+
+describe("ensureWatchlistEntry", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it("returns the existing group entry without inserting a second one", async () => {
+    const existing = { data: { id: "we-1" }, error: null };
+    const chain = makeChain(existing);
+    mockFrom.mockReturnValue(chain);
+
+    const { ensureWatchlistEntry } = require("../../src/lib/movieDetailMutations");
+    const result = await ensureWatchlistEntry({ groupId: "g1", movieId: "m1", addedBy: "u1" });
+
+    expect(result).toEqual(existing);
+    expect(chain.insert).not.toHaveBeenCalled();
+    expect(chain.eq).toHaveBeenCalledWith("group_id", "g1");
+    expect(chain.eq).toHaveBeenCalledWith("movie_id", "m1");
+  });
+
+  it("inserts exactly one entry when none exists", async () => {
+    const lookup = makeChain({ data: null, error: null });
+    const insertResult = { data: { id: "new" }, error: null };
+    const insertChain = makeChain(insertResult);
+    mockFrom.mockReturnValueOnce(lookup).mockReturnValueOnce(insertChain);
+
+    const { ensureWatchlistEntry } = require("../../src/lib/movieDetailMutations");
+    const result = await ensureWatchlistEntry({ groupId: "g1", movieId: "m1", addedBy: "u1" });
+
+    expect(result).toEqual(insertResult);
+    expect(insertChain.insert).toHaveBeenCalledTimes(1);
+    expect(insertChain.insert).toHaveBeenCalledWith({ group_id: "g1", movie_id: "m1", added_by: "u1" });
+  });
+
+  it("returns the lookup error without inserting", async () => {
+    const failed = { data: null, error: { message: "x" } };
+    const chain = makeChain(failed);
+    mockFrom.mockReturnValue(chain);
+
+    const { ensureWatchlistEntry } = require("../../src/lib/movieDetailMutations");
+    const result = await ensureWatchlistEntry({ groupId: "g1", movieId: "m1", addedBy: "u1" });
+
+    expect(result).toEqual(failed);
+    expect(chain.insert).not.toHaveBeenCalled();
+  });
+});

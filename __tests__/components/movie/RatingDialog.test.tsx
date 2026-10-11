@@ -20,6 +20,11 @@ const mockResetMutate = jest.fn();
 let mockSaveIsPending = false;
 let mockResetIsPending = false;
 
+const mockDirectMutate = jest.fn();
+jest.mock("@/hooks/useDirectRate", () => ({
+  useDirectRate: () => ({ mutate: mockDirectMutate, isPending: false }),
+}));
+
 jest.mock("@/hooks/useSaveRating", () => ({
   useSaveRating: () => ({ mutate: mockSaveMutate, isPending: mockSaveIsPending }),
   useResetRating: () => ({ mutate: mockResetMutate, isPending: mockResetIsPending }),
@@ -541,5 +546,79 @@ describe("RatingDialog with the tracker feature flag off", () => {
       expect.objectContaining({ payment: undefined }),
       expect.anything(),
     );
+  });
+
+  describe("direct mode (creates the group entry on Speichern)", () => {
+    const directProps = () =>
+      baseProps({
+        mode: "direct",
+        watchlistEntryId: "",
+        movieId: "",
+        directCreate: { tmdbId: 42 },
+      });
+
+    it("opening and cancelling writes nothing", async () => {
+      const props = directProps();
+      const { getByTestId } = await render(<RatingDialog {...props} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-cancel-button"));
+
+      expect(props.onClose).toHaveBeenCalled();
+      expect(mockDirectMutate).not.toHaveBeenCalled();
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+    });
+
+    it("Speichern triggers exactly one direct-rate mutation and no plain save", async () => {
+      const { getByTestId } = await render(<RatingDialog {...directProps()} />);
+
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      expect(mockDirectMutate).toHaveBeenCalledTimes(1);
+      expect(mockDirectMutate).toHaveBeenCalledWith(
+        expect.objectContaining({ tmdbId: 42, groupId: "group-1", memberId: "user-1" }),
+        expect.any(Object),
+      );
+      expect(mockSaveMutate).not.toHaveBeenCalled();
+    });
+
+    it("success closes with toast", async () => {
+      const props = directProps();
+      const { getByTestId } = await render(<RatingDialog {...props} />);
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      mockDirectMutate.mock.calls[0][1].onSuccess();
+
+      expect(props.onClose).toHaveBeenCalled();
+      expect(showToast).toHaveBeenCalledWith("Bewertung gespeichert", { variant: "success" });
+    });
+
+    it("entry failure after saved rating: red toast, rating stays (onSaved, dialog closes)", async () => {
+      const props = directProps();
+      const onSaved = jest.fn();
+      const { getByTestId } = await render(<RatingDialog {...props} onSaved={onSaved} />);
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      mockDirectMutate.mock.calls[0][1].onError({ ratingSaved: true });
+
+      expect(showToast).toHaveBeenCalledWith(
+        "Bewertung gespeichert, aber der Film konnte der Gruppe nicht hinzugefügt werden.",
+        { variant: "error" },
+      );
+      expect(props.onClose).toHaveBeenCalled();
+    });
+
+    it("rating failure: generic red toast, dialog stays open", async () => {
+      const props = directProps();
+      const { getByTestId } = await render(<RatingDialog {...props} />);
+      await fireEvent.press(getByTestId("rating-dialog-save-button"));
+
+      mockDirectMutate.mock.calls[0][1].onError({ ratingSaved: false });
+
+      expect(showToast).toHaveBeenCalledWith(
+        "Die Bewertung konnte nicht gespeichert werden. Bitte versuche es erneut.",
+        { variant: "error" },
+      );
+      expect(props.onClose).not.toHaveBeenCalled();
+    });
   });
 });

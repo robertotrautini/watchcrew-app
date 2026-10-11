@@ -142,6 +142,33 @@ export async function addToWatchlist(params: AddToWatchlistParams) {
     .single();
 }
 
+export interface EnsureWatchlistEntryParams {
+  groupId: string;
+  movieId: string;
+  addedBy: string;
+}
+
+/**
+ * Idempotent: returns the group's existing `watchlist_entries` row for the movie, or inserts one
+ * when missing (used by "Direkt bewerten", which must never create a second entry).
+ */
+export async function ensureWatchlistEntry(params: EnsureWatchlistEntryParams) {
+  const existing = await supabase
+    .from("watchlist_entries")
+    .select()
+    .eq("group_id", params.groupId)
+    .eq("movie_id", params.movieId)
+    .maybeSingle();
+  if (existing.error || existing.data) {
+    return existing;
+  }
+  return supabase
+    .from("watchlist_entries")
+    .insert({ group_id: params.groupId, movie_id: params.movieId, added_by: params.addedBy })
+    .select()
+    .single();
+}
+
 // --- M7 part 2b: Rating-Dialog writes ---
 //
 // Interim decision (docs/interim-decisions.md "M7 Teil 2b"): these three
