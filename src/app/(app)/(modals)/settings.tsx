@@ -3,19 +3,18 @@ import Constants from "expo-constants";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { type IconRole } from "@/components/ui/Icon";
 import { View } from "react-native";
-import { Text, TextInput } from "@/components/ui/Text";
+import { Text } from "@/components/ui/Text";
 
 import { DataSourceAttributions } from "@/components/settings/DataSourceAttributions";
+import { DeleteAccountDialog } from "@/components/settings/DeleteAccountDialog";
 import { DisplayNameSheet } from "@/components/settings/DisplayNameSheet";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
+import { SettingsLegalGroup } from "@/components/settings/SettingsLegalGroup";
 import {
   Button,
 } from "@/components/ui/Button";
 import { KeyboardAwareScrollView } from "@/components/ui/KeyboardAwareScrollView";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { SURFACE_EDGE } from "@/components/ui/Surface";
 import { Select } from "@/components/ui/Select";
 import { SettingsRow } from "@/components/ui/SettingsRow";
 import { useGroupQuickSwitch } from "@/hooks/useGroupQuickSwitch";
@@ -23,9 +22,6 @@ import { useCurrentUserEmail } from "@/hooks/useCurrentUserEmail";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useOwnProfile } from "@/hooks/useOwnProfile";
 import { signOut } from "@/lib/auth";
-import { deleteOwnAccount } from "@/lib/deleteAccount";
-import * as Haptics from "expo-haptics";
-import { openLegalUrl } from "@/lib/legalLinks";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
 
 /**
@@ -49,44 +45,6 @@ import { usePreferencesStore } from "@/stores/usePreferencesStore";
  * opt-in screen (M10 reconciliation, see docs/interim-decisions.md — the
  * hub row and route themselves needed no change).
  */
-
-/**
- * M11 part 2, Job 3 (ADR 0011) — legal document rows. Not a `route`
- * (these don't navigate to an in-app screen) -- pressing one either opens
- * the configured URL in the system browser (simplest reliable approach,
- * per this task's brief -- no in-app WebView) or, while iubenda hasn't been
- * set up yet and the config still holds the placeholder default (see
- * src/lib/legalLinks.ts), shows a "Wird bald ergänzt" toast instead of a
- * broken link.
- */
-interface LegalSection {
-  key: string;
-  label: string;
-  url: string | undefined;
-  icon: IconRole;
-}
-
-function legalSections(): LegalSection[] {
-  const extra = Constants.expoConfig?.extra as
-    { privacyPolicyUrl?: string; termsOfServiceUrl?: string } | undefined;
-
-  return [
-    {
-      key: "privacy-policy",
-      label: "Datenschutzerklärung",
-      url: extra?.privacyPolicyUrl,
-      icon: "document",
-    },
-    {
-      key: "terms-of-service",
-      label: "Nutzungsbedingungen",
-      url: extra?.termsOfServiceUrl,
-      icon: "document",
-    },
-  ];
-}
-
-const DELETE_CONFIRMATION_PHRASE = "LÖSCHEN";
 
 export default function SettingsScreen() {
   const parallaxScroll = useParallaxScroll();
@@ -117,40 +75,7 @@ export default function SettingsScreen() {
     await signOut();
   }
 
-  // "Konto löschen": ConfirmDialog with typed confirmation phrase.
   const [deleteDialogVisible, setDeleteDialogVisible] = useState(false);
-  const [deleteConfirmationInput, setDeleteConfirmationInput] = useState("");
-  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [deleteErrorMessage, setDeleteErrorMessage] = useState<string | null>(
-    null,
-  );
-  const isDeleteConfirmed = deleteConfirmationInput === DELETE_CONFIRMATION_PHRASE;
-
-  function openDeleteDialog() {
-    setDeleteConfirmationInput("");
-    setDeleteErrorMessage(null);
-    setDeleteDialogVisible(true);
-  }
-
-  async function handleConfirmDeleteAccount() {
-    if (!isDeleteConfirmed || isDeletingAccount) {
-      return;
-    }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsDeletingAccount(true);
-    setDeleteErrorMessage(null);
-
-    const { error } = await deleteOwnAccount();
-    if (error) {
-      setIsDeletingAccount(false);
-      setDeleteErrorMessage(error.message);
-      return;
-    }
-
-    // Navigate FIRST, then end the session (see handleSignOut above).
-    router.replace("/(auth)/login");
-    await signOut();
-  }
 
   const displayName = ownProfileQuery.data?.display_name ?? "";
   const streamingCount = selectedStreamingProviderIds.length;
@@ -242,17 +167,7 @@ export default function SettingsScreen() {
           />
         </SettingsGroup>
 
-        <SettingsGroup testID="settings-legal-sections" title="Rechtliches">
-          {legalSections().map((section) => (
-            <SettingsRow
-              key={section.key}
-              testID={`settings-section-${section.key}`}
-              icon={section.icon}
-              label={section.label}
-              onPress={() => openLegalUrl(section.url)}
-            />
-          ))}
-        </SettingsGroup>
+        <SettingsLegalGroup />
 
         <DataSourceAttributions />
 
@@ -271,7 +186,7 @@ export default function SettingsScreen() {
           className="w-full"
           label="Konto löschen"
           icon="delete"
-          onPress={openDeleteDialog}
+          onPress={() => setDeleteDialogVisible(true)}
         />
 
         <Text
@@ -288,40 +203,10 @@ export default function SettingsScreen() {
         storedDisplayName={storedDisplayName}
       />
 
-      <ConfirmDialog
+      <DeleteAccountDialog
         visible={deleteDialogVisible}
-        testID="delete-account"
-        title="Konto endgültig löschen"
-        confirmLabel="Endgültig löschen"
-        confirmDisabled={!isDeleteConfirmed}
-        loading={isDeletingAccount}
         onCancel={() => setDeleteDialogVisible(false)}
-        onConfirm={handleConfirmDeleteAccount}
-      >
-        <View className="gap-3">
-          <Text className="text-text-secondary">
-            Dein Konto sowie alle deine Gruppenmitgliedschaften, Bewertungen und
-            Zahlungsdaten werden endgültig gelöscht. Dieser Vorgang kann nicht
-            rückgängig gemacht werden.
-          </Text>
-          <Text className="text-text-secondary">
-            Gib zur Bestätigung &quot;{DELETE_CONFIRMATION_PHRASE}&quot; ein.
-          </Text>
-          <TextInput
-            testID="delete-account-confirm-input"
-            className={`rounded-lg ${SURFACE_EDGE} bg-black/35 px-3 py-2 text-text-primary`}
-            autoCapitalize="characters"
-            autoCorrect={false}
-            value={deleteConfirmationInput}
-            onChangeText={setDeleteConfirmationInput}
-          />
-          {deleteErrorMessage ? (
-            <Text testID="delete-account-error" className="text-danger">
-              Konto konnte nicht gelöscht werden: {deleteErrorMessage}
-            </Text>
-          ) : null}
-        </View>
-      </ConfirmDialog>
+      />
     </View>
   );
 }

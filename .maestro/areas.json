@@ -185,7 +185,9 @@
         "src/hooks/usePersonSearch.ts",
         "src/hooks/useCompanySearch.ts",
         "src/hooks/useStudioFilmography.ts",
-        "src/lib/tmdbProxy.ts"
+        "src/lib/tmdbProxy.ts",
+        "src/hooks/useAddMovieScreen.ts",
+        "src/lib/movieDetailNavigation.ts"
       ]
     },
     "rating": {
@@ -197,7 +199,9 @@
         "src/components/movie/RatingDialog.tsx",
         "src/components/ui/StarRating.tsx",
         "src/lib/ratingLogic.ts",
-        "src/hooks/useSaveRating.ts"
+        "src/hooks/useSaveRating.ts",
+        "src/components/movie/Rating*Section.tsx",
+        "src/hooks/useDirectRate.ts"
       ]
     },
     "settings": {
@@ -244,7 +248,11 @@
         "src/hooks/useGroupSettings.ts",
         "src/hooks/useGroupDetails.ts",
         "src/hooks/useGroupMembers.ts",
-        "src/hooks/useActiveGroup.ts"
+        "src/hooks/useActiveGroup.ts",
+        "src/components/settings/Group*Section.tsx",
+        "src/hooks/useGroupSettingsScreen.ts",
+        "src/hooks/useAppMutation.ts",
+        "src/components/settings/CreateGroupSheet.tsx"
       ]
     },
     "offline-deeplinks": {

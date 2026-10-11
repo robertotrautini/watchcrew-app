@@ -176,6 +176,26 @@ Aufwand: S < 0,5 Tag, M ca. 1 Tag, L > 1 Tag. Testrisiko: Hoch/Mittel/Niedrig. "
 
 ### P-G Große Seiten aufteilen, Gruppen-Mutations-Gerüst, Navigation
 
+**Status: erledigt 2026-10-11 (2 Commits).** Zeilen vorher/nachher (`wc -l`, Dateizeilen):
+
+| Datei | vorher | nachher | ausgelagert nach |
+|---|---|---|---|
+| `group-settings.tsx` | 613 | 175 | `hooks/useGroupSettingsScreen.ts` (267), `settings/Group{Switcher,Name,Theme,Invite,Members}Section.tsx` (56/59/69/66/89); Leave-Button und die 4 Dialoge bleiben im Screen |
+| `movie/[tmdbId].tsx` | 587 | 255 | `hooks/useMovieDetailScreen.ts` (375), `movie/MovieDetailContent.tsx` (96) |
+| `RatingDialog.tsx` | 541 | 436 | `movie/Rating{SeenAt,GroupRatings,Payment}Section.tsx` (78/69/57), `buildOtherRatingRows` getestet |
+| `add-movie.tsx` | 397 | 281 | `hooks/useAddMovieScreen.ts` (168) |
+| `settings.tsx` | 327 | 212 | `settings/DeleteAccountDialog.tsx` (98), `settings/SettingsLegalGroup.tsx` (57) |
+| `useGroupSettings.ts` | 220 | 176 | neu `hooks/useAppMutation.ts` (59) |
+| `useMovieDetailMutations` / `useSaveRating` / `useTrackerPayments` / `useUpdateDisplayName` | 164 / 141 / 96 / 31 | 136 / 131 / 88 / 29 | auf `useAppMutation` |
+
+Summe der Screens/Dialoge: 2465 auf 1359, dazu neue Dateien 1663 Zeilen (inkl. `useAppMutation`), die Mutations-Hooks schrumpfen um 92: netto ca. +465 Zeilen, KEINE Zeilenersparnis (wie im Plan erwartet). Gewinn ist Wartbarkeit: Verhalten (Hook) und Layout (Route) getrennt, Abschnitte einzeln benennbar, 7+ Mutationen ohne wiederholtes Gerüst, ein Ort fuer Toast+Invalidierung. Ehrliche Einschränkung: die Controller-Hooks (`useMovieDetailScreen` 375, `useGroupSettingsScreen` 267) sind selbst gross, weil sie die verschobene Logik 1:1 enthalten (kein Verhalten geändert, bewusst nicht weiter zerlegt); sie geben ein breites Objekt zurück, das ist die Kosten der Trennung.
+
+Mutations-Gerüst: `useAppMutation({ mutationFn, invalidateKeys, successToast, errorToast, onSuccess, onError })` (Reihenfolge: invalidieren, `onSuccess`, Toast). Eingesetzt in `useGroupSettings` (7), `useMovieDetailMutations` (4, Toasts von `useAddToWatchlist`/`useSetReleaseDateOverride` hierhin), `useSaveRating` (2), `useTrackerPayments` (2), `useUpdateDisplayName`. Neuer Test `useAppMutation.test.tsx` (4). Bewusst NICHT umgestellt: `useDirectRate` (invalidiert in `onSettled`, auch bei Fehler, weil die Bewertung trotz Fehler gespeichert sein kann: andere Semantik), `useGroupPushSubscription` (zwei Mutationen mit Query-Optimistik/Statusabhängigkeit), Toasts in `RatingDialog`/`PaymentModal`/`TrackerEntrySheet`/`settings` (situationsabhängig, am Aufrufer gelassen, Konvention im Style-Guide).
+
+Navigation: neu `navigateToMovieDetailWithContext(router, target, "push" | "replace")` in `lib/movieDetailNavigation.ts` (optionaler Gruppenkontext); genutzt in `MovieGridScreen` (3 Stellen), `add-movie` (2) und `usePushNotificationRouting`. Kein handgebautes `/movie/[tmdbId]` mehr ausser in `movieDetailNavigation.ts`. Nicht erledigt: Typ `MovieGridItem` nach `lib/` (Umkehr-Import `addMovieLogic.ts`), nicht Teil dieses Auftrags.
+
+Bewusst NICHT aufgeteilt: die Modi-Panels von `add-movie.tsx` (Film/Person/Studio): sie teilen State (`query`, Auswahl) und das Pick-dann-Raster-Muster mit unterschiedlichen Queries; Zerlegung in `AddMovieModePanel`-Teile brächte viele Props ohne klarere Verantwortung, daher nur Hook-Auslagerung. `RatingDialog`: Sterne/Herz-Zeile, Löschen-Entwurf und Speichern/Direkt-Speichern bleiben im Body (eng verzahnter Draft-State mit den Mutationen, `useRatingDraft` würde nur verschieben). `settings.tsx`: Profil-/App-Gruppen bleiben, bestehen nur aus `SettingsGroup`/`SettingsRow`. Leave-Abschnitt in `group-settings` (ein Button) als Komponente wäre Wrapper ohne Verantwortung. Prüfung: tsc 0 Fehler, jest (Gesamtlauf), eslint 0. Maestro-Handy-Prüfung steht aus; `areas.json` um die neuen Dateien ergänzt.
+
 | Feld | Inhalt |
 |---|---|
 | Ziel | Wartbarkeit, keine Zeilen-Ersparnis erwartet. Teile in benannte Komponenten/Hooks mit klarer Verantwortung |

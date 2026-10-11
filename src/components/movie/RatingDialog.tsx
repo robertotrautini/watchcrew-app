@@ -1,18 +1,19 @@
-import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { IconButton } from "@/components/ui/IconButton";
 import { MOVIE_TITLE_FONT } from "@/components/ui/movieTitle";
 import { useState } from "react";
-import { Pressable, View } from "react-native";
+import { View } from "react-native";
 import { Text } from "@/components/ui/Text";
-import { Icon } from "@/components/ui/Icon";
 
-import { MemberRatingRow } from "@/components/movie/MemberRatingRow";
-import { DateField } from "@/components/ui/DateField";
+import {
+  buildOtherRatingRows,
+  RatingGroupRatingsSection,
+} from "@/components/movie/RatingGroupRatingsSection";
+import { RatingPaymentSection } from "@/components/movie/RatingPaymentSection";
+import { RatingSeenAtSection } from "@/components/movie/RatingSeenAtSection";
 import { DraftSheet, DraftSheetForm } from "@/components/ui/DraftSheet";
 import { StarRating } from "@/components/ui/StarRating";
 import { useDirectRate } from "@/hooks/useDirectRate";
 import { useResetRating, useSaveRating } from "@/hooks/useSaveRating";
-import { memberDisplayLabel } from "@/lib/diaryDisplay";
 import type { GroupMemberRow } from "@/lib/groups";
 import {
   formatDateForInput,
@@ -24,7 +25,6 @@ import type { Rating } from "@/lib/watchlistTypes";
 import { showToast } from "@/lib/toast";
 import { toLocalIsoDate } from "@/lib/localDate";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
-import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 /**
@@ -197,30 +197,12 @@ function RatingDialogBody({
   const resetMutation = useResetRating();
   const directMutation = useDirectRate();
 
-  // Group section: every OTHER member (also those who have not rated yet, shown with empty
-  // stars like the legacy dialog); falls back to the raw rating rows when no member list is given.
-  const groupRatingRows =
-    groupMembers.filter((m) => m.user_id !== currentUserId).length > 0
-      ? groupMembers
-          .filter((m) => m.user_id !== currentUserId)
-          .map((m) => ({
-            key: m.user_id,
-            label: memberDisplayLabel(
-              m.user_id,
-              m.profiles?.display_name ?? displayNameById.get(m.user_id),
-            ),
-            rating:
-              otherRatings.find((r) => r.member_id === m.user_id)?.rating ??
-              null,
-          }))
-      : otherRatings.map((r) => ({
-          key: r.member_id,
-          label: memberDisplayLabel(
-            r.member_id,
-            displayNameById.get(r.member_id),
-          ),
-          rating: r.rating,
-        }));
+  const groupRatingRows = buildOtherRatingRows(
+    groupMembers,
+    otherRatings,
+    currentUserId,
+    displayNameById,
+  );
 
   const canReset = hasRealRating(ownRating?.rating ?? null) && !markedForDelete;
   const releaseDateAvailable = movieReleaseDate != null;
@@ -398,59 +380,15 @@ function RatingDialogBody({
             {movieTitle}
           </Text>
 
-          <View className="gap-2">
-            <Text className="text-text-secondary">Gesehen am</Text>
-            <DateField
-              testID="rating-dialog-seen-at-input"
-              valueIso={parseGermanDateInput(manualDateInput)}
-              displayText={manualDateInput}
-              placeholder="TT.MM.JJJJ"
-              editable={seenAtMode === "manual"}
-              onChangeIso={(iso) => setManualDateInput(formatDateForInput(iso))}
-            />
-
-            <View className="flex-row flex-wrap gap-x-6">
-              <Pressable
-                testID="rating-dialog-checkbox-unknown"
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: seenAtMode === "unknown" }}
-                onPress={toggleUnknown}
-                className="min-h-touch-comfortable flex-row items-center gap-2"
-              >
-                <Icon
-                  name={seenAtMode === "unknown" ? "checkboxOn" : "checkboxOff"}
-                  size="M"
-                  color={starColor}
-                />
-                <Text className="text-text-primary">Weiß nicht</Text>
-              </Pressable>
-
-              {releaseDateAvailable ? (
-                <Pressable
-                  testID="rating-dialog-checkbox-release-date"
-                  accessibilityRole="checkbox"
-                  accessibilityState={{
-                    checked: seenAtMode === "release_date",
-                  }}
-                  onPress={toggleReleaseDate}
-                  className="min-h-touch-comfortable flex-row items-center gap-2"
-                >
-                  <Icon
-                    name={
-                      seenAtMode === "release_date"
-                        ? "checkboxOn"
-                        : "checkboxOff"
-                    }
-                    size="M"
-                    color={starColor}
-                  />
-                  <Text className="text-text-primary">
-                    Release Date ({formatDateForInput(movieReleaseDate)})
-                  </Text>
-                </Pressable>
-              ) : null}
-            </View>
-          </View>
+          <RatingSeenAtSection
+            mode={seenAtMode}
+            manualDateInput={manualDateInput}
+            onChangeManualDate={setManualDateInput}
+            onToggleUnknown={toggleUnknown}
+            onToggleReleaseDate={toggleReleaseDate}
+            movieReleaseDate={movieReleaseDate}
+            starColor={starColor}
+          />
 
           <View className="flex-row items-center justify-between">
             <StarRating
@@ -471,59 +409,16 @@ function RatingDialogBody({
             />
           </View>
 
-          {groupRatingRows.length > 0 ? (
-            <View
-              testID="rating-dialog-other-ratings"
-              className="gap-1 border-t border-surface-border pt-3"
-            >
-              <Text className="text-text-secondary">
-                Bewertungen der Gruppe
-              </Text>
-              {groupRatingRows.map((row) => (
-                <MemberRatingRow
-                  key={row.key}
-                  memberLabel={row.label}
-                  rating={row.rating}
-                  starColor={starColor}
-                  hideValue
-                />
-              ))}
-            </View>
-          ) : null}
+          <RatingGroupRatingsSection rows={groupRatingRows} starColor={starColor} />
 
           {trackerEnabled ? (
-            <View className="gap-2">
-              <View className="flex-row items-center gap-2">
-                <Icon name="price" size="S" color={PLACEHOLDER_COLOR} />
-                <Text className="text-text-secondary">Wer hat bezahlt?</Text>
-              </View>
-              <Select
-                testID="rating-dialog-payer-select"
-                accessibilityLabel="Wer hat bezahlt?"
-                options={groupMembers.map((member) => ({
-                  value: member.user_id,
-                  label: memberDisplayLabel(
-                    member.user_id,
-                    member.profiles?.display_name,
-                  ),
-                }))}
-                value={selectedPayerId}
-                onChange={setSelectedPayerId}
-                placeholder="Person wählen"
-              />
-
-              {selectedPayerId ? (
-                <DateField
-                  testID="rating-dialog-payment-date-input"
-                  valueIso={parseGermanDateInput(paymentDateInput)}
-                  displayText={paymentDateInput}
-                  placeholder="Bezahlt am (TT.MM.JJJJ, optional)"
-                  onChangeIso={(iso) =>
-                    setPaymentDateInput(formatDateForInput(iso))
-                  }
-                />
-              ) : null}
-            </View>
+            <RatingPaymentSection
+              groupMembers={groupMembers}
+              selectedPayerId={selectedPayerId}
+              onSelectPayer={setSelectedPayerId}
+              paymentDateInput={paymentDateInput}
+              onChangePaymentDate={setPaymentDateInput}
+            />
           ) : null}
         </DraftSheetForm>
       </DraftSheet>

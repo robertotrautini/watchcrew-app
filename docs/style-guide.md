@@ -137,6 +137,13 @@ Gemeinsame Tokens in `Button.tsx`: `DANGER_SURFACE_CLASSNAME` (`bg-danger/15 bor
 - testIDs: `<prefix>` (Root), `-loading`, `-error` (ungueltige Params und Standard-Query-Fehler), `-error-data` (`errorTestIDSuffix`, Aehnliche Filme/Filmreihe), `-grid`, `-load-more-button`.
 - Provider-Chips (Flatrate/Leihen/Kaufen): `Grid={ProviderFilteredMovieGrid}` (eigenes Modul, damit Screens ohne Filter den tmdb-proxy nicht importieren). Items kommen ueber `mapMovieLikeToGridItem`.
 
+## Hooks und Teilkomponenten (grosse Screens)
+
+- Grosse Screens trennen Verhalten und Layout: ein Controller-Hook `use<Screen>Screen` (`src/hooks/`) besitzt Route-Params, Queries, Dialog-/Eingabe-State, Handler und abgeleitete Flags; die Route-Datei layoutet nur. Beispiele: `useGroupSettingsScreen`, `useMovieDetailScreen`, `useAddMovieScreen`.
+- Teilkomponenten haben eine klare Verantwortung und rein per Props (keine eigenen Queries), benannt `<Screen><Abschnitt>Section` (`GroupNameSection`, `RatingPaymentSection`) und liegen neben den verwandten Komponenten (`components/settings/`, `components/movie/`). Eigene Logik nur, wenn sie nur dort gebraucht wird (z. B. `DeleteAccountDialog`: Bestaetigungsphrase). Nicht mechanisch zerlegen: bleibt eine Datei danach nicht besser lesbar, bleibt sie ganz.
+- Mutationen laufen ueber `useAppMutation` (`src/hooks/useAppMutation.ts`): `mutationFn` (wirft bei Supabase-`error`), `invalidateKeys` (Liste oder Funktion von Variablen/Daten), `successToast`/`errorToast` (Text oder Funktion), `onSuccess`/`onError`. Toast-Konvention: Standard-Erfolg/-Fehler im Mutations-Hook; situationsabhaengige Meldungen (z. B. `RatingDialog` mit `ratingSaved`) bleiben am Aufrufer.
+- Filmdetail-Navigation aus Screens/Hooks immer ueber `src/lib/movieDetailNavigation.ts` (`navigateToMovieDetail`, `...WithContext`, `...WithoutGroup`), kein handgebautes `router.push({ pathname: "/movie/[tmdbId]" ... })`.
+
 ## Navigation (Zurück)
 
 - Zurück-Wisch von links nach rechts nimmt genau eine Ebene vom Stack (Detail, Ähnliche Filme, Einstellungen und Unterseiten, Filmreihe, Filmografien, Film hinzufuegen). Android: Systemgeste am Rand plus `BackSwipeView` (linke 25 % der Breite); iOS: `fullScreenGestureEnabled`. Hardware-Zurück tut dasselbe.
