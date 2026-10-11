@@ -6,6 +6,9 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 
 ## Inhaltsverzeichnis
 
+- [Legacy-Import (Dev): Umfang, Titelsprache, Duplikate, Reset-Entwurf](#legacy-import-dev-umfang-titelsprache-duplikate-reset-entwurf)
+- [Legacy-Import Phase 2: Apply, Reset-Allowlist, Service-Key, ESLint-Override](#legacy-import-phase-2-apply-reset-allowlist-service-key-eslint-override)
+- [tmdb-proxy: Action `refresh_movie` und EN-Titel-Fallback](#tmdb-proxy-action-refresh_movie-und-en-titel-fallback)
 - [M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)](#m2--gruppen-theme-farbableitung-5-nicht-gold-themes)
 - [M2 — Card-Hintergrund-Token-Wahl](#m2--card-hintergrund-token-wahl)
 - [M2 — Sheet/Modal: Implementierung via React-Native-`Modal` statt custom Animated/Gesture-Library](#m2--sheetmodal-implementierung-via-react-native-modal-statt-custom-animatedgesture-library)
@@ -175,6 +178,7 @@ Zweck: Nach vollständiger Implementierung der App geht der Nutzer dieses Dokume
 - [ESLint: eslint-config-expo (flat config)](#eslint-eslint-config-expo-flat-config)
 - [Tooling — ESLint: `no-require-imports` und `import/first` nur in `__tests__/**` aus](#tooling--eslint-no-require-imports-und-importfirst-nur-in-__tests__-aus)
 - [Abmelden: erst nach /(auth)/login navigieren, dann signOut (Android ScreenStackFragment-Crash)](#abmelden-erst-nach-authlogin-navigieren-dann-signout-android-screenstackfragment-crash)
+- [Film-Detail: Erscheinungsdatum bearbeiten ueber die Datumszeile (Idee 1)](#film-detail-erscheinungsdatum-bearbeiten-ueber-die-datumszeile-idee-1)
 ---
 
 ## M2 — Gruppen-Theme-Farbableitung (5 Nicht-Gold-Themes)
@@ -2436,7 +2440,7 @@ Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
 - **Regel (Nutzervorgabe):** Nach jeder App-Änderung: `tsc` + `jest`, dann `scripts/maestro-all.sh` auf dem Pixel 6 Pro (alle Flows, jeder Screen, jede Funktion; Laufzeit egal), Screenshots selbst sichten und **alle** Screenshots per SendUserFile an den Nutzer schicken, plus kurze Zusammenfassung.
 - **Umsetzung:** `scripts/maestro-all.sh` (feste Flow-Reihenfolge, sammelt jeden `takeScreenshot` mit geordneten Namen `NN-<flow>--<shot>.png` in ein Ausgabeverzeichnis, Pass/Fail je Flow, Exit-Code != 0 bei Fehler). Abdeckung: `docs/maestro-coverage.md` (Screen/Funktion -> Flow -> Screenshot -> Status).
 - **Definition of Done:** Flows (inkl. Screenshots) für neue Features/Screens gehören zum Feature; `docs/maestro-coverage.md` wird mitgepflegt.
-- **Flow-Regeln:** Flows stellen den Testzustand wieder her (Name Robin, Gruppe "Maestro Test Gruppe", Theme Gold, Netflix aus, Watchlist-Sortierung "Meine Streaming-Dienste" / Grid / Panel zu, Tagebuch "Mein Tagebuch" / Karten / Panel zu, Tracker leer). Destruktive Dialoge werden gezeigt und abgebrochen; echte Schreibzyklen nur mit selbst angelegten Daten und anschließendem Rückbau.
+- **Flow-Regeln:** Flows stellen den Testzustand wieder her (Name Robin, Gruppe "Maestro Test Gruppe", Theme Gold, Netflix aus, Watchlist-Sortierung "Meine Streaming-Dienste" / Grid / Panel zu, Tagebuch "Mein Tagebuch" (seit 2026-10-10 Default "Beste Bewertung", siehe Abschnitt "Spaltenkopf-Sortierung") / Karten / Panel zu, Tracker leer). Destruktive Dialoge werden gezeigt und abgebrochen; echte Schreibzyklen nur mit selbst angelegten Daten und anschließendem Rückbau.
 - **Screenshot-Helfer:** Maestros `takeScreenshot` scheitert bei posterlastigen Screens (PNG > 4 MB gRPC-Limit). Dafür `.maestro/subflows/shot.yaml` + `scripts/maestro-shot-server.py` (`adb screencap`), vom Runner gestartet.
 - **Änderung später:** Flow-Liste nur in `scripts/maestro-all.sh` (Array `FLOWS`) und `docs/maestro-coverage.md`.
 - **Status:** Offen fuer deine Geraete-Pruefung.
@@ -2550,3 +2554,56 @@ Rückmeldung zum Detail-Screenshot, Stand 2026-10-01.
 **Entscheidung:** `handleSignOut` in `settings.tsx` navigiert zuerst (`router.replace("/(auth)/login")`), dann `await signOut()`; das nachgelagerte `replace("/")` entfaellt. Optik unveraendert, Layouts unveraendert. Jest prueft die Reihenfolge (`__tests__/screens/Settings.test.tsx`).
 
 **Folgen einer Aenderung:** Die gleiche Reihenfolge-Falle besteht potenziell in `settings/delete-account.tsx` (signOut, dann `replace("/")`); dort bisher kein Crash beobachtet, nicht angefasst.
+
+## Film-Detail: Erscheinungsdatum bearbeiten ueber die Datumszeile (Idee 1)
+
+**Entscheidung (Nutzer hat Design "Idee 1" freigegeben, 2026-10-07):** Im Watchlist-Kontext (source=watchlist mit Gruppe) entfaellt der Aktions-Button "Bearbeiten". Stattdessen ist die Datumszeile (`movie-detail-release-date`, z. B. "Kino 17.06.1999") ein Pressable (`movie-detail-release-date-edit`, Rolle button, Label "Erscheinungsdatum ändern") mit kleinem `edit`-Icon; Tipp oeffnet das bestehende Sheet "Eintrag bearbeiten" (DateField + "Auf TMDB-Datum zurücksetzen", Speichern sofort, `useSetReleaseDateOverride`). Sheet liegt jetzt in `MovieDetailReleaseDateSheet`, Zustand im Screen `movie/[tmdbId].tsx`. Tagebuch: "Bearbeiten" bleibt (RatingDialog). Datumszeile nur in Watchlist+Gruppe tippbar. Ergebnis max. 4 Buttons (Watchlist: bewerten, aehnliche, filmreihe, loeschen; Tagebuch: bearbeiten, aehnliche, filmreihe, loeschen); Loeschen bleibt rechts.
+
+**Folgen:** Das 3+2-Raster (`GRID_THRESHOLD` in `MovieDetailActionsBar`) ist jetzt unerreichbar (toter Code, bewusst nicht entfernt). ~~Ohne bekanntes Datum (`releaseInfo == null`) gibt es keine Datumszeile und damit keinen Weg, ein Datum zu setzen.~~ **Luecke geschlossen (Nutzerentscheidung 2026-10-07):** Im Watchlist+Gruppe-Kontext ohne bekanntes Datum zeigt die Datumszeile den Platzhalter "Kein Datum" (gleicher muted Stil, `movie-detail-release-date`), weiterhin tippbar mit Stift-Icon (`movie-detail-release-date-edit`) und oeffnet dasselbe Sheet (leeres DateField, Reset nur bei vorhandenem Override). Tagebuch / ohne Gruppe: weiterhin keine Datumszeile.
+
+**Aenderung spaeter:** Sichtbarkeit nur in `getVisibleActions` (`src/lib/movieDetailLogic.ts`); Tippbarkeit in `canEditReleaseDate` im Screen.
+
+## Legacy-Import (Dev): Umfang, Titelsprache, Duplikate, Reset-Entwurf
+
+**Entscheidung (Nutzer, 2026-10-10):** Import nur in das Dev-Projekt (Ref-Guard im Skript, Prod nie). Umfang: Gruppen "Alle Drei" (gold) und "Robin & Tobias" (red), Mitglieder Robin/Tobias/Dad (Mapping auf bestehende Accounts per E-Mail aus `~/legacy-export/members-map.json`, ausserhalb des Repos), 204 Watchlist-Eintraege, 154 Ratings. Owner/`added_by` = Robin. tmdb-Duplikate: eine `movies`-Zeile (vollstaendigste, dann neueste). Leere Ratings und Filme ohne importierten Eintrag entfallen. Titelregel: Deutsch, sonst Englisch, sonst Legacy-`name` (Aufloesung ueber TMDB im Apply; Schema hat nur eine Spalte `movies.name`). `paid_at` -> 12:00 UTC, fehlendes `rated_at` -> `seen_at` 12:00 UTC sonst NULL. Der Dump (`*.sql` ausserhalb des Repos) bleibt als Reset-Quelle; `*.sql` darf NICHT global in `.gitignore`, weil `supabase/migrations/*.sql` getrackt bleiben muss. Zusatz: in Dev duerfen fuer den Import alle Fachdaten (nicht Nutzer/profiles) geloescht werden (Entwurf `reset-dev-data`, nicht ausgefuehrt).
+
+**Umsetzung Phase 1:** `scripts/legacy-import/` (Node/CommonJS, keine Abhaengigkeiten; Konvention: `scripts/` enthaelt .js/.sh/.py, kein tsx/ts-node installiert), Tests in `__tests__/scripts/legacyImport/`. Nur Dry-run; `--apply` ist ein Stub. Details und Zahlen: `docs/migration-dump-analysis.md` Abschnitt 9.
+
+**Folgen einer Aenderung:** Umfang/Regeln liegen in `DEFAULT_CONFIG` (`transform.js`); IDs nie aendern (Namespace fix), sonst sind Reruns keine Upserts mehr.
+
+## tmdb-proxy: Action `refresh_movie` und EN-Titel-Fallback
+
+**Entscheidung (Nutzer hat Design freigegeben, 2026-10-10):** (1) Neue Action `refresh_movie` (`tmdbId`, optional `fillGapsOnly`, Default `true`) fuellt/aktualisiert eine **bestehende** `movies`-Zeile aus TMDB (de-DE + en-US + Credits); legt nie Zeilen an (404 `movie_not_found`), ist idempotent. (2) Titelregel ueberall: Deutsch (echte Uebersetzung), sonst Englisch, sonst Original. In `details` (und damit `upsert_movie` fuer neue Zeilen) greift sie ueber einen zweiten en-US-Request, nur wenn der deutsche Titel nicht echt ist. Vertrag: `docs/tmdb-proxy-refresh-contract.md`.
+
+**Details/Annahmen (von mir festgelegt, bitte pruefen):**
+- "Echte Uebersetzung" = Titel nicht leer UND (`title != original_title` ODER `original_language` == Zielsprache). TMDB liefert bei fehlender Uebersetzung den Originaltitel in `title` (gleiches Signal wie bei der Suche, siehe "M6 — DE-Uebersetzungs-Erkennung"). Nicht gegen die echte API getestet (kein Key lokal); Fixture-Tests decken die Logik ab.
+- `movies.name` wird bei `refresh_movie` auch mit `fillGapsOnly=true` ueberschrieben, wenn ein DE-/EN-Titel gefunden wird (sonst koennte der Legacy-Name nie durch die Titelregel ersetzt werden). Gefunden wird nichts => Name bleibt.
+- Alle anderen Felder: nur leer (`NULL`/leer/Whitespace) fuellen; `force` ueberschreibt, aber nie mit fehlenden TMDB-Werten (kein Nullen). `runtime` 0 zaehlt als "kein Wert". Genres: nur Links ergaenzen, nie loeschen.
+- Auth: `refresh_movie` nur mit Service-Role-Token (sonst 403), weil es global den Filmkatalog schreibt. Alle bisherigen Actions unveraendert (Gateway `verify_jwt` = Default, jede gueltige JWT).
+- `details` ist cache-aside ohne TTL: bereits gecachte Titel bleiben alt; neue Titelregel greift nur fuer neu gefetchte Eintraege.
+
+**Folgen einer Aenderung:** Titelregel in `isTranslatedTitle`/`resolveMovieTitle` (`tmdb-client.ts`); Feldlogik in `movie-refresh.ts`; Rollenpruefung in `service-auth.ts`.
+
+## Legacy-Import Phase 2: Apply, Reset-Allowlist, Service-Key, ESLint-Override
+
+**Entscheidung (Nutzer, 2026-10-10, final):** (1) Reset bestehender Fachdaten in DEV ist freigegeben (nur `auth.*`, `profiles`, Push-Tabellen bleiben; nie Prod). (2) Die "Maestro Test Gruppe" ist vom Reset ausgenommen (Allowlist per Gruppenname, ID wird zur Laufzeit aufgeloest) samt Mitgliedern, Eintraegen, Ratings und den davon referenzierten `movies`/`genres`/`movie_genres`. (3) Metadaten-Luecken und Titel (Deutsch -> Englisch -> Legacy-Name) werden ueber die Proxy-Action `refresh_movie` gefuellt (Vertrag `docs/tmdb-proxy-refresh-contract.md`). (4) Der Service-Role-Key kommt nur zur Laufzeit aus `SUPABASE_SERVICE_ROLE_KEY` oder `--service-key-file <Pfad>` (ausserhalb des Repos, Modus 600, kein Symlink), nie als CLI-Wert, nie in Ausgaben. (5) Dev-Ref-Guard bleibt, `--dry-run` bleibt Standard, Push-Tabellen muessen leer sein, `joined_at` der Mitglieder = frueuester `added_at` der Gruppe. (6) ESLint: Node-Override fuer `scripts/**`, `__tests__/scripts/**` und `__tests__/helpers/legacyDumpFixture.js` in `eslint.config.js` (einzige freigegebene Aenderung dort).
+
+**Umsetzung:** `--apply` in `scripts/legacy-import/` (Details, Ablauf, Befehle: `docs/migration-dump-analysis.md` 9.5/9.6). Zwei Umsetzungsdetails, die dabei entstanden und vom Nutzer zu bestaetigen sind: (a) der Reset laeuft per PostgREST als wiederholbare Folge gezielter DELETEs (nicht atomar, da PostgREST keine Multi-Statement-Transaktion kennt); (b) `refresh_movie` wird standardmaessig fuer ALLE importierten Filme aufgerufen (nicht nur fuer die mit Luecken), weil die Titelregel in dieser Action steckt; `--refresh-scope gaps` begrenzt auf Luecken.
+
+**Offen (Blocker, nicht entschieden):** `service_role` hat keine Schreibrechte auf `watch_groups`, `watch_group_members`, `watchlist_entries`, `ratings` (und kein UPDATE auf `profiles`, kein SELECT auf `push_subscriptions`); Migration `20260930090000` hat sie nur fuer Katalog/Caches vergeben. Vorschlag (befristete GRANTs im SQL Editor, alternativ Migration) steht in `docs/migration-dump-analysis.md` 9.5; es wurde keine Migration angelegt.
+
+**Folgen einer Aenderung:** Reset-Umfang/Allowlist in `reset.js` (`MAESTRO_GROUP_NAME`, `COUNT_TABLES`); Reihenfolge und Konfliktverhalten der Upserts in `importer.js` (`ORDER`); Proxy-Aufruf in `restClient.js` (`REFRESH_KIND`).
+
+
+## Spaltenkopf-Sortierung (Tagebuch/Watchlist Liste) und neuer Tagebuch-Default
+
+**Entscheidung (Nutzerwunsch, 2026-10-10):** Tippen auf einen Spaltenkopf der Listenansicht sortiert: 1. Tipp aufsteigend, 2. absteigend, 3. aus (zurueck zur Sortierung des Filter-Panels); Pfeil-Icon (`sortAsc`/`sortDesc`, MaterialIcons arrow-upward/-downward) an der aktiven Spalte. Tagebuch-Default ist jetzt `rating` ("Beste Bewertung": Durchschnitt absteigend) statt `my_diary`; gespeicherte Werte (auch `my_diary`) bleiben gueltig, nur "nichts gespeichert" bekommt den neuen Default.
+
+**Details/Annahmen (von mir umgesetzt, Nutzer kann widersprechen):**
+- Spalten-Sortierung ordnet NUR um; welche Eintraege erscheinen (Filter/Pillen/Suche) bestimmt weiter das Panel. Aktive Spalten-Sortierung hat Vorrang vor der Panel-Reihenfolge (auch vor der Such-Relevanz); "aus" = Panel-Reihenfolge.
+- Lokaler UI-State (`useColumnSort`), nicht persistiert, Reset beim Verlassen des Tabs (Blur).
+- Sortierbar: Tagebuch Film (A-Z, deutsch, ohne Gross/Klein/Umlaut-Unterschied), Herz (eigener Like; absteigend = Likes zuerst), Ø, TMDB; Watchlist Film, Erscheint (effektives Datum inkl. Override). Fehlende Werte (kein Ø/TMDB/Datum) immer zuletzt, in beiden Richtungen. Stabil (Gleichstand behaelt Panel-Reihenfolge).
+- Tracker (Film | Bezahlt von | Datum) nicht umgestellt: eigene Tabelle ohne die geteilten `GlassTable`-Kopfzellen, nicht virtualisiert, anderer Daten-Hook; nicht trivial, bewusst uebersprungen.
+- Sortier-Anzeige: kleiner Chevron (14px) absolut unterhalb des Kopf-Icons (zentriert) bzw. in festem 14px-Slot rechts von "Film"; bei rechtsbuendigem "Erscheint" unter dem Textende (Slot rechts wuerde den Text gegen die Datumsspalte verschieben). Kopf-Icons 20px (Token `SM`), Spalten Herz/Ø `w-12`, TMDB `w-16`, Inhalt zentriert, Kopf und Zeilen teilen dieselben Konstanten; Kopfzelle `h-9`, Touchziel >= 44dp.
+
+**Folgen einer Aenderung:** Vergleichslogik in `src/lib/columnSort.ts`; Default in `DEFAULT_DIARY_SORT` (`src/lib/listFilters.ts`); Kopfzellen in `src/components/ui/GlassTable.tsx`.

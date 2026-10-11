@@ -17,7 +17,7 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | Onboarding Auswahl/Erstellen/Beitreten `(onboarding)/create-or-join-group` | `onboarding-explore`, `create-test-group` | onboarding | `onboarding-explore/01..03` | not automatable (Test-Account hat Gruppe; Flows laufen nur bei gruppenlosem Account, sonst übersprungen) |
 | Tracker-Tab | `tracker-payment`, `tabs-tour` | tracker, navigation | `tracker-payment/01-tracker-before`, `06-tracker-with-payment`, `11-tracker-restored`, `tabs-tour/01-tab-tracker` | covered |
 | Watchlist-Tab | `watchlist-filter-sort`, `tabs-tour`, `watchlist-add-remove` | watchlist, navigation, add-movie | `watchlist-filter-sort/01..20`, `tabs-tour/02-tab-watchlist` | covered (Default-Sort "Hinzugefügt", Zustand per `subflows/watchlist-normalize.yaml` gesetzt) |
-| Tagebuch-Tab | `tagebuch-filter-sort`, `tabs-tour` | tagebuch, navigation | `tagebuch-filter-sort/01..21`, `tabs-tour/03-tab-tagebuch` | covered |
+| Tagebuch-Tab | `tagebuch-filter-sort`, `tabs-tour` | tagebuch, navigation | `tagebuch-filter-sort/01..21`, `tabs-tour/03-tab-tagebuch` | covered (Restore-/Default-Sortierung ist jetzt "Beste Bewertung" statt "Mein Tagebuch"; Spaltenkopf-Sortierung in Liste noch ohne Flow, manuell zu pruefen) |
 | Tab-Bar (Wechsel, Akzentfarbe) | alle Flows, `group-settings-edit` (alle 6 Themes) | group-settings | `group-settings-edit/04..09` | covered |
 | Filmdetail `movie/[tmdbId]` (Tagebuch-Kontext) | `movie-detail-full` | movie-detail | `01-detail-top`..`09-detail-delete-confirm`, `13-back-on-tagebuch` | covered |
 | Filmdetail (Watchlist-Kontext) | `watchlist-open-detail`, `rating-cycle`, `watchlist-add-remove` | watchlist, movie-detail, rating, add-movie | `watchlist-open-detail/01-watchlist-detail`, `rating-cycle/01-watchlist-detail-actions` | covered |
@@ -66,12 +66,14 @@ Status: **covered** = automatisiert, Screenshot vorhanden. **partial** = Teil au
 | "Direkt bewerten" | - | - | `watchlist-add-remove/03` (Button sichtbar) | partial (Button sichtbar, nicht ausgelöst, würde Film dauerhaft hinzufügen+bewerten) |
 | Film von Watchlist löschen (Bestätigung + echt, nur selbst angelegt) | `watchlist-add-remove` | watchlist, add-movie | `07-delete-confirm`, `08-watchlist-after-remove` | covered |
 | Film aus Tagebuch löschen | `movie-detail-full` | movie-detail | `09-detail-delete-confirm` | partial (Dialog gezeigt/abgebrochen, Löschen zerstört echte Daten) |
-| Watchlist-Eintrag bearbeiten (Erscheinungsdatum-Sheet) | `watchlist-add-remove` | watchlist, add-movie | `06-watchlist-entry-edit-sheet` | partial (Sheet gezeigt, nicht gespeichert) |
+| Watchlist-Eintrag bearbeiten (Tipp auf Datumszeile `movie-detail-release-date-edit` -> Erscheinungsdatum-Sheet) | `watchlist-add-remove` | watchlist, add-movie | `05b-watchlist-detail-date-edit`, `06-watchlist-entry-edit-sheet` | partial (Sheet gezeigt, nicht gespeichert) |
+| Watchlist-Eintrag ohne Datum: Platzhalter "Kein Datum" tippbar (`movie-detail-release-date`/`-edit`) | - | - | - | not automatable (braucht Watchlist-Film ohne bekanntes Datum, mit Seed-Daten nicht reproduzierbar; Jest-abgedeckt) |
 | Watchlist/Tagebuch Suche (Treffer, kein Treffer) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `02`, `03` | covered |
 | Filter-Panel auf/zu + Filter-Punkt | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `04`, `18`, `20/21` | covered |
 | Sortier-Flyout + jede Sortieroption (Watchlist 8, Tagebuch 9) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `05..15` / `05..16` | covered |
 | Genre-/Jahr-Chips | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `11..14` / `12..15` | covered |
 | Provider-Kategorien (Flatrate/Leihen/Kaufen) | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `16` / `17` | covered |
+| Listenkopf-Sortierung (Tippen auf Spaltenkopf: auf/ab/aus, Pfeil) | - | watchlist, tagebuch | - | nicht automatisiert (Nutzer testet manuell) |
 | Ansichtsmodi Karten/Grid/Liste | `watchlist-filter-sort`, `tagebuch-filter-sort` | watchlist, tagebuch | `17..19` / `18..20` | covered |
 | Detail: Bewertungen auf/zuklappen, Beschreibung, Besetzung | `movie-detail-full` | movie-detail | `02..04`, `07` | covered |
 | Detail: Anbieter-Liste (Provider) | `movie-detail-full` | movie-detail | `05`, `06` | partial (nur wenn Film Anbieter hat, sonst bedingt übersprungen) |
@@ -110,3 +112,6 @@ Letzter Gesamtlauf: 19 Flows, alle PASS, 158 Screenshots, 29,8 Min (vorher 43,3 
 Bekannte Restspuren der Rating-Zyklen: Das flow-eigene Matrix (wird am Ende gelöscht) behält nach "Zurücksetzen" ein leeres Rating mit gesetztem "Gesehen am"-Datum (in der UI nicht sichtbar, Eintrag bleibt unbewertet auf der Watchlist).
 
 Hinweis Flow-Technik: `scrollUntilVisible` stoppt bei teilweise verdecktem Element (feste Aktionsleiste unten im Filmdetail); Flows nutzen dort `centerElement: true` (movie-detail-full: Regie/Besetzung). Seed-Zustand der Testgruppe: siehe `.maestro/README.md` (Prerequisites).
+
+
+Hinweis Header (2026-10-10): `app-header-title` zeigt jetzt den Gruppennamen (Fallback Ansichtsname ohne Gruppe); `app-header-group` entfaellt (Platzhalter `app-header-spacer`). Kein Flow in `.maestro/flows` referenziert diese testIDs oder den Ansichtsnamen im Header; nicht per Maestro verifiziert.

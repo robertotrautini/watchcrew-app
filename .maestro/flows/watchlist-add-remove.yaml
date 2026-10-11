@@ -64,9 +64,14 @@ appId: com.watchcrew.app
       id: "movie-detail-action-loeschen"
     timeout: 15000
 
-# --- edit sheet (release date) shown, not saved ---
+# --- edit sheet (release date) shown via tappable date line, not saved ---
+- extendedWaitUntil:
+    visible:
+      id: "movie-detail-release-date-edit"
+    timeout: 10000
+- takeScreenshot: 05b-watchlist-detail-date-edit
 - tapOn:
-    id: "movie-detail-action-bearbeiten"
+    id: "movie-detail-release-date-edit"
 - extendedWaitUntil:
     visible:
       id: "movie-detail-edit-sheet"

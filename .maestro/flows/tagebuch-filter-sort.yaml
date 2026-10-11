@@ -2,7 +2,8 @@ appId: com.watchcrew.app
 ---
 # tagebuch-filter-sort.yaml — Tagebuch tab: search, filter panel, every sort
 # option, genre/year chips, view modes, open entry. Restores: sort "Mein
-# Tagebuch", view mode cards, panel closed.
+# Tagebuch" -> NEU: "Beste Bewertung" (App-Default seit der Spaltenkopf-
+# Sortierung, Option `rating`), view mode cards, panel closed.
 - runFlow: ../subflows/ensure-app.yaml
 - runFlow: ../subflows/go-tagebuch.yaml
 - extendedWaitUntil:
@@ -141,7 +142,7 @@ appId: com.watchcrew.app
 - tapOn:
     id: "tagebuch-sort-button"
 - tapOn:
-    id: "tagebuch-sort-option-my_diary"
+    id: "tagebuch-sort-option-rating"
 - assertNotVisible:
     id: "tagebuch-sort-sheet"
 - tapOn:
