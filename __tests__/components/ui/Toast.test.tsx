@@ -21,7 +21,7 @@ import { Animated } from "react-native";
 import { act, fireEvent, render } from "@testing-library/react-native";
 
 import { ToastHost } from "@/components/ui/Toast";
-import { __resetToastListenersForTests, showErrorToast, showSuccessToast, showToast } from "@/lib/toast";
+import { __resetToastListenersForTests, showToast } from "@/lib/toast";
 
 describe("ToastHost", () => {
   afterEach(() => {
@@ -201,7 +201,7 @@ describe("ToastHost", () => {
     it("success variant is green: green border, green tint, green text and check icon", async () => {
       const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
-        showSuccessToast("Gespeichert");
+        showToast("Gespeichert", { variant: "success" });
       });
       expect(getByTestId("toast-surface").props.className).toContain("border-success/40");
       expect(getByTestId("toast-tint").props.className).toContain("bg-success/15");
@@ -214,7 +214,7 @@ describe("ToastHost", () => {
     it("error variant is red: danger border, danger tint, danger text and error icon", async () => {
       const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
-        showErrorToast("Fehler beim Speichern");
+        showToast("Fehler beim Speichern", { variant: "error" });
       });
       expect(getByTestId("toast-surface").props.className).toContain("border-danger/40");
       expect(getByTestId("toast-tint").props.className).toContain("bg-danger/15");
@@ -238,11 +238,11 @@ describe("ToastHost", () => {
     it("announces error toasts assertively and others politely (accessibility live region)", async () => {
       const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
-        showErrorToast("Fehler");
+        showToast("Fehler", { variant: "error" });
       });
       expect(getByTestId("toast-host").props.accessibilityLiveRegion).toBe("assertive");
       await act(async () => {
-        showSuccessToast("OK");
+        showToast("OK", { variant: "success" });
       });
       expect(getByTestId("toast-host").props.accessibilityLiveRegion).toBe("polite");
     });
@@ -251,7 +251,7 @@ describe("ToastHost", () => {
       const onPress = jest.fn();
       const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
-        showSuccessToast("Tippen", { onPress });
+        showToast("Tippen", { variant: "success", onPress });
       });
       await fireEvent.press(getByTestId("toast-press"));
       expect(onPress).toHaveBeenCalledTimes(1);
@@ -274,7 +274,7 @@ describe("ToastHost", () => {
       const onPress = jest.fn();
       const { getByTestId } = await render(<ToastHost />);
       await act(async () => {
-        showSuccessToast("Tippen", { onPress });
+        showToast("Tippen", { variant: "success", onPress });
       });
       await fireEvent.press(getByTestId("toast-close"));
       expect(onPress).not.toHaveBeenCalled();

@@ -12,6 +12,12 @@ jest.mock("@/hooks/useSaveRating", () => ({
   useSaveRating: () => ({ mutate: jest.fn(), isPending: false }),
   useResetRating: () => ({ mutate: jest.fn(), isPending: false }),
 }));
+// RatingDialog pulls in useDirectRate -> lib/supabase (realtime needs a WebSocket
+// that plain Node lacks); not under test here.
+jest.mock("@/hooks/useDirectRate", () => ({
+  useDirectRate: () => ({ mutate: jest.fn(), mutateAsync: jest.fn(), isPending: false }),
+  DirectRateError: class DirectRateError extends Error {},
+}));
 jest.mock("@/hooks/useTrackerPayments", () => ({
   useSetPayment: () => ({ mutate: jest.fn(), isPending: false }),
 }));

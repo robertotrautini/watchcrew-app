@@ -6,8 +6,6 @@
 
 import {
   __resetToastListenersForTests,
-  showErrorToast,
-  showSuccessToast,
   showToast,
   subscribeToToasts,
 } from "@/lib/toast";
@@ -73,16 +71,5 @@ describe("toast pub/sub", () => {
     showToast("Neue Features", { durationMs: 6000, onPress });
 
     expect(listener).toHaveBeenCalledWith("Neue Features", { durationMs: 6000, onPress });
-  });
-
-  it("showSuccessToast / showErrorToast deliver the matching variant", () => {
-    const listener = jest.fn();
-    subscribeToToasts(listener);
-
-    showSuccessToast("Gespeichert");
-    showErrorToast("Fehler", { durationMs: 6000 });
-
-    expect(listener).toHaveBeenNthCalledWith(1, "Gespeichert", { variant: "success" });
-    expect(listener).toHaveBeenNthCalledWith(2, "Fehler", { variant: "error", durationMs: 6000 });
   });
 });

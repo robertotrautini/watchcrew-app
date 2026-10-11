@@ -33,8 +33,8 @@ describe("getNoResultsMessage", () => {
   });
 
   it("falls back to the filter wording without an active search", () => {
-    expect(getNoResultsMessage("")).toBe("Keine Einträge für diese Auswahl.");
-    expect(getNoResultsMessage(" a ")).toBe("Keine Einträge für diese Auswahl.");
+    expect(getNoResultsMessage("")).toBe("Keine Filme für diese Filter");
+    expect(getNoResultsMessage(" a ")).toBe("Keine Filme für diese Filter");
   });
 });
 
