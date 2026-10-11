@@ -36,7 +36,7 @@ function ratedCountFor(entry: WatchlistEntry): number {
 /**
  * Virtualization tuning shared by all modes (counts are rows, not items).
  * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
- * too heavy. Cards/rows use the cheap glass (no BlurView per item), which is
+ * too heavy. Cards/rows use the flat glass (no blur), which is
  * what makes a wider window affordable; clipping stays off (blanks on Android).
  * See docs/performance-scroll-analysis.md "Nachtrag 2".
  */

@@ -49,7 +49,7 @@ export function DiaryEntryCard({
   members,
 }: DiaryEntryCardProps) {
   return (
-    <Card cheap testID="diary-entry-card" className="flex-row overflow-hidden">
+    <Card testID="diary-entry-card" className="flex-row overflow-hidden">
       <View testID="poster-card-poster-wrapper" className="min-h-36 w-24 self-stretch bg-black/40">
         {posterUrl ? (
           <Image

@@ -21,7 +21,6 @@ import { View } from "react-native";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { ParallaxProvider } from "@/components/ParallaxProvider";
 import { AppBackground } from "@/components/ui/AppBackground";
-import { GlassBlurTarget } from "@/components/ui/GlassBlur";
 import { rootBackdropLayout } from "@/components/ui/ScreenBackdrop";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { ToastHost } from "@/components/ui/Toast";
@@ -101,9 +100,7 @@ export default function RootLayout() {
       <ThemeProvider value={APP_NAV_THEME}>
         <ParallaxProvider>
           <View className="flex-1 bg-bg-primary">
-            <GlassBlurTarget>
-              <AppBackground />
-            </GlassBlurTarget>
+            <AppBackground />
             {/* M11 (platform-quirk review, see docs/interim-decisions.md "M11 —
             StatusBar"): this app's own color palette (tailwind.config.js's
             `bg-primary`/`text-primary` etc.) is a single fixed dark theme --

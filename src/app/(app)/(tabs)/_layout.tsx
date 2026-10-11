@@ -8,10 +8,8 @@ import { TabSwipeView } from "@/components/TabSwipeView";
 import { TabSwitchContext } from "@/components/tabSwitchContext";
 import { useTabSwitchState } from "@/hooks/useTabSwitchState";
 import {
-  GLASS_TAB_BAR_BLUR_STYLE,
   GLASS_TAB_BAR_STYLE,
 } from "@/components/ui/Glass";
-import { GlassBlur, isBlurAvailable } from "@/components/ui/GlassBlur";
 import { TabBarButton } from "@/components/ui/TabBarButton";
 import { tabIndexOf } from "@/lib/parallax";
 import { WATCHLIST_ROUTE } from "@/lib/homeRoute";
@@ -112,19 +110,9 @@ export default function TabsLayout() {
             headerShown: false,
             tabBarActiveTintColor: groupColors.accent,
             tabBarInactiveTintColor: "#888888",
-            // Legacy look: dark glass bar (no blur available) with hairline top
+            // Legacy look: flat dark glass bar with hairline top
             // border; the gold top line over the active tab is TabBarButton.
-            tabBarStyle: isBlurAvailable()
-              ? GLASS_TAB_BAR_BLUR_STYLE
-              : GLASS_TAB_BAR_STYLE,
-            tabBarBackground: () => (
-              <GlassBlur
-                className="flex-1"
-                blurClassName="bg-bg-tab-bar-blur"
-                fallbackClassName=""
-                pointerEvents="none"
-              />
-            ),
+            tabBarStyle: GLASS_TAB_BAR_STYLE,
             tabBarButton: TabBarButton as never,
           }}
         >

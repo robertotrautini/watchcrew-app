@@ -4,7 +4,7 @@ import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { useGroupTheme } from "@/components/GroupThemeProvider";
-import { GlassBlur } from "@/components/ui/GlassBlur";
+import { Glass } from "@/components/ui/Glass";
 import { Icon } from "@/components/ui/Icon";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  * Shared "table" look of the list views (Tracker, Watchlist "Liste",
  * Tagebuch "Liste"). The Tracker renders one `Glass` card around a plain
  * header + rows; virtualized lists (FlatList) cannot wrap all rows in one
- * surface, so header and every row are their own `GlassBlur` slice with the
+ * surface, so header and every row are their own `Glass` slice with the
  * same tint tokens, a shared side border and the same inner padding. Header
  * is the top slice (rounded top), the last row is the bottom slice (rounded
  * bottom), so the stack reads as one card.
@@ -34,13 +34,6 @@ export const TABLE_SCORE_CELL = "w-16 text-center text-text-secondary";
 /** Emphasised average-rating column. */
 export const TABLE_SCORE_STRONG_CELL = "w-12 text-center font-sans-semibold text-text-primary";
 
-const FILL = {
-  fallbackClassName: "bg-bg-glass",
-  blurClassName: "bg-bg-card-blur",
-  /** Table slices only live in virtualized lists: no live BlurView per row. */
-  cheap: true,
-} as const;
-
 export function GlassTableHeader({
   testID,
   children,
@@ -49,8 +42,7 @@ export function GlassTableHeader({
   children: ReactNode;
 }) {
   return (
-    <GlassBlur
-      {...FILL}
+    <Glass
       className="rounded-t-xl border-x border-t border-glass-border px-3 pt-3"
     >
       <View
@@ -59,7 +51,7 @@ export function GlassTableHeader({
       >
         {children}
       </View>
-    </GlassBlur>
+    </Glass>
   );
 }
 
@@ -205,8 +197,7 @@ export function GlassTableRow({
   children: ReactNode;
 }) {
   return (
-    <GlassBlur
-      {...FILL}
+    <Glass
       className={cn(
         "border-x border-glass-border px-3",
         isLast && "rounded-b-xl border-b pb-1",
@@ -223,7 +214,7 @@ export function GlassTableRow({
       >
         {children}
       </Pressable>
-    </GlassBlur>
+    </Glass>
   );
 }
 

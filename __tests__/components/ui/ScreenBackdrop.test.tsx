@@ -4,11 +4,10 @@ import { Text } from "react-native";
 import { ScreenBackdrop, rootBackdropLayout, screenBackdropLayout } from "@/components/ui/ScreenBackdrop";
 
 describe("ScreenBackdrop", () => {
-  it("renders a blurred, strongly dark-tinted layer", async () => {
+  it("renders a flat dark layer (no blur)", async () => {
     await render(<ScreenBackdrop />);
     expect(screen.getByTestId("screen-backdrop")).toBeTruthy();
-    expect(screen.getByTestId("glass-blur-view")).toBeTruthy();
-    expect(screen.getByTestId("glass-blur-tint").props.className).toContain("bg-black/70");
+    expect(screen.getByTestId("screen-backdrop-glass").props.className).toContain("bg-bg-card-flat");
   });
 
   it("layout wrapper renders backdrop behind the children", async () => {
@@ -17,15 +16,9 @@ describe("ScreenBackdrop", () => {
     expect(screen.getByText("inhalt")).toBeTruthy();
   });
 
-  it("dim level is darker than calm", async () => {
-    await render(<ScreenBackdrop level="dim" />);
-    expect(screen.getByTestId("glass-blur-tint").props.className).toContain("bg-black/80");
-  });
-
   it("modal settings routes get the dim backdrop", async () => {
     await render(screenBackdropLayout({ route: { name: "settings" }, children: <Text>inhalt</Text> }));
     expect(screen.getByTestId("screen-backdrop")).toBeTruthy();
-    expect(screen.getByTestId("glass-blur-tint").props.className).toContain("bg-black/80");
     expect(screen.getByText("inhalt")).toBeTruthy();
   });
 

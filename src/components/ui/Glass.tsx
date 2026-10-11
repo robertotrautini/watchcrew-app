@@ -1,14 +1,11 @@
-import { type GestureResponderEvent, type ViewProps } from "react-native";
+import { Pressable, View, type GestureResponderEvent, type ViewProps } from "react-native";
 
-import { GlassBlur } from "@/components/ui/GlassBlur";
 import { cn } from "@/lib/utils";
 
 /**
- * Legacy "glassmorphism" surface: translucent dark fill + single flat 1px faint white
- * border + rounded corners. Large panels (toast, bars, tab bar) get real blur
- * via GlassBlur (expo-blur) with the tinted fill as fallback; cards/rows in
- * scrolling lists pass `cheap` (static pre-blurred image + tint, no live
- * BlurView, see GlassBlur). See docs/interim-decisions.md "Echter Blur". Shared by Card, Toast and similar surfaces.
+ * Flat dark glass surface: near-opaque dark fill (`GLASS_FLAT_FILL`, 95 %) +
+ * single flat 1px faint white border + rounded corners. No blur anywhere
+ * (docs/style-guide.md). Shared by Card, Toast, settings groups and similar surfaces.
  */
 export type GlassVariant = "default" | "strong" | "panel";
 
@@ -25,7 +22,6 @@ export const GLASS_CLASSNAMES: Record<GlassVariant, string> = {
   default: `rounded-xl ${GLASS_EDGE}`,
   strong: `rounded-xl ${GLASS_EDGE}`,
   /** Large panels: toast, bottom action bar (sheet/tab bar reuse the same tokens). */
-  /** Fill comes from GlassBlur (blurred tint, or bg-sheet fallback). */
   panel: GLASS_EDGE,
 };
 
@@ -38,59 +34,37 @@ export const GLASS_TILE_CLASSNAME = `rounded-xl ${GLASS_EDGE} bg-card`;
 /** Detail screen bottom action bar surface (top edge only). */
 export const GLASS_BAR_CLASSNAME = "border-t border-glass-border";
 
-/** Fills for blurred (translucent tint over BlurView) vs. fallback (near-opaque) surfaces. */
-export const GLASS_PANEL_FALLBACK_FILL = "bg-bg-sheet";
-export const GLASS_PANEL_BLUR_FILL = "bg-bg-sheet-blur";
+/** The one fill of every glass surface; token in tailwind.config.js. */
+export const GLASS_FLAT_FILL = "bg-bg-card-flat";
 
 /** Sheet surface (rounded top corners). */
 export const GLASS_SHEET_CLASSNAME =
-  "rounded-t-xl border-t border-glass-border bg-bg-sheet";
+  "rounded-t-xl border-t border-glass-border bg-bg-card-flat";
 
 /**
  * Tab bar needs raw style values (React Navigation `tabBarStyle`); keep them in
  * sync with the `bg-tab-bar` / `glass-border` tokens in tailwind.config.js.
- * When blur is available the bar background is transparent and a GlassBlur is
- * rendered via `tabBarBackground` (see GLASS_TAB_BAR_BLUR_STYLE).
  */
 export const GLASS_TAB_BAR_STYLE = {
-  backgroundColor: "rgba(12,12,14,0.96)",
+  backgroundColor: "rgba(10,10,12,0.95)",
   borderTopColor: "rgba(255,255,255,0.1)",
   borderTopWidth: 1,
-} as const;
-
-export const GLASS_TAB_BAR_BLUR_STYLE = {
-  ...GLASS_TAB_BAR_STYLE,
-  backgroundColor: "transparent",
 } as const;
 
 export interface GlassProps extends ViewProps {
   onPress?: (event: GestureResponderEvent) => void;
   variant?: GlassVariant;
-  /** Pre-blurred static image instead of a live BlurView; use for items of scrolling lists. */
-  cheap?: boolean;
 }
 
-const GLASS_VARIANT_FILLS: Record<
-  GlassVariant,
-  { fallback: string; blur: string }
-> = {
-  default: { fallback: "bg-bg-glass", blur: "bg-bg-card-blur" },
-  strong: { fallback: "bg-bg-glass-strong", blur: "bg-bg-glass-strong-blur" },
-  panel: { fallback: GLASS_PANEL_FALLBACK_FILL, blur: GLASS_PANEL_BLUR_FILL },
-};
-
-export function Glass({ variant = "default", className, cheap, ...rest }: GlassProps) {
-  {
-    return (
-      <GlassBlur
-        cheap={cheap}
-        className={cn(GLASS_CLASSNAMES[variant], className)}
-        fallbackClassName={GLASS_VARIANT_FILLS[variant].fallback}
-        blurClassName={GLASS_VARIANT_FILLS[variant].blur}
-        {...rest}
-      />
-    );
-  }
+export function Glass({ variant = "default", className, onPress, ...rest }: GlassProps) {
+  const Root = (onPress ? Pressable : View) as typeof View;
+  const rootProps = onPress ? { onPress, ...rest } : rest;
+  return (
+    <Root
+      className={cn("overflow-hidden", GLASS_CLASSNAMES[variant], className, GLASS_FLAT_FILL)}
+      {...rootProps}
+    />
+  );
 }
 
 /** Shared glass text-input look (auth, onboarding, settings forms). */

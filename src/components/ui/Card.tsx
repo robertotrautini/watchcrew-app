@@ -24,8 +24,6 @@ export interface CardProps extends ViewProps {
    * When omitted, Card renders as a plain, non-interactive View.
    */
   onPress?: (event: GestureResponderEvent) => void;
-  /** Cheap frosted glass (no live BlurView) for cards inside scrolling lists. */
-  cheap?: boolean;
 }
 
 /**
@@ -38,11 +36,10 @@ export function Card({
   onPress,
   children,
   testID,
-  cheap,
   ...rest
 }: CardProps) {
   return (
-    <Glass className={className} onPress={onPress} testID={testID} cheap={cheap} {...rest}>
+    <Glass className={className} onPress={onPress} testID={testID} {...rest}>
       {children}
     </Glass>
   );

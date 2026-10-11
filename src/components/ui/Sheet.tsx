@@ -14,11 +14,7 @@ import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BUTTON_ICON_COLORS, Button } from "@/components/ui/Button";
-import {
-  GLASS_PANEL_BLUR_FILL,
-  GLASS_PANEL_FALLBACK_FILL,
-} from "@/components/ui/Glass";
-import { GlassBlur } from "@/components/ui/GlassBlur";
+import { GLASS_FLAT_FILL } from "@/components/ui/Glass";
 import { Icon } from "@/components/ui/Icon";
 import { useKeyboardHeight } from "@/hooks/useKeyboardHeight";
 import { modalKeyboardAvoidingBehavior } from "@/lib/platformKeyboardAvoiding";
@@ -27,11 +23,8 @@ import { sheetMaxHeight } from "@/lib/sheetLayout";
 /**
  * Below this viewport width, the backdrop uses a flatter/less-transparent
  * fill instead of relying on layered opacity for its "glass" look. This is
- * the cheap stand-in for the planning report's "reduced blur on small
- * screens for performance" note: a real blur view (e.g. expo-glass-effect,
- * already a dependency) is NOT wired in here, since this base component is
- * meant to stay simple/generic — swapping in a real BlurView per-platform is
- * left as a follow-up once a screen actually needs it. Width is read once at
+ * flat stand-in for the planning report's "reduced blur on small
+ * screens" note: there is no blur anywhere in the app. Width is read once at
  * module load (not via a resize listener) since phones don't rotate between
  * a Sheet opening and closing.
  */
@@ -105,7 +98,7 @@ export interface SheetProps {
  */
 export function Sheet({ visible, onClose, title, children }: SheetProps) {
   // The sheet is an in-window overlay (NOT an RN Modal): a Modal is a separate
-  // Android window where the BlurView cannot sample the app photo (blur target).
+  // Android window.
   // Whether the main window is resized by the keyboard is device dependent, so
   // the lift uses the measured keyboard height as before.
   const keyboardHeight = useKeyboardHeight();
@@ -184,12 +177,10 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
           }
         >
           <Animated.View style={slideStyle}>
-            <GlassBlur
+            <Pressable
               testID="sheet-surface"
               style={surfaceStyle}
-              className="rounded-t-xl border-t border-glass-border"
-              fallbackClassName={GLASS_PANEL_FALLBACK_FILL}
-              blurClassName={GLASS_PANEL_BLUR_FILL}
+              className={`overflow-hidden rounded-t-xl border-t border-glass-border ${GLASS_FLAT_FILL}`}
               onPress={() => {
                 // Swallow the tap so it doesn't bubble to the backdrop.
               }}
@@ -224,7 +215,7 @@ export function Sheet({ visible, onClose, title, children }: SheetProps) {
                   {children}
                 </ScrollView>
               </SafeAreaView>
-            </GlassBlur>
+            </Pressable>
           </Animated.View>
         </Pressable>
       </KeyboardAvoidingView>

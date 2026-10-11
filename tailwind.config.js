@@ -23,10 +23,9 @@ module.exports = {
       colors: {
         // Static (non-group-dependent) colors.
         "bg-primary": "#0a0a0a",
-        // Glass tokens (JS-only glassmorphism, no blur module yet): LIGHTENED
+        // Glass tokens (flat dark glass, no blur): LIGHTENED
         // translucent fills + a clearly visible hairline border so surfaces
-        // stand off from the dark background photo. Single source of truth;
-        // a later expo-blur BlurView only needs to lower these alphas.
+        // stand off from the dark background photo. Single source of truth.
         "bg-card": "rgba(10,10,12,.72)",
         "bg-glass": "rgba(10,10,12,.78)",
         "bg-glass-strong": "rgba(10,10,12,.82)",
@@ -34,14 +33,8 @@ module.exports = {
         // keeps text legible, photo still shows through.
         "bg-sheet": "rgba(12,12,14,.96)",
         "bg-tab-bar": "rgba(12,12,14,.96)",
-        // Blurred variants (used on top of a real BlurView, see GlassBlur.tsx);
-        // the opaque tokens above stay as the no-blur fallback.
-        // Flat dark list-item fill (GlassBlur `cheap`, no blur at all).
+        // Flat dark list-item fill (`GLASS_FLAT_FILL` in Glass.tsx, used by every glass surface, no blur).
         "bg-card-flat": "rgba(10,10,12,.95)",
-        "bg-card-blur": "rgba(10,10,12,.62)",
-        "bg-glass-strong-blur": "rgba(10,10,12,.72)",
-        "bg-sheet-blur": "rgba(10,10,12,.76)",
-        "bg-tab-bar-blur": "rgba(10,10,12,.72)",
         // Flat Material border (docs/style-guide.md): one uniform, subtle
         // 1px hairline for every surface (cards, buttons, inputs, sheets).
         "glass-border": "rgba(255,255,255,.10)",

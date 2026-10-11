@@ -62,7 +62,7 @@ export function DiaryPosterTile({
   children,
 }: DiaryPosterTileProps) {
   return (
-    <Card cheap testID={testID} className="overflow-hidden">
+    <Card testID={testID} className="overflow-hidden">
       <View testID="poster-card-poster-wrapper" className="relative w-full">
         {posterUrl ? (
           <Image

@@ -13,7 +13,7 @@ import { modalScreenLayout } from "@/components/modalScreenLayout";
  * their own `<Stack.Screen options={{...}}>` export.
  */
 /**
- * Every modal route gets a dimmed blurred glass backdrop instead of the busy
+ * Every modal route gets a flat dark glass backdrop instead of the busy
  * projector photo (see ScreenBackdrop + docs/style-guide.md): detail-style
  * routes "calm", settings routes "dim". Only the three tabs show the undimmed
  * photo. (expo-router drops a per-`Stack.Screen` `layout` prop, so this uses

@@ -1,38 +1,18 @@
 import type { ReactElement, ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
 
-import { GlassBlur } from "@/components/ui/GlassBlur";
+import { GLASS_FLAT_FILL } from "@/components/ui/Glass";
 
 /**
- * Smoked-glass backdrop (docs/style-guide.md "Backdrop rule"). The busy
- * projector photo (root AppBackground) is blurred hard and tinted dark so
- * content reads cleanly. ONLY the three tabs (Tracker, Watchlist, Tagebuch)
- * show the undimmed photo; every other screen uses one of two levels:
- *  - "calm" (black 70%): detail-style routes (movie detail = reference look).
- *  - "dim"  (black 80%): settings, group settings, auth, onboarding, join.
- * Static layer behind the content (no per-row blur, so scrolling costs
- * nothing). Without expo-blur the opaque fallback tint is used.
+ * Flat dark backdrop (docs/style-guide.md "Backdrop rule"): the projector photo
+ * (root AppBackground) is covered by the shared flat fill (`GLASS_FLAT_FILL`,
+ * 95 %), no blur. ONLY the three tabs (Tracker, Watchlist, Tagebuch) show the
+ * undimmed photo. Static layer behind the content.
  */
-export type ScreenBackdropLevel = "calm" | "dim";
-
-export const SCREEN_BACKDROP_BLUR_INTENSITY = 90;
-export const SCREEN_BACKDROP_LEVELS: Record<ScreenBackdropLevel, { tint: string; fallback: string }> = {
-  calm: { tint: "bg-black/70", fallback: "bg-black/85" },
-  dim: { tint: "bg-black/80", fallback: "bg-black/90" },
-};
-export const SCREEN_BACKDROP_TINT_CLASSNAME = SCREEN_BACKDROP_LEVELS.calm.tint;
-export const SCREEN_BACKDROP_FALLBACK_CLASSNAME = SCREEN_BACKDROP_LEVELS.calm.fallback;
-
-export function ScreenBackdrop({ level = "calm" }: { level?: ScreenBackdropLevel }) {
+export function ScreenBackdrop() {
   return (
     <View testID="screen-backdrop" pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <GlassBlur
-        testID="screen-backdrop-glass"
-        className="flex-1"
-        intensity={SCREEN_BACKDROP_BLUR_INTENSITY}
-        blurClassName={SCREEN_BACKDROP_LEVELS[level].tint}
-        fallbackClassName={SCREEN_BACKDROP_LEVELS[level].fallback}
-      />
+      <View testID="screen-backdrop-glass" className={`flex-1 ${GLASS_FLAT_FILL}`} />
     </View>
   );
 }
@@ -48,7 +28,7 @@ export const CALM_BACKDROP_ROUTES: readonly string[] = [
   "filmography/studio/[companyId]",
 ];
 
-/** Settings modal routes: dim level. */
+/** Settings modal routes (flat backdrop). */
 export const DIM_BACKDROP_ROUTES: readonly string[] = [
   "settings",
   "settings/streaming-services",
@@ -58,7 +38,7 @@ export const DIM_BACKDROP_ROUTES: readonly string[] = [
   "group-settings",
 ];
 
-/** Root-stack routes outside the app shell (auth, onboarding, invite, reset callback): dim level. */
+/** Root-stack routes outside the app shell (auth, onboarding, invite, reset callback) (flat backdrop). */
 export const ROOT_DIM_BACKDROP_ROUTES: readonly string[] = [
   "(auth)",
   "(onboarding)",
@@ -66,19 +46,19 @@ export const ROOT_DIM_BACKDROP_ROUTES: readonly string[] = [
   "join/[token]",
 ];
 
-function layoutWithBackdrop(level: ScreenBackdropLevel | null, children: ReactNode): ReactElement {
-  if (level == null) {
+function layoutWithBackdrop(withBackdrop: boolean, children: ReactNode): ReactElement {
+  if (!withBackdrop) {
     return <>{children}</>;
   }
   return (
     <View className="flex-1">
-      <ScreenBackdrop level={level} />
+      <ScreenBackdrop />
       {children}
     </View>
   );
 }
 
-/** (modals) navigator `screenLayout`: every modal route gets a backdrop (calm, settings dim). */
+/** (modals) navigator `screenLayout`: every modal route gets the flat backdrop. */
 export function screenBackdropLayout({
   route,
   children,
@@ -86,10 +66,10 @@ export function screenBackdropLayout({
   route: { name: string };
   children: ReactNode;
 }): ReactElement {
-  return layoutWithBackdrop(DIM_BACKDROP_ROUTES.includes(route.name) ? "dim" : "calm", children);
+  return layoutWithBackdrop(true, children);
 }
 
-/** Root navigator `screenLayout`: dim backdrop for auth/onboarding/join/callback; app shell untouched. */
+/** Root navigator `screenLayout`: flat backdrop for auth/onboarding/join/callback; app shell untouched. */
 export function rootBackdropLayout({
   route,
   children,
@@ -97,5 +77,5 @@ export function rootBackdropLayout({
   route: { name: string };
   children: ReactNode;
 }): ReactElement {
-  return layoutWithBackdrop(ROOT_DIM_BACKDROP_ROUTES.includes(route.name) ? "dim" : null, children);
+  return layoutWithBackdrop(ROOT_DIM_BACKDROP_ROUTES.includes(route.name), children);
 }

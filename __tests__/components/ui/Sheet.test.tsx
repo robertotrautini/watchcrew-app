@@ -37,7 +37,7 @@ describe("Sheet", () => {
       </Sheet>,
     );
 
-    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-sheet-blur");
+    expect(getByTestId("sheet-surface").props.className).toContain("bg-bg-card-flat");
     expect(getByTestId("sheet-surface").props.className).not.toContain("bg-glass");
   });
 

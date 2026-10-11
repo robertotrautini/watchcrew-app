@@ -98,14 +98,14 @@ export function WatchlistPosterCard({
     ? (movie.overview as string)
     : OVERVIEW_FALLBACK;
 
-  // Dim only the content layer; the glass surface (blur + tint) must stay untouched.
+  // Dim only the content layer; the glass surface (flat fill) must stay untouched.
   const dimClassName = dimmed ? " opacity-50" : "";
 
   if (variant === "card") {
     // Legacy list row: small poster left, gold serif title, date line,
     // 2-line synopsis, TMDB badge bottom-right.
     return (
-      <Card cheap testID={testID} onPress={onPress} className="overflow-hidden">
+      <Card testID={testID} onPress={onPress} className="overflow-hidden">
         <View
           testID={`${testID}-content`}
           className={`flex-row${dimClassName}`}
@@ -174,7 +174,7 @@ export function WatchlistPosterCard({
   // Edge-to-edge poster: the tile (Card, overflow-hidden) clips the poster's top
   // corners; the bottom edge is a straight cut above the info area.
   return (
-    <Card cheap testID={testID} onPress={onPress} className="overflow-hidden">
+    <Card testID={testID} onPress={onPress} className="overflow-hidden">
       <View testID={`${testID}-content`} className={dimClassName.trim()}>
         <View testID={`${testID}-poster-wrapper`} className="relative w-full">
           <Image

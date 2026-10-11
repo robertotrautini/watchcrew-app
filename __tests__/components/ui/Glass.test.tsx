@@ -6,8 +6,7 @@ describe("Glass", () => {
   it("default variant is a translucent card fill with a faint border and rounded corners", async () => {
     const { getByTestId } = await render(<Glass testID="g" />);
     const className = getByTestId("g").props.className as string;
-    expect(getByTestId("glass-blur-view")).toBeTruthy();
-    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-card-blur");
+    expect(className).toContain("bg-bg-card-flat");
     expect(className).toContain("border-glass-border");
     expect(className).toContain("rounded-xl");
   });
@@ -15,14 +14,14 @@ describe("Glass", () => {
   it("strong variant uses the denser fill and merges extra classes", async () => {
     const { getByTestId } = await render(<Glass testID="g" variant="strong" className="px-4" />);
     const className = getByTestId("g").props.className as string;
-    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-glass-strong-blur");
+    expect(className).toContain("bg-bg-card-flat");
     expect(className).toContain("px-4");
   });
 
-  it("panel variant is blurred glass (BlurView + translucent tint)", async () => {
-    const { getByTestId } = await render(<Glass testID="g" variant="panel" />);
-    expect(getByTestId("glass-blur-view")).toBeTruthy();
-    expect(getByTestId("glass-blur-tint").props.className).toContain("bg-bg-sheet-blur");
+  it("panel variant uses the same flat fill", async () => {
+    const { getByTestId, queryByTestId } = await render(<Glass testID="g" variant="panel" />);
+    expect(queryByTestId("glass-blur-view")).toBeNull();
+    expect(getByTestId("g").props.className).toContain("bg-bg-card-flat");
     expect(getByTestId("g").props.className).toContain("border-glass-border");
   });
 });
@@ -39,14 +38,15 @@ describe("Glass flat border (style guide)", () => {
 });
 
 describe("Glass tint tokens (readable over the busy photo)", () => {
-  it("blur tints are at least 60% dark and fallbacks at least 70%", () => {
+  it("flat fill is 95% dark and the legacy tokens at least 70%", () => {
     const colors = require("../../../tailwind.config.js").theme.extend.colors;
     const alpha = (v: string) => Number(/,\s*(\.?\d*\.?\d+)\)/.exec(v)![1]);
-    for (const k of ["bg-card-blur", "bg-glass-strong-blur", "bg-sheet-blur", "bg-tab-bar-blur"]) {
-      expect(alpha(colors[k])).toBeGreaterThanOrEqual(0.6);
-    }
+    expect(alpha(colors["bg-card-flat"])).toBe(0.95);
     for (const k of ["bg-card", "bg-glass", "bg-glass-strong"]) {
       expect(alpha(colors[k])).toBeGreaterThanOrEqual(0.7);
+    }
+    for (const k of ["bg-card-blur", "bg-glass-strong-blur", "bg-sheet-blur", "bg-tab-bar-blur"]) {
+      expect(colors[k]).toBeUndefined();
     }
   });
 });
