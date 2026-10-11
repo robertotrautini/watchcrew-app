@@ -356,42 +356,12 @@ describe("MovieGrid", () => {
     });
   });
 
-  // M7 part 2 (Add-Movie-Modal): optional per-tile quick-add affordance,
-  // separate from `onPressItem` (which still navigates to the movie's
-  // detail overlay, unchanged) -- lets the Add-Movie-Modal add a result
-  // directly to the watchlist without leaving the search screen.
-  describe("quick-add button (onAddItem)", () => {
-    it("renders no add button when onAddItem is not provided", async () => {
-      const { queryByTestId } = await render(
-        <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" />,
-      );
+  it("renders no quick-add button on tiles (adding happens in the detail)", async () => {
+    const { queryByTestId } = await render(
+      <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" />,
+    );
 
-      expect(queryByTestId("grid-add-1")).toBeNull();
-    });
-
-    it("renders an add button per tile when onAddItem is provided", async () => {
-      const items = [makeItem({ tmdbId: 1 }), makeItem({ tmdbId: 2 })];
-      const { getByTestId } = await render(
-        <MovieGrid items={items} onPressItem={jest.fn()} testID="grid" onAddItem={jest.fn()} />,
-      );
-
-      expect(getByTestId("grid-add-1")).toBeTruthy();
-      expect(getByTestId("grid-add-2")).toBeTruthy();
-    });
-
-    it("calls onAddItem (not onPressItem) when the add button is tapped", async () => {
-      const onPressItem = jest.fn();
-      const onAddItem = jest.fn();
-      const item = makeItem({ tmdbId: 1 });
-      const { getByTestId } = await render(
-        <MovieGrid items={[item]} onPressItem={onPressItem} testID="grid" onAddItem={onAddItem} />,
-      );
-
-      await fireEvent.press(getByTestId("grid-add-1"));
-
-      expect(onAddItem).toHaveBeenCalledWith(item);
-      expect(onPressItem).not.toHaveBeenCalled();
-    });
+    expect(queryByTestId("grid-add-1")).toBeNull();
   });
 
   describe("footer", () => {
@@ -425,7 +395,7 @@ describe("MovieGrid", () => {
         <MovieGrid items={[]} onPressItem={jest.fn()} testID="grid" />,
       );
 
-      expect(getByTestId("grid-empty").props.children).toBe("Keine Filme gefunden.");
+      expect(getByTestId("grid-empty")).toHaveTextContent("Keine Filme gefunden");
     });
 
     it("shows a custom empty message when provided", async () => {
@@ -433,7 +403,7 @@ describe("MovieGrid", () => {
         <MovieGrid items={[]} onPressItem={jest.fn()} testID="grid" emptyMessage="Nichts hier." />,
       );
 
-      expect(getByTestId("grid-empty").props.children).toBe("Nichts hier.");
+      expect(getByTestId("grid-empty")).toHaveTextContent("Nichts hier.");
     });
 
     it("does not render any item tiles when items is empty", async () => {
@@ -473,13 +443,4 @@ describe("MovieGrid", () => {
       expect(onPressItem).toHaveBeenCalledWith(items[0]);
     });
   });
-
-describe("MovieGrid quick-add touch target", () => {
-  it("the + button is a 48x48 touch box around the small visual", async () => {
-    const { getByTestId } = await render(
-      <MovieGrid items={[makeItem({ tmdbId: 1 })]} onPressItem={jest.fn()} testID="grid" onAddItem={jest.fn()} />,
-    );
-    expect(getByTestId("grid-add-1").props.className).toContain("h-12 w-12");
-  });
-});
 });

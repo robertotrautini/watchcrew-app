@@ -5,7 +5,7 @@ import { searchPerson } from "@/lib/tmdbProxy";
 import { queryKeys } from "@/lib/queryKeys";
 
 /** Regisseur/Besetzung mode debounce (M7 part 2, per the task spec): 250ms. */
-export const PERSON_SEARCH_DEBOUNCE_MS = 250;
+const PERSON_SEARCH_DEBOUNCE_MS = 250;
 
 /**
  * Add-Movie-Modal Regisseur/Besetzung modes (M7 part 2): debounced person

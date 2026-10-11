@@ -1,8 +1,10 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
-import { Icon } from "@/components/ui/Icon";
+import { Icon, type IconRole } from "@/components/ui/Icon";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useParallaxScroll } from "@/components/parallaxContext";
 import type { ReactNode } from "react";
-import { FlatList, Pressable, View } from "react-native";
+import { FlatList, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { Chip } from "@/components/ui/Chip";
@@ -25,18 +27,10 @@ import { usePreferencesStore } from "@/stores/usePreferencesStore";
  * how to render a list of items plus optional progress/filter/footer UI.
  *
  * Corner badges come only from `PosterCornerBadge` (top-right: eye/bookmark)
- * and `PosterTmdbBadge` (bottom-right); the quick-add button sits bottom-left.
+ * and `PosterTmdbBadge` (bottom-right).
  */
 
-// Neutral placeholder-icon color (matches the "#8b8b8b" placeholder text
-// color already used elsewhere, e.g. src/app/(app)/(tabs)/watchlist.tsx's
-// search input).
-const PLACEHOLDER_ICON_COLOR = "#8b8b8b";
-// M7 part 2 (Add-Movie-Modal quick-add button): white, for contrast against
-// the same semi-opaque dark badge/score pill background already used here.
-const ADD_BUTTON_ICON_COLOR = "#ffffff";
-
-const DEFAULT_EMPTY_MESSAGE = "Keine Filme gefunden.";
+const DEFAULT_EMPTY_MESSAGE = "Keine Filme gefunden";
 
 export interface MovieGridItem {
   tmdbId: number;
@@ -48,14 +42,14 @@ export interface MovieGridItem {
 
 export type MovieGridBadge = "watched" | "watchlist" | null;
 
-export type StreamingFilterValue = "flatrate" | "rent" | "buy";
+type StreamingFilterValue = "flatrate" | "rent" | "buy";
 
-export interface MovieGridStreamingFilterProps {
+interface MovieGridStreamingFilterProps {
   active: StreamingFilterValue | null;
   onChange: (value: StreamingFilterValue | null) => void;
 }
 
-export interface MovieGridProgressHeader {
+interface MovieGridProgressHeader {
   watched: number;
   total: number;
   percent: number;
@@ -71,15 +65,8 @@ export interface MovieGridProps<T extends MovieGridItem = MovieGridItem> {
   streamingFilter?: MovieGridStreamingFilterProps | null;
   footer?: ReactNode;
   emptyMessage?: string;
-  /**
-   * M7 part 2 (Add-Movie-Modal): optional per-tile quick-add affordance,
-   * rendered as a small "+" button overlay distinct from tapping the tile
-   * itself (which still calls `onPressItem` to navigate to the movie's
-   * detail overlay, unchanged for every existing caller). Omitted entirely
-   * (no prop given) renders no add button at all — every M6 sub-view screen
-   * using this component is unaffected.
-   */
-  onAddItem?: (item: T) => void;
+  /** Icon role of the empty state (default: film). */
+  emptyIcon?: IconRole;
   /** Number of grid columns (default: the "Raster Aehnliche Filme & Filmsuche" setting, 3 or 4). */
   columns?: number;
 }
@@ -102,7 +89,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
   streamingFilter,
   footer,
   emptyMessage = DEFAULT_EMPTY_MESSAGE,
-  onAddItem,
+  emptyIcon = "film",
   columns: columnsProp,
 }: MovieGridProps<T>) {
   const parallaxScroll = useParallaxScroll();
@@ -135,7 +122,7 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
               testID={`${testID}-item-${item.tmdbId}-poster-placeholder`}
               className="aspect-[2/3] w-full items-center justify-center bg-black/40 px-1"
             >
-              <Icon name="film" size="L" color={PLACEHOLDER_ICON_COLOR} />
+              <Icon name="film" size="L" color={PLACEHOLDER_COLOR} />
               <Text
                 testID={`${testID}-item-${item.tmdbId}-placeholder-title`}
                 numberOfLines={3}
@@ -159,20 +146,6 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
             score={item.voteAverage}
           />
 
-          {onAddItem ? (
-            <Pressable
-              testID={`${testID}-add-${item.tmdbId}`}
-              accessibilityRole="button"
-              accessibilityLabel="Zur Watchlist hinzufügen"
-              onPress={() => onAddItem(item)}
-              // 48x48 touch box in the tile corner; the dark 24dp circle stays the visible size
-              className="absolute bottom-0 left-0 h-12 w-12 items-center justify-center"
-            >
-              <View className="items-center justify-center rounded-full bg-black/70 p-1">
-                <Icon name="add" size="S" color={ADD_BUTTON_ICON_COLOR} />
-              </View>
-            </Pressable>
-          ) : null}
         </View>
 
         <View
@@ -241,15 +214,11 @@ export function MovieGrid<T extends MovieGridItem = MovieGridItem>({
       ) : null}
 
       {items.length === 0 ? (
-        <View className="mt-16 items-center gap-3">
-          <Icon name="film" size="L" color={PLACEHOLDER_ICON_COLOR} />
-          <Text
-            testID={`${testID}-empty`}
-            className="text-center text-base text-text-secondary"
-          >
-            {emptyMessage}
-          </Text>
-        </View>
+        <EmptyState
+          testID={`${testID}-empty`}
+          icon={emptyIcon}
+          title={emptyMessage}
+        />
       ) : (
         <FlatList
           {...parallaxScroll}

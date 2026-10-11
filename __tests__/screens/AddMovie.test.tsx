@@ -254,92 +254,68 @@ describe("AddMovieScreen", () => {
     });
   });
 
-  it("quick-add: adds a movie with a release date directly, with no manual-date or duplicate sheet", async () => {
+  it("has no quick-add button on result posters and never adds from the search screen", async () => {
     mockUseMovieSearch.mockReturnValue(
       emptyQueryResult({ data: [{ id: 603, title: "The Matrix", release_date: "1999-03-31" }] }),
     );
     const AddMovieScreen = loadAddMovieScreen();
     const { getByTestId, queryByTestId } = await render(<AddMovieScreen />);
 
-    await fireEvent.press(getByTestId("add-movie-film-grid-add-603"));
-
-    expect(mockAddMutate).toHaveBeenCalledWith({ tmdbId: 603, groupId: "group-1", addedBy: "u1" });
+    expect(getByTestId("add-movie-film-grid-item-603")).toBeTruthy();
+    expect(queryByTestId("add-movie-film-grid-add-603")).toBeNull();
+    await fireEvent.press(getByTestId("add-movie-film-grid-item-603"));
+    expect(mockAddMutate).not.toHaveBeenCalled();
     expect(queryByTestId("add-movie-manual-date-input")).toBeNull();
     expect(queryByTestId("add-movie-duplicate-cancel-button")).toBeNull();
   });
 
-  it("manual-date fallback: gates the add behind a required date input when release_date is missing, and forwards the picked date as manualReleaseDate", async () => {
-    mockUseMovieSearch.mockReturnValue(
-      emptyQueryResult({ data: [{ id: 604, title: "No Date Movie", release_date: undefined }] }),
-    );
-    const AddMovieScreen = loadAddMovieScreen();
-    const { getByTestId, queryByTestId } = await render(<AddMovieScreen />);
+  describe("empty states: same centered structure in every search tab", () => {
+    function expectCenteredEmpty(getByTestId: (id: string) => any, areaId: string, emptyId: string) {
+      const area = getByTestId(areaId);
+      expect(area.props.className).toContain("flex-1");
+      const empty = getByTestId(emptyId);
+      expect(empty.props.className).toContain("flex-1");
+      expect(empty.props.className).toContain("justify-center");
+      expect(empty.props.className).toContain("items-center");
+    }
 
-    await fireEvent.press(getByTestId("add-movie-film-grid-add-604"));
-
-    expect(mockAddMutate).not.toHaveBeenCalled();
-    expect(getByTestId("add-movie-manual-date-input")).toBeTruthy();
-
-    // Confirm button disabled until a date is picked.
-    await fireEvent.press(getByTestId("add-movie-manual-date-confirm-button"));
-    expect(mockAddMutate).not.toHaveBeenCalled();
-
-    // Tapping the field opens the native picker; picking a date closes it
-    // again and fills the field's displayed value.
-    expect(queryByTestId("add-movie-manual-date-input-picker")).toBeNull();
-    await fireEvent.press(getByTestId("add-movie-manual-date-input"));
-    await fireEvent(
-      getByTestId("add-movie-manual-date-input-picker"),
-      "change",
-      { type: "set" },
-      new Date("1999-03-31T00:00:00.000Z"),
-    );
-
-    await fireEvent.press(getByTestId("add-movie-manual-date-confirm-button"));
-
-    expect(mockAddMutate).toHaveBeenCalledWith({
-      tmdbId: 604,
-      groupId: "group-1",
-      addedBy: "u1",
-      manualReleaseDate: "1999-03-31",
+    it("Film", async () => {
+      const AddMovieScreen = loadAddMovieScreen();
+      const { getByTestId } = await render(<AddMovieScreen />);
+      expectCenteredEmpty(getByTestId, "add-movie-film-results", "add-movie-film-grid-empty");
     });
-  });
 
-  it("duplicate warning: shows the 'Bereits gesehen' sheet with the average rating when the target group already rated this tmdbId", async () => {
-    mockUseGroupWatchlist.mockReturnValue({
-      data: {
-        entries: [
-          makeEntry({
-            id: "entry-1",
-            movie: makeMovie({ tmdb_id: 603 }),
-            ratings: [
-              { id: "r1", watchlist_entry_id: "entry-1", member_id: "u1", rating: 4, liked: false, seen_at: null, rated_at: null },
-              { id: "r2", watchlist_entry_id: "entry-1", member_id: "u2", rating: 5, liked: false, seen_at: null, rated_at: null },
-            ],
-          }),
-        ],
-        streamingAvailability: new Map(),
-      },
+    it("Regisseur", async () => {
+      const AddMovieScreen = loadAddMovieScreen();
+      const { getByTestId, queryByTestId } = await render(<AddMovieScreen />);
+      await fireEvent.press(getByTestId("add-movie-mode-regisseur"));
+      expectCenteredEmpty(getByTestId, "add-movie-person-results-area", "add-movie-person-empty");
+      // EmptyState is a direct child of the area wrapper, not inside a ScrollView.
+      expect(queryByTestId("add-movie-person-results-area-scroll")).toBeNull();
     });
-    mockUseMovieSearch.mockReturnValue(
-      emptyQueryResult({ data: [{ id: 603, title: "The Matrix", release_date: "1999-03-31" }] }),
-    );
-    const AddMovieScreen = loadAddMovieScreen();
-    const { getByTestId, getByText } = await render(<AddMovieScreen />);
 
-    await fireEvent.press(getByTestId("add-movie-film-grid-add-603"));
+    it("Besetzung", async () => {
+      const AddMovieScreen = loadAddMovieScreen();
+      const { getByTestId } = await render(<AddMovieScreen />);
+      await fireEvent.press(getByTestId("add-movie-mode-besetzung"));
+      expectCenteredEmpty(getByTestId, "add-movie-person-results-area", "add-movie-person-empty");
+    });
 
-    expect(mockAddMutate).not.toHaveBeenCalled();
-    expect(getByText("Film bereits gesehen")).toBeTruthy();
-    expect(getByText(/Ø 4\.5 Sternen/)).toBeTruthy();
+    it("Studio", async () => {
+      const AddMovieScreen = loadAddMovieScreen();
+      const { getByTestId } = await render(<AddMovieScreen />);
+      await fireEvent.press(getByTestId("add-movie-mode-studio"));
+      expectCenteredEmpty(getByTestId, "add-movie-company-results-area", "add-movie-company-empty");
+    });
 
-    await fireEvent.press(getByTestId("add-movie-duplicate-cancel-button"));
-    expect(mockAddMutate).not.toHaveBeenCalled();
-
-    await fireEvent.press(getByTestId("add-movie-film-grid-add-603"));
-    await fireEvent.press(getByTestId("add-movie-duplicate-confirm-button"));
-
-    expect(mockAddMutate).toHaveBeenCalledWith({ tmdbId: 603, groupId: "group-1", addedBy: "u1" });
+    it("result lists use a ScrollView with flex-grow content", async () => {
+      mockUsePersonSearch.mockReturnValue(emptyQueryResult({ data: [{ id: 5, name: "Jane" }] }));
+      const AddMovieScreen = loadAddMovieScreen();
+      const { getByTestId } = await render(<AddMovieScreen />);
+      await fireEvent.press(getByTestId("add-movie-mode-regisseur"));
+      const scroll = getByTestId("add-movie-person-results-area-scroll");
+      expect(scroll.props.contentContainerClassName).toContain("flex-grow");
+    });
   });
 
   it("Regisseur mode: searching, selecting a person, then rendering their (director) filmography grid", async () => {

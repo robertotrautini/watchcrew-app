@@ -22,6 +22,12 @@ describe("Icon", () => {
     }
   });
 
+  it("defines the empty-state roles search, filter and studio", () => {
+    expect(ICON_ROLES.search).toBe("search");
+    expect(ICON_ROLES.filter).toBe("filter-list");
+    expect(ICON_ROLES.studio).toBe("business");
+  });
+
   it("defines the S/M/L size tokens", () => {
     expect(ICON_SIZES).toEqual({ XS: 14, S: 16, SM: 20, M: 24, L: 40 });
   });

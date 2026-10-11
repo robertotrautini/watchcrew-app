@@ -1,40 +1,33 @@
+import { PLACEHOLDER_COLOR } from "@/lib/colors";
 import { useRouter } from "expo-router";
-import { LoadingArea } from "@/components/ui/LoadingArea";
-import { useParallaxScroll } from "@/components/parallaxContext";
 import { useState } from "react";
 import { KeyboardInsetView } from "@/components/ui/KeyboardInsetView";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Text, TextInput } from "@/components/ui/Text";
+import { LoadingArea } from "@/components/ui/LoadingArea";
+import { SearchResultsArea } from "@/components/ui/SearchResultsArea";
 
 import { MovieGrid, type MovieGridItem } from "@/components/movie/MovieGrid";
 import { Chip } from "@/components/ui/Chip";
 import { Button } from "@/components/ui/Button";
-import { DateField } from "@/components/ui/DateField";
-import { formatDateForInput } from "@/lib/ratingLogic";
-import { Sheet } from "@/components/ui/Sheet";
 import { useActorFilmography } from "@/hooks/useActorFilmography";
 import { useCompanySearch } from "@/hooks/useCompanySearch";
 import { useActiveGroup } from "@/hooks/useActiveGroup";
 import { useCurrentUserId } from "@/hooks/useCurrentUserId";
 import { useDirectorFilmography } from "@/hooks/useDirectorFilmography";
 import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useAddToWatchlist } from "@/hooks/useMovieDetailMutations";
 import { useMovieSearch } from "@/hooks/useMovieSearch";
 import { useMoviesProviders } from "@/hooks/useMoviesProviders";
 import { usePersonSearch } from "@/hooks/usePersonSearch";
 import { useStudioFilmography } from "@/hooks/useStudioFilmography";
 import {
-  findDuplicateRatedEntry,
-  formatAverageRating,
   mapMovieLikeToGridItem,
   mapSearchResultToGridItem,
-  needsManualReleaseDate,
-  type DuplicateRatingInfo,
 } from "@/lib/addMovieLogic";
 import { getLibraryBadgeForTmdbId } from "@/lib/movieLibraryStatus";
 import { filterByMyStreaming } from "@/lib/movieProviderFilter";
 import { usePreferencesStore } from "@/stores/usePreferencesStore";
-import type { TmdbCompany, TmdbMovieLike, TmdbPerson } from "@/lib/tmdbProxy";
+import type { TmdbMovieLike } from "@/lib/tmdbProxy";
 
 /**
  * Add-Movie-Modal (M7 part 2). Accessible from the Watchlist screen's "+"
@@ -47,11 +40,8 @@ import type { TmdbCompany, TmdbMovieLike, TmdbPerson } from "@/lib/tmdbProxy";
  * Tapping a result tile navigates to that movie's Detail-Overlay (matching
  * the exact pattern established in similar/[tmdbId].tsx: pass `groupId`/
  * `source`/`watchlistEntryId` when the movie is already in the active
- * group's library, per `getLibraryBadgeForTmdbId`). The actual "add to
- * watchlist" action is a separate, explicit quick-add ("+") button per tile
- * (`MovieGrid`'s `onAddItem`, M7 part 2 addition) -- an interim decision,
- * since tapping the tile itself is reserved for "view details" everywhere
- * else `MovieGrid` is used; see docs/interim-decisions.md.
+ * group's library, per `getLibraryBadgeForTmdbId`). Adding to the watchlist
+ * happens ONLY there (button in the detail), not in this screen.
  */
 
 type AddMovieMode = "film" | "regisseur" | "besetzung" | "studio";
@@ -62,16 +52,6 @@ const MODES: Array<{ key: AddMovieMode; label: string }> = [
   { key: "besetzung", label: "Besetzung" },
   { key: "studio", label: "Studio" },
 ];
-
-/**
- * "Bereits gesehen" duplicate-warning dialog copy — resolved interim
- * decision (source doc didn't specify exact wording), see
- * docs/interim-decisions.md "M7 Teil 2 — Add-Movie-Modal".
- */
-const DUPLICATE_SHEET_TITLE = "Film bereits gesehen";
-function duplicateSheetBody(info: DuplicateRatingInfo): string {
-  return `Dieser Film wurde bereits mit Ø ${formatAverageRating(info.averageRating)} Sternen bewertet. Trotzdem zur Watchlist hinzufügen?`;
-}
 
 function dedupeByTmdbId(items: TmdbMovieLike[]): TmdbMovieLike[] {
   const seen = new Set<number>();
@@ -86,7 +66,6 @@ function dedupeByTmdbId(items: TmdbMovieLike[]): TmdbMovieLike[] {
 }
 
 export default function AddMovieScreen() {
-  const parallaxScroll = useParallaxScroll();
   const router = useRouter();
 
   const currentUserId = useCurrentUserId();
@@ -101,11 +80,6 @@ export default function AddMovieScreen() {
     null,
   );
   const [streamingFilterActive, setStreamingFilterActive] = useState(false);
-
-  const [pendingItem, setPendingItem] = useState<MovieGridItem | null>(null);
-  const [manualDateInput, setManualDateInput] = useState("");
-  const [duplicateInfo, setDuplicateInfo] =
-    useState<DuplicateRatingInfo | null>(null);
 
   function handleSelectMode(nextMode: AddMovieMode) {
     setMode(nextMode);
@@ -160,9 +134,7 @@ export default function AddMovieScreen() {
     mapMovieLikeToGridItem,
   );
 
-  // --- Shared: navigation + add-to-watchlist -------------------------------
-  const addToWatchlistMutation = useAddToWatchlist();
-
+  // --- Shared: navigation ----------------------------------------------------
   function getBadge(item: MovieGridItem) {
     return getLibraryBadgeForTmdbId(
       watchlistQuery.data?.entries ?? [],
@@ -194,154 +166,9 @@ export default function AddMovieScreen() {
     }
   }
 
-  function performAdd(item: MovieGridItem) {
-    if (!activeGroupId || !currentUserId) {
-      return;
-    }
-    // M7 consolidation (Item 1, see docs/interim-decisions.md): the
-    // manually-entered release date is only ever meaningful -- and only
-    // ever forwarded -- when THIS item actually needed the manual-date
-    // fallback in the first place (`needsManualReleaseDate`). A quick-add
-    // for a movie that already has a real TMDB release date never sends
-    // `manualReleaseDate`, even if a stale value happens to still be
-    // sitting in `manualDateInput` from a previous, unrelated add.
-    const manualReleaseDate = needsManualReleaseDate(item.releaseDate)
-      ? manualDateInput.trim()
-      : undefined;
-    addToWatchlistMutation.mutate({
-      tmdbId: item.tmdbId,
-      groupId: activeGroupId,
-      addedBy: currentUserId,
-      manualReleaseDate,
-    });
-    setPendingItem(null);
-    setDuplicateInfo(null);
-    setManualDateInput("");
-  }
-
-  function proceedPastManualDate(item: MovieGridItem) {
-    const duplicate = findDuplicateRatedEntry(
-      watchlistQuery.data?.entries ?? [],
-      item.tmdbId,
-    );
-    if (duplicate) {
-      setPendingItem(item);
-      setDuplicateInfo(duplicate);
-      return;
-    }
-    performAdd(item);
-  }
-
-  function handleAddItem(item: MovieGridItem) {
-    if (needsManualReleaseDate(item.releaseDate)) {
-      setPendingItem(item);
-      setManualDateInput("");
-      return;
-    }
-    proceedPastManualDate(item);
-  }
-
-  function handleManualDateConfirm() {
-    if (!pendingItem || manualDateInput.trim().length === 0) {
-      return;
-    }
-    proceedPastManualDate(pendingItem);
-  }
-
-  function handleDuplicateCancel() {
-    setPendingItem(null);
-    setDuplicateInfo(null);
-  }
-
-  function handleDuplicateConfirm() {
-    if (pendingItem) {
-      performAdd(pendingItem);
-    }
-  }
-
-  const manualDateSheetVisible =
-    pendingItem != null &&
-    duplicateInfo == null &&
-    needsManualReleaseDate(pendingItem.releaseDate);
-  const duplicateSheetVisible = pendingItem != null && duplicateInfo != null;
-
-  function renderPersonResults(
-    results: TmdbPerson[] | null | undefined,
-    isLoading: boolean,
-    isError: boolean,
-  ) {
-    if (isLoading) {
-      return <LoadingArea className="min-h-32 w-full" testID="add-movie-person-loading" />;
-    }
-    if (isError) {
-      return (
-        <Text testID="add-movie-person-error" className="text-danger">
-          Personensuche fehlgeschlagen.
-        </Text>
-      );
-    }
-    if (!results || results.length === 0) {
-      return (
-        <Text testID="add-movie-person-empty" className="text-text-secondary">
-          Keine Personen gefunden.
-        </Text>
-      );
-    }
-    return (
-      <View testID="add-movie-person-results">
-        {results.map((person, index) => (
-          <Pressable
-            key={person.id}
-            testID={`add-movie-person-result-${person.id}`}
-            accessibilityRole="button"
-            onPress={() => setSelectedPersonId(person.id)}
-            className={`py-3 ${index < results.length - 1 ? "border-b border-border-subtle" : ""}`}
-          >
-            <Text className="text-text-primary">{person.name}</Text>
-          </Pressable>
-        ))}
-      </View>
-    );
-  }
-
-  function renderCompanyResults(
-    results: TmdbCompany[] | null | undefined,
-    isLoading: boolean,
-    isError: boolean,
-  ) {
-    if (isLoading) {
-      return <LoadingArea className="min-h-32 w-full" testID="add-movie-company-loading" />;
-    }
-    if (isError) {
-      return (
-        <Text testID="add-movie-company-error" className="text-danger">
-          Studiosuche fehlgeschlagen.
-        </Text>
-      );
-    }
-    if (!results || results.length === 0) {
-      return (
-        <Text testID="add-movie-company-empty" className="text-text-secondary">
-          Keine Studios gefunden.
-        </Text>
-      );
-    }
-    return (
-      <View testID="add-movie-company-results">
-        {results.map((company, index) => (
-          <Pressable
-            key={company.id}
-            testID={`add-movie-company-result-${company.id}`}
-            accessibilityRole="button"
-            onPress={() => setSelectedCompanyId(company.id)}
-            className={`py-3 ${index < results.length - 1 ? "border-b border-border-subtle" : ""}`}
-          >
-            <Text className="text-text-primary">{company.name}</Text>
-          </Pressable>
-        ))}
-      </View>
-    );
-  }
+  const personResults = personSearchQuery.data ?? [];
+  const companyResults = companySearchQuery.data ?? [];
+  const noQuery = query.trim().length === 0;
 
   return (
     <KeyboardInsetView testID="add-movie-screen" className="px-4 pt-4">
@@ -365,7 +192,7 @@ export default function AddMovieScreen() {
               testID="add-movie-film-search-input"
               className="flex-1 rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
               placeholder="Filmtitel suchen…"
-              placeholderTextColor="#888888"
+              placeholderTextColor={PLACEHOLDER_COLOR}
               value={query}
               onChangeText={setQuery}
             />
@@ -379,28 +206,25 @@ export default function AddMovieScreen() {
             textClassName="text-xs"
           />
 
-          <View className="mt-3 flex-1">
-            {movieSearchQuery.isLoading ? (
-              <LoadingArea className="min-h-32 w-full" testID="add-movie-film-loading" />
-            ) : movieSearchQuery.isError ? (
-              <Text testID="add-movie-film-error" className="text-danger">
-                Filmsuche fehlgeschlagen.
-              </Text>
-            ) : (
-              <MovieGrid
-                items={filmItems}
-                onPressItem={handlePressItem}
-                onAddItem={handleAddItem}
-                getBadge={getBadge}
-                testID="add-movie-film-grid"
-                emptyMessage={
-                  query.trim().length === 0
-                    ? "Suche nach einem Filmtitel."
-                    : "Keine Filme gefunden."
-                }
-              />
-            )}
-          </View>
+          <SearchResultsArea
+            testID="add-movie-film-results"
+            isLoading={movieSearchQuery.isLoading}
+            loadingTestID="add-movie-film-loading"
+            isError={movieSearchQuery.isError}
+            errorTestID="add-movie-film-error"
+            errorMessage="Filmsuche fehlgeschlagen."
+            isEmpty={filmItems.length === 0}
+            emptyTestID="add-movie-film-grid-empty"
+            emptyIcon="film"
+            emptyTitle={noQuery ? "Suche nach einem Filmtitel" : "Keine Filme gefunden"}
+          >
+            <MovieGrid
+              items={filmItems}
+              onPressItem={handlePressItem}
+              getBadge={getBadge}
+              testID="add-movie-film-grid"
+            />
+          </SearchResultsArea>
         </>
       ) : null}
 
@@ -416,21 +240,37 @@ export default function AddMovieScreen() {
                     ? "Regisseur suchen…"
                     : "Schauspieler suchen…"
                 }
-                placeholderTextColor="#888888"
+                placeholderTextColor={PLACEHOLDER_COLOR}
                 value={query}
                 onChangeText={setQuery}
               />
-              <ScrollView
-                {...parallaxScroll}
-                className="mt-3"
-                keyboardShouldPersistTaps="handled"
+              <SearchResultsArea
+                testID="add-movie-person-results-area"
+                scroll
+                isLoading={personSearchQuery.isLoading}
+                loadingTestID="add-movie-person-loading"
+                isError={personSearchQuery.isError}
+                errorTestID="add-movie-person-error"
+                errorMessage="Personensuche fehlgeschlagen."
+                isEmpty={personResults.length === 0}
+                emptyTestID="add-movie-person-empty"
+                emptyIcon="person"
+                emptyTitle={noQuery ? "Suche nach einem Namen" : "Keine Personen gefunden"}
               >
-                {renderPersonResults(
-                  personSearchQuery.data,
-                  personSearchQuery.isLoading,
-                  personSearchQuery.isError,
-                )}
-              </ScrollView>
+                <View testID="add-movie-person-results">
+                  {personResults.map((person, index) => (
+                    <Pressable
+                      key={person.id}
+                      testID={`add-movie-person-result-${person.id}`}
+                      accessibilityRole="button"
+                      onPress={() => setSelectedPersonId(person.id)}
+                      className={`py-3 ${index < personResults.length - 1 ? "border-b border-border-subtle" : ""}`}
+                    >
+                      <Text className="text-text-primary">{person.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </SearchResultsArea>
             </>
           ) : (
             <>
@@ -455,10 +295,9 @@ export default function AddMovieScreen() {
                   <MovieGrid
                     items={personItems}
                     onPressItem={handlePressItem}
-                    onAddItem={handleAddItem}
-                    getBadge={getBadge}
+                        getBadge={getBadge}
                     testID="add-movie-person-grid"
-                    emptyMessage="Keine Filme gefunden."
+                    emptyMessage="Keine Filme gefunden"
                   />
                 )}
               </View>
@@ -475,21 +314,37 @@ export default function AddMovieScreen() {
                 testID="add-movie-company-search-input"
                 className="rounded-lg border border-accent bg-card px-3 py-3 text-text-primary"
                 placeholder="Studio suchen…"
-                placeholderTextColor="#888888"
+                placeholderTextColor={PLACEHOLDER_COLOR}
                 value={query}
                 onChangeText={setQuery}
               />
-              <ScrollView
-                {...parallaxScroll}
-                className="mt-3"
-                keyboardShouldPersistTaps="handled"
+              <SearchResultsArea
+                testID="add-movie-company-results-area"
+                scroll
+                isLoading={companySearchQuery.isLoading}
+                loadingTestID="add-movie-company-loading"
+                isError={companySearchQuery.isError}
+                errorTestID="add-movie-company-error"
+                errorMessage="Studiosuche fehlgeschlagen."
+                isEmpty={companyResults.length === 0}
+                emptyTestID="add-movie-company-empty"
+                emptyIcon="studio"
+                emptyTitle={noQuery ? "Suche nach einem Studio" : "Keine Studios gefunden"}
               >
-                {renderCompanyResults(
-                  companySearchQuery.data,
-                  companySearchQuery.isLoading,
-                  companySearchQuery.isError,
-                )}
-              </ScrollView>
+                <View testID="add-movie-company-results">
+                  {companyResults.map((company, index) => (
+                    <Pressable
+                      key={company.id}
+                      testID={`add-movie-company-result-${company.id}`}
+                      accessibilityRole="button"
+                      onPress={() => setSelectedCompanyId(company.id)}
+                      className={`py-3 ${index < companyResults.length - 1 ? "border-b border-border-subtle" : ""}`}
+                    >
+                      <Text className="text-text-primary">{company.name}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </SearchResultsArea>
             </>
           ) : (
             <>
@@ -511,10 +366,9 @@ export default function AddMovieScreen() {
                   <MovieGrid
                     items={studioItems}
                     onPressItem={handlePressItem}
-                    onAddItem={handleAddItem}
-                    getBadge={getBadge}
+                        getBadge={getBadge}
                     testID="add-movie-studio-grid"
-                    emptyMessage="Keine Filme gefunden."
+                    emptyMessage="Keine Filme gefunden"
                     footer={
                       studioFilmographyQuery.hasNextPage ? (
                         <View className="items-center py-4">
@@ -539,69 +393,6 @@ export default function AddMovieScreen() {
           )}
         </View>
       ) : null}
-
-      {/*
-        Manual-date fallback (per the task spec): a selected movie with no
-        TMDB release_date needs a manual date entered before the add can
-        proceed. M7 consolidation (Item 1, see docs/interim-decisions.md):
-        the FORMERLY-flagged gap is now resolved -- the entered value is
-        forwarded as `manualReleaseDate` to `addToWatchlist`/`upsertMovie`
-        (see `performAdd` above), which only ever fills a genuine TMDB gap
-        server-side and never overrides real TMDB data.
-      */}
-      <Sheet
-        visible={manualDateSheetVisible}
-        onClose={() => setPendingItem(null)}
-        title="Erscheinungsdatum fehlt"
-      >
-        <Text className="mb-3 text-text-primary">
-          Für &quot;{pendingItem?.title}&quot; ist kein Erscheinungsdatum bekannt. Bitte
-          gib eins ein, um fortzufahren.
-        </Text>
-        <DateField
-          testID="add-movie-manual-date-input"
-          className="mb-3"
-          valueIso={manualDateInput || null}
-          displayText={formatDateForInput(manualDateInput)}
-          placeholder="Datum wählen"
-          onChangeIso={setManualDateInput}
-        />
-        <Button
-          testID="add-movie-manual-date-confirm-button"
-          label="Weiter"
-          icon="next"
-          disabled={manualDateInput.trim().length === 0}
-          onPress={handleManualDateConfirm}
-        />
-      </Sheet>
-
-      <Sheet
-        visible={duplicateSheetVisible}
-        onClose={handleDuplicateCancel}
-        title={DUPLICATE_SHEET_TITLE}
-      >
-        <Text className="mb-4 text-text-primary">
-          {duplicateInfo ? duplicateSheetBody(duplicateInfo) : ""}
-        </Text>
-        <View className="flex-row gap-2">
-          <Button
-            testID="add-movie-duplicate-cancel-button"
-            label="Abbrechen"
-            icon="close"
-            variant="secondary"
-            className="flex-1"
-            onPress={handleDuplicateCancel}
-          />
-          <Button
-            testID="add-movie-duplicate-confirm-button"
-            label="Trotzdem hinzufügen"
-            icon="add"
-            className="flex-1"
-            loading={addToWatchlistMutation.isPending}
-            onPress={handleDuplicateConfirm}
-          />
-        </View>
-      </Sheet>
     </KeyboardInsetView>
   );
 }

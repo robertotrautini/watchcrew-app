@@ -10,7 +10,7 @@ import { queryKeys } from "@/lib/queryKeys";
  * decision: 300ms (between the two given values), logged in
  * docs/interim-decisions.md.
  */
-export const COMPANY_SEARCH_DEBOUNCE_MS = 300;
+const COMPANY_SEARCH_DEBOUNCE_MS = 300;
 
 /**
  * Add-Movie-Modal Studio mode (M7 part 2): debounced production-company

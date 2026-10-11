@@ -59,6 +59,9 @@ export const ICON_ROLES = {
   bookmarkEmpty: "bookmark-border",
   watched: "visibility",
   person: "person",
+  search: "search",
+  filter: "filter-list",
+  studio: "business",
   checkboxOn: "check-box",
   checkboxOff: "check-box-outline-blank",
   // view modes
