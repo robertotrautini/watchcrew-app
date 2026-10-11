@@ -70,7 +70,7 @@ export const PANEL_LIST_OVERLAP_CLASSNAME = "-mt-3";
  * Visible air between panel bottom and first row at scroll position 0 (dp) is
  * EXACTLY the vertical gap between two rows of the same view: cards/list 12
  * (`h-3`/`gap-3`, = panel top margin `mt-3`), poster grid 8 (`h-2`/`gap-2`).
- * Keep these in sync with the row separators in Tagebuch/WatchlistEntryList.
+ * Keep these in sync with the row gaps in entries/EntryList.
  */
 export const PANEL_LIST_START_GAP = 12;
 export const PANEL_LIST_GRID_START_GAP = 8;

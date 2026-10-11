@@ -1,11 +1,9 @@
 import { memo } from "react";
-import { useParallaxScroll } from "@/components/parallaxContext";
-import { FlatList, View } from "react-native";
+import { EntryList } from "@/components/entries/EntryList";
 import { Text } from "@/components/ui/Text";
 
 import { WatchlistPosterCard } from "@/components/movie/WatchlistPosterCard";
 import { FadeInItem } from "@/components/ui/FadeInItem";
-import { useSortRemountKey } from "@/hooks/useSortRemountKey";
 import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
   DataTableHeader,
@@ -17,12 +15,6 @@ import {
 import type { SortState } from "@/lib/entrySorting";
 import { formatPlainDate } from "@/lib/dateFormat";
 import {
-  isGridPlaceholder,
-  GRID_COLUMN_WRAPPER_STYLE,
-  padToFullRows,
-  type GridPlaceholder,
-} from "@/lib/gridPadding";
-import {
   getEffectiveReleaseDate,
   withEffectiveReleaseDate,
 } from "@/lib/watchlistLogic";
@@ -30,29 +22,11 @@ import type {
   StreamingAvailabilityLookup,
   WatchlistEntry,
 } from "@/lib/watchlistTypes";
-import { usePreferencesStore, type WatchlistViewMode } from "@/stores/usePreferencesStore";
-import {
-  PANEL_LIST_CONTENT_PT_CLASSNAME,
-  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
-} from "@/components/ui/Surface";
+import type { WatchlistViewMode } from "@/stores/usePreferencesStore";
 
 function ratedCountFor(entry: WatchlistEntry): number {
   return entry.ratings.filter((r) => r.rating != null && r.rating > 0).length;
 }
-
-/**
- * Virtualization tuning shared by all modes (counts are rows, not items).
- * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
- * too heavy. Cards/rows use the flat surface (no blur), which is
- * what makes a wider window affordable; clipping stays off (blanks on Android).
- * See docs/performance-scroll-analysis.md "Nachtrag 2".
- */
-const VIRTUALIZATION = {
-  windowSize: 9,
-  maxToRenderPerBatch: 6,
-  updateCellsBatchingPeriod: 30,
-  removeClippedSubviews: false,
-} as const;
 
 /**
  * Row components are memoized and take stable props (entry object, shared
@@ -144,16 +118,6 @@ const WatchlistPosterRow = memo(function WatchlistPosterRow({
   );
 }, propsEqualIgnoringIndex);
 
-const GRID_PLACEHOLDER = <View className="flex-1" />;
-
-function keyOfListEntry(entry: WatchlistEntry): string {
-  return entry.id;
-}
-
-function keyOfGridEntry(entry: WatchlistEntry | GridPlaceholder): string {
-  return isGridPlaceholder(entry) ? entry.key : entry.id;
-}
-
 export function WatchlistEntryList({
   entries,
   viewMode,
@@ -172,68 +136,33 @@ export function WatchlistEntryList({
   /** The one active sort (set in the panel); only drives the remount key. */
   sort: SortState;
 }) {
-  const parallaxScroll = useParallaxScroll();
-  const gridColumns = usePreferencesStore((s) => s.gridColumnsDiaryWatchlist);
-  const { listKey: sortKey, skipFade } = useSortRemountKey(viewMode, sort);
-  // numColumns cannot change on a mounted FlatList: remount on column change.
-  const listKey = viewMode === "grid" ? `${sortKey}-c${gridColumns}` : sortKey;
-
-  if (viewMode === "list") {
-    return (
-      <FlatList
-        {...parallaxScroll}
-        key={listKey}
-        testID="watchlist-list"
-        data={entries}
-        keyExtractor={keyOfListEntry}
-        ListHeaderComponent={<WatchlistListHeader />}
-        contentContainerClassName={`px-4 pb-3 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
-        initialNumToRender={20}
-        {...VIRTUALIZATION}
-        renderItem={({ item, index }) => (
-          <WatchlistListRow
-            item={item}
-            isLast={index === entries.length - 1}
-            onOpenEntry={onOpenEntry}
-          />
-        )}
-      />
-    );
-  }
-
-  const isGrid = viewMode === "grid";
   return (
-    <FlatList
-      {...parallaxScroll}
-      testID="watchlist-grid-or-cards"
-      key={listKey}
-      data={padToFullRows(entries, isGrid ? gridColumns : 1)}
-      keyExtractor={keyOfGridEntry}
-      numColumns={isGrid ? gridColumns : 1}
-      contentContainerClassName={
-        isGrid
-          ? `px-4 ${PANEL_LIST_GRID_CONTENT_PT_CLASSNAME} gap-2`
-          : `px-4 ${PANEL_LIST_CONTENT_PT_CLASSNAME} gap-3`
-      }
-      columnWrapperStyle={isGrid ? GRID_COLUMN_WRAPPER_STYLE : undefined}
-      initialNumToRender={isGrid ? 12 : 8}
-      {...VIRTUALIZATION}
-      renderItem={({ item, index }) =>
-        isGridPlaceholder(item) ? (
-          GRID_PLACEHOLDER
-        ) : (
-          <WatchlistPosterRow
-            item={item}
-            index={index}
-            skipFade={skipFade}
-            isGrid={isGrid}
-            streamingAvailability={streamingAvailability}
-            totalMembers={totalMembers}
-            showTitlesInGrid={showTitlesInGrid}
-            onOpenEntry={onOpenEntry}
-          />
-        )
-      }
+    <EntryList
+      entries={entries}
+      mode={viewMode}
+      sort={sort}
+      listTestID="watchlist-list"
+      postersTestID="watchlist-grid-or-cards"
+      tableHeader={<WatchlistListHeader />}
+      renderTableRow={(item, isLast) => (
+        <WatchlistListRow
+          item={item}
+          isLast={isLast}
+          onOpenEntry={onOpenEntry}
+        />
+      )}
+      renderPoster={(item, { index, isGrid, skipFade }) => (
+        <WatchlistPosterRow
+          item={item}
+          index={index}
+          skipFade={skipFade}
+          isGrid={isGrid}
+          streamingAvailability={streamingAvailability}
+          totalMembers={totalMembers}
+          showTitlesInGrid={showTitlesInGrid}
+          onOpenEntry={onOpenEntry}
+        />
+      )}
     />
   );
 }

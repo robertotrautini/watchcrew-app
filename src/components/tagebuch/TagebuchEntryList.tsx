@@ -1,14 +1,13 @@
 import { LIKE_HEART_COLOR } from "@/lib/colors";
 import { MOVIE_TITLE_TEXT } from "@/components/ui/movieTitle";
 import { memo, useMemo } from "react";
-import { FlatList, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Text } from "@/components/ui/Text";
 
 import { DiaryEntryCard } from "@/components/movie/DiaryEntryCard";
 import { DiaryPosterTile } from "@/components/movie/DiaryPosterTile";
-import { useParallaxScroll } from "@/components/parallaxContext";
+import { EntryList } from "@/components/entries/EntryList";
 import { FadeInItem } from "@/components/ui/FadeInItem";
-import { useSortRemountKey } from "@/hooks/useSortRemountKey";
 import { propsEqualIgnoringIndex } from "@/lib/memoCompare";
 import {
   DataTableHeader,
@@ -23,16 +22,11 @@ import {
 import { Icon } from "@/components/ui/Icon";
 import { TmdbBadge } from "@/components/ui/TmdbBadge";
 import type { SortState } from "@/lib/entrySorting";
-import { GRID_COLUMN_WRAPPER_STYLE, isGridPlaceholder, padToFullRows, type GridPlaceholder } from "@/lib/gridPadding";
 import { formatPlainDate } from "@/lib/dateFormat";
 import { computeAverageRating, memberDisplayLabel } from "@/lib/diaryDisplay";
 import { buildTmdbImageUrl } from "@/lib/tmdbImage";
 import type { WatchlistEntry } from "@/lib/watchlistTypes";
-import { usePreferencesStore, type DiaryViewMode } from "@/stores/usePreferencesStore";
-import {
-  PANEL_LIST_CONTENT_PT_CLASSNAME,
-  PANEL_LIST_GRID_CONTENT_PT_CLASSNAME,
-} from "@/components/ui/Surface";
+import type { DiaryViewMode } from "@/stores/usePreferencesStore";
 
 /**
  * Virtualized Tagebuch list (FlatList): only the rows near the viewport are
@@ -52,40 +46,6 @@ export interface TagebuchEntryListProps {
   onOpenEntry: (entry: WatchlistEntry) => void;
   /** The one active sort (set in the panel); only drives the remount key. */
   sort: SortState;
-}
-
-/**
- * Virtualization tuning shared by all modes (counts are rows, not items).
- * Middle ground (9/6/30 ms): 7/5/clipped blanked on fast flings, 11/8/25 was
- * too heavy. Cards/rows use the flat surface (no blur), which is
- * what makes a wider window affordable; clipping stays off (blanks on Android).
- * See docs/performance-scroll-analysis.md "Nachtrag 2".
- */
-const VIRTUALIZATION = {
-  windowSize: 9,
-  maxToRenderPerBatch: 6,
-  updateCellsBatchingPeriod: 30,
-  removeClippedSubviews: false,
-} as const;
-
-function keyOf(entry: WatchlistEntry): string {
-  return entry.id;
-}
-
-function keyOfGridItem(item: WatchlistEntry | GridPlaceholder): string {
-  return isGridPlaceholder(item) ? item.key : item.id;
-}
-
-/** Invisible cell completing the last grid row so tiles keep 1/3 width. */
-const GRID_PLACEHOLDER = <View className="flex-1" />;
-
-/** Row gap of the 4-column grid, equal to the column gap (gap-2). */
-function GridSeparator() {
-  return <View className="h-2" />;
-}
-
-function ItemSeparator() {
-  return <View className="h-3" />;
 }
 
 function findOwnRating(entry: WatchlistEntry, userId: string | undefined) {
@@ -301,94 +261,45 @@ export function TagebuchEntryList({
   onOpenEntry,
   sort,
 }: TagebuchEntryListProps) {
-  // Empty today (see parallaxContext); kept so any future scroll handler is
-  // spread onto the list unchanged (must stay a UI-thread worklet handler).
-  const parallaxScroll = useParallaxScroll();
-  const gridColumns = usePreferencesStore((s) => s.gridColumnsDiaryWatchlist);
-  const { listKey: sortKey, skipFade } = useSortRemountKey(mode, sort);
-  // numColumns cannot change on a mounted FlatList: remount on column change.
-  const listKey = mode === "grid" ? `${sortKey}-c${gridColumns}` : sortKey;
-
-  if (mode === "grid") {
-    return (
-      <FlatList
-        {...parallaxScroll}
-        key={listKey}
-        testID="tagebuch-entry-list"
-        data={padToFullRows(entries, gridColumns)}
-        keyExtractor={keyOfGridItem}
-        numColumns={gridColumns}
-        columnWrapperStyle={GRID_COLUMN_WRAPPER_STYLE}
-        ItemSeparatorComponent={GridSeparator}
-        contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_GRID_CONTENT_PT_CLASSNAME}`}
-        initialNumToRender={12}
-        {...VIRTUALIZATION}
-        renderItem={({ item, index }) =>
-          isGridPlaceholder(item) ? (
-            GRID_PLACEHOLDER
-          ) : (
-            <GridRow
-              entry={item}
-              index={index}
-              skipFade={skipFade}
-              userId={userId}
-              starColor={starColor}
-              showTitlesInGrid={showTitlesInGrid}
-              onOpenEntry={onOpenEntry}
-            />
-          )
-        }
-      />
-    );
-  }
-
-  if (mode === "list") {
-    return (
-      <FlatList
-        {...parallaxScroll}
-        key={listKey}
-        testID="tagebuch-entry-list"
-        data={entries}
-        keyExtractor={keyOf}
-        ListHeaderComponent={<ListHeader starColor={starColor} />}
-        contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
-        initialNumToRender={20}
-        {...VIRTUALIZATION}
-        renderItem={({ item, index }) => (
-          <ListRow
-            entry={item}
-            isLast={index === entries.length - 1}
-            userId={userId}
-            onOpenEntry={onOpenEntry}
-          />
-        )}
-      />
-    );
-  }
-
   return (
-    <FlatList
-      {...parallaxScroll}
-      key={listKey}
-      testID="tagebuch-entry-list"
-      data={entries}
-      keyExtractor={keyOf}
-      ItemSeparatorComponent={ItemSeparator}
-      contentContainerClassName={`px-4 pb-8 ${PANEL_LIST_CONTENT_PT_CLASSNAME}`}
-      initialNumToRender={8}
-      {...VIRTUALIZATION}
-      renderItem={({ item, index }) => (
-        <CardRow
-          entry={item}
-          index={index}
-          skipFade={skipFade}
+    <EntryList
+      entries={entries}
+      mode={mode}
+      sort={sort}
+      listTestID="tagebuch-entry-list"
+      tableHeader={<ListHeader starColor={starColor} />}
+      renderTableRow={(entry, isLast) => (
+        <ListRow
+          entry={entry}
+          isLast={isLast}
           userId={userId}
-          starColor={starColor}
-          groupMemberIds={groupMemberIds}
-          displayNameById={displayNameById}
           onOpenEntry={onOpenEntry}
         />
       )}
+      renderPoster={(entry, { index, isGrid, skipFade }) =>
+        isGrid ? (
+          <GridRow
+            entry={entry}
+            index={index}
+            skipFade={skipFade}
+            userId={userId}
+            starColor={starColor}
+            showTitlesInGrid={showTitlesInGrid}
+            onOpenEntry={onOpenEntry}
+          />
+        ) : (
+          <CardRow
+            entry={entry}
+            index={index}
+            skipFade={skipFade}
+            userId={userId}
+            starColor={starColor}
+            groupMemberIds={groupMemberIds}
+            displayNameById={displayNameById}
+            onOpenEntry={onOpenEntry}
+          />
+        )
+      }
     />
   );
 }

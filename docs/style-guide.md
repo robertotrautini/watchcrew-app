@@ -217,6 +217,8 @@ Spalten: Tracker Film | Bezahlt von | Datum; Watchlist Film | Erscheint; Tagebuc
 
 **Statische Spaltenkoepfe:** Die Kopfzeile der Listenansichten (Tagebuch: Film | Herz | Stern | TMDB-Logo; Watchlist: Film | Erscheint) ist eine einzige statische Zeile ohne Pressables, ohne Sortierung und ohne Chevrons; sortiert wird ausschliesslich ueber die Sortierzeile des Panels. Icon-Zellen `h-5` mit Label (`accessibilityLabel`). Regel: Kopf- und Datenzelle einer Spalte nutzen dieselbe Breitenkonstante (`TABLE_ICON_CELL` w-12, `TABLE_SCORE_STRONG_CELL` w-12, `TABLE_SCORE_CELL` w-16), Inhalt zentriert. Kopf-Icons `SM` (20), TMDB-Logo `largeLogo` (36x16). testIDs: `<p>-table-header`, `<p>-table-header-<title|like|average|tmdb|release>`.
 
+**Gemeinsame Listen-Basis (Tagebuch + Watchlist):** Beide Tabs nutzen `EntryList` (`src/components/entries/EntryList.tsx`) mit Renderer-Props je Modus (Karten, Raster, Tabelle); die Zeilenkomponenten bleiben je Tab (`TagebuchEntryList`/`WatchlistEntryList` als duenne Huellen). `EntryList` besitzt: die EINE `VIRTUALIZATION`-Konstante, Remount-Key (`useSortRemountKey` + Spaltenzahl `-c<n>`), Spaltenzahl-Store, Platzhalterzellen und das Padding (`px-4` + `PANEL_LIST_CONTENT_PT_CLASSNAME`/`PANEL_LIST_GRID_CONTENT_PT_CLASSNAME`; Karten `gap-3`, Raster `gap-2`, Tabelle `pb-3`; KEINE `ItemSeparatorComponent`). Zustaende (Laden, Fehler in `text-danger` mit `px-4`, Streaming-Laden, Leer, Keine Treffer, Listen-Container mit `PANEL_LIST_OVERLAP_CLASSNAME`) kommen aus `EntryScreenFrame`; der View-State aus `useEntryScreen` (Strategie je Tab: Datenquelle, Filterfunktion, Optionsmengen, Navigation).
+
 
 ## Schriften (Fonts)
 

@@ -1,83 +1,44 @@
-import { useRouter } from "expo-router";
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
 
 import { useGroupTheme } from "@/components/GroupThemeProvider";
-import { useActiveGroup } from "@/hooks/useActiveGroup";
-import { useCurrentUserId } from "@/hooks/useCurrentUserId";
-import { useEntryFilters } from "@/hooks/useEntryFilters";
-import { useGroupMembers } from "@/hooks/useGroupMembers";
-import { useGroupRealtimeSync } from "@/hooks/useGroupRealtimeSync";
-import { useGroupWatchlist } from "@/hooks/useGroupWatchlist";
-import { useMyDiary } from "@/hooks/useMyDiary";
-import { useMyStreamingProviders } from "@/hooks/useMyStreamingProviders";
-import { useOwnProfile } from "@/hooks/useOwnProfile";
-import { useRegisterFocusedGroupScreen } from "@/hooks/useRegisterFocusedGroupScreen";
 import {
-  deriveGenreNamesById,
-  deriveGroupMemberIds,
-} from "@/lib/diaryDisplay";
+  useEntryScreen,
+  type EntryScreenStrategy,
+  type EntrySourceContext,
+} from "@/hooks/useEntryScreen";
+import { useMyDiary } from "@/hooks/useMyDiary";
+import { useOwnProfile } from "@/hooks/useOwnProfile";
+import { deriveGroupMemberIds } from "@/lib/diaryDisplay";
 import { filterDiary, selectDiaryScope } from "@/lib/entryFiltering";
 import { deriveSeenYears, getDistinctGenreIds } from "@/lib/entryFilters";
-import { sortEntries } from "@/lib/entrySorting";
 import {
   navigateToMovieDetail,
   navigateToMovieDetailWithoutGroup,
 } from "@/lib/movieDetailNavigation";
-import { searchEntries } from "@/lib/watchlistLogic";
-import { DEFAULT_ENTRY_FILTERS, type EntryFilters } from "@/lib/listFilters";
-import type { WatchlistEntry } from "@/lib/watchlistTypes";
-import { usePreferencesStore } from "@/stores/usePreferencesStore";
+import { DEFAULT_ENTRY_FILTERS } from "@/lib/listFilters";
 
 /**
- * View state of the Tagebuch (diary) tab: data queries, scope/filter/sort/
- * search state and the derived entry lists. Pipeline: scope (Mein Tagebuch /
- * Gruppe) -> filters (all AND) -> fuzzy search -> sort. The rules live in
- * src/lib/entryFiltering.ts, entrySorting.ts and watchlistLogic.ts and are
- * consumed here, never reimplemented.
- *
- * Member roster: real members (`useGroupMembers`) unioned with rating authors
- * (`deriveGroupMemberIds`); display names come from the joined profiles, with
- * `memberDisplayLabel` falling back to a uuid-prefix placeholder. Genre names
- * come from `deriveGenreNamesById`. Active group: `useActiveGroup`; star
- * colour: `useGroupTheme()` (active group's theme).
+ * Tagebuch strategy for `useEntryScreen`. Scope (Mein Tagebuch / Gruppe) picks
+ * the data source: "Mein Tagebuch" (Phase 5, ADR 0014) = all my rated/seen
+ * movies across ALL groups (+ movies in no group), independent of the active
+ * group's entries; "Gruppe" = the active group's rated entries. Member roster:
+ * real members unioned with rating authors (`deriveGroupMemberIds`).
  */
-export function useTagebuchScreen() {
-  const router = useRouter();
-  const userId = useCurrentUserId();
-  const { activeGroupId, groupsQuery } = useActiveGroup(userId);
-
-  // M10 realtime sync + focused-screen registration, same as the Watchlist.
-  useGroupRealtimeSync(activeGroupId);
-  useRegisterFocusedGroupScreen(activeGroupId);
-
-  const watchlistQuery = useGroupWatchlist(activeGroupId);
-  const groupMembersQuery = useGroupMembers(activeGroupId);
-  // Phase 5 (ADR 0014): "Mein Tagebuch" = all my rated/seen movies across ALL
-  // groups (+ movies in no group), independent of the active group's entries.
+function useDiarySource({
+  userId,
+  activeGroupId,
+  scope,
+  rawEntries,
+  groupsQuery,
+  watchlistQuery,
+  groupMembersQuery,
+}: EntrySourceContext) {
   const myDiaryQuery = useMyDiary(userId);
-  const ownProfileQuery = useOwnProfile(userId);
-
-  const diaryViewMode = usePreferencesStore((s) => s.diaryViewMode);
-  const setDiaryViewMode = usePreferencesStore((s) => s.setDiaryViewMode);
-  // M10: "Filmtitel in Grid anzeigen" adds a title below the poster tile in
-  // grid mode (docs/interim-decisions.md "M10 — Settings hub").
-  const showTitlesInGrid = usePreferencesStore((s) => s.showTitlesInGrid);
-
-  const filters = useEntryFilters("diary");
-  const { sort, scope } = filters;
-
-  const starColor = useGroupTheme().colors.starColor;
-
-  const rawEntries = useMemo(
-    () => watchlistQuery.data?.entries ?? [],
-    [watchlistQuery.data],
-  );
-
+  const isMyDiaryScope = scope === "my_diary";
   const myDiaryEntries = useMemo(
     () => myDiaryQuery.data ?? [],
     [myDiaryQuery.data],
   );
-  const isMyDiaryScope = scope === "my_diary";
 
   const groupMemberIds = useMemo(
     () =>
@@ -89,10 +50,99 @@ export function useTagebuchScreen() {
           ),
     [isMyDiaryScope, userId, rawEntries, groupMembersQuery.data],
   );
+  const extra = useMemo(() => ({ groupMemberIds }), [groupMemberIds]);
+
+  const entries = useMemo(() => {
+    if (!userId) return [];
+    return isMyDiaryScope
+      ? myDiaryEntries
+      : selectDiaryScope(rawEntries, "group", userId);
+  }, [isMyDiaryScope, myDiaryEntries, rawEntries, userId]);
+
+  return {
+    entries,
+    extra,
+    isLoading:
+      !userId ||
+      groupsQuery.isLoading ||
+      (isMyDiaryScope && myDiaryQuery.isLoading) ||
+      (!!activeGroupId &&
+        (watchlistQuery.isLoading || groupMembersQuery.isLoading)),
+    isError:
+      groupsQuery.isError ||
+      watchlistQuery.isError ||
+      groupMembersQuery.isError ||
+      (isMyDiaryScope && myDiaryQuery.isError),
+  };
+}
+
+const DIARY_STRATEGY: EntryScreenStrategy<{ groupMemberIds: string[] }> = {
+  tab: "diary",
+  useSource: useDiarySource,
+  // "Alle bewertet" / "Fehlt noch" only make sense for the group view; a
+  // stored choice stays saved but is neither applied nor shown in "Mein Tagebuch".
+  activeFilters: (filters, scope) =>
+    scope === "my_diary"
+      ? {
+          ...filters,
+          allRated: DEFAULT_ENTRY_FILTERS.allRated,
+          missing: DEFAULT_ENTRY_FILTERS.missing,
+        }
+      : filters,
+  filter: (entries, filters, ctx) =>
+    filterDiary(entries, filters, {
+      userId: ctx.userId,
+      groupMemberIds: ctx.extra.groupMemberIds,
+      providersByTmdbId: ctx.providersByTmdbId,
+      myProviderIds: ctx.myProviderIds,
+    }),
+  deriveOptions: (entries, userId) => {
+    const { years, hasNoDate } = deriveSeenYears(entries, userId);
+    return { genreIds: getDistinctGenreIds(entries, true), years, hasNoDate };
+  },
+  openEntry: (entry, { router, activeGroupId, rawEntries, scope }) => {
+    // "Mein Tagebuch" items are synthetic: open in the active group's context
+    // when the movie lies there, else without any group context.
+    const isMyDiaryScope = scope === "my_diary";
+    const groupEntry = isMyDiaryScope
+      ? rawEntries.find((e) => e.movie_id === entry.movie_id)
+      : entry;
+    if (!activeGroupId || !groupEntry) {
+      if (isMyDiaryScope) {
+        navigateToMovieDetailWithoutGroup(
+          router,
+          entry.movie.tmdb_id,
+          entry.movie,
+        );
+      }
+      return;
+    }
+    navigateToMovieDetail(router, {
+      tmdbId: entry.movie.tmdb_id,
+      groupId: activeGroupId,
+      source: "diary",
+      watchlistEntryId: groupEntry.id,
+    });
+  },
+};
+
+/**
+ * View state of the Tagebuch (diary) tab: `useEntryScreen` with the diary
+ * strategy plus diary-only extras (member ids, display names, star colour).
+ * Pipeline: scope -> filters (all AND) -> fuzzy search -> sort; the rules live
+ * in src/lib/entryFiltering.ts, entrySorting.ts and watchlistLogic.ts.
+ * Display names come from the joined profiles, with `memberDisplayLabel`
+ * falling back to a uuid-prefix placeholder. Star colour: `useGroupTheme()`.
+ */
+export function useTagebuchScreen() {
+  const screen = useEntryScreen(DIARY_STRATEGY);
+  const { userId, groupMembers } = screen;
+  const ownProfileQuery = useOwnProfile(userId);
+  const starColor = useGroupTheme().colors.starColor;
 
   const displayNameById = useMemo(() => {
     const names = new Map<string, string>();
-    for (const member of groupMembersQuery.data ?? []) {
+    for (const member of groupMembers ?? []) {
       if (member.profiles?.display_name) {
         names.set(member.user_id, member.profiles.display_name);
       }
@@ -102,142 +152,32 @@ export function useTagebuchScreen() {
       names.set(userId, ownName);
     }
     return names;
-  }, [groupMembersQuery.data, ownProfileQuery.data, userId]);
+  }, [groupMembers, ownProfileQuery.data, userId]);
 
-  const diaryEntries = useMemo(() => {
-    if (!userId) return [];
-    return isMyDiaryScope
-      ? myDiaryEntries
-      : selectDiaryScope(rawEntries, "group", userId);
-  }, [isMyDiaryScope, myDiaryEntries, rawEntries, userId]);
-
-  // "Alle bewertet" / "Fehlt noch" only make sense for the group view; a
-  // stored choice stays saved but is neither applied nor shown in "Mein Tagebuch".
-  const activeFilters = useMemo<EntryFilters>(
-    () =>
-      isMyDiaryScope
-        ? {
-            ...filters.filters,
-            allRated: DEFAULT_ENTRY_FILTERS.allRated,
-            missing: DEFAULT_ENTRY_FILTERS.missing,
-          }
-        : filters.filters,
-    [isMyDiaryScope, filters.filters],
-  );
-
-  // Providers are only loaded (cache-backed, one batch call) while the
-  // streaming filter is active.
-  const streamingFilterActive = filters.filters.myStreaming;
-  const providersQuery = useMyStreamingProviders(
-    diaryEntries.map((entry) => entry.movie.tmdb_id),
-    streamingFilterActive,
-  );
-  const providersByTmdbId = providersQuery.data;
-
-  const filteredEntries = useMemo(() => {
-    if (!userId) return [];
-    return filterDiary(diaryEntries, activeFilters, {
-      userId,
-      groupMemberIds,
-      providersByTmdbId,
-      myProviderIds: filters.myProviderIds,
-    });
-  }, [
-    diaryEntries,
-    activeFilters,
-    userId,
-    groupMemberIds,
-    providersByTmdbId,
-    filters.myProviderIds,
-  ]);
-
-  const searchedEntries = useMemo(
-    () => searchEntries(filteredEntries, filters.searchQuery),
-    [filteredEntries, filters.searchQuery],
-  );
-
-  // One sort for cards, grid and list (panel sort row and table headers).
-  const visibleEntries = useMemo(
-    () => (userId ? sortEntries(searchedEntries, sort, { userId }) : []),
-    [searchedEntries, sort, userId],
-  );
-
-  const availableGenreIds = useMemo(
-    () => getDistinctGenreIds(diaryEntries, true),
-    [diaryEntries],
-  );
-  const genreNamesById = useMemo(
-    () => deriveGenreNamesById(diaryEntries),
-    [diaryEntries],
-  );
-  const { years: availableYears, hasNoDate: hasNoDateYear } = useMemo(
-    () => deriveSeenYears(diaryEntries, userId ?? ""),
-    [diaryEntries, userId],
-  );
-
-  const isLoading =
-    !userId ||
-    groupsQuery.isLoading ||
-    (isMyDiaryScope && myDiaryQuery.isLoading) ||
-    (!!activeGroupId &&
-      (watchlistQuery.isLoading || groupMembersQuery.isLoading));
-  const isError =
-    groupsQuery.isError ||
-    watchlistQuery.isError ||
-    groupMembersQuery.isError ||
-    (isMyDiaryScope && myDiaryQuery.isError);
-  const isDiaryEmpty = diaryEntries.length === 0;
-  const hasNoResults = !isDiaryEmpty && visibleEntries.length === 0;
-
-  const openEntry = useCallback(
-    (entry: WatchlistEntry) => {
-      // "Mein Tagebuch" items are synthetic: open in the active group's
-      // context when the movie lies there, else without any group context.
-      const groupEntry = isMyDiaryScope
-        ? rawEntries.find((e) => e.movie_id === entry.movie_id)
-        : entry;
-      if (!activeGroupId || !groupEntry) {
-        if (isMyDiaryScope) {
-          navigateToMovieDetailWithoutGroup(
-            router,
-            entry.movie.tmdb_id,
-            entry.movie,
-          );
-        }
-        return;
-      }
-      navigateToMovieDetail(router, {
-        tmdbId: entry.movie.tmdb_id,
-        groupId: activeGroupId,
-        source: "diary",
-        watchlistEntryId: groupEntry.id,
-      });
-    },
-    [activeGroupId, isMyDiaryScope, rawEntries, router],
-  );
+  const isDiaryEmpty = screen.baseEntries.length === 0;
 
   return {
-    filters,
+    filters: screen.filters,
     /** Filters actually applied/shown (group-only flags cleared in "Mein Tagebuch"). */
-    activeFilters,
-    isMyDiaryScope,
-    diaryViewMode,
-    setDiaryViewMode,
-    showTitlesInGrid,
+    activeFilters: screen.activeFilters,
+    isMyDiaryScope: screen.filters.scope === "my_diary",
+    diaryViewMode: screen.viewMode,
+    setDiaryViewMode: screen.setViewMode,
+    showTitlesInGrid: screen.showTitlesInGrid,
     starColor,
-    groupMemberIds,
+    groupMemberIds: screen.extra.groupMemberIds,
     displayNameById,
-    visibleEntries,
-    availableGenreIds,
-    genreNamesById,
-    availableYears,
-    hasNoDateYear,
-    isLoading,
-    isError,
+    visibleEntries: screen.visibleEntries,
+    availableGenreIds: screen.options.genreIds,
+    genreNamesById: screen.genreNamesById,
+    availableYears: screen.options.years,
+    hasNoDateYear: screen.options.hasNoDate,
+    isLoading: screen.isLoading,
+    isError: screen.isError,
     isDiaryEmpty,
-    hasNoResults,
-    providersLoading: streamingFilterActive && providersQuery.isLoading,
+    hasNoResults: !isDiaryEmpty && screen.visibleEntries.length === 0,
+    providersLoading: screen.providersLoading,
     userId,
-    openEntry,
+    openEntry: screen.openEntry,
   };
 }
